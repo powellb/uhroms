@@ -86,6 +86,7 @@ endif
 
 ifdef USE_OpenMP
          CPPFLAGS += -D_OPENMP
+           FFLAGS += -mp
 endif
 
 # According to the PGI manual, the -u -Bstatic flags initializes
@@ -118,7 +119,7 @@ ifdef USE_MCT
 endif
 
 ifdef USE_ESMF
-#     ESMF_SUBDIR := $(ESMF_OS).$(ESMF_COMPILER).$(ESMF_ABI).$(ESMF_SITE)
+#     ESMF_SUBDIR := $(ESMF_OS).$(ESMF_COMPILER).$(ESMF_ABI).$(ESMF_COMM).$(ESMF_SITE)
 #     ESMF_MK_DIR ?= $(ESMF_DIR)/lib/lib$(ESMF_BOPT)/$(ESMF_SUBDIR)
 #     ESMF_MK_DIR ?= /opt/pgisoft/esmf-2.2.2rp1/lib/libO/Linux.pgi.64.mpich.default
 #     ESMF_MK_DIR ?= /opt/pgisoft/esmf-3.0.2/lib/libO/Linux.pgi.64.mpich.default
