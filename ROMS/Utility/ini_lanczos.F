@@ -238,7 +238,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: Lwrk, i, j, lstr, ndefLCZ, outLoop, rec
+      integer :: Lwrk, i, j, lstr, ndefHSS, outLoop, rec
 # ifdef SOLVE3D
       integer :: itrc, k
 # endif
@@ -261,8 +261,8 @@
 !
 !  Determine if single or multiple Lanczos vector NetCDF files.
 !
-      CALL netcdf_get_ivar (ng, iADM, TRIM(LCZname(ng)), 'ndefADJ',      &
-     &                      ndefLCZ)
+      CALL netcdf_get_ivar (ng, iADM, TRIM(HSSname(ng)), 'ndefADJ',      &
+     &                      ndefHSS)
       IF (exit_flag.ne.NoError) RETURN
 ! 
       Lwrk=1
@@ -272,15 +272,15 @@
 !  written into the adjoint NetCDF in the IS4DVAR Lanczos algorithm.
 !  The Lanczos vector for each inner loop is accumulated in the 
 !  unlimited dimension. The name of this file is provided here in
-!  the LCZname variable since the ADJname value will be use in the
+!  the HSSname variable since the ADJname value will be use in the
 !  adjoint sensitivity part.
 !
-        IF (ndefLCZ.gt.0) THEN
-          lstr=LEN_TRIM(LCZname(ng))
-          WRITE (ncname,10) LCZname(ng)(1:lstr-8), inner
+        IF (ndefHSS.gt.0) THEN
+          lstr=LEN_TRIM(HSSname(ng))
+          WRITE (ncname,10) HSSname(ng)(1:lstr-8), inner
  10       FORMAT (a,'_',i4.4,'.nc')
         ELSE
-          ncname=LCZname(ng)
+          ncname=HSSname(ng)
         END IF
 !
 !  Read in the Lanczos vectors (q_i, where i=1,2,...k) computed from
@@ -290,7 +290,7 @@
         CALL read_state (ng, tile, iTLM,                                &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Lwrk, inner,                                   &
-     &                   ndefLCZ, ncLCZid(ng), TRIM(ncname),            &
+     &                   ndefHSS, ncHSSid(ng), TRIM(ncname),            &
 # ifdef MASKING
      &                   rmask, umask, vmask,                           &
 # endif
@@ -412,16 +412,16 @@
         Lwrk=3-Ladj
       END IF
       DO inner=1,Ninner                 ! last record ignored
-        IF (ndefLCZ.gt.0) THEN
-          lstr=LEN_TRIM(LCZname(ng))
-          WRITE (ncname,10) LCZname(ng)(1:lstr-8), inner
+        IF (ndefHSS.gt.0) THEN
+          lstr=LEN_TRIM(HSSname(ng))
+          WRITE (ncname,10) HSSname(ng)(1:lstr-8), inner
         ELSE
-          ncname=LCZname(ng)
+          ncname=HSSname(ng)
         END IF
         CALL read_state (ng, tile, iTLM,                                &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Lwrk, inner,                                   &
-     &                   ndefLCZ, ncLCZid(ng), ncname,                  &
+     &                   ndefHSS, ncHSSid(ng), ncname,                  &
 # ifdef MASKING
      &                   rmask, umask, vmask,                           &
 # endif

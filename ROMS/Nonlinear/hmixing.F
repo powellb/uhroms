@@ -1,5 +1,4 @@
 #include "cppdefs.h"
-#undef NEW_CODE
       MODULE hmixing_mod
 
 #if (defined DIFF_3DCOEF || defined VISC_3DCOEF) && defined SOLVE3D
@@ -234,7 +233,7 @@
       real(r8), parameter :: SmagorCoef = 0.1_r8
       real(r8), parameter :: PecletCoef = 1.0_r8 / 12.0_r8
 
-      real(r8) :: DefRate, cff, clip_diff, clip_scale
+      real(r8) :: DefRate, cff, clip_scale
 
 # include "set_bounds.h"
 
@@ -393,17 +392,11 @@
      &                      PecletCoef*(om_u(i,j)**3)*                  &
      &                      ABS(u(i,j,k,nrhs))
 #  ifdef MIX_GEO_TS
-#   ifdef NEW_CODE
-            clip_scale=0.5_r8*(Hz(i-1,j,k)+Hz(i,j,k))*om_u(i,j)/        &
-     &                 (z_r(i,j,k)-z_r(i-1,j,k))
-            clip_diff=0.05_r8*clip_scale**4/dt(ng)
-#   else
             clip_scale=0.5_r8*(Hz(i-1,j,k)+Hz(i,j,k))/                  &
-     &                 (z_r(i,j,k)-z_r(i-1,j,k))
-            clip_diff=diff3d_u(i,j,k)*                                  &
-     &                MIN(1.0_r8, clip_scale*clip_scale)
-#   endif
-            diff3d_u(i,j,k)=MIN(clip_diff, diff3d_u(i,j,k))
+     &                        (z_r(i,j,k+1)-z_r(i-1,j,k+1))
+            clip_scale=diff3d_u(i,j,k)*                                 &
+     &                 MIN(1.0_r8, clip_scale*clip_scale)
+            diff3d_u(i,j,k)=MIN(clip_scale, diff3d_u(i,j,k))
 #  endif
             diff3d_u(i,j,k)=SQRT(diff3d_u(i,j,k))
           END DO
@@ -419,17 +412,11 @@
      &                      PecletCoef*(on_v(i,j)**3)*                  &
      &                      ABS(v(i,j,k,nrhs))
 #  ifdef MIX_GEO_TS
-#   ifdef NEW_CODE
-            clip_scale=0.5_r8*(Hz(i,j,k)+Hz(i,j-1,k))*on_v(i,j)/        &
-     &                 (z_r(i,j,k)-z_r(i,j-1,k))
-            clip_diff=0.05_r8*clip_scale**4/dt(ng)
-#   else
             clip_scale=0.5_r8*(Hz(i,j,k)+Hz(i,j-1,k))/                  &
-     &                 (z_r(i,j,k)-z_r(i,j-1,k))
-            clip_diff=diff3d_v(i,j,k)*                                  &
-     &                MIN(1.0_r8, clip_scale*clip_scale)
-#   endif
-            diff3d_v(i,j,k)=MIN(clip_diff, diff3d_v(i,j,k))
+     &                        (z_r(i,j,k+1)-z_r(i,j-1,k+1))
+            clip_scale=diff3d_v(i,j,k)*                                 &
+     &                 MIN(1.0_r8, clip_scale*clip_scale)
+            diff3d_v(i,j,k)=MIN(clip_scale, diff3d_v(i,j,k))
 #  endif
             diff3d_v(i,j,k)=SQRT(diff3d_v(i,j,k))
           END DO
