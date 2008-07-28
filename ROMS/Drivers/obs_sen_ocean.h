@@ -218,7 +218,7 @@
 !
 !-----------------------------------------------------------------------
 !  Read in Lanczos algorithm coefficients (cg_beta, cg_delta) from
-!  file HSSname NetCDF (IS4DVAR adjoint file), as computed in the
+!  file LCZname NetCDF (IS4DVAR adjoint file), as computed in the
 !  IS4DVAR Lanczos data assimilation algorithm for the first outer
 !  loop.  They are needed here, in routine "ini_lanczos", to compute
 !  the tangent linear model initial conditions as the weighted sum
@@ -227,10 +227,10 @@
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
-        CALL netcdf_get_fvar (ng, iADM, HSSname(ng), 'cg_beta',         &
+        CALL netcdf_get_fvar (ng, iADM, LCZname(ng), 'cg_beta',         &
      &                        cg_beta)
         IF (exit_flag.ne. NoError) RETURN
-        CALL netcdf_get_fvar (ng, iADM, HSSname(ng), 'cg_delta',        &
+        CALL netcdf_get_fvar (ng, iADM, LCZname(ng), 'cg_delta',        &
      &                        cg_delta)
         IF (exit_flag.ne. NoError) RETURN
       END DO
@@ -372,7 +372,7 @@
 !  time to run the tangent linear model.  This time must be the same
 !  as the IS4DVAR Lanczos algorithm.
 !
-        CALL netcdf_get_ivar (ng, iADM, HSSname(ng), 'ntimes',          &
+        CALL netcdf_get_ivar (ng, iADM, LCZname(ng), 'ntimes',          &
      &                        ntimes(ng))
         IF (exit_flag.ne. NoError) RETURN
 !

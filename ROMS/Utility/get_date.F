@@ -516,8 +516,13 @@
 !  Encode current mode time.
 !-----------------------------------------------------------------------
 !
-      iday=INT(time/86400)
-      isec=INT(time-iday*86400.0_r8)
+      iday=INT(time/86400.0_r8)
+      IF (time.lt.0.0_r8) THEN
+        isec=INT(iday*86400.0_r8-time)
+!!      iday=iday-1
+      ELSE
+        isec=INT(time-iday*86400.0_r8)
+      END IF
       ihour=isec/3600
       minute=MOD(isec,3600)/60
       isec=MOD(isec,60)

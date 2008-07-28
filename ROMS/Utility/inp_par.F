@@ -6847,6 +6847,11 @@
               HSSname(Nval)(i:i)=blank
             END DO
             HSSname(Nval)=TRIM(ADJUSTL(Cval(Nval)))
+          ELSE IF (TRIM(KeyWord).eq.'LCZname') THEN
+            DO i=1,LEN(LCZname(Nval))
+              LCZname(Nval)(i:i)=blank
+            END DO
+            LCZname(Nval)=TRIM(ADJUSTL(Cval(Nval)))
           ELSE IF (TRIM(KeyWord).eq.'MODname') THEN
             DO i=1,LEN(MODname(Nval))
               MODname(Nval)(i:i)=blank
@@ -7100,10 +7105,9 @@
      &                    TRIM(fname)
 #   endif
 #  endif
-#  ifdef OBS_SENSITIVITY
           WRITE (out,160) '    Input/Output Lanczos File:  ',           &
-     &                    TRIM(HSSname(ng))
-#  else
+     &                    TRIM(LCZname(ng))
+#  ifndef OBS_SENSITIVITY
           WRITE (out,160) '    Input/Output Hessian File:  ',           &
      &                    TRIM(HSSname(ng))
 #  endif
