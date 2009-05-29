@@ -188,9 +188,11 @@
 #  endif
 # endif 
 # if defined SEDIMENT || defined BBL_MODEL
+#  ifndef ANA_SEDIMENT
         DO itrc=1,MBOTP
           get_var(idBott(itrc))=.TRUE.
         END DO
+#  endif
 # endif
 #endif
 #ifdef PERFECT_RESTART
@@ -255,7 +257,9 @@
      &    (model.eq.iRPM).or.(model.eq.9).or.(model.eq.11)) THEN
 # ifdef ADJUST_STFLUX
         DO itrc=1,NT(ng)
-          get_var(idTsur(itrc))=.TRUE.
+          IF (Lstflux(itrc,ng)) THEN
+            get_var(idTsur(itrc))=.TRUE.
+          END IF
         END DO
 # endif
 # ifdef ADJUST_WSTRESS
@@ -575,7 +579,7 @@
       IF ((model.eq.5).or.(model.eq.6)) THEN
         DO itrc=1,NT(ng)
           IF (.not.have_var(idTsur(itrc)).and.                          &
-     &        get_var(idTsur(itrc))) THEN
+     &        get_var(idTsur(itrc)).and.Lstflux(itrc,ng)) THEN
             IF (Master) WRITE (stdout,10) string,                       &
      &                                    TRIM(Vname(1,idTsur(itrc))),  &
      &                                    TRIM(ncname)
