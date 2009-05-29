@@ -313,6 +313,64 @@
         END DO
 !
 !-----------------------------------------------------------------------
+!  Natarov (2009) vertical stretching function.
+!-----------------------------------------------------------------------
+!
+      ELSE IF (Vstretching(ng).eq.4) THEN
+!
+!  Same as Vstretching=2, but with a different weight function to allow
+!  more control over near-bottom refinement
+!  
+
+        hc(ng)=Tcline(ng)
+!        IF (hc(ng).le.hmin(ng)) THEN
+          Aweight=1.0_r8
+          Bweight=1.0_r8
+          ds=1.0_r8/REAL(N(ng),r8)
+!
+          SCALARS(ng)%sc_w(N(ng))=0.0_r8
+          SCALARS(ng)%Cs_w(N(ng))=0.0_r8
+          DO k=N(ng)-1,1,-1
+            sc_w=ds*REAL(k-N(ng),r8)
+            SCALARS(ng)%sc_w(k)=sc_w
+            IF (theta_s(ng).gt.0.0_r8) THEN
+              Csur=(1.0_r8-COSH(theta_s(ng)*sc_w))/                     &
+     &             (COSH(theta_s(ng))-1.0_r8)
+              IF (theta_b(ng).gt.0.0_r8) THEN
+                Cbot=SINH(theta_b(ng)*(sc_w+1.0_r8))/                   &
+     &               SINH(theta_b(ng))-1.0_r8
+                Cweight=EXP(-0.03_r8/((sc_w+1.0_r8)**2)) 
+                SCALARS(ng)%Cs_w(k)=Cweight*Csur+(1.0_r8-Cweight)*Cbot
+              ELSE
+                SCALARS(ng)%Cs_w(k)=Csur
+              END IF
+            ELSE
+              SCALARS(ng)%Cs_w(k)=sc_w
+            END IF
+          END DO
+          SCALARS(ng)%sc_w(0)=-1.0_r8
+          SCALARS(ng)%Cs_w(0)=-1.0_r8
+!
+          DO k=1,N(ng)
+            sc_r=ds*(REAL(k-N(ng),r8)-0.5_r8)
+            SCALARS(ng)%sc_r(k)=sc_r
+            IF (theta_s(ng).gt.0.0_r8) THEN
+              Csur=(1.0_r8-COSH(theta_s(ng)*sc_r))/                     &
+     &             (COSH(theta_s(ng))-1.0_r8)
+              IF (theta_b(ng).gt.0.0_r8) THEN
+                Cbot=SINH(theta_b(ng)*(sc_r+1.0_r8))/                   &
+     &               SINH(theta_b(ng))-1.0_r8
+                Cweight=EXP(-0.03_r8/((sc_r+1.0_r8)**2)) 
+                SCALARS(ng)%Cs_r(k)=Cweight*Csur+(1.0_r8-Cweight)*Cbot
+              ELSE
+                SCALARS(ng)%Cs_r(k)=Csur
+              END IF
+            ELSE
+              SCALARS(ng)%Cs_r(k)=sc_r
+            END IF
+          END DO
+!
+!-----------------------------------------------------------------------
 !  R. Geyer stretching function for high bottom boundary layer
 !  resolution.
 !-----------------------------------------------------------------------
