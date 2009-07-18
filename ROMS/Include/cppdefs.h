@@ -542,7 +542,9 @@
 ** MULTIPLE_TLM        use if multiple TLM history files in 4DVAR            **
 ** NLM_OUTER           use if nonlinear model as basic state in outer loop   **
 ** OBS_IMPACT          use if observation impact to 4DVAR data assimilation  **
-** POSTERIOR_EOFS      Use if estimating posterior analysis error covariace  **
+** POSTERIOR_EOFS      Use if posterior analysis error covariace EOFS        **
+** POSTERIOR_ERROR_F   Use if final posterior analysis error covariace       **
+** POSTERIOR_ERROR_I   Use if initial posterior analysis error covariace     **
 ** RPM_RELAXATION      use if Picard iterations, Diffusive Relaxation of RPM **
 ** SO_SEMI_WHITE       use to activate white/red noise processes             **
 ** SPLINES_VCONV       use to activate implicit splines vertical convolution **
@@ -569,7 +571,10 @@
 ** NPZD biology model OPTIONS:                                               **
 **                                                                           **
 ** NPZD_FRANKS         use if NPZD Biology model, Franks et al. (1986)       **
+** NPZD_IRON           use if NPZD Biology model wiht iron limitation        **
 ** NPZD_POWELL         use if NPZD Biology model, Powell et al. (2006)       **
+** IRON_LIMIT          use if Fe limitation on phytoplankton growth          **
+** IRON_RELAX          use if nudging Fe over the shelf, h <= FeHmin         **
 **                                                                           **
 ** Bio-optical EcoSim model OPTIONS:                                         **
 **                                                                           **

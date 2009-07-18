@@ -442,6 +442,12 @@
 #if !(defined W4DPSAS || defined W4DVAR) && defined POSTERIOR_EOFS
 # undef POSTERIOR_EOFS
 #endif
+#if !(defined W4DPSAS || defined W4DVAR) && defined POSTERIOR_ERROR_F
+# undef POSTERIOR_ERROR_F
+#endif
+#if !(defined W4DPSAS || defined W4DVAR) && defined POSTERIOR_ERROR_I
+# undef POSTERIOR_ERROR_I
+#endif
 #if !(defined WEAK_CONSTRAINT || defined OBS_SENSITIVITY) && \
       defined OBS_IMPACT
 # undef OBS_IMPACT
@@ -779,7 +785,7 @@
 
 #if defined BIO_FENNEL  || defined ECOSIM      || \
     defined NEMURO      || defined NPZD_FRANKS || \
-    defined NPZD_POWELL
+    defined NPZD_IRON   || defined NPZD_POWELL
 # define BIOLOGY
 #endif
 

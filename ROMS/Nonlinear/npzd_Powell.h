@@ -127,7 +127,7 @@
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
-      real(r8) :: Att, PAR
+      real(r8) :: Att, ExpAtt, Itop, PAR
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
 
@@ -320,18 +320,21 @@
             IF (PARsur(i).gt.0.0_r8) THEN              ! day time
               DO k=N(ng),1,-1
 !
-!  Attenuate the light to the center of the grid cell. Here, AttSW is
+!  Compute average light attenuation for each grid cell. Here, AttSW is
 !  the light attenuation due to seawater and AttPhy is the attenuation
 !  due to phytoplankton (self-shading coefficient).
 !
-                Att=EXP(-0.5_r8*(AttSW(ng)+AttPhy(ng)*Bio(i,k,iPhyt))*  &
-     &                  (z_w(i,j,k)-z_w(i,j,k-1)))
-                PAR=PAR*Att
+                Att=(AttSW(ng)+AttPhy(ng)*Bio(i,k,iPhyt))*              &
+     &              (z_w(i,j,k)-z_w(i,j,k-1))
+                ExpAtt=EXP(-Att)
+                Itop=PAR
+                PAR=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
                 Light(i,k)=PAR
 !
-!  Attenuate the light to the bottom of the grid cell.
+!  Light attenuation at the bottom of the grid cell. It is the starting
+!  PAR value for the next (deeper) vertical grid cell.
 !
-                PAR=PAR*Att
+                PAR=Itop*ExpAtt
               END DO
             ELSE                                       ! night time
               DO k=1,N(ng)
