@@ -328,7 +328,36 @@
      defined R_SYMMETRY)
 # define ANA_PERTURB
 #endif
-
+#if defined TANGENT || defined ADJOINT
+# if !defined TL_TSC2HADVECTION       &&   \
+     !defined TL_TSC4HADVECTION       &&   \
+     !defined TL_TSU3HADVECTION       &&   \
+     !defined TL_TSA4HADVECTION
+#  if defined TS_C2HADVECTION
+#   define TL_TSC2HADVECTION
+#  elif defined TS_C4HADVECTION
+#   define TL_TSC4HADVECTION
+#  elif defined TS_U3HADVECTION
+#   define TL_TSU3HADVECTION
+#  elif defined TS_A4HADVECTION
+#   define TL_TSA4HADVECTION
+#  endif
+# endif
+# if !defined TL_TSC2VADVECTION       &&    \
+     !defined TL_TSC4VADVECTION       &&    \
+     !defined TL_TSSVADVECTION        &&    \
+     !defined TL_TSA4VADVECTION
+#  if defined TS_C2VADVECTION
+#   define TL_TSC2VADVECTION
+#  elif defined TS_C4VADVECTION
+#   define TL_TSC4VADVECTION
+#  elif defined TS_SVADVECTION
+#   define TL_TSSVADVECTION
+#  elif defined TS_A4VADVECTION
+#   define TL_TSA4VADVECTION
+#  endif
+# endif
+#endif
 /*
 ** Turn off nonlinear model switch.
 */
