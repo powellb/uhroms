@@ -356,7 +356,7 @@
 
 # if !defined TS_A4VADVECTION_TL       && \
      !defined TS_C2VADVECTION_TL       && \
-     !defined TS_C4VADVEVTION_TL       && \
+     !defined TS_C4VADVECTION_TL       && \
      !defined TS_SVADVECTION_TL
 #  if defined TS_A4VADVECTION
 #   define TS_A4VADVECTION_TL
