@@ -81,7 +81,7 @@ endif
 ifdef USE_DEBUG
            FFLAGS += -g -check bounds
 else
-           FFLAGS += -ip -O3 -xsse3
+           FFLAGS += -ip -O3 -mssse3
  ifdef USE_LARGE
            FFLAGS += -m64
  else
