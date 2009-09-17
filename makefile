@@ -241,14 +241,14 @@ clean_list += $(MAKE_MACROS)
 
 #--------------------------------------------------------------------------
 #  Make functions for putting the temporary files in $(SCRATCH_DIR)
-#  DO NOT modify this section; spaces and blank lineas are needed.
+#  DO NOT modify this section; spaces and blank lines are needed.
 #--------------------------------------------------------------------------
 
 # $(call source-dir-to-binary-dir, directory-list)
 source-dir-to-binary-dir = $(addprefix $(SCRATCH_DIR)/, $(notdir $1))
 
 # $(call source-to-object, source-file-list)
-source-to-object = $(call source-dir-to-bindary-dir,   \
+source-to-object = $(call source-dir-to-binary-dir,   \
                    $(subst .F,.o,$1))
 
 # $(call make-library, library-name, source-file-list)
@@ -385,18 +385,23 @@ all: $(SCRATCH_DIR) $(SCRATCH_DIR)/MakeDepend $(BIN) rm_macros
 
  modules  :=
 ifdef USE_ADJOINT
- modules  +=	ROMS/Adjoint
+ modules  +=	ROMS/Adjoint \
+		ROMS/Adjoint/Biology
 endif
 ifdef USE_REPRESENTER
- modules  +=	ROMS/Representer
+ modules  +=	ROMS/Representer \
+		ROMS/Representer/Biology
 endif
 ifdef USE_SEAICE
  modules  +=	ROMS/SeaIce
 endif
 ifdef USE_TANGENT
- modules  +=	ROMS/Tangent
+ modules  +=	ROMS/Tangent \
+		ROMS/Tangent/Biology
 endif
  modules  +=	ROMS/Nonlinear \
+		ROMS/Nonlinear/Biology \
+		ROMS/Nonlinear/Sediment \
 		ROMS/Functionals \
 		ROMS/Utility \
 		ROMS/Modules
@@ -406,18 +411,23 @@ ifdef MY_ANALYTICAL
  includes +=	$(MY_ANALYTICAL_DIR)
 endif
 ifdef USE_ADJOINT
- includes +=	ROMS/Adjoint
+ includes +=	ROMS/Adjoint \
+		ROMS/Adjoint/Biology
 endif
 ifdef USE_REPRESENTER
- includes +=	ROMS/Representer
+ includes +=	ROMS/Representer \
+		ROMS/Representer/Biology
 endif
 ifdef USE_SEAICE
  includes +=	ROMS/SeaIce
 endif
 ifdef USE_TANGENT
- includes +=	ROMS/Tangent
+ includes +=	ROMS/Tangent \
+		ROMS/Tangent/Biology
 endif
  includes +=	ROMS/Nonlinear \
+		ROMS/Nonlinear/Biology \
+		ROMS/Nonlinear/Sediment \
 		ROMS/Utility \
 		ROMS/Drivers \
                 ROMS/Functionals
