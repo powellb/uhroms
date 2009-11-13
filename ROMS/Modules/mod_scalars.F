@@ -498,7 +498,7 @@
         integer, parameter :: linear = 0        ! linear interpolation
         integer, parameter :: cubic  = 1        ! cubic  interpolation
 !
-        integer :: InterpFlag = linear          ! interpolation flag
+        integer :: InterpFlag = cubic          ! interpolation flag
 !
 !  Shallowest and Deepest levels to apply bottom momemtum stresses as
 !  a bodyforce
