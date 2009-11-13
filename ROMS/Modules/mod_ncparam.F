@@ -159,6 +159,7 @@
         integer  :: idDano        ! density anomaly
         integer  :: idDiff(2)     ! temperature and salinity diffusion
         integer  :: iddQdT        ! heat flux sensitivity to SST
+        integer  :: idEmPf        ! E-P from bulk_flux.F
         integer  :: idevap        ! evaporation rate
         integer  :: idFsur        ! free-surface
         integer  :: idFsuD        ! detided free-surface
@@ -406,6 +407,7 @@
         integer  :: ncADJid(Ngrids)     ! input/output adjoint
         integer  :: ncADSid(Ngrids)     ! input adjoint sensitivity
         integer  :: ncAVGid(Ngrids)     ! output averages
+        integer  :: ncBLKid(Ngrids)     ! Basic state surface fluxes
         integer  :: ncBRYid(Ngrids)     ! input boundary conditions
         integer  :: ncCLMid(Ngrids)     ! input climatology
         integer  :: ncDIAid(Ngrids)     ! output diagnostics
@@ -575,8 +577,8 @@
         integer :: Lvar, Ntiles, i, ic, ie, is, j, ng
         integer :: gtype, tile, varid
 
-        real(r8), parameter :: epsilon = 1.0E-8_r8 
-        real(r8), parameter :: spv = 0.0_r8 
+        real(r8), parameter :: epsilon = 1.0E-8_r8
+        real(r8), parameter :: spv = 0.0_r8
         real(r8) :: offset, scale
 
         character (len=80), dimension(7) :: Vinfo
@@ -901,6 +903,7 @@
           ncADJid(ng)=-1
           ncADSid(ng)=-1
           ncAVGid(ng)=-1
+          ncBLKid(ng)=-1
           ncBRYid(ng)=-1
           ncCLMid(ng)=-1
           ncDIAid(ng)=-1
@@ -971,7 +974,7 @@
         END DO
 #endif
 !
-!  Set IDs for state some state variables. 
+!  Set IDs for state some state variables.
 !
 #if defined FORCING_SV || defined SO_SEMI
         isUstr=1
@@ -1309,6 +1312,8 @@
                 idShea=varid
               CASE ('idrain')
                 idrain=varid
+              CASE ('idEmPf')
+                idEmPf=varid
               CASE ('idevap')
                 idevap=varid
               CASE ('idUair')
@@ -1517,7 +1522,7 @@
               CASE ('idTads(isalt)')
                 idTads(isalt)=varid
 #endif
-#if defined WEAK_CONSTRAINT || defined IOM
+#ifdef WEAK_CONSTRAINT
               CASE ('idZtlf')
                 idZtlf=varid
               CASE ('idUbtf')
@@ -3662,6 +3667,38 @@
      &          TRIM(ADJUSTL(Vname(2,idTvar(i)))), ', surface flux'
           WRITE (Vname(3,varid),'(a,1x,a)')                             &
      &          TRIM(ADJUSTL(Vname(3,idTvar(i)))), 'meter second-1'
+          WRITE (Vname(4,varid),'(a,a)')                                &
+     &          TRIM(Vname(1,varid)), ', scalar, series'
+          WRITE (Vname(5,varid),'(a)')                                  &
+     &          TRIM(ADJUSTL(Vname(5,idTvar(i))))
+        END DO
+#endif
+#ifdef WEAK_CONSTRAINT
+!
+!-----------------------------------------------------------------------
+!  Set passive tracers impulse forcing. The metadata values are the
+!  same as the basic tracer but with different indices sinc they are
+!  used at the same time. This allows flexibility in the time
+!  interpolation.
+!-----------------------------------------------------------------------
+!
+        DO i=NAT+1,MT
+          varid=varid+1
+          IF (varid.gt.MV) THEN
+            WRITE (stdout,60) MV, varid
+            STOP
+          END IF
+          idTtlf(i)=varid
+          DO ng=1,Ngrids
+            Fscale(varid,ng)=1.0_r8
+            Iinfo(1,varid,ng)=r3dvar
+          END DO
+          WRITE (Vname(1,varid),'(a)')                                  &
+     &          TRIM(ADJUSTL(Vname(1,idTvar(i))))
+          WRITE (Vname(2,varid),'(a,a)')                                &
+     &          TRIM(ADJUSTL(Vname(2,idTvar(i)))), ' impulse forcing'
+          WRITE (Vname(3,varid),'(a)')                                  &
+     &          TRIM(ADJUSTL(Vname(3,idTvar(i))))
           WRITE (Vname(4,varid),'(a,a)')                                &
      &          TRIM(Vname(1,varid)), ', scalar, series'
           WRITE (Vname(5,varid),'(a)')                                  &

@@ -47,7 +47,7 @@
 # ifdef BBL_MODEL_NOT_YET
 !!    USE rp_bbl_mod, ONLY : rp_bblm
 # endif
-# ifdef BULK_FLUXES
+# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
       USE rp_bulk_flux_mod, ONLY : rp_bulk_flux
 # endif
 # ifdef BVF_MIXING_NOT_YET
@@ -107,7 +107,7 @@
 # ifdef FLOATS_NOT_YET
 !!    USE rp_step_floats_mod, ONLY : rp_step_floats
 # endif
-# if defined WEAK_CONSTRAINT || defined IOM
+# ifdef WEAK_CONSTRAINT
       USE tl_forcing_mod, ONLY : tl_forcing
 # endif
 !!    USE wvelocity_mod, ONLY : wvelocity
@@ -178,7 +178,7 @@
       END DO
 !$OMP END PARALLEL DO
 # endif
-# if defined WEAK_CONSTRAINT || defined IOM
+# ifdef WEAK_CONSTRAINT
 !
 !-----------------------------------------------------------------------
 !  If appropriate, add convolved adjoint solution impulse forcing to
@@ -318,7 +318,7 @@
       DO thread=0,numthreads-1
         subs=NtileX(ng)*NtileE(ng)/numthreads
         DO tile=subs*thread,subs*(thread+1)-1,+1
-# ifdef BULK_FLUXES
+# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
           CALL rp_bulk_flux (ng, TILE)
 # endif
 # ifdef BBL_MODEL_NOT_YET

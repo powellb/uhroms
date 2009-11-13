@@ -427,7 +427,21 @@
 # endif
 
 # ifdef SALINITY
-#  if !(defined ANA_SSFLUX || defined EMINUSP || defined SRELAXATION)
+#  if defined NL_BULK_FLUXES && !defined BULK_FLUXES
+!
+!-----------------------------------------------------------------------
+!  Surface net freshwater flux (E-P) from NLM bulk flux computation.
+!-----------------------------------------------------------------------
+!
+      CALL get_2dfld (ng, iRPM, idEmPf, ncFRCid(idEmPf,ng),             &
+     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                LBi, UBi, LBj, UBj, 2, 1,                         &
+#   ifdef MASKING
+     &                GRID(ng) % rmask(LBi,LBj),                        &
+#   endif
+     &                FORCES(ng) % stflxG(LBi,LBj,1,isalt))
+
+#  elif !(defined ANA_SSFLUX || defined EMINUSP || defined SRELAXATION)
 !
 !-----------------------------------------------------------------------
 !  Surface net freshwater flux: E-P.
@@ -1093,23 +1107,25 @@
      &                  GRID(ng) % rmask(LBi,LBj),                      &
 # endif
      &                  OCEAN(ng) % zetaG(LBi,LBj,1))
+# ifndef SOLVE3D
 !
 !  Read 2D momentum.
 !
         CALL get_2dfld (ng, iNLM, idUbar, ncTLFid(ng), 1,               &
      &                  TLFname(ng), update(1),                         &
      &                  LBi, UBi, LBj, UBj, 2, 1,                       &
-# ifdef MASKING
+#  ifdef MASKING
      &                  GRID(ng) % umask(LBi,LBj),                      &
-# endif
+#  endif
      &                  OCEAN(ng) % ubarG(LBi,LBj,1))
         CALL get_2dfld (ng, iNLM, idVbar, ncTLFid(ng), 1,               &
      &                  TLFname(ng), update(1),                         &
      &                  LBi, UBi, LBj, UBj, 2, 1,                       &
-# ifdef MASKING
+#  ifdef MASKING
      &                  GRID(ng) % vmask(LBi,LBj),                      &
-# endif
+#  endif
      &                  OCEAN(ng) % vbarG(LBi,LBj,1))
+# endif
 # ifdef SOLVE3D
 !
 !  Read in 3D momentum.

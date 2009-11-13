@@ -159,7 +159,8 @@
 !
           real(r8), pointer :: sustr(:,:)
           real(r8), pointer :: svstr(:,:)
-#if !defined ANA_SMFLUX && !defined BULK_FLUXES
+#if !defined ANA_SMFLUX     && !defined BULK_FLUXES || \
+     defined NL_BULK_FLUXES
           real(r8), pointer :: sustrG(:,:,:)
           real(r8), pointer :: svstrG(:,:,:)
 #endif
@@ -284,19 +285,22 @@
           real(r8), pointer :: rainG(:,:,:)
 #  endif
 #  ifdef EMINUSP
+          real(r8), pointer :: EminusP(:,:)
           real(r8), pointer :: evap(:,:)
 #  endif
 # endif
 
           real(r8), pointer :: stflx(:,:,:)
-# if !defined ANA_STFLUX || !defined ANA_SSFLUX
+# if !defined ANA_STFLUX || !defined ANA_SSFLUX || \
+     !defined ANA_SPFLUX
           real(r8), pointer :: stflxG(:,:,:,:)
 # endif
 # ifdef ADJUST_STFLUX
           real(r8), pointer :: tflux(:,:,:,:,:)
 # endif
           real(r8), pointer :: btflx(:,:,:)
-# if !defined ANA_BTFLUX || !defined ANA_BSFLUX
+# if !defined ANA_BTFLUX || !defined ANA_BSFLUX || \
+     !defined ANA_BPFLUX
           real(r8), pointer :: btflxG(:,:,:,:)
 # endif
 
@@ -452,7 +456,8 @@
       allocate ( FORCES(ng) % sustr(LBi:UBi,LBj:UBj) )
       allocate ( FORCES(ng) % svstr(LBi:UBi,LBj:UBj) )
 
-#if !defined ANA_SMFLUX && !defined BULK_FLUXES
+#if !defined ANA_SMFLUX     && !defined BULK_FLUXES || \
+     defined NL_BULK_FLUXES
       allocate ( FORCES(ng) % sustrG(LBi:UBi,LBj:UBj,2) )
       allocate ( FORCES(ng) % svstrG(LBi:UBi,LBj:UBj,2) )
 #endif
@@ -587,13 +592,15 @@
       allocate ( FORCES(ng) % rainG(LBi:UBi,LBj:UBj,2) )
 #  endif
 #  ifdef EMINUSP
+      allocate ( FORCES(ng) % EminusP(LBi:UBi,LBj:UBj) )
       allocate ( FORCES(ng) % evap(LBi:UBi,LBj:UBj) )
 #  endif
 # endif
 
       allocate ( FORCES(ng) % stflx(LBi:UBi,LBj:UBj,NT(ng)) )
 
-# if !defined ANA_STFLUX || !defined ANA_SSFLUX
+# if !defined ANA_STFLUX || !defined ANA_SSFLUX || \
+     !defined ANA_SPFLUX
       allocate ( FORCES(ng) % stflxG(LBi:UBi,LBj:UBj,2,NT(ng)) )
 # endif
 # ifdef ADJUST_STFLUX
@@ -602,7 +609,8 @@
 # endif
       allocate ( FORCES(ng) % btflx(LBi:UBi,LBj:UBj,NT(ng)) )
 
-# if !defined ANA_BTFLUX || !defined ANA_BSFLUX
+# if !defined ANA_BTFLUX || !defined ANA_BSFLUX || \
+     !defined ANA_BPFLUX
       allocate ( FORCES(ng) % btflxG(LBi:UBi,LBj:UBj,2,NT(ng)) )
 # endif
 
@@ -814,7 +822,8 @@
 #endif
             FORCES(ng) % sustr(i,j) = IniVal
             FORCES(ng) % svstr(i,j) = IniVal
-#if !defined ANA_SMFLUX && !defined BULK_FLUXES
+#if !defined ANA_SMFLUX     && !defined BULK_FLUXES || \
+     defined NL_BULK_FLUXES
             FORCES(ng) % sustrG(i,j,1) = IniVal
             FORCES(ng) % sustrG(i,j,2) = IniVal
             FORCES(ng) % svstrG(i,j,1) = IniVal
@@ -918,6 +927,7 @@
 # ifdef BULK_FLUXES
             FORCES(ng) % rain(i,j) = IniVal
 #  ifdef EMINUSP
+            FORCES(ng) % EminusP(i,j) = IniVal
             FORCES(ng) % evap(i,j) = IniVal
 #  endif
 # endif
@@ -973,11 +983,13 @@
 # endif
               FORCES(ng) % stflx(i,j,itrc) = IniVal
               FORCES(ng) % btflx(i,j,itrc) = IniVal
-# if !defined ANA_STFLUX || !defined ANA_SSFLUX
+# if !defined ANA_STFLUX || !defined ANA_SSFLUX || \
+     !defined ANA_SPFLUX
               FORCES(ng) % stflxG(i,j,1,itrc) = IniVal
               FORCES(ng) % stflxG(i,j,2,itrc) = IniVal
 # endif
-# if !defined ANA_BTFLUX || !defined ANA_BSFLUX
+# if !defined ANA_BTFLUX || !defined ANA_BSFLUX || \
+     !defined ANA_BPFLUX
               FORCES(ng) % btflxG(i,j,1,itrc) = IniVal
               FORCES(ng) % btflxG(i,j,2,itrc) = IniVal
 # endif

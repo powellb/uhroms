@@ -208,33 +208,6 @@
 # endif
 #endif
 
-#if defined BALANCE_OPERATOR || defined ZETA_ELLIPTIC
-          real(r8), pointer :: bc_ak(:)
-          real(r8), pointer :: bc_bk(:)
-
-          real(r8), pointer :: zdf1(:)
-          real(r8), pointer :: zdf2(:)
-          real(r8), pointer :: zdf3(:)
-
-          real(r8), pointer :: pc_r2d(:,:)
-          real(r8), pointer :: rhs_r2d(:,:)
-          real(r8), pointer :: r2d_ref(:,:)
-          real(r8), pointer :: zeta_ref(:,:)
-
-          real(r8), pointer :: p_r2d(:,:,:)
-          real(r8), pointer :: r_r2d(:,:,:)
-          real(r8), pointer :: bp_r2d(:,:,:)
-          real(r8), pointer :: br_r2d(:,:,:)
-
-          real(r8), pointer :: tl_rhs_r2d(:,:)
-          real(r8), pointer :: tl_r2d_ref(:,:)
-          real(r8), pointer :: tl_zeta_ref(:,:)
-
-          real(r8), pointer :: ad_rhs_r2d(:,:)
-          real(r8), pointer :: ad_r2d_ref(:,:)
-          real(r8), pointer :: ad_zeta_ref(:,:)
-#endif
-
 #if defined FOUR_DVAR || defined IMPULSE
 !
 !  Working arrays to store adjoint impulse forcing, error covariance,
@@ -266,7 +239,7 @@
           real(r8), pointer :: e_v(:,:,:,:)
 #  endif
 # endif
-# if defined WEAK_CONSTRAINT || defined IOM
+# ifdef WEAK_CONSTRAINT
           real(r8), pointer :: f_ubar(:,:)
           real(r8), pointer :: f_vbar(:,:)
           real(r8), pointer :: f_zeta(:,:)
@@ -301,7 +274,7 @@
           real(r8), pointer :: uG(:,:,:,:)
           real(r8), pointer :: vG(:,:,:,:)
 # endif
-# if defined WEAK_CONSTRAINT || defined IOM
+# ifdef WEAK_CONSTRAINT
           real(r8), pointer :: f_zetaG(:,:,:)
 #  ifdef SOLVE3D
           real(r8), pointer :: f_tG(:,:,:,:,:)
@@ -487,33 +460,6 @@
 # endif
 #endif
 
-#if defined BALANCE_OPERATOR || defined ZETA_ELLIPTIC
-      allocate ( OCEAN(ng) % bc_ak(Nbico(ng)) )
-      allocate ( OCEAN(ng) % bc_bk(Nbico(ng)) )
-
-      allocate ( OCEAN(ng) % zdf1(Nbico(ng)) )
-      allocate ( OCEAN(ng) % zdf2(Nbico(ng)) )
-      allocate ( OCEAN(ng) % zdf3(Nbico(ng)) )
-
-      allocate ( OCEAN(ng) % pc_r2d(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % rhs_r2d(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % r2d_ref(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % zeta_ref(LBi:UBi,LBj:UBj) )
-
-      allocate ( OCEAN(ng) % p_r2d(LBi:UBi,LBj:UBj,Nbico(ng)) )
-      allocate ( OCEAN(ng) % r_r2d(LBi:UBi,LBj:UBj,Nbico(ng)) )
-      allocate ( OCEAN(ng) % bp_r2d(LBi:UBi,LBj:UBj,Nbico(ng)) )
-      allocate ( OCEAN(ng) % br_r2d(LBi:UBi,LBj:UBj,Nbico(ng)) )
-
-      allocate ( OCEAN(ng) % tl_rhs_r2d(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % tl_r2d_ref(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % tl_zeta_ref(LBi:UBi,LBj:UBj) )
-
-      allocate ( OCEAN(ng) % ad_rhs_r2d(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % ad_r2d_ref(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % ad_zeta_ref(LBi:UBi,LBj:UBj) )
-#endif
-
 #if defined FOUR_DVAR || defined IMPULSE
 !
 !  Working arrays to store adjoint impulse forcing, background error
@@ -551,7 +497,7 @@
       allocate ( OCEAN(ng) % e_v(LBi:UBi,LBj:UBj,N(ng),NSA) )
 #  endif
 
-#  if defined WEAK_CONSTRAINT || defined IOM
+#  ifdef WEAK_CONSTRAINT
       allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
       allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
       allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
@@ -589,7 +535,7 @@
       allocate ( OCEAN(ng) % uG(LBi:UBi,LBj:UBj,N(ng),2) )
       allocate ( OCEAN(ng) % vG(LBi:UBi,LBj:UBj,N(ng),2) )
 # endif
-# if defined WEAK_CONSTRAINT || defined IOM
+# ifdef WEAK_CONSTRAINT
       allocate ( OCEAN(ng) % f_zetaG(LBi:UBi,LBj:UBj,2) )
 #  ifdef SOLVE3D
       allocate ( OCEAN(ng) % f_tG(LBi:UBi,LBj:UBj,N(ng),2,NT(ng)) )
@@ -740,7 +686,7 @@
                 OCEAN(ng) % t(i,j,k,3,itrc) = IniVal
               END DO
             END DO
-          END DO 
+          END DO
 # ifdef SEDIMENT
           DO itrc=1,NST
             DO k=1,Nbed
@@ -934,45 +880,6 @@
       END IF
 #endif
 
-#if defined BALANCE_OPERATOR || defined ZETA_ELLIPTIC
-      IF (model.eq.0) THEN
-        DO rec=1,Nbico(ng)
-          OCEAN(ng) % bc_ak(rec) = IniVal
-          OCEAN(ng) % bc_bk(rec) = IniVal
-
-          OCEAN(ng) % zdf1(rec) = IniVal
-          OCEAN(ng) % zdf2(rec) = IniVal
-          OCEAN(ng) % zdf3(rec) = IniVal
-        END DO
-        DO j=Jmin,Jmax
-          DO i=Imin,Imax
-            OCEAN(ng) % pc_r2d(i,j) = 1.0_r8
-            OCEAN(ng) % rhs_r2d(i,j) = IniVal
-            OCEAN(ng) % r2d_ref(i,j) = IniVal
-            OCEAN(ng) % zeta_ref(i,j) = IniVal
-
-            OCEAN(ng) % tl_rhs_r2d(i,j) = IniVal
-            OCEAN(ng) % tl_r2d_ref(i,j) = IniVal
-            OCEAN(ng) % tl_zeta_ref(i,j) = IniVal
-
-            OCEAN(ng) % ad_rhs_r2d(i,j) = IniVal
-            OCEAN(ng) % ad_r2d_ref(i,j) = IniVal
-            OCEAN(ng) % ad_zeta_ref(i,j) = IniVal
-          END DO
-        END DO
-        DO j=Jmin,Jmax
-          DO rec=1,Nbico(ng)
-            DO i=Imin,Imax
-              OCEAN(ng) % p_r2d(i,j,rec) = IniVal
-              OCEAN(ng) % r_r2d(i,j,rec) = IniVal
-              OCEAN(ng) % bp_r2d(i,j,rec) = IniVal
-              OCEAN(ng) % br_r2d(i,j,rec) = IniVal
-            END DO
-          END DO
-        END DO
-      END IF
-#endif
-
 #if defined FOUR_DVAR || defined IMPULSE
 !
 !  Working arrays to store adjoint impulse forcing, background error
@@ -999,7 +906,7 @@
             OCEAN(ng) % d_vbar(i,j) = IniVal
             OCEAN(ng) % d_zeta(i,j) = IniVal
 
-#  if defined WEAK_CONSTRAINT || defined IOM
+#  ifdef WEAK_CONSTRAINT
             OCEAN(ng) % f_ubar(i,j) = IniVal
             OCEAN(ng) % f_vbar(i,j) = IniVal
             OCEAN(ng) % f_zeta(i,j) = IniVal
@@ -1007,7 +914,7 @@
           END DO
 # endif
 # ifdef SOLVE3D
-          DO rec=1,NSA          
+          DO rec=1,NSA
             DO k=1,N(ng)
               DO i=Imin,Imax
                 OCEAN(ng) % b_u(i,j,k,rec) = IniVal
@@ -1025,7 +932,7 @@
               OCEAN(ng) % d_u(i,j,k) = IniVal
               OCEAN(ng) % d_v(i,j,k) = IniVal
 
-#   if defined WEAK_CONSTRAINT || defined IOM
+#   ifdef WEAK_CONSTRAINT
               OCEAN(ng) % f_u(i,j,k) = IniVal
               OCEAN(ng) % f_v(i,j,k) = IniVal
 #   endif
@@ -1048,7 +955,7 @@
               DO i=Imin,Imax
                 OCEAN(ng) % d_t(i,j,k,itrc) = IniVal
 
-#   if defined WEAK_CONSTRAINT || defined IOM
+#   ifdef WEAK_CONSTRAINT
                 OCEAN(ng) % f_t(i,j,k,itrc) = IniVal
 #   endif
               END DO
@@ -1083,7 +990,7 @@
             OCEAN(ng) % vbarG(i,j,2) = IniVal
             OCEAN(ng) % zetaG(i,j,1) = IniVal
             OCEAN(ng) % zetaG(i,j,2) = IniVal
-# if defined WEAK_CONSTRAINT || defined IOM
+# ifdef WEAK_CONSTRAINT
             OCEAN(ng) % f_zetaG(i,j,1) = IniVal
             OCEAN(ng) % f_zetaG(i,j,2) = IniVal
 #  ifndef SOLVE3D
@@ -1101,7 +1008,7 @@
               OCEAN(ng) % uG(i,j,k,2) = IniVal
               OCEAN(ng) % vG(i,j,k,1) = IniVal
               OCEAN(ng) % vG(i,j,k,2) = IniVal
-#  if defined WEAK_CONSTRAINT || defined IOM
+#  ifdef WEAK_CONSTRAINT
               OCEAN(ng) % f_uG(i,j,k,1) = IniVal
               OCEAN(ng) % f_uG(i,j,k,2) = IniVal
               OCEAN(ng) % f_vG(i,j,k,1) = IniVal
@@ -1124,7 +1031,7 @@
               DO i=Imin,Imax
                 OCEAN(ng) % tG(i,j,k,1,itrc) = IniVal
                 OCEAN(ng) % tG(i,j,k,2,itrc) = IniVal
-#  if defined WEAK_CONSTRAINT || defined IOM
+#  ifdef WEAK_CONSTRAINT
                 OCEAN(ng) % f_tG(i,j,k,1,itrc) = IniVal
                 OCEAN(ng) % f_tG(i,j,k,2,itrc) = IniVal
 #  endif
