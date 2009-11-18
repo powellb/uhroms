@@ -429,16 +429,18 @@
         CALL get_state (ng, iNLM, 2, INIname(ng), Lini, Lini)
         IF (exit_flag.ne.NoError) RETURN
 
+        IF (balance(isFsur)) THEN
 !$OMP PARALLEL DO PRIVATE(ng,thread,subs,tile,Lini) SHARED(numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL balance_ref (ng, TILE, Lini)
-            CALL biconj (ng, TILE, iNLM, Lini)
+          DO thread=0,numthreads-1
+            subs=NtileX(ng)*NtileE(ng)/numthreads
+            DO tile=subs*thread,subs*(thread+1)-1
+              CALL balance_ref (ng, TILE, Lini)
+              CALL biconj (ng, TILE, iNLM, Lini)
+            END DO
           END DO
-        END DO
 !$OMP END PARALLEL DO
-        wrtZetaRef(ng)=.TRUE.
+          wrtZetaRef(ng)=.TRUE.
+        END IF
 #endif
 !
 !  Define tangent linear initial conditions file.
@@ -510,14 +512,6 @@
 !  avoid the inquiring stage.
 !
         ncFWDid(ng)=ncHISid(ng)
-
-#if defined BULK_FLUXES && defined NL_BULK_FLUXES
-!
-!  Set nonlinear NetCDF ID containing the basic state surface fluxes to
-!  use.
-!
-        ncBLKid(ng)=ncFWDid(ng)
-#endif
 
 #ifdef RECOMPUTE_4DVAR
 !
@@ -596,16 +590,18 @@
           CALL get_state (ng, iNLM, 2, INIname(ng), Lini, Lini)
           IF (exit_flag.ne.NoError) RETURN
 
+          IF (balance(isFsur)) THEN
 !$OMP PARALLEL DO PRIVATE(ng,thread,subs,tile,Lini) SHARED(numthreads)
-          DO thread=0,numthreads-1
-            subs=NtileX(ng)*NtileE(ng)/numthreads
-            DO tile=subs*thread,subs*(thread+1)-1
-              CALL balance_ref (ng, TILE, Lini)
-              CALL biconj (ng, TILE, iNLM, Lini)
+            DO thread=0,numthreads-1
+              subs=NtileX(ng)*NtileE(ng)/numthreads
+              DO tile=subs*thread,subs*(thread+1)-1
+                CALL balance_ref (ng, TILE, Lini)
+                CALL biconj (ng, TILE, iNLM, Lini)
+              END DO
             END DO
-          END DO
 !$OMP END PARALLEL DO
-          wrtZetaRef(ng)=.TRUE.
+            wrtZetaRef(ng)=.TRUE.
+          END IF
 # endif
 !
           INNER_LOOP : DO my_inner=0,Ninner

@@ -353,16 +353,18 @@
 !  Compute the reference zeta and biconjugate gradient arrays
 !  required for the balance of free surface.
 !
+          IF (balance(isFsur)) THEN
 !$OMP PARALLEL DO PRIVATE(ng,thread,subs,tile,Lini) SHARED(numthreads)
-          DO thread=0,numthreads-1
-            subs=NtileX(ng)*NtileE(ng)/numthreads
-            DO tile=subs*thread,subs*(thread+1)-1
-              CALL balance_ref (ng, TILE, Lini)
-              CALL biconj (ng, TILE, iNLM, Lini)
+            DO thread=0,numthreads-1
+              subs=NtileX(ng)*NtileE(ng)/numthreads
+              DO tile=subs*thread,subs*(thread+1)-1
+                CALL balance_ref (ng, TILE, Lini)
+                CALL biconj (ng, TILE, iNLM, Lini)
+              END DO
             END DO
-          END DO
 !$OMP END PARALLEL DO
-          wrtZetaRef(ng)=.TRUE.
+            wrtZetaRef(ng)=.TRUE.
+          END IF
 #endif
 !
 !  If first pass, compute or read in background-error covariance
@@ -441,16 +443,6 @@
           wrtNLmod(ng)=.FALSE.
           wrtTLmod(ng)=.TRUE.
 
-#if defined BULK_FLUXES && defined NL_BULK_FLUXES
-!
-!  Set nonlinear NetCDF ID containing the basic state surface fluxes to
-!  use.
-!
-          IF (outer.eq.1) THEN
-            ncBLKid(ng)=ncHISid(ng)
-          END IF
-#endif
-
 #if defined ADJUST_BOUNDARY || defined ADJUST_STFLUX || \
     defined ADJUST_WSTRESS
 !
@@ -468,7 +460,7 @@
 !  Write out nonlinear model misfit cost function into MODname NetCDF
 !  file.
 !
-          SourceFile='is4dvar_lanzos_ocean.h, ROMS_run'
+          SourceFile='is4dvar_ocean.h, ROMS_run'
 
           CALL netcdf_put_fvar (ng, iNLM, MODname(ng),                  &
      &                          'NLcost_function',                      &
@@ -586,7 +578,7 @@
 !  If multiple TLM history NetCDF files, close current NetCDF file.
 !
             IF (ncTLMid(ng).ne.-1) THEN
-              SourceFile='is4dvar_lanczos_ocean.h, ROMS_run'
+              SourceFile='is4dvar_ocean.h, ROMS_run'
 
               CALL netcdf_close (ng, iTLM, ncTLMid(ng))
               IF (exit_flag.ne.NoError) RETURN
@@ -907,7 +899,7 @@
 !  Close adjoint NetCDF file.
 !
           IF (ncADJid(ng).ne.-1) THEN
-            SourceFile='is4dvar_lanczos_ocean.h, ROMS_run'
+            SourceFile='is4dvar_ocean.h, ROMS_run'
 
             CALL netcdf_close (ng, iADM, ncADJid(ng))
             IF (exit_flag.ne.NoError) RETURN
@@ -916,7 +908,7 @@
 !  Close Hessian NetCDF file.
 !
           IF (ncHSSid(ng).ne.-1) THEN
-            SourceFile='is4dvar_lanczos_ocean.h, ROMS_run'
+            SourceFile='is4dvar_ocean.h, ROMS_run'
 
             CALL netcdf_close (ng, iADM, ncHSSid(ng))
             IF (exit_flag.ne.NoError) RETURN
@@ -1070,7 +1062,7 @@
 !
 !  Close current forward NetCDF file.
 !
-          SourceFile='is4dvar_lanczos_ocean.h, ROMS_run'
+          SourceFile='is4dvar_ocean.h, ROMS_run'
 
           CALL netcdf_close (ng, iNLM, ncFWDid(ng))
           IF (exit_flag.ne.NoError) RETURN
@@ -1133,7 +1125,7 @@
 !  Write out nonlinear model final misfit cost function into MODname
 !  NetCDF file. Notice that it is written in the Nouter+1 record.
 !
-        SourceFile='is4dvar_lanczos_ocean.h, ROMS_run'
+        SourceFile='is4dvar_ocean.h, ROMS_run'
 
         CALL netcdf_put_fvar (ng, iNLM, MODname(ng), 'NLcost_function', &
      &                        FOURDVAR(ng)%NLobsCost(0:),               &
