@@ -58,10 +58,10 @@ endif
 ifdef USE_ARPACK
  ifdef USE_MPI
    PARPACK_LIBDIR ?= /opt/intelsoft/PARPACK
-             LIBS += -L$(PARPACK_LIBDIR) -lparpack
+             LIBS += -L$(PARPACK_LIBDIR) -lparpack_intel
  endif
     ARPACK_LIBDIR ?= /opt/intelsoft/PARPACK
-             LIBS += -L$(ARPACK_LIBDIR) -larpack
+             LIBS += -L$(ARPACK_LIBDIR) -larpack_intel
 endif
 
 ifdef USE_MPI
