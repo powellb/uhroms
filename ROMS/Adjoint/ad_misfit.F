@@ -146,6 +146,7 @@
       integer :: itrc, j, k, nfrc
 # endif
       real(r8), parameter :: IniVal = 0.0_r8
+      real(r8) :: ad_uradial(Mobs), ad_vradial(Mobs)
 
 # include "set_bounds.h"
 !
@@ -324,6 +325,69 @@
      &                             ADmodVal)
           END IF
         END DO
+!
+!  Radial Velocity
+! We need to do the u and v separately, given by:
+!      ad_v = ad_v + ADmodVal*sin(angle)
+!      ad_u = ad_u + ADmodVal*cos(angle)
+!
+        IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
+          DO iobs=1,Nobs(ng)
+            IF (ObsType(iobs).eq.isRadial) THEN
+              ad_uradial(iobs)=ADmodVal(iobs)*COS(ObsMeta(iobs))
+              ad_vradial(iobs)=ADmodVal(iobs)*SIN(ObsMeta(iobs))
+            ELSE
+              ad_uradial(iobs)=ADmodVal(iobs)
+              ad_vradial(iobs)=ADmodVal(iobs)
+            END IF
+          END DO
+          DO k=1,N(ng)
+            DO j=JstrV-1,Jend+1
+              DO i=Istr-1,Iend+1
+                z_v(i,j,k)=0.5_r8*(z_r(i,j-1,k)+                        &
+     &                             z_r(i,j  ,k))
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           isRadial,                              &
+     &                           Mobs, 1, Nobs(ng),                     &
+     &                           vXmin(ng), vXmax(ng),                  &
+     &                           vYmin(ng), vYmax(ng),                  &
+     &                           time(ng), dt(ng),                      &
+     &                           ObsType, ObsScale,                     &
+     &                           Tobs, Xobs, Yobs+0.5, Zobs,            &
+     &                           ad_v(:,:,:,nfrc),                      &
+     &                           z_v,                                   &
+#  ifdef MASKING
+     &                           vmask,                                 &
+#  endif
+     &                           ad_vradial)
+          DO k=1,N(ng)
+            DO j=Jstr-1,Jend+1
+              DO i=IstrU-1,Iend+1
+                z_v(i,j,k)=0.5_r8*(z_r(i-1,j,k)+                        &
+     &                             z_r(i  ,j,k))
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           isRadial,                              &
+     &                           Mobs, 1, Nobs(ng),                     &
+     &                           uXmin(ng), uXmax(ng),                  &
+     &                           uYmin(ng), uYmax(ng),                  &
+     &                           time(ng), dt(ng),                      &
+     &                           ObsType, ObsScale,                     &
+     &                           Tobs, Xobs+0.5, Yobs, Zobs,            &
+     &                           ad_u(:,:,:,nfrc),                      &
+     &                           z_v,                                   &
+#  ifdef MASKING
+     &                           umask,                                 &
+#  endif
+     &                           ad_uradial)
+        END IF
 # endif
 # ifdef DISTRIBUTE
 !
@@ -357,6 +421,9 @@
             ELSE IF (ObsType(iobs).eq.isVvel) THEN
               FOURDVAR(ng)%ObsReject(isVvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVvel)+1
+            ELSE IF (ObsType(iobs).eq.isRadial) THEN
+              FOURDVAR(ng)%ObsReject(isRadial)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.isTvar(itrc)) THEN

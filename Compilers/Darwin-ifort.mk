@@ -58,10 +58,10 @@ endif
 ifdef USE_ARPACK
  ifdef USE_MPI
    PARPACK_LIBDIR ?= /usr/local/lib
-             LIBS += -L$(PARPACK_LIBDIR) -lparpack
+             LIBS += -L$(PARPACK_LIBDIR) -lparpack_ifort
  endif
     ARPACK_LIBDIR ?= /usr/local/lib
-             LIBS += -L$(ARPACK_LIBDIR) -larpack
+             LIBS += -L$(ARPACK_LIBDIR) -larpack_ifort
 endif
 
 ifdef USE_MPI

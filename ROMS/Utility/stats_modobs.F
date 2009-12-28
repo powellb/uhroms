@@ -64,6 +64,7 @@
       real(r8), allocatable :: mod_value(:)
       real(r8), allocatable :: Obs_scale(:)
       real(r8), allocatable :: Obs_value(:)
+      real(r8), allocatable :: obs_meta(:)
 
       character (len=11), dimension(NstateVar(ng)) :: text, svar_name
 !
@@ -79,6 +80,7 @@
       IF (.not.allocated(obs_scale)) allocate (obs_scale(Ndatum(ng)))
       IF (.not.allocated(obs_type))  allocate (obs_type (Ndatum(ng)))
       IF (.not.allocated(obs_value)) allocate (obs_value(Ndatum(ng)))
+      IF (.not.allocated(obs_meta))  allocate (obs_meta(Ndatum(ng)))
 !
 !  Read in observation type identifier.
 !
@@ -92,6 +94,14 @@
 !
       CALL netcdf_get_fvar (ng, iNLM, OBSname(ng), Vname(1,idOval),     &
      &                      obs_value,                                  &
+     &                      ncid = ncOBSid(ng),                         &
+     &                      start = (/1/), total = (/Ndatum(ng)/))
+      IF (exit_flag.ne. NoError) RETURN
+!
+!  Read in observation meta values.
+!
+      CALL netcdf_get_fvar (ng, iNLM, OBSname(ng), Vname(1,idOmeta),    &
+     &                      obs_meta,                                   &
      &                      ncid = ncOBSid(ng),                         &
      &                      start = (/1/), total = (/Ndatum(ng)/))
       IF (exit_flag.ne. NoError) RETURN
@@ -235,6 +245,7 @@
       IF (allocated(obs_scale)) deallocate (obs_scale)
       IF (allocated(obs_type))  deallocate (obs_type)
       IF (allocated(obs_value)) deallocate (obs_value)
+      IF (allocated(obs_meta))  deallocate (obs_meta)
 !
 !  Write comparison statistics to NetCDF file.
 !

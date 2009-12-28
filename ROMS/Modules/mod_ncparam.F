@@ -195,6 +195,7 @@
         integer  :: idOerr        ! observations error
         integer  :: idOtyp        ! observations type
         integer  :: idOval        ! observations value
+        integer  :: idOmeta       ! observations meta value
         integer  :: idOvar        ! observations global variance
         integer  :: idOvel        ! omega vertical velocity
         integer  :: idQair        ! surface air humidity
@@ -392,6 +393,7 @@
         integer, allocatable :: isTvar(:)     ! tracers
         integer, allocatable :: idSvar(:)     ! state vector indices
         integer, allocatable :: idSbry(:)     ! state boundaries indices
+        integer  :: isRadial = 20             ! Radial HF-Radar
 !
 !  Input/Output NetCDF files IDs.
 !
@@ -1697,6 +1699,8 @@
                 idOtyp=varid
               CASE ('idOval')
                 idOval=varid
+              CASE ('idOmeta')
+                idOmeta=varid
               CASE ('idOvar')
                 idOvar=varid
               CASE ('idKhor')

@@ -62,6 +62,7 @@
 !                 normalization of the observations.                   !
 !  ObsType      Observation type identifier.                           !
 !  ObsVal       Observation values.                                    !
+!  ObsMeta      Observation meta values.                               !
 !  ObsVar       Global observation variance for each state variable.   !
 !  Optimality   normalized, optimal cost function minimum.             !
 !  Ritz         Ritz eigenvalues to compute approximated Hessian.      !
@@ -162,6 +163,7 @@
         real(r8), allocatable :: ObsErr(:)
         real(r8), allocatable :: ObsScale(:)
         real(r8), allocatable :: ObsVal(:)
+        real(r8), allocatable :: ObsMeta(:)
         real(r8), allocatable :: Tobs(:)
         real(r8), allocatable :: Xobs(:)
         real(r8), allocatable :: Yobs(:)
@@ -224,7 +226,7 @@
 !
 !  Maximum number of observations to process.
 !
-        integer :: Mobs
+        integer :: Mobs, NumObsTypes = 20
 !
 !  Number of model state variables to process.
 !
@@ -833,13 +835,13 @@
 #   endif
 #  endif
 
-        allocate ( FOURDVAR(ng) % ObsVar(NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsVar(NumObsTypes) )
         FOURDVAR(ng) % ObsVar = 1.0_r8
 
-        allocate ( FOURDVAR(ng) % ObsCount(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsCount(0:NumObsTypes) )
         FOURDVAR(ng) % ObsCount = 0
 
-        allocate ( FOURDVAR(ng) % ObsReject(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsReject(0:NumObsTypes) )
         FOURDVAR(ng) % ObsReject = 0
 
       END DO
@@ -895,6 +897,9 @@
 
       allocate ( ObsVal(Mobs) )
       ObsVal = IniVal
+
+      allocate ( ObsMeta(Mobs) )
+      ObsMeta = IniVal
 
       allocate ( Tobs(Mobs) )
       Tobs = IniVal
