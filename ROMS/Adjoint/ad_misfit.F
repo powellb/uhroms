@@ -327,6 +327,10 @@
         END DO
 !
 !  Radial Velocity
+!
+! The forward problem is:
+!         r = u*cos(angle) + v*sin(angle)
+!
 ! We need to do the u and v separately, given by:
 !      ad_v = ad_v + ADmodVal*sin(angle)
 !      ad_u = ad_u + ADmodVal*cos(angle)
