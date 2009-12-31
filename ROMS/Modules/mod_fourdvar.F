@@ -332,7 +332,7 @@
 !
         logical, dimension(Ngrids) :: wrtMisfit
 
-# if defined OBS_SENSITIVITY
+# if defined IS4DVAR_SENSITIVITY
 #  ifdef OBS_IMPACT
 !
 !  Switch to control the writing of the total observation impact for
@@ -534,7 +534,7 @@
         real(r8), allocatable :: zLanczos_err(:,:)     ! error, identity
 #  endif
 # endif
-# if defined OBS_SENSITIVITY
+# if defined IS4DVAR_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  Lanczos algorithm coefficients.
@@ -1177,7 +1177,7 @@
       cg_zu = IniVal
 
 # endif
-# if defined OBS_SENSITIVITY
+# if defined IS4DVAR_SENSITIVITY
 !
 !  Allocate Lanczos algorithm coefficients.
 !
@@ -1206,7 +1206,7 @@
 # ifdef BALANCE_OPERATOR
         wrtZetaRef(ng)=.FALSE.
 # endif
-# ifdef OBS_SENSITIVITY
+# ifdef IS4DVAR_SENSITIVITY
 #  ifdef OBS_IMPACT
         wrtIMPACT_TOT(ng)=.FALSE.
 #  endif

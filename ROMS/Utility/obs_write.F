@@ -87,7 +87,7 @@
         Mstr=1
         Mend=Nobs(ng)
 # endif
-# ifndef OBS_SENSITIVITY
+# ifndef IS4DVAR_SENSITIVITY
 !
 !  Some entries are not computed in the extraction routine.  Set values
 !  to zero to avoid problems when writing non initialized values.
@@ -122,7 +122,7 @@
 !
 !  Free-surface observations.
 !
-# ifndef OBS_SENSITIVITY
+# ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isFsur).gt.0)) THEN
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
@@ -163,7 +163,7 @@
 !
 !  Vertically integrated u-velocity observations.
 !
-# ifndef OBS_SENSITIVITY
+# ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isUbar).gt.0)) THEN
           CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
@@ -204,7 +204,7 @@
 !
 !  Vertically integrated v-velocity observations.
 !
-# ifndef OBS_SENSITIVITY
+# ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isVbar).gt.0)) THEN
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
@@ -247,7 +247,7 @@
 !
 !  3D u-velocity observations.
 !
-#  ifndef OBS_SENSITIVITY
+#  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isUvel).gt.0)) THEN
           DO k=1,N(ng)
@@ -306,7 +306,7 @@
 !
 !  3D v-velocity observations.
 !
-#  ifndef OBS_SENSITIVITY
+#  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isVvel).gt.0)) THEN
           DO k=1,N(ng)
@@ -366,7 +366,7 @@
 !  Tracer type observations.
 !
         DO itrc=1,NT(ng)
-#  ifndef OBS_SENSITIVITY
+#  ifndef IS4DVAR_SENSITIVITY
           IF (wrtNLmod(ng).and.                                         &
      &        (FOURDVAR(ng)%ObsCount(isTvar(itrc)).gt.0)) THEN
             CALL extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,           &
@@ -411,7 +411,7 @@
 !  Radial HF-Radar observations. We need to get u and v, then we will
 !  compute the radial component
 !
-#  ifndef OBS_SENSITIVITY
+#  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
           DO k=1,N(ng)
@@ -536,7 +536,8 @@
         END IF
 #  endif
 # endif
-# ifdef OBS_SENSITIVITY
+
+# ifdef IS4DVAR_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  Scaled extracted data at observations location by the observation
@@ -559,7 +560,7 @@
 #  else
         Ncollect=Mobs
 #  endif
-#  ifndef OBS_SENSITIVITY
+#  ifndef IS4DVAR_SENSITIVITY
 
         IF (wrtNLmod(ng)) THEN
           CALL mp_collect (ng, model, Ncollect, IniVal,                 &
@@ -597,7 +598,7 @@
      &                   ObsScale)
 #  endif
 # endif
-# if defined FOUR_DVAR && !defined OBS_SENSITIVITY
+# if defined FOUR_DVAR && !defined IS4DVAR_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  Compute and write initial and final model-observation misfit
@@ -643,7 +644,7 @@
 !-----------------------------------------------------------------------
 !  Write out data into output 4DVAR NetCDF file.
 !-----------------------------------------------------------------------
-# if defined FOUR_DVAR && !defined OBS_SENSITIVITY
+# if defined FOUR_DVAR && !defined IS4DVAR_SENSITIVITY
 !
 !  Current outer and inner loop.
 !
@@ -672,7 +673,7 @@
           IF (exit_flag.ne.NoError) RETURN
         END IF
 
-# ifndef OBS_SENSITIVITY
+# ifndef IS4DVAR_SENSITIVITY
 !
 !  Nonlinear model or first guess (background) state at observation
 !  locations.
@@ -700,7 +701,7 @@
           IF (exit_flag.ne.NoError) RETURN
           haveTLmod(ng)=.TRUE.
         END IF
-#  ifdef OBS_SENSITIVITY
+#  ifdef IS4DVAR_SENSITIVITY
 #   ifdef OBS_IMPACT
 !
 !  Write the total observation impact.
@@ -905,7 +906,7 @@
         ELSE IF (wrtRPmod(ng)) THEN
           string='Wrote RPM state at observation locations,         '
 #  else
-#   ifdef OBS_SENSITIVITY
+#   ifdef IS4DVAR_SENSITIVITY
         ELSE IF (wrtTLmod(ng)) THEN
           string='Wrote 4DVAR observation sensitivity,              '
 #   else
