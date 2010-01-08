@@ -3,7 +3,7 @@
 **
 ** svn $Id$
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2009 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -536,7 +536,7 @@
 ** FT_EIGENMODES       use if finite time eingenmodes driver: normal modes   **
 ** INNER_PRODUCT       use if tangent linear and adjoint inner product check **
 ** IS4DVAR             use if incremental 4DVar data assimilation            **
-** OBS_SENSITIVITY     use if 4DVAR observations sensitivity driver          **
+** IS4DVAR_SENSITIVITY use if I4DVar observations sensitivity driver         **
 ** OPT_OBSERVATIONS    use if optimal observations driver                    **
 ** OPT_PERTURBATION    use if optimal perturbations driver, singular vectors **
 ** PICARD_TEST         use if representer tangent linear model test          **
@@ -572,6 +572,7 @@
 ** MULTIPLE_TLM        use if multiple TLM history files in 4DVAR            **
 ** NLM_OUTER           use if nonlinear model as basic state in outer loop   **
 ** OBS_IMPACT          use if observation impact to 4DVAR data assimilation  **
+** OBS_IMPACT_SPLIT    use to separate impact due to IC, forcing, and OBC    **
 ** POSTERIOR_EOFS      Use if posterior analysis error covariance EOFS       **
 ** POSTERIOR_ERROR_F   Use if final posterior analysis error covariance      **
 ** POSTERIOR_ERROR_I   Use if initial posterior analysis error covariance    **
@@ -596,7 +597,6 @@
 ** DENITRIFICATION     use to add denitrification processes                  **
 ** OXYGEN              use to add oxygen dynamics                            **
 ** OCMIP_OXYGEN_SC     use if Schmidt number from Keeling et al. (1998)      **
-** RIVER_BIOLOGY       use to process river biology point-sources            **
 ** TALK_NONCONSERV     use if nonconservative computation of alkalinity      **
 **                                                                           **
 ** NPZD biology model OPTIONS:                                               **
@@ -627,7 +627,6 @@
 ** SEDIMENT            use to activate sediment transport model              **
 ** BEDLOAD_MPM         use to activate Meyer-Peter-Mueller bed load          **
 ** BEDLOAD_SOULSBY     use to activate Soulsby wave/current bed load         **
-** RIVER_SEDIMENT      use to process river sediment point-sources           **
 ** SED_DENS            use to activate sediment to affect equation of state  **
 ** SED_MORPH           use to allow bottom model elevation to evolve         **
 ** SUSPLOAD            use to activate suspended load transport              **

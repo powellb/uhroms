@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -24,6 +24,7 @@
       USE mod_netcdf
       USE mod_scalars
 # if defined SEDIMENT || defined BBL_MODEL
+      USE mod_sedbed
       USE mod_sediment
 # endif
 # if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
@@ -1222,7 +1223,7 @@
 !
       IF (Hout(idTsur(itemp),ng)) THEN
 #   ifdef ADJOINT
-#    if defined AD_SENSITIVITY   || defined OBS_SENSITIVITY || \
+#    if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
         defined OPT_OBSERVATIONS
         scale=1.0_r8/(rho0*Cp)
 #    else
@@ -1419,7 +1420,7 @@
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idSrad)), tAVGindx(ng)
-          END IF          
+          END IF
           exit_flag=3
           ioerror=status
           RETURN
@@ -1434,7 +1435,7 @@
 !
       IF (Hout(idUsms,ng)) THEN
 #  ifdef ADJOINT
-#   if defined AD_SENSITIVITY   || defined OBS_SENSITIVITY || \
+#   if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
        defined OPT_OBSERVATIONS
         scale=1.0_r8/rho0
 #   else
@@ -1454,7 +1455,7 @@
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idUsms)), tAVGindx(ng)
-          END IF                    
+          END IF
           exit_flag=3
           ioerror=status
           RETURN
@@ -1465,7 +1466,7 @@
 !
       IF (Hout(idVsms,ng)) THEN
 #  ifdef ADJOINT
-#   if defined AD_SENSITIVITY   || defined OBS_SENSITIVITY || \
+#   if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
        defined OPT_OBSERVATIONS
         scale=1.0_r8/rho0
 #   else
@@ -1496,7 +1497,7 @@
 !
       IF (Hout(idUbms,ng)) THEN
 #  ifdef ADJOINT
-#   if defined AD_SENSITIVITY   || defined OBS_SENSITIVITY || \
+#   if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
        defined OPT_OBSERVATIONS
         scale=1.0_r8/rho0
 #   else
@@ -1516,7 +1517,7 @@
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idUbms)), tAVGindx(ng)
-          END IF                    
+          END IF
           exit_flag=3
           ioerror=status
           RETURN
@@ -1527,7 +1528,7 @@
 !
       IF (Hout(idVbms,ng)) THEN
 #  ifdef ADJOINT
-#   if defined AD_SENSITIVITY   || defined OBS_SENSITIVITY || \
+#   if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
        defined OPT_OBSERVATIONS
         scale=1.0_r8/rho0
 #   else
@@ -1569,7 +1570,7 @@
 #  ifdef MASKING
      &                       GRID(ng) % umask,                          &
 #  endif
-     &                       AVERAGE(ng) % avgbedldu(:,:,itrc))
+     &                       SEDBED(ng) % avgbedldu(:,:,itrc))
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,idUbld(itrc))),            &
@@ -1593,7 +1594,7 @@
 #  ifdef MASKING
      &                       GRID(ng) % vmask,                          &
 #  endif
-     &                       AVERAGE(ng) % avgbedldv(:,:,itrc))
+     &                       SEDBED(ng) % avgbedldv(:,:,itrc))
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,idVbld(itrc))),            &

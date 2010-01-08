@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -22,9 +22,9 @@
 #ifdef OBC
       USE mod_boundary, ONLY : allocate_boundary, initialize_boundary
 #endif
-#if defined AD_SENSITIVITY    || defined CLIMATOLOGY      || \
-    defined OBS_SENSITIVITY   || defined OPT_OBSERVATIONS || \
-    defined SENSITIVITY_4DVAR || defined SO_SEMI
+#if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
+    defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
+    defined SENSITIVITY_4DVAR   || defined SO_SEMI
       USE mod_clima, ONLY : allocate_clima, initialize_clima
 #endif
 #ifdef SOLVE3D
@@ -40,6 +40,9 @@
       USE mod_obs, ONLY : allocate_obs, initialize_obs
 #endif
       USE mod_ocean, ONLY : allocate_ocean, initialize_ocean
+#if defined SEDIMENT || defined BBL_MODEL
+      USE mod_sedbed, ONLY : allocate_sedbed, initialize_sedbed
+#endif
 #if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
       USE mod_sources, ONLY : allocate_sources
 #endif
@@ -86,9 +89,9 @@
 #ifdef BBL_MODEL
           CALL allocate_bbl (ng, LBi, UBi, LBj, UBj)
 #endif
-#if defined AD_SENSITIVITY    || defined CLIMATOLOGY      || \
-    defined OBS_SENSITIVITY   || defined OPT_OBSERVATIONS || \
-    defined SENSITIVITY_4DVAR || defined SO_SEMI
+#if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
+    defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
+    defined SENSITIVITY_4DVAR   || defined SO_SEMI
           CALL allocate_clima (ng, LBi, UBi, LBj, UBj)
 #endif
 #ifdef SOLVE3D
@@ -103,7 +106,10 @@
 #if defined ASSIMILATION || defined NUDGING
           CALL allocate_obs (ng, LBi, UBi, LBj, UBj)
 #endif
-          CALL allocate_ocean  (ng, LBi, UBi, LBj, UBj)
+          CALL allocate_ocean (ng, LBi, UBi, LBj, UBj)
+#if defined SEDIMENT || defined BBL_MODEL
+          CALL allocate_sedbed (ng, LBi, UBi, LBj, UBj)
+#endif
 #if defined SSH_TIDES || defined UV_TIDES
           CALL allocate_tides (ng, LBi, UBi, LBj, UBj)
 #endif
@@ -135,9 +141,9 @@
 #ifdef OBC
             CALL initialize_boundary (ng, TILE, model)
 #endif
-#if defined AD_SENSITIVITY    || defined CLIMATOLOGY      || \
-    defined OBS_SENSITIVITY   || defined OPT_OBSERVATIONS || \
-    defined SENSITIVITY_4DVAR || defined SO_SEMI
+#if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
+    defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
+    defined SENSITIVITY_4DVAR   || defined SO_SEMI
             CALL initialize_clima (ng, TILE)
 #endif
 #ifdef SOLVE3D
@@ -153,6 +159,9 @@
             CALL initialize_obs (ng, TILE)
 #endif
             CALL initialize_ocean (ng, TILE, model)
+#if defined SEDIMENT || defined BBL_MODEL
+            CALL initialize_sedbed (ng, TILE, model)
+#endif
 #if defined SSH_TIDES || defined UV_TIDES
             CALL initialize_tides (ng, TILE)
 #endif
