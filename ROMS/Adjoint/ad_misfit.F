@@ -340,6 +340,7 @@
             IF (ObsType(iobs).eq.isRadial) THEN
               ad_uradial(iobs)=ADmodVal(iobs)*COS(ObsMeta(iobs))
               ad_vradial(iobs)=ADmodVal(iobs)*SIN(ObsMeta(iobs))
+              ADmodVal(iobs)=IniVal
             ELSE
               ad_uradial(iobs)=ADmodVal(iobs)
               ad_vradial(iobs)=ADmodVal(iobs)
