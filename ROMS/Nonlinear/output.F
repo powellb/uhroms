@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -396,7 +396,7 @@
         END IF
       END IF
 # if (defined FOUR_DVAR || defined VERIFICATION) && \
-     !defined OBS_SENSITIVITY
+     !defined IS4DVAR_SENSITIVITY
 #  ifdef OBSERVATIONS
 !
 !-----------------------------------------------------------------------

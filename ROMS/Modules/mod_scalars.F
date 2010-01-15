@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -72,124 +72,6 @@
         integer :: isalt              ! Salinity
 #ifdef T_PASSIVE
         integer, pointer :: inert(:)  ! inert tracers
-#endif
-#ifdef SEDIMENT
-        integer, pointer :: idsed(:)  ! Cohesive and non-cohesive
-        integer, pointer :: idmud(:)  ! Cohesive sediment
-        integer, pointer :: isand(:)  ! Non-cohesive sediment
-#endif
-#if defined NPZD_FRANKS || defined NPZD_POWELL
-        integer, pointer :: idbio(:)  ! Biological tracers
-        integer :: iNO3_              ! Nitrate concentration
-        integer :: iPhyt              ! Phytoplankton concentration
-        integer :: iZoop              ! Zooplankton concentration
-        integer :: iSDet              ! Small detritus concentration
-#endif
-#ifdef NPZD_IRON
-        integer, pointer :: idbio(:)  ! Biological tracers
-        integer :: iNO3_              ! Nitrate concentration
-        integer :: iPhyt              ! Phytoplankton concentration
-        integer :: iZoop              ! Zooplankton concentration
-        integer :: iSDet              ! Small detritus concentration
-# ifdef IRON_LIMIT
-        integer :: iFphy              ! Phytoplankton-associated iron
-        integer :: iFdis              ! Available disolved iron
-# endif
-#endif
-#ifdef BIO_FENNEL
-        integer, pointer :: idbio(:)  ! Biological tracers
-        integer :: iNO3_              ! Nitrate concentration
-        integer :: iNH4_              ! Ammonium concentration
-        integer :: iChlo              ! Chlorophyll concentration
-        integer :: iPhyt              ! Phytoplankton concentration
-        integer :: iZoop              ! Zooplankton concentration
-        integer :: iLDeN              ! Large detritus N-concentration
-        integer :: iSDeN              ! Small detritus N-concentration
-#  ifdef CARBON
-        integer :: iLDeC              ! Large detritus C-concentration
-        integer :: iSDeC              ! Small detritus C-concentration
-        integer :: iTIC_              ! Total inorganic carbon
-        integer :: iTAlk              ! Total alkalinity
-#  endif
-#  ifdef OXYGEN
-        integer :: iOxyg              ! Dissolved oxygen concentration
-#  endif
-#endif
-#ifdef BIO_LIMADONEY
-        integer, pointer :: idbio(:)  ! Biological tracers
-        integer :: iNO3_              ! Nitrate concentration
-        integer :: iNH4_              ! Ammonium concentration
-        integer :: iChl1              ! Small Phytoplankton Chlorophyll
-        integer :: iPh1C              ! Small Phytoplankton C-concentration
-        integer :: iPh1N              ! Small Phytoplankton N-concentration
-        integer :: iChl2              ! Large Phytoplankton Chlorophyll
-        integer :: iPh2C              ! Large Phytoplankton C-concentration
-        integer :: iPh2N              ! Large Phytoplankton N-concentration
-        integer :: iZooC              ! Zooplankton C-concentration
-        integer :: iZooN              ! Zooplankton N-concentration
-        integer :: iDe1C              ! Small suspended detritus Carbon
-        integer :: iDe1N              ! Small suspended detritus Nitrogen
-        integer :: iDe2C              ! Large sinking detritus Carbon
-        integer :: iDe2N              ! Large sinking detritus Nitrogen
-#endif
-#ifdef ECOSIM
-        integer, pointer :: idbio(:)  ! Biological tracers
-        integer :: iBacC(Nbac)        ! Bacteria, Carbon group
-        integer :: iBacN(Nbac)        ! Bacteria, Nitrogen group
-        integer :: iBacP(Nbac)        ! Bacteria, Phosphorous group
-        integer :: iBacF(Nbac)        ! Bacteria, Iron group
-        integer :: iCDMC(Ndom)        ! Color degradational matter
-        integer :: iDOMC(Ndom)        ! DOM, Carbon group
-        integer :: iDOMN(Ndom)        ! DOM, Nitrogen group
-        integer :: iDOMP(Ndom)        ! DOM, Phosphorous group
-        integer :: iFecC(Nfec)        ! Fecal matter, Carbon group
-        integer :: iFecN(Nfec)        ! Fecal matter, Nitrogen group
-        integer :: iFecP(Nfec)        ! Fecal matter, Phosphorous group
-        integer :: iFecF(Nfec)        ! Fecal matter, Iron group
-        integer :: iFecS(Nfec)        ! Fecal matter, Silica group
-        integer :: iPhyC(Nphy)        ! Phytoplankton, Carbon group
-        integer :: iPhyN(Nphy)        ! Phytoplankton, Nitrogen group
-        integer :: iPhyP(Nphy)        ! Phytoplankton, Phosphorous group
-        integer :: iPhyF(Nphy)        ! Phytoplankton, Iron group
-        integer :: iPhyS(Nphy)        ! Phytoplankton, Silica group
-        integer :: iPigs(Nphy,Npig)   ! Phytoplankton, pigment group
-        integer :: iNO3_              ! Nitrate concentration
-        integer :: iNH4_              ! Ammonium concentration
-        integer :: iPO4_              ! Phosphate concentration
-        integer :: iFeO_              ! Iron concentration
-        integer :: iSiO_              ! Silica concentration
-        integer :: iDIC_              ! Dissolved inorganic Carbon
-        integer :: FirstPig           ! Index of first tracer pigment
-!
-!  EcoSim group names used on standard output.
-!
-        character (len=16), dimension(Nbac) :: BacName
-        character (len=11), dimension(Ndom) :: DomName
-        character (len=13), dimension(Nfec) :: FecName
-        character (len=21), dimension(Nphy) :: PhyName
-
-        character (len=39), dimension(7) :: PigName =                   &
-     &            (/ 'chlorophyll-a                          ',         &
-     &               'chlorophyll-b                          ',         &
-     &               'chlorophyll-c                          ',         &
-     &               'photosythetic carotenoids              ',         &
-     &               'photoprotective carotenoids            ',         &
-     &               'low urobilin phycoeurythin carotenoids ',         &
-     &               'high urobilin phycoeurythin carotenoids' /)
-#endif
-#ifdef NEMURO
-        integer, pointer :: idbio(:)  ! Biological tracers
-        integer :: iLphy              ! Large Phytoplankton biomass
-        integer :: iSphy              ! Small Phytoplankton biomass
-        integer :: iLzoo              ! Large Zooplankton biomass
-        integer :: iSzoo              ! Small Zooplankton biomass
-        integer :: iPzoo              ! Predator Zooplankton biomass
-        integer :: iNO3_              ! Nitrate concentration
-        integer :: iNH4_              ! Ammonium concentration
-        integer :: iPON_              ! Particulate Organic Nitrogen
-        integer :: iDON_              ! Dissolved Organic Nitrogen
-        integer :: iSiOH              ! Silicate concentration
-        integer :: iopal              ! Particulate organic silica
 #endif
 #ifdef DIAGNOSTICS
 !
@@ -468,6 +350,11 @@
 !
         logical :: Lstiffness = .TRUE.
 !
+!  Switch indicating which tracer field need to be processed for
+!  Sources/Sinks terms.
+!
+        logical, allocatable :: LtracerSrc(:,:)
+!
 !  Execution termination flag.
 !
 !    exit_flag = 0   No error
@@ -724,30 +611,71 @@
 !                    momentum.
 !    Kdiff         Isopycnal mixing thickness diffusivity (m2/s) for
 !                    tracers.
-!    visc2         Lateral harmonic constant mixing coefficient
+!    ad_visc2      ADM lateral harmonic constant mixing coefficient
 !                    (m2/s) for momentum.
-!    visc4         Square root lateral biharmonic constant mixing
-!                    coefficient (m2 s^-1/2) for momentum.
+!    nl_visc2      NLM lateral harmonic constant mixing coefficient
+!                    (m2/s) for momentum.
+!    tl_visc2      TLM lateral harmonic constant mixing coefficient
+!                    (m2/s) for momentum.
+!    visc2         Current lateral harmonic constant mixing coefficient
+!                    (m2/s) for momentum.
+!    ad_visc4      ADM lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for momentum.
+!    nl_visc4      NLM lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for momentum.
+!    tl_visc4      TLM lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for momentum.
+!    visc4         Current lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for momentum.
+!    ad_tnu2       ADM lateral harmonic constant mixing coefficient
+!                    (m2/s) for tracer type variables.
+!    nl_tnu2       NLM lateral harmonic constant mixing coefficient
+!                    (m2/s) for tracer type variables.
+!    tl_tnu2       TLM lateral harmonic constant mixing coefficient
+!                    (m2/s) for tracer type variables.
+!    tnu2          Current lateral harmonic constant mixing coefficient
+!                    (m2/s) for tracer type variables.
+!    ad_tnu4       ADM lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for tracers.
+!    nl_tnu4       NLM lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for tracers.
+!    tl_tnu4       TLM lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for tracers.
+!    tnu4          Current lateral biharmonic (squared root) constant
+!                     mixing coefficient (m2 s^-1/2) for tracers.
 !    tkenu2        Lateral harmonic constant mixing coefficient
 !                    (m2/s) for turbulent energy.
-!    tkenu4        Square root lateral biharmonic constant mixing
+!    tkenu4        Lateral biharmonic (squared root) constant mixing
 !                    coefficient (m2 s^-1/2) for turbulent energy.
-!    tnu2          Lateral harmonic constant mixing coefficient
-!                    (m2/s) for tracer type variables.
-!    tnu4          Square root lateral biharmonic constant mixing
-!                    coefficient (m2 s^-1/2) for tracer type variables.
 !
         real(r8), dimension(Ngrids) :: Akk_bak       ! m2/s
         real(r8), dimension(Ngrids) :: Akp_bak       ! m2/s
         real(r8), dimension(Ngrids) :: Akv_bak       ! m2/s
+
+        real(r8), dimension(Ngrids) :: ad_visc2      ! m2/s
+        real(r8), dimension(Ngrids) :: nl_visc2      ! m2/s
+        real(r8), dimension(Ngrids) :: tl_visc2      ! m2/s
         real(r8), dimension(Ngrids) :: visc2         ! m2/s
+
+        real(r8), dimension(Ngrids) :: ad_visc4      ! m2 s-1/2
+        real(r8), dimension(Ngrids) :: nl_visc4      ! m2 s-1/2
+        real(r8), dimension(Ngrids) :: tl_visc4      ! m2 s-1/2
         real(r8), dimension(Ngrids) :: visc4         ! m2 s-1/2
+
         real(r8), dimension(Ngrids) :: tkenu2        ! m2/s
         real(r8), dimension(Ngrids) :: tkenu4        ! m2 s-1/2
 
         real(r8), allocatable :: Akt_bak(:,:)        ! m2/s
         real(r8), allocatable :: Kdiff(:,:)          ! m2/s
+
+        real(r8), allocatable :: ad_tnu2(:,:)        ! m2/s
+        real(r8), allocatable :: nl_tnu2(:,:)        ! m2/s
+        real(r8), allocatable :: tl_tnu2(:,:)        ! m2/s
         real(r8), allocatable :: tnu2(:,:)           ! m2/s
+
+        real(r8), allocatable :: ad_tnu4(:,:)        ! m2 s-1/2
+        real(r8), allocatable :: nl_tnu4(:,:)        ! m2 s-1/2
+        real(r8), allocatable :: tl_tnu4(:,:)        ! m2 s-1/2
         real(r8), allocatable :: tnu4(:,:)           ! m2 s-1/2
 !
 !  Horizontal diffusive relaxation coefficients (m2/s) used to smooth
@@ -758,6 +686,16 @@
         real(r8), dimension(Ngrids) :: tl_M3diff     ! 3D momentum
 
         real(r8), allocatable :: tl_Tdiff(:,:)       ! tracers
+!
+!  Basic state vertical mixing coefficient scale factors for adjoint
+!  based algorithms. In some applications, a smaller/larger values of
+!  vertical mixing are necessary for stability.
+!
+        real(r8), dimension(Ngrids) :: ad_Akv_fac    ! ADM momentum
+        real(r8), dimension(Ngrids) :: tl_Akv_fac    ! TLM momentum
+
+        real(r8), allocatable :: ad_Akt_fac(:,:)     ! ADM tracers
+        real(r8), allocatable :: tl_Akt_fac(:,:)     ! TLM tracers
 !
 !-----------------------------------------------------------------------
 !  IO parameters.
@@ -1687,17 +1625,6 @@
       integer :: i, ic, j, ng, itrc
 
       real(r8), parameter :: IniVal = 0.0_r8
-
-#ifdef ECOSIM
-      character (len=21), dimension(7) :: PhyGroups =                   &
-     &                                 (/ 'small diatom         ',      &
-     &                                    'large diatom         ',      &
-     &                                    'small dinoflagellate ',      &
-     &                                    'large dinoflagellate ',      &
-     &                                    'synechococcus        ',      &
-     &                                    'small prochlorococcus',      &
-     &                                    'large prochlorococcus' /)
-#endif
 !
 !-----------------------------------------------------------------------
 !  Allocate and initialize variables in module structure.
@@ -1755,10 +1682,19 @@
 # endif
 !
 #endif
+      allocate ( LtracerSrc(MT,Ngrids) )
       allocate ( Akt_bak(MT,Ngrids) )
+      allocate ( ad_Akt_fac(MT,Ngrids) )
+      allocate ( tl_Akt_fac(MT,Ngrids) )
       allocate ( Kdiff(MT,Ngrids) )
       allocate ( SO_sdev(2+MT,Ngrids) )
+      allocate ( ad_tnu2(MT,Ngrids) )
+      allocate ( nl_tnu2(MT,Ngrids) )
+      allocate ( tl_tnu2(MT,Ngrids) )
       allocate ( tnu2(MT,Ngrids) )
+      allocate ( ad_tnu4(MT,Ngrids) )
+      allocate ( nl_tnu4(MT,Ngrids) )
+      allocate ( tl_tnu4(MT,Ngrids) )
       allocate ( tnu4(MT,Ngrids) )
       allocate ( tl_Tdiff(MT,Ngrids) )
 #ifdef SOLVE3D
@@ -1766,19 +1702,11 @@
       Tobc_in = IniVal
       allocate ( Tobc_out(MT,Ngrids,4) )
       Tobc_out = IniVal
-# ifdef BIOLOGY
-      allocate ( idbio(NBT) )
-# endif
 # if defined FLOATS && defined SOLVE3D
         allocate ( ifTvar(MT) )
 # endif
 # ifdef T_PASSIVE
       allocate ( inert(NPT) )
-# endif
-# ifdef SEDIMENT
-      allocate ( idsed(MAX(1,NST)) )
-      allocate ( idmud(MAX(1,NCS)) )
-      allocate ( isand(MAX(1,NNS)) )
 # endif
 #endif
       allocate ( Tnudg(MT,Ngrids) )
@@ -1828,196 +1756,6 @@
       DO i=1,NPT
         ic=ic+1
         inert(i)=ic
-      END DO
-#endif
-
-#ifdef SEDIMENT
-!
-!  Cohesive and noncohesive suspended sediment tracers indices.
-!
-      DO i=1,NCS
-        ic=ic+1
-        idmud(i)=ic
-        idsed(i)=idmud(i)
-      END DO
-      DO i=1,NNS
-        ic=ic+1
-        isand(i)=ic
-        idsed(NCS+i)=isand(i)
-      END DO
-#endif
-#if defined BIO_FENNEL
-!
-!  Set Fennel et al (2006) Nitrogen-based biological tracer indices.
-!
-      DO i=1,NBT
-        idbio(i)=ic+i
-      END DO
-      iNO3_=ic+1
-      iNH4_=ic+2
-      iChlo=ic+3
-      iPhyt=ic+4
-      iZoop=ic+5
-      iLDeN=ic+6
-      iSDeN=ic+7
-      ic=ic+7
-# ifdef CARBON
-      iLDeC=ic+1
-      iSDeC=ic+2
-      iTIC_=ic+3
-      iTAlk=ic+4
-      ic=ic+4
-# endif
-# ifdef OXYGEN
-      iOxyg=ic+1
-      ic=ic+1
-# endif
-#elif defined BIO_LIMADONEY
-!
-!  Set biological tracer indices.
-!
-      DO i=1,NBT
-        idbio(i)=ic+i
-      END DO
-      iNO3_=ic+1
-      iNH4_=ic+2
-      iChl1=ic+3
-      iPh1N=ic+4
-      iPh1C=ic+5
-      iChl2=ic+6
-      iPh2N=ic+7
-      iPh2C=ic+8
-      iZooN=ic+9
-      iZooC=ic+10
-      iDe1N=ic+11
-      iDe1C=ic+12
-      iDe2N=ic+13
-      iDe2C=ic+14
-      ic=ic+14
-#elif defined NEMURO
-!
-!  Set Nemuro ecosystem tracer indices.
-!
-      DO i=1,NBT
-        idbio(i)=ic+i
-      END DO
-      iSphy=ic+1
-      iLphy=ic+2
-      iSzoo=ic+3
-      iLzoo=ic+4
-      iPzoo=ic+5
-      iNO3_=ic+6
-      iNH4_=ic+7
-      iPON_=ic+8
-      iDON_=ic+9
-      iSiOH=ic+10
-      iopal=ic+11
-      ic=ic+11
-#elif defined NPZD_FRANKS || defined NPZD_POWELL
-!
-!  Set NPZD biological tracer indices.
-!
-      DO i=1,NBT
-        idbio(i)=ic+i
-      END DO
-      iNO3_=ic+1
-      iPhyt=ic+2
-      iZoop=ic+3
-      iSDet=ic+4
-      ic=ic+4
-#elif defined NPZD_IRON
-!
-!  Set NPZD with iron limitation biological tracer indices.
-!
-      DO i=1,NBT
-        idbio(i)=ic+i
-      END DO
-      iNO3_=ic+1
-      iPhyt=ic+2
-      iZoop=ic+3
-      iSDet=ic+4
-# ifdef IRON_LIMIT
-      iFphy=ic+5
-      iFdis=ic+6
-      ic=ic+6
-# else
-      ic=ic+4
-# endif
-#elif defined ECOSIM
-!
-!  Set bio-optical tracer indices.
-!
-      DO i=1,NBT
-        idbio(i)=ic+i
-      END DO
-      iDIC_=ic+1
-      iFeO_=ic+2
-      iNH4_=ic+3
-      iNO3_=ic+4
-      iPO4_=ic+5
-      iSiO_=ic+6
-      ic=ic+6
-      DO i=1,Nbac
-        iBacC(i)=ic+1
-        iBacF(i)=ic+2
-        iBacN(i)=ic+3
-        iBacP(i)=ic+4
-        ic=ic+4
-      END DO
-      DO i=1,Ndom
-        iCDMC(i)=ic+1
-        iDOMC(i)=ic+2
-        iDOMN(i)=ic+3
-        iDOMP(i)=ic+4
-        ic=ic+4
-      END DO
-      DO i=1,Nfec
-        iFecC(i)=ic+1
-        iFecF(i)=ic+2
-        iFecN(i)=ic+3
-        iFecP(i)=ic+4
-        iFecS(i)=ic+5
-        ic=ic+5
-      END DO
-      DO i=1,Nphy
-        iPhyC(i)=ic+1
-        iPhyF(i)=ic+2
-        iPhyN(i)=ic+3
-        iPhyP(i)=ic+4
-        ic=ic+4
-      END DO
-      DO i=1,Nphy
-        IF (PHY(i).le.2) THEN
-          ic=ic+1
-          iPhyS(i)=ic
-        ELSE
-          iPhyS(i)=0
-        END IF
-      END DO
-      FirstPig=ic+1
-      DO j=1,Npig
-        DO i=1,Nphy
-          iPigs(i,j)=0
-          IF (PIG(PHY(i),j).eq.1) THEN
-            ic=ic+1
-            iPigs(i,j)=ic
-          END IF
-        END DO
-      END DO
-!
-!  Set EcoSim group variable names.
-!
-      DO i=1,Nphy
-        PhyName(i)=PhyGroups(PHY(i))
-      END DO
-      DO i=1,Nbac
-        WRITE (BacName(i),'(a,1x,i1)') 'Bacteria Group', i
-      END DO
-      DO i=1,Ndom
-        WRITE (DomName(i),'(a,1x,i1)') 'DOM Group', i
-      END DO
-      DO i=1,Nfec
-        WRITE (FecName(i),'(a,1x,i1)') 'Fecal Group', i
       END DO
 #endif
 
@@ -2176,11 +1914,28 @@
         SFcount(ng)=0
 #endif
         first_time(ng)=0
-        DO itrc=1,NAT+NPT
+        DO itrc=1,MT
+          LtracerSrc(itrc,ng)=.FALSE.
+          ad_Akt_fac(itrc,ng)=1.0_r8
+          tl_Akt_fac(itrc,ng)=1.0_r8
+          ad_tnu2(itrc,ng)=IniVal
+          nl_tnu2(itrc,ng)=IniVal
+          tl_tnu2(itrc,ng)=IniVal
           tnu2(itrc,ng)=IniVal
+          ad_tnu4(itrc,ng)=IniVal
+          nl_tnu4(itrc,ng)=IniVal
+          tl_tnu4(itrc,ng)=IniVal
           tnu4(itrc,ng)=IniVal
         END DO
+        ad_Akv_fac(ng)=1.0_r8
+        tl_Akv_fac(ng)=1.0_r8
+        ad_visc2(ng)=IniVal
+        nl_visc2(ng)=IniVal
+        tl_visc2(ng)=IniVal
         visc2(ng)=IniVal
+        ad_visc4(ng)=IniVal
+        nl_visc4(ng)=IniVal
+        tl_visc4(ng)=IniVal
         visc4(ng)=IniVal
 #ifdef BULK_FLUXES
         blk_ZQ(ng)=10.0_r8

@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -92,27 +92,27 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' ADJOINT,'
 #endif
-#if defined ADJUST_BOUNDARY && \
-   (defined IS4DVAR           || defined OBS_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS         || \
+#if defined ADJUST_BOUNDARY   && \
+   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
+    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
     defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_BOUNDARY',                  &
      &   'Including boundary conditions in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' ADJUST_BOUNDARY,'
 #endif
-#if defined ADJUST_STFLUX && \
-   (defined IS4DVAR           || defined OBS_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS         || \
+#if defined ADJUST_STFLUX     && \
+   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
+    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
     defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_STFLUX',                    &
      &   'Including surface tracer flux in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' ADJUST_STFLUX,'
 #endif
-#if defined ADJUST_WSTRESS && \
-   (defined IS4DVAR           || defined OBS_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS         || \
+#if defined ADJUST_WSTRESS    && \
+   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
+    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
     defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_WSTRESS',                   &
      &   'Including surface wind stress in 4DVar state estimation.'
@@ -306,9 +306,9 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' ANA_RAIN,'
 #endif
-#if defined ANA_SCOPE && \
-   (defined AD_SENSITIVITY   || defined OBS_SENSITIVITY   || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR || \
+#if defined ANA_SCOPE        && \
+   (defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
     defined SO_SEMI)
       IF (Master) WRITE (stdout,20) 'ANA_SCOPE',                        &
      &   'Analytical spatial scope masking arrays.'
@@ -1035,9 +1035,16 @@
 #endif
 #ifdef IS4DVAR
       IF (Master) WRITE (stdout,20) 'IS4DVAR',                          &
-     &   'Incremental strong constraint 4DVAR data assimilation.'
+     &   'Incremental strong constraint 4D-Var data assimilation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' IS4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef IS4DVAR_SENSITIVITY
+      IF (Master) WRITE (stdout,20) 'IS4DVAR_SENSITIVITY',              &
+     &   'I4D-Var Observations Sensitivity Analysis.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+21)=' IS4DVAR_SENSITIVITY,'
       idriver=idriver+1
 #endif
 #if defined INLINE_2DIO && defined DISTRIBUTE
@@ -1569,12 +1576,11 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' OBS_IMPACT,'
 #endif
-#ifdef OBS_SENSITIVITY
-      IF (Master) WRITE (stdout,20) 'OBS_SENSITIVITY',                  &
-     &   '4DVAR Observations Sensitivity Analysis.'
+#if defined OBS_IMPACT && defined OBS_IMPACT_SPLIT
+      IF (Master) WRITE (stdout,20) 'OBS_IMPACT_SPLIT',                 &
+     &   'Separate impact due to IC, surface forcing, and OBC'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+17)=' OBS_SENSITIVITY,'
-      idriver=idriver+1
+      Coptions(is:is+18)=' OBS_IMPACT_SPLIT,'
 #endif
 #ifdef OUT_DOUBLE
       IF (Master) WRITE (stdout,20) 'OUT_DOUBLE',                       &
@@ -1765,18 +1771,6 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' REP_MATRIX,'
       idriver=idriver+1
-#endif
-#if defined RIVER_BIOLOGY && defined BIOLOGY
-      IF (Master) WRITE (stdout,20) 'RIVER_BIOLOGY',                    &
-     &   'River biology point sources.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+15)=' RIVER_BIOLOGY,'
-#endif
-#if defined RIVER_SEDIMENT && defined SEDIMENT
-      IF (Master) WRITE (stdout,20) 'RIVER_SEDIMENT',                   &
-     &   'River sediment point sources.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+16)=' RIVER_SEDIMENT,'
 #endif
 #if defined LMD_MIXING
 # ifdef RI_HORAVG

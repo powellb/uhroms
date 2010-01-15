@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !=======================================================================
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -36,6 +36,9 @@
       USE mod_coupling
       USE mod_grid
       USE mod_ocean
+# if defined SEDIMENT && defined SED_MORPH
+      USE mod_sedbed
+# endif
       USE mod_stepping
 !
 !  Imported variable declarations.
@@ -55,7 +58,7 @@
      &                     GRID(ng) % zice,                             &
 # endif
 # if defined SEDIMENT && defined SED_MORPH
-     &                     GRID(ng) % bed_thick,                        &
+     &                     SEDBED(ng) % bed_thick,                      &
 # endif
      &                     COUPLING(ng) % Zt_avg1,                      &
      &                     GRID(ng) % Hz,                               &

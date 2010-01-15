@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2009 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -110,7 +110,7 @@
 !  Tracer Sources/Sinks.
 !
       DO i=1,NT(ng)
-        IF (SOURCES(ng)%Ltracer(i)) THEN
+        IF (LtracerSrc(i,ng)) THEN
           CALL get_ngfld (ng, iNLM, idRtrc(i), ncFRCid(idRtrc(i),ng),   &
      &                    nFfiles(ng), FRCname(1,ng), update(1),        &
      &                    1, Nsrc(ng), N(ng), 2, 1, Nsrc(ng), N(ng),    &
