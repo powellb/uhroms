@@ -1122,6 +1122,12 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' LMD_SKPP,'
 #endif
+#ifdef LMD_SPLINES
+      IF (Master) WRITE (stdout,20) 'LMD_SPLINES',                      &
+     &   'KPP parabolic spline reconstruction'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+10)=' LMD_SPLINES,'
+#endif
 #if defined LONGWAVE && defined BULK_FLUXES
       IF (Master) WRITE (stdout,20) 'LONGWAVE',                         &
      &   'Compute net longwave radiation internally.'

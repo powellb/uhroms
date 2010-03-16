@@ -79,12 +79,13 @@ ifdef USE_OpenMP
 endif
 
 ifdef USE_DEBUG
-#           FFLAGS += -g -check bounds
-           FFLAGS += -g
+           FFLAGS += -g -check bounds
 else
-           FFLAGS += -ip -O3 -axP
- ifeq ($(CPU),x86_64)
-#          FFLAGS += -xW
+           FFLAGS += -ip -O3 -mssse3
+ ifdef USE_LARGE
+           FFLAGS += -m64
+ else
+           FFLAGS += -m32
  endif
 endif
 
@@ -137,26 +138,26 @@ endif
 
 ifdef USE_SWAN
 
-$(SCRATCH_DIR)/ocpcre.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/ocpids.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/ocpmix.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swancom1.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swancom2.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swancom3.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swancom4.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swancom5.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanmain.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanout1.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanout2.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanparll.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanpre1.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanpre2.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swanser.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swmod1.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/swmod2.o: FFLAGS += -nofree
-$(SCRATCH_DIR)/m_constants.o: FFLAGS += -ffree
-$(SCRATCH_DIR)/m_fileio.o: FFLAGS += -ffree
-$(SCRATCH_DIR)/mod_xnl4v5.o: FFLAGS += -ffree
-$(SCRATCH_DIR)/serv_xnl4v5.o: FFLAGS += -ffree
+$(SCRATCH_DIR)/ocpcre.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/ocpids.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/ocpmix.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swancom1.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swancom2.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swancom3.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swancom4.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swancom5.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanmain.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanout1.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanout2.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanparll.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanpre1.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanpre2.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swanser.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swmod1.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/swmod2.o: FFLAGS += -nofree -zero
+$(SCRATCH_DIR)/m_constants.o: FFLAGS += -ffree -zero
+$(SCRATCH_DIR)/m_fileio.o: FFLAGS += -ffree -zero
+$(SCRATCH_DIR)/mod_xnl4v5.o: FFLAGS += -ffree -zero
+$(SCRATCH_DIR)/serv_xnl4v5.o: FFLAGS += -ffree -zero
 
 endif
