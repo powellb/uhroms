@@ -745,34 +745,34 @@
         FOURDVAR(ng) % SurveyTime = IniVal
 
 #  ifdef FOUR_DVAR
-        allocate ( FOURDVAR(ng) % BackCost(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % BackCost(0:NumObsTypes) )
         FOURDVAR(ng) % BackCost = IniVal
 
         allocate ( FOURDVAR(ng) % Cost0(Nouter) )
         FOURDVAR(ng) % Cost0 = IniVal
 
-        allocate ( FOURDVAR(ng) % CostFun(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % CostFun(0:NumObsTypes) )
         FOURDVAR(ng) % CostFun = IniVal
 
-        allocate ( FOURDVAR(ng) % CostFunOld(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % CostFunOld(0:NumObsTypes) )
         FOURDVAR(ng) % CostFunOld = IniVal
 
-        allocate ( FOURDVAR(ng) % CostNorm(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % CostNorm(0:NumObsTypes) )
         FOURDVAR(ng) % CostNorm = IniVal
 
-        allocate ( FOURDVAR(ng) % ObsCost(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsCost(0:NumObsTypes) )
         FOURDVAR(ng) % ObsCost = IniVal
 
-        allocate ( FOURDVAR(ng) % DataPenalty(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % DataPenalty(0:NumObsTypes) )
         FOURDVAR(ng) % DataPenalty = IniVal
 
 #   if defined DATALESS_LOOPS || defined TL_W4DPSAS          || \
        defined W4DPSAS        || defined W4DPSAS_SENSITIVITY
-        allocate ( FOURDVAR(ng) % NLPenalty(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % NLPenalty(0:NumObsTypes) )
         FOURDVAR(ng) % NLPenalty = IniVal
 #   endif
 
-        allocate ( FOURDVAR(ng) % NLobsCost(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % NLobsCost(0:NumObsTypes) )
         FOURDVAR(ng) % NLobsCost = IniVal
 
 #   if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC

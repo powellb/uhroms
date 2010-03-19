@@ -234,19 +234,22 @@
 !  Save and Report cost function between nonlinear model and
 !  observations.
 !
-        DO i=0,NstateVar(ng)
+        DO i=0,NumObsTypes
           FOURDVAR(ng)%CostFunOld(i)=FOURDVAR(ng)%CostFun(i)
         END DO
         IF (Master) THEN
           WRITE (stdout,30) FOURDVAR(ng)%CostFunOld(0)
-          DO i=1,NstateVar(ng)
+          DO i=1,NumObsTypes
             IF (FOURDVAR(ng)%CostFunOld(i).gt.0.0_r8) THEN
               IF (i.eq.1) THEN
                 WRITE (stdout,40) FOURDVAR(ng)%CostFunOld(i),           &
      &                            TRIM(Vname(1,idSvar(i)))
-              ELSE
+              ELSE IF (i.le.NstateVar(ng))
                 WRITE (stdout,50) FOURDVAR(ng)%CostFunOld(i),           &
      &                            TRIM(Vname(1,idSvar(i)))
+              ELSE IF (i.eq.idRadial)
+                WRITE (stdout,50) FOURDVAR(ng)*CostFunOld(i),           &
+     &                            'Radials'
               END IF
             END IF
           END DO
