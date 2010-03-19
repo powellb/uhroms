@@ -552,7 +552,7 @@
             DO i=0,NumObsTypes
               IF (i.eq.0) THEN
                 string='Total'
-              ELSE IF (i.le.NstateVar(ng))
+              ELSE IF (i.le.NstateVar(ng)) THEN
                 string=Vname(1,idSvar(i))
               ELSE IF (i.eq.20) THEN
                 string='Radials'
@@ -1391,7 +1391,7 @@
             DO i=0,NumObsTypes
               IF (i.eq.0) THEN
                 string='Total'
-              ELSE IF (i.le.NstateVar(ng))
+              ELSE IF (i.le.NstateVar(ng)) THEN
                 string=Vname(1,idSvar(i))
               ELSE IF (i.eq.20) THEN
                 string='Radials'

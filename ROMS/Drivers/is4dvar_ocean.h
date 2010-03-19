@@ -807,12 +807,12 @@
                       WRITE (stdout,40) outer, inner,                   &
      &                                  FOURDVAR(ng)%NLobsCost(i)/      &
      &                                  FOURDVAR(ng)%CostNorm(i)
-                    ELSE IF (i.le.NstateVar(ng))
+                    ELSE IF (i.le.NstateVar(ng)) THEN
                       WRITE (stdout,50) outer, inner,                   &
      &                                  FOURDVAR(ng)%NLobsCost(i)/      &
      &                                  FOURDVAR(ng)%CostNorm(i),       &
      &                                  TRIM(Vname(1,idSvar(i)))
-                    ELSE IF (i.eq.20)
+                    ELSE IF (i.eq.20) THEN
                       WRITE (stdout,50) outer, inner,                   &
      &                                  FOURDVAR(ng)%NLobsCost(i)/      &
      &                                  FOURDVAR(ng)%CostNorm(i),       &
@@ -1150,12 +1150,12 @@
                 WRITE (stdout,40) outer, inner,                         &
      &                            FOURDVAR(ng)%NLobsCost(i)/            &
      &                            FOURDVAR(ng)%CostNorm(i)
-              ELSE IF (i.le.NstateVar(ng))
+              ELSE IF (i.le.NstateVar(ng)) THEN
                 WRITE (stdout,50) outer, inner,                         &
      &                            FOURDVAR(ng)%NLobsCost(i)/            &
      &                            FOURDVAR(ng)%CostNorm(i),             &
      &                            TRIM(Vname(1,idSvar(i)))
-              ELSE IF (i.eq.20)
+              ELSE IF (i.eq.20) THEN
                 WRITE (stdout,50) outer, inner,                         &
      &                            FOURDVAR(ng)%NLobsCost(i)/            &
      &                            FOURDVAR(ng)%CostNorm(i),             &

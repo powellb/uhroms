@@ -215,7 +215,7 @@
 !  normalized values.
 !
       IF ((Nrun.eq.1).and.(model.eq.iTLM)) THEN
-        DO ivar=0,
+        DO ivar=0,NumObsTypes
           FOURDVAR(ng)%CostNorm(ivar)=FOURDVAR(ng)%ObsCost(ivar)
         END DO
       END IF
