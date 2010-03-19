@@ -867,7 +867,7 @@
 !  Load total available and rejected observations into structure
 !  array.
 !
-        DO i=1,NstateVar(ng)
+        DO i=1,NumObsTypes
           FOURDVAR(ng)%ObsCount(0)=FOURDVAR(ng)%ObsCount(0)+            &
      &                             FOURDVAR(ng)%ObsCount(i)
           FOURDVAR(ng)%ObsReject(0)=FOURDVAR(ng)%ObsReject(0)+          &
@@ -882,11 +882,16 @@
           ObsSum=0
           ObsVoid=0
           is=NstrObs(ng)
-          DO i=1,NstateVar(ng)
+          DO i=1,NumObsTypes
             IF (FOURDVAR(ng)%ObsCount(i).gt.0) THEN
               ie=is+FOURDVAR(ng)%ObsCount(i)-1
-              WRITE (stdout,10) TRIM(Vname(1,idSvar(i))), is, ie,       &
+              IF (i.le.NstateVar(ng))
+                WRITE (stdout,10) TRIM(Vname(1,idSvar(i))), is, ie,     &
      &                          ie-is+1, FOURDVAR(ng)%ObsReject(i)
+              ELSE IF (i.eq.20) THEN
+                WRITE (stdout,10) 'Radials', is, ie,     &
+     &                          ie-is+1, FOURDVAR(ng)%ObsReject(i)
+              END IF
               is=ie+1
               ObsSum=ObsSum+FOURDVAR(ng)%ObsCount(i)
               ObsVoid=ObsVoid+FOURDVAR(ng)%ObsReject(i)
