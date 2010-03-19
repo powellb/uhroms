@@ -885,7 +885,7 @@
           DO i=1,NumObsTypes
             IF (FOURDVAR(ng)%ObsCount(i).gt.0) THEN
               ie=is+FOURDVAR(ng)%ObsCount(i)-1
-              IF (i.le.NstateVar(ng))
+              IF (i.le.NstateVar(ng)) THEN
                 WRITE (stdout,10) TRIM(Vname(1,idSvar(i))), is, ie,     &
      &                          ie-is+1, FOURDVAR(ng)%ObsReject(i)
               ELSE IF (i.eq.20) THEN
