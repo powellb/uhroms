@@ -79,8 +79,8 @@ ifdef USE_OpenMP
 endif
 
 ifdef USE_DEBUG
-#          FFLAGS += -g -check bounds -traceback
-           FFLAGS += -g -check uninit -ftrapuv -traceback
+          FFLAGS += -g -check all -traceback
+#           FFLAGS += -g -check uninit -ftrapuv -traceback
 else
            FFLAGS += -ip -O3
  ifeq ($(CPU),i686)

@@ -56,7 +56,7 @@
 !
 !  Initialize observations processing counters.
 !
-        DO i=1,NumObsTypes
+        DO i=1,NumObsTypes(ng)
           FOURDVAR(ng)%ObsCount(i)=0
           FOURDVAR(ng)%ObsReject(i)=0
         END DO

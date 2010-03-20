@@ -516,7 +516,7 @@
 !  RP model.
 !
           IF (Master) THEN
-            DO i=0,NumObsTypes
+            DO i=0,NumObsTypes(ng)
               IF (i.eq.0) THEN
                 string='Total'
               ELSE IF (i.le.NstateVar(ng))
@@ -1270,7 +1270,7 @@
 !  Report data penalty function.
 !
           IF (Master) THEN
-            DO i=0,NumObsTypes
+            DO i=0,NumObsTypes(ng)
               IF (i.eq.0) THEN
                 string='Total'
               ELSE IF (i.le.NstateVar(ng))
