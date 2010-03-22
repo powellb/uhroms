@@ -738,7 +738,7 @@
 #  ifdef ADJUST_WSTRESS
         NstateVar(ng)=NstateVar(ng)+2
 #  endif
-        NumObsTypes(ng)=20
+        NumObsTypes(ng)=my_NstateVar
         allocate ( FOURDVAR(ng) % NobsSurvey(Nsurvey(ng)) )
         FOURDVAR(ng) % NobsSurvey = 0
 
