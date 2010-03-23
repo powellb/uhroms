@@ -468,7 +468,7 @@
           CALL netcdf_put_fvar (ng, iNLM, MODname(ng),                  &
      &                          'NLcost_function',                      &
      &                          FOURDVAR(ng)%NLobsCost(0:),             &
-     &                          (/1,outer/), (/NstateVar(ng)+1,1/),     &
+     &                          (/1,outer/), (/NumObsTypes(ng)+1,1/),     &
      &                          ncid = ncMODid(ng))
           IF (exit_flag.ne.NoError) RETURN
 !
@@ -1137,7 +1137,7 @@
 
         CALL netcdf_put_fvar (ng, iNLM, MODname(ng), 'NLcost_function', &
      &                        FOURDVAR(ng)%NLobsCost(0:),               &
-     &                        (/1,Nouter+1/), (/NstateVar(ng)+1,1/),    &
+     &                        (/1,Nouter+1/), (/NumObsTypes(ng)+1,1/),    &
      &                        ncid = ncMODid(ng))
         IF (exit_flag.ne.NoError) RETURN
 !

@@ -839,7 +839,8 @@
 # endif
           CASE ('Hdecay')
             IF ((model.eq.5).or.(model.eq.11)) THEN
-              Npts=UBOUND(Hdecay,DIM=2)
+              Npts=5+MT
+!              Npts=UBOUND(Hdecay,DIM=2)
               CALL netcdf_get_fvar (ng, IDmod, ncname, var_name(i),     &
      &                              FvarV,                              &
      &                              start = (/1/), total = (/Npts/))
@@ -877,7 +878,8 @@
 # ifdef SOLVE3D
           CASE ('Vdecay')
             IF ((model.eq.5).or.(model.eq.11)) THEN
-              Npts=UBOUND(Vdecay,DIM=2)
+              Npts=5+MT
+!              Npts=UBOUND(Vdecay,DIM=2)
               CALL netcdf_get_fvar (ng, IDmod, ncname, var_name(i),     &
      &                              FvarV,                              &
      &                              start = (/1/), total = (/Npts/))
