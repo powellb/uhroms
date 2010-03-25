@@ -231,7 +231,7 @@
 !  Number of model state variables to process.
 !
         integer, dimension(Ngrids) :: NstateVar
-        integer, dimension(Ngrids) :: NumObsTypes
+        integer, dimension(Ngrids) :: NobsVar
 !
 !  Number of interpolation weights and (I,J,K) indices offsets.
 !
@@ -738,7 +738,7 @@
 #  ifdef ADJUST_WSTRESS
         NstateVar(ng)=NstateVar(ng)+2
 #  endif
-        NumObsTypes(ng)=my_NstateVar
+        NobsVar(ng)=my_NstateVar
         allocate ( FOURDVAR(ng) % NobsSurvey(Nsurvey(ng)) )
         FOURDVAR(ng) % NobsSurvey = 0
 
@@ -746,34 +746,34 @@
         FOURDVAR(ng) % SurveyTime = IniVal
 
 #  ifdef FOUR_DVAR
-        allocate ( FOURDVAR(ng) % BackCost(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % BackCost(0:NobsVar(ng)) )
         FOURDVAR(ng) % BackCost = IniVal
 
         allocate ( FOURDVAR(ng) % Cost0(Nouter) )
         FOURDVAR(ng) % Cost0 = IniVal
 
-        allocate ( FOURDVAR(ng) % CostFun(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % CostFun(0:NobsVar(ng)) )
         FOURDVAR(ng) % CostFun = IniVal
 
-        allocate ( FOURDVAR(ng) % CostFunOld(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % CostFunOld(0:NobsVar(ng)) )
         FOURDVAR(ng) % CostFunOld = IniVal
 
-        allocate ( FOURDVAR(ng) % CostNorm(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % CostNorm(0:NobsVar(ng)) )
         FOURDVAR(ng) % CostNorm = IniVal
 
-        allocate ( FOURDVAR(ng) % ObsCost(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % ObsCost(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsCost = IniVal
 
-        allocate ( FOURDVAR(ng) % DataPenalty(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % DataPenalty(0:NobsVar(ng)) )
         FOURDVAR(ng) % DataPenalty = IniVal
 
 #   if defined DATALESS_LOOPS || defined TL_W4DPSAS          || \
        defined W4DPSAS        || defined W4DPSAS_SENSITIVITY
-        allocate ( FOURDVAR(ng) % NLPenalty(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % NLPenalty(0:NobsVar(ng)) )
         FOURDVAR(ng) % NLPenalty = IniVal
 #   endif
 
-        allocate ( FOURDVAR(ng) % NLobsCost(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % NLobsCost(0:NobsVar(ng)) )
         FOURDVAR(ng) % NLobsCost = IniVal
 
 #   if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
@@ -836,13 +836,13 @@
 #   endif
 #  endif
 
-        allocate ( FOURDVAR(ng) % ObsVar(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % ObsVar(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsVar = 1.0_r8
 
-        allocate ( FOURDVAR(ng) % ObsCount(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % ObsCount(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsCount = 0
 
-        allocate ( FOURDVAR(ng) % ObsReject(0:NumObsTypes(ng)) )
+        allocate ( FOURDVAR(ng) % ObsReject(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsReject = 0
 
       END DO

@@ -841,7 +841,7 @@
         DO i=0,NstateVar(ng)
           op_handle(i)='SUM'
         END DO
-        CALL mp_reduce (ng, iNLM, NstateVar(ng)+1,                      &
+        CALL mp_reduce (ng, iNLM, NobsVar(ng)+1,                        &
      &                  FOURDVAR(ng)%BackCost(0:),  op_handle(0:))
 # endif
       END IF
