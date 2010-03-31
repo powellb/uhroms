@@ -79,7 +79,7 @@ ifdef USE_OpenMP
 endif
 
 ifdef USE_DEBUG
-           FFLAGS += -g -check bounds
+           FFLAGS += -g -check all
 else
            FFLAGS += -ip -O3 -mssse3
  ifdef USE_LARGE

@@ -431,12 +431,17 @@
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
      &                           Tobs, Xobs, Yobs+0.5, Zobs,            &
-     &                           ad_v(:,:,:,nfrc),                      &
-     &                           z_v,                                   &
+     &                           f_v, z_v,                              &
 #  ifdef MASKING
      &                           vmask,                                 &
 #  endif
      &                           ad_vradial)
+#  ifdef DISTRIBUTE
+          CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           NghostPoints, EWperiodic, NSperiodic,  &
+     &                           f_v)
+#  endif
           DO k=1,N(ng)
             DO j=Jstr-1,Jend+1
               DO i=IstrU-1,Iend+1
@@ -454,12 +459,17 @@
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
      &                           Tobs, Xobs+0.5, Yobs, Zobs,            &
-     &                           ad_u(:,:,:,nfrc),                      &
-     &                           z_v,                                   &
+     &                           f_u, z_v,                              &
 #  ifdef MASKING
      &                           umask,                                 &
 #  endif
      &                           ad_uradial)
+#  ifdef DISTRIBUTE
+          CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           NghostPoints, EWperiodic, NSperiodic,  &
+     &                           f_u)
+#  endif
         END IF
 # endif
 # ifdef DISTRIBUTE
