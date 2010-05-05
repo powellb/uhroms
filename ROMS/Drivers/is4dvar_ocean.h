@@ -259,6 +259,7 @@
       integer :: AdjRec, Lbck, Lini, Lsav, Rec1, Rec2, Rec3, Rec4
       integer :: i, my_iic, ng, subs, tile, thread
       integer :: Lcon, LTLM1, LTLM2, LTLM3, LADJ1, LADJ2
+      integer :: NRMrec
       integer :: lstr, status
 
       real(r8) :: rate
@@ -396,18 +397,16 @@
               LdefNRM(1:4,ng)=.FALSE.
               LwrtNRM(1:4,ng)=.FALSE.
             ELSE
-              i=1
-              CALL get_state (ng, 5, 5, NRMname(1,ng), i, 1)
+              NRMrec=1
+              CALL get_state (ng, 5, 5, NRMname(1,ng), NRMrec, 1)
               IF (exit_flag.ne.NoError) RETURN
 
 #ifdef ADJUST_BOUNDARY
-              i=1
-              CALL get_state (ng, 10, 10, NRMname(3,ng), i, 1)
+              CALL get_state (ng, 10, 10, NRMname(3,ng), NRMrec, 1)
               IF (exit_flag.ne.NoError) RETURN
 #endif
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
-              i=1
-              CALL get_state (ng, 11, 11, NRMname(4,ng), i, 1)
+              CALL get_state (ng, 11, 11, NRMname(4,ng), NRMrec, 1)
               IF (exit_flag.ne.NoError) RETURN
 #endif
             END IF
