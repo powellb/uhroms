@@ -942,67 +942,69 @@
 !
 !  Allocate and initialize weak constraint conjugate gradient vectors.
 !
+      IF (Master) THEN
 #   if defined TL_W4DPSAS          || defined TL_W4DVAR          || \
        defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY
-      allocate ( ad_zcglwk(Mobs,Ninner+1) )
-      ad_zcglwk = IniVal
+        allocate ( ad_zcglwk(Mobs,Ninner+1) )
+        ad_zcglwk = IniVal
 
-      allocate ( ad_zgrad0(Mobs) )
-      ad_zgrad0 = IniVal
+        allocate ( ad_zgrad0(Mobs) )
+        ad_zgrad0 = IniVal
 
-      allocate ( ad_cg_innov(Mobs) )
-      ad_cg_innov = IniVal
+        allocate ( ad_cg_innov(Mobs) )
+        ad_cg_innov = IniVal
 
-      allocate ( ad_cg_pxsave(Mobs) )
-      ad_cg_pxsave = IniVal
+        allocate ( ad_cg_pxsave(Mobs) )
+        ad_cg_pxsave = IniVal
 
-      allocate ( tl_zcglwk(Mobs,Ninner+1) )
-      tl_zcglwk = IniVal
+        allocate ( tl_zcglwk(Mobs,Ninner+1) )
+        tl_zcglwk = IniVal
 
-      allocate ( tl_zgrad0(Mobs) )
-      tl_zgrad0 = IniVal
+        allocate ( tl_zgrad0(Mobs) )
+        tl_zgrad0 = IniVal
 
-      allocate ( tl_cg_innov(Mobs) )
-      tl_cg_innov = IniVal
+        allocate ( tl_cg_innov(Mobs) )
+        tl_cg_innov = IniVal
 
-      allocate ( tl_cg_pxsave(Mobs) )
-      tl_cg_pxsave = IniVal
+        allocate ( tl_cg_pxsave(Mobs) )
+        tl_cg_pxsave = IniVal
 
-      allocate ( tl_ObsVal(Mobs) )
-      tl_ObsVal = IniVal
+        allocate ( tl_ObsVal(Mobs) )
+        tl_ObsVal = IniVal
 
-      allocate ( ad_ObsVal(Mobs) )
-      ad_ObsVal = IniVal
+        allocate ( ad_ObsVal(Mobs) )
+        ad_ObsVal = IniVal
 #   endif
-      allocate ( cg_dla(Ninner,Nouter) )
-      cg_dla = IniVal
+        allocate ( cg_dla(Ninner,Nouter) )
+        cg_dla = IniVal
 
-      allocate ( zcglwk(Mobs,Ninner+1,Nouter) )
-      zcglwk = IniVal
+        allocate ( zcglwk(Mobs,Ninner+1,Nouter) )
+        zcglwk = IniVal
 
-      allocate ( vcglev(Mobs,Ninner,Nouter) )
-      vcglev = IniVal
+        allocate ( vcglev(Mobs,Ninner,Nouter) )
+        vcglev = IniVal
 
-      allocate ( zgrad0(Mobs,Nouter) )
-      zgrad0 = IniVal
+        allocate ( zgrad0(Mobs,Nouter) )
+        zgrad0 = IniVal
 
-      allocate ( vgrad0(Mobs) )
-      vgrad0 = IniVal
+        allocate ( vgrad0(Mobs) )
+        vgrad0 = IniVal
 
-      allocate ( vgrad0s(Mobs) )
-      vgrad0s = IniVal
+        allocate ( vgrad0s(Mobs) )
+        vgrad0s = IniVal
 
-      allocate ( gdgw(Mobs) )
-      gdgw = IniVal
+        allocate ( gdgw(Mobs) )
+        gdgw = IniVal
 
-      allocate ( vgnorm(Nouter) )
-      vgnorm = IniVal
+        allocate ( vgnorm(Nouter) )
+        vgnorm = IniVal
 
-      allocate ( cg_innov(Mobs) )
-      cg_innov = IniVal
+        allocate ( cg_innov(Mobs) )
+        cg_innov = IniVal
 
-      allocate ( cg_pxsave(Mobs) )
-      cg_pxsave = IniVal
+        allocate ( cg_pxsave(Mobs) )
+        cg_pxsave = IniVal
+      END IF
 #  endif
 
 # else
