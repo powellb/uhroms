@@ -928,8 +928,10 @@
 #   if defined SENSITIVITY_4DVAR    || defined TL_W4DPSAS || \
        defined TL_W4DVAR            || defined W4DPSAS    || \
        defined W4DVAR
-      allocate ( TLmodVal_S(Mobs,Ninner,Nouter) )
-      TLmodVal_S = IniVal
+      IF (Master) THEN
+        allocate ( TLmodVal_S(Mobs,Ninner,Nouter) )
+        TLmodVal_S = IniVal
+      END IF
 #   endif
 #   if defined TL_W4DPSAS           || defined W4DPSAS    || \
        defined W4DPSAS_SENSITIVITY
