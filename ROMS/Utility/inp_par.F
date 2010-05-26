@@ -147,25 +147,37 @@
         allocate ( BOUNDS(Ngrids) )
         DO ng=1,Ngrids
           Ntiles=NtileI(ng)*NtileJ(ng)-1
-          allocate ( BOUNDS(ng) % tile (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % LBi  (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % UBi  (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % LBj  (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % UBj  (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % Iend (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % Istr (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % Jstr (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % Jend (-1:Ntiles) )
-          allocate ( BOUNDS(ng) % IstrR(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % IstrT(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % IstrU(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % IendR(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % IendT(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % JstrR(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % JstrT(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % JstrV(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % JendR(-1:Ntiles) )
-          allocate ( BOUNDS(ng) % JendT(-1:Ntiles) )
+          allocate ( BOUNDS(ng) % tile   (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % LBi    (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % UBi    (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % LBj    (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % UBj    (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Istr   (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Iend   (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Jstr   (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Jend   (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IstrR  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IstrU  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IendR  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JstrR  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JstrV  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JendR  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IstrP  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IstrT  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IendT  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JstrP  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JstrT  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JendT  (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Istrm2 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Istrm1 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % IstrUm1(-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Iendp1 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Iendp2 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Jstrm2 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Jstrm1 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % JstrVm1(-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Jendp1 (-1:Ntiles) )
+          allocate ( BOUNDS(ng) % Jendp2 (-1:Ntiles) )
           allocate ( BOUNDS(ng) % Imin (4,0:1,0:Ntiles) )
           allocate ( BOUNDS(ng) % Imax (4,0:1,0:Ntiles) )
           allocate ( BOUNDS(ng) % Jmin (4,0:1,0:Ntiles) )
@@ -211,15 +223,27 @@
      &                   BOUNDS(ng) % Jstr(tile),                       &
      &                   BOUNDS(ng) % Jend(tile),                       &
      &                   BOUNDS(ng) % IstrR(tile),                      &
-     &                   BOUNDS(ng) % IstrT(tile),                      &
      &                   BOUNDS(ng) % IstrU(tile),                      &
      &                   BOUNDS(ng) % IendR(tile),                      &
-     &                   BOUNDS(ng) % IendT(tile),                      &
      &                   BOUNDS(ng) % JstrR(tile),                      &
-     &                   BOUNDS(ng) % JstrT(tile),                      &
      &                   BOUNDS(ng) % JstrV(tile),                      &
      &                   BOUNDS(ng) % JendR(tile),                      &
-     &                   BOUNDS(ng) % JendT(tile))
+     &                   BOUNDS(ng) % IstrP(tile),                      &
+     &                   BOUNDS(ng) % IstrT(tile),                      &
+     &                   BOUNDS(ng) % IendT(tile),                      &
+     &                   BOUNDS(ng) % JstrP(tile),                      &
+     &                   BOUNDS(ng) % JstrT(tile),                      &
+     &                   BOUNDS(ng) % JendT(tile),                      &
+     &                   BOUNDS(ng) % Istrm2(tile),                     &
+     &                   BOUNDS(ng) % Istrm1(tile),                     &
+     &                   BOUNDS(ng) % IstrUm1(tile),                    &
+     &                   BOUNDS(ng) % Iendp1(tile),                     &
+     &                   BOUNDS(ng) % Iendp2(tile),                     &
+     &                   BOUNDS(ng) % Jstrm2(tile),                     &
+     &                   BOUNDS(ng) % Jstrm1(tile),                     &
+     &                   BOUNDS(ng) % JstrVm1(tile),                    &
+     &                   BOUNDS(ng) % Jendp1(tile),                     &
+     &                   BOUNDS(ng) % Jendp2(tile))
           CALL get_bounds (ng, tile, 0, Nghost, Itile, Jtile,           &
      &                     BOUNDS(ng) % LBi(tile),                      &
      &                     BOUNDS(ng) % UBi(tile),                      &
@@ -531,6 +555,14 @@
 !
       gorho0=g/rho0
       DO ng=1,Ngrids
+!
+!  Determine total run time by all nested grids. Set the largest
+!  value between all nested grids.
+!
+        run_time=MAX(run_time,ntimes(ng)*dt(ng))
+!
+!  Size of barotropic time-steps.
+!
         dtfast(ng)=dt(ng)/REAL(ndtfast(ng),r8)
 !
 !  Take the square root of the biharmonic coefficients so it can
