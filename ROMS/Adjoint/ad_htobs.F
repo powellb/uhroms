@@ -400,18 +400,14 @@
 !         r = u*cos(angle) + v*sin(angle)
 !
 ! We need to do the u and v separately, given by:
-!      ad_v = ad_v + ADmodVal*sin(angle)
-!      ad_u = ad_u + ADmodVal*cos(angle)
+!      f_v = f_v + ADmodVal*sin(angle)
+!      f_u = f_u + ADmodVal*cos(angle)
 !
         IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
           DO iobs=1,Nobs(ng)
             IF (ObsType(iobs).eq.isRadial) THEN
               ad_uradial(iobs)=ADmodVal(iobs)*COS(ObsMeta(iobs))
               ad_vradial(iobs)=ADmodVal(iobs)*SIN(ObsMeta(iobs))
-              ADmodVal(iobs)=IniVal
-            ELSE
-              ad_uradial(iobs)=ADmodVal(iobs)
-              ad_vradial(iobs)=ADmodVal(iobs)
             END IF
           END DO
           DO k=1,N(ng)
@@ -436,12 +432,6 @@
      &                           vmask,                                 &
 #  endif
      &                           ad_vradial)
-#  ifdef DISTRIBUTE
-          CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
-     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
-     &                           NghostPoints, EWperiodic, NSperiodic,  &
-     &                           f_v)
-#  endif
           DO k=1,N(ng)
             DO j=Jstr-1,Jend+1
               DO i=IstrU-1,Iend+1
@@ -465,6 +455,10 @@
 #  endif
      &                           ad_uradial)
 #  ifdef DISTRIBUTE
+          CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           NghostPoints, EWperiodic, NSperiodic,  &
+     &                           f_v)
           CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
      &                           NghostPoints, EWperiodic, NSperiodic,  &
