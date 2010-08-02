@@ -428,7 +428,7 @@
           Vinfo( 3)=Vname(3,idFsur)
           Vinfo(14)=Vname(4,idFsur)
           Vinfo(16)=Vname(1,idtime)
-# if defined WRITE_WATER && defined MASKING
+# if !defined WET_DRY && (defined WRITE_WATER && defined MASKING)
           Vinfo(20)='mask_rho'
 # endif
           Vinfo(22)='coordinates'
@@ -1162,13 +1162,11 @@
           Vinfo( 3)=Vname(3,idVvis)
           Vinfo(14)=Vname(4,idVvis)
           Vinfo(16)=Vname(1,idtime)
-#   if defined WRITE_WATER && defined MASKING
-          Vinfo(20)='mask_rho'
-#   endif
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idVvis,ng),r8)
           status=def_var(ng, model, ncAVGid(ng), avgVid(idVvis,ng),     &
-     &                   NF_FOUT, nvd4, w3dgrd, Aval, Vinfo, ncname)
+     &                   NF_FOUT, nvd4, w3dgrd, Aval, Vinfo, ncname,    &
+     &                   SetFillVal = .FALSE.)
           IF (exit_flag.ne.NoError) RETURN
         END IF
 !
@@ -1180,13 +1178,11 @@
           Vinfo( 3)=Vname(3,idTdif)
           Vinfo(14)=Vname(4,idTdif)
           Vinfo(16)=Vname(1,idtime)
-#   if defined WRITE_WATER && defined MASKING
-          Vinfo(20)='mask_rho'
-#   endif
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idTdif,ng),r8)
           status=def_var(ng, model, ncAVGid(ng), avgVid(idTdif,ng),     &
-     &                   NF_FOUT, nvd4, w3dgrd, Aval, Vinfo, ncname)
+     &                   NF_FOUT, nvd4, w3dgrd, Aval, Vinfo, ncname,    &
+     &                   SetFillVal = .FALSE.)
           IF (exit_flag.ne.NoError) RETURN
         END IF
 !
@@ -1198,13 +1194,11 @@
           Vinfo( 3)=Vname(3,idSdif)
           Vinfo(14)=Vname(4,idSdif)
           Vinfo(16)=Vname(1,idtime)
-#   if defined WRITE_WATER && defined MASKING
-          Vinfo(20)='mask_rho'
-#   endif
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idSdif,ng),r8)
           status=def_var(ng, model, ncAVGid(ng), avgVid(idSdif,ng),     &
-     &                   NF_FOUT, nvd4, w3dgrd, Aval, Vinfo, ncname)
+     &                   NF_FOUT, nvd4, w3dgrd, Aval, Vinfo, ncname,    &
+     &                   SetFillVal = .FALSE.)
           IF (exit_flag.ne.NoError) RETURN
         END IF
 #  endif
@@ -2240,28 +2234,29 @@
      &                                  TRIM(ncname)
           exit_flag=3
           RETURN
+        END IF
 #  endif
 # endif
-        IF (.not.got_var(id2dPV)) THEN
+        IF (.not.got_var(id2dPV).and.Aout(id2dPV,ng)) THEN
           IF (Master) WRITE (stdout,60) TRIM(Vname(1,id2dPV)),          &
      &                                  TRIM(ncname)
           exit_flag=3
           RETURN
         END IF
-        IF (.not.got_var(id2dRV)) THEN
+        IF (.not.got_var(id2dRV).and.Aout(id2dRV,ng)) THEN
           IF (Master) WRITE (stdout,60) TRIM(Vname(1,id2dRV)),          &
      &                                  TRIM(ncname)
           exit_flag=3
           RETURN
         END IF
 # ifdef SOLVE3D
-        IF (.not.got_var(id3dPV)) THEN
+        IF (.not.got_var(id3dPV).and.Aout(id3dPV,ng)) THEN
           IF (Master) WRITE (stdout,60) TRIM(Vname(1,id3dPV)),          &
      &                                  TRIM(ncname)
           exit_flag=3
           RETURN
         END IF
-        IF (.not.got_var(id3dRV)) THEN
+        IF (.not.got_var(id3dRV).and.Aout(id3dRV,ng)) THEN
           IF (Master) WRITE (stdout,60) TRIM(Vname(1,id3dRV)),          &
      &                                  TRIM(ncname)
           exit_flag=3
