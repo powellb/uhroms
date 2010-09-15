@@ -358,10 +358,6 @@
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: oHz
 # ifdef TS_MPDATA
-#  ifdef DIAGNOSTICS_TS
-      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,3) :: Dhadv
-      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng),NT(ng)) :: Dvadv
-#  endif
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng),NT(ng)) :: Ta
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: Ua
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: Va
@@ -401,6 +397,9 @@
       END DO
 # undef I_RANGE
 # undef J_RANGE
+!
+!  Compute horizontal tracer advection fluxes.
+!
 # if defined TS_MPDATA   && \
     (defined EW_PERIODIC || defined NS_PERIODIC || defined DISTRIBUTE)
 !
@@ -422,9 +421,7 @@
      &                    t(:,:,:,3,:))
 #  endif
 # endif
-!
-!  Compute horizontal tracer advection fluxes.
-!
+
       T_LOOP : DO itrc=1,NT(ng)
         K_LOOP : DO k=1,N(ng)
 
@@ -689,19 +686,19 @@
 !  Time-step horizontal advection term.
 !
 # ifdef TS_MPDATA
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
+#   ifdef EW_PERIODIC
+#    define I_RANGE Istr-2,Iend+2
+#   else
+#    define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
+#   endif
+#   ifdef NS_PERIODIC
+#    define J_RANGE Jstr-2,Jend+2
+#   else
+#    define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
+#   endif
 # else
-#  define I_RANGE Istr,Iend
-#  define J_RANGE Jstr,Jend
+#   define I_RANGE Istr,Iend
+#   define J_RANGE Jstr,Jend
 # endif
           DO j=J_RANGE
             DO i=I_RANGE
@@ -709,37 +706,22 @@
               cff1=cff*(FX(i+1,j)-FX(i,j))
               cff2=cff*(FE(i,j+1)-FE(i,j))
               cff3=cff1+cff2
-# ifdef TS_MPDATA
+#  ifdef TS_MPDATA
               cff4=Hz(i,j,k)+                                           &
      &             cff*(Huon(i+1,j,k)-Huon(i,j,k)+                      &
      &                  Hvom(i,j+1,k)-Hvom(i,j,k)+                      &
      &                  (W(i,j,k)-W(i,j,k-1)))                 ! Hz_old
               Ta(i,j,k,itrc)=t(i,j,k,3,itrc)*cff4-cff3
-# else
-              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff3
-# endif
-# ifdef DIAGNOSTICS_TS
-#  ifdef TS_MPDATA
-              Dhadv(i,j,iTxadv)=-cff1
-              Dhadv(i,j,iTyadv)=-cff2
-              Dhadv(i,j,iThadv)=-cff3
 #  else
+              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff3
+#  endif
+#  ifdef DIAGNOSTICS_TS
               DiaTwrk(i,j,k,itrc,iTxadv)=-cff1
               DiaTwrk(i,j,k,itrc,iTyadv)=-cff2
               DiaTwrk(i,j,k,itrc,iThadv)=-cff3
 #  endif
-# endif
             END DO
           END DO
-# if defined DIAGNOSTICS_TS && defined TS_MPDATA
-          DO j=Jstr,Jend
-            DO i=Istr,Iend
-              DiaTwrk(i,j,k,itrc,iTxadv)=Dhadv(i,j,iTxadv)
-              DiaTwrk(i,j,k,itrc,iTyadv)=Dhadv(i,j,iTyadv)
-              DiaTwrk(i,j,k,itrc,iThadv)=Dhadv(i,j,iThadv)
-            END DO
-          END DO
-# endif
         END DO K_LOOP
       END DO T_LOOP
 !
@@ -941,7 +923,7 @@
 # ifdef TS_MPDATA
               Ta(i,j,k,itrc)=(Ta(i,j,k,itrc)-cff1)*oHz(i,j,k)
 #  ifdef DIAGNOSTICS_TS
-              Dvadv(i,j,k,itrc)=-cff1
+              DiaTwrk(i,j,k,itrc,iTvadv)=-cff1
 #  endif
 # else
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff1
@@ -959,8 +941,6 @@
             END DO
           END DO
         END DO
-# undef I_RANGE
-# undef J_RANGE
 # ifdef TS_MPDATA
       END DO
 !
@@ -973,6 +953,7 @@
         CALL mpdata_adiff_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          IminS, ImaxS, JminS, JmaxS,             &
+     &                          nrhs,                                   &
 #  ifdef MASKING
      &                          rmask, umask, vmask,                    &
 #  endif
@@ -985,7 +966,7 @@
      &                          t(:,:,:,3,itrc),                        &
      &                          Ta(:,:,:,itrc),  Ua, Va, Wa)
 !
-!  Compute anti-diffusive corrected advection fluxes.
+!  Compute anti-difussive corrected advection fluxes.
 !
         DO k=1,N(ng)
           DO j=Jstr,Jend
@@ -1028,7 +1009,7 @@
           END DO
         END DO
 !
-!  Compute anti-diffusive corrected vertical advection flux.
+!  Compute anti-difussive corrected vertical advection flux.
 !
         DO j=Jstr,Jend
           DO k=1,N(ng)-1
@@ -1057,7 +1038,7 @@
               cff1=CF(i,0)*(FC(i,k)-FC(i,k-1))
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff1
 #  ifdef DIAGNOSTICS_TS
-              DiaTwrk(i,j,k,itrc,iTvadv)=Dvadv(i,j,k,itrc)-             &
+              DiaTwrk(i,j,k,itrc,iTvadv)=DiaTwrk(i,j,k,itrc,iTvadv)-    &
      &                                   cff1
               DO idiag=1,NDT
                 DiaTwrk(i,j,k,itrc,idiag)=DiaTwrk(i,j,k,itrc,idiag)*    &
