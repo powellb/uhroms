@@ -99,8 +99,8 @@
       USE mod_coupling
 # endif
       USE mod_forces
-# ifdef SOLVE3D
       USE mod_grid
+# ifdef SOLVE3D
       USE mod_mixing
 # endif
       USE mod_ocean
@@ -580,6 +580,7 @@
             END DO
           END DO
         END IF
+#   ifdef NEARSHORE_MELLOR05
         IF (Aout(idW3zx,ng)) THEN
           DO k=1,N(ng)
             DO j=JstrR,JendR
@@ -598,6 +599,7 @@
             END DO
           END DO
         END IF
+#   endif
 #  endif
 # endif
 !
@@ -1231,6 +1233,7 @@
             END DO
           END DO
         END IF
+#   ifdef NEARSHORE_MELLOR05
         IF (Aout(idW3zx,ng)) THEN
           DO k=1,N(ng)
             DO j=JstrR,JendR
@@ -1251,6 +1254,7 @@
             END DO
           END DO
         END IF
+#   endif
 #  endif
 # endif
 !
@@ -1882,6 +1886,7 @@
             END DO
           END DO
         END IF
+#   ifdef NEARSHORE_MELLOR05
         IF (Aout(idW3zx,ng)) THEN
           DO k=1,N(ng)
             DO j=JstrR,JendR
@@ -1902,6 +1907,7 @@
             END DO
           END DO
         END IF
+#   endif
 #  endif
 # endif
 !
@@ -2230,7 +2236,7 @@
               DO i=IstrR,IendR
                 TIDES(ng)%vbar_tide(i,j,nk)=TIDES(ng)%vbar_tide(i,j,    &
      &                                                          nk)+    &
-     &                                      OCEAN(ng)%zeta(i,j,Kout)*   &
+     &                                      OCEAN(ng)%vbar(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
               END DO
             END DO
@@ -2350,7 +2356,7 @@
               DO i=IstrR,IendR
                 TIDES(ng)%vbar_tide(i,j,nk)=TIDES(ng)%vbar_tide(i,j,    &
      &                                                          nk)+    &
-     &                                      OCEAN(ng)%zeta(i,j,Kout)*   &
+     &                                      OCEAN(ng)%vbar(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
               END DO
             END DO

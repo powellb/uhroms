@@ -1367,7 +1367,7 @@
             DO ng=1,Ngrids
               tl_visc2(ng)=ad_visc2(ng)
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'VISC4') THEN
+          ELSE IF (TRIM(KeyWord).eq.'ad_VISC4') THEN
             Npts=load_r(Nval, Rval, Ngrids, ad_visc4)
             DO ng=1,Ngrids
               tl_visc4(ng)=ad_visc4(ng)
@@ -2364,6 +2364,7 @@
             END DO
 #  endif
 # endif
+# ifdef SOLVE3D
           ELSE IF (TRIM(KeyWord).eq.'Aout(idHUav)') THEN
             IF (idHUav.eq.0) THEN
               IF (Master) WRITE (out,280) 'idHUav'
@@ -2399,6 +2400,7 @@
               RETURN
             END IF
             Npts=load_l(Nval, Cval, Ngrids, Aout(idVVav,:))
+# endif
           ELSE IF (TRIM(KeyWord).eq.'Aout(idU2av)') THEN
             IF (idU2av.eq.0) THEN
               IF (Master) WRITE (out,280) 'idU2av'
@@ -2420,6 +2422,7 @@
               RETURN
             END IF
             Npts=load_l(Nval, Cval, Ngrids, Aout(idZZav,:))
+# ifdef SOLVE3D
           ELSE IF (TRIM(KeyWord).eq.'Aout(idTTav)') THEN
             IF (MAXVAL(idTTav).eq.0) THEN
               IF (Master) WRITE (out,280) 'idTTav'
@@ -2485,6 +2488,7 @@
                 Aout(i,ng)=Ltracer(itrc,ng)
               END DO
             END DO
+# endif
 # if defined SOLVE3D && defined T_PASSIVE
           ELSE IF (TRIM(KeyWord).eq.'Aout(inert)') THEN
             Npts=load_l(Nval, Cval, NPT*Ngrids, Linert)
@@ -2767,6 +2771,17 @@
               Dout(idDv3d(M3yvis),ng)=Ldiag(ng)
             END DO
 #  endif
+          ELSE IF (TRIM(KeyWord).eq.'Dout(M3vvis)') THEN
+            IF (M3vvis.le.0) THEN
+              IF (Master) WRITE (out,280) 'M3vvis'
+              exit_flag=5
+              RETURN
+            END IF
+            Npts=load_l(Nval, Cval, Ngrids, Ldiag)
+            DO ng=1,Ngrids
+              Dout(idDu3d(M3vvis),ng)=Ldiag(ng)
+              Dout(idDv3d(M3vvis),ng)=Ldiag(ng)
+            END DO
 # endif
 #endif
 #if defined DIAGNOSTICS_TS && defined SOLVE3D
@@ -3222,7 +3237,7 @@
 !  Set size of additonal dimension for error covariance normalization
 !  and standard deviation factors.
 !
-# ifdef WEAK_CONSTRAINT
+# if defined CORRELATION || defined WEAK_CONSTRAINT
         IF (nADJ(ng).lt.ntimes(ng)) THEN
           NSA=2
         ELSE
@@ -3907,7 +3922,7 @@
             itrc=inert(i)
             WRITE (out,185) LtracerSrc(i,ng), 'LtracerSrc', itrc,       &
      &            'Processing point sources/Sink on tracer ', itrc,     &
-     &            TRIM(Vname(1,idTvar(trc)))
+     &            TRIM(Vname(1,idTvar(itrc)))
           END DO
 # endif
 #endif
@@ -4020,12 +4035,14 @@
           IF (Hout(idW3yy,ng)) WRITE (out,170) Hout(idW3yy,ng),         &
      &       'Hout(idW3yy)',                                            &
      &       'Write out 3D radiation stress, Syy.'
+#  ifdef NEARSHORE_MELLOR05
           IF (Hout(idW3zx,ng)) WRITE (out,170) Hout(idW3zx,ng),         &
      &       'Hout(idW3zx)',                                            &
      &       'Write out 3D radiation stress, Szx.'
           IF (Hout(idW3zy,ng)) WRITE (out,170) Hout(idW3zy,ng),         &
      &       'Hout(idW3zy)',                                            &
      &       'Write out 3D radiation stress, Szy.'
+#  endif
           IF (Hout(idU3rs,ng)) WRITE (out,170) Hout(idU3rs,ng),         &
      &       'Hout(idU3rs)',                                            &
      &       'Write out total 3D u-radiation stress.'
@@ -4500,6 +4517,9 @@
           IF (Dout(idDu3d(M3xvis),ng).or.Dout(idDv3d(M3xvis),ng))       &
      &       WRITE (out,170) .TRUE., 'Dout(M3xvis)',                    &
      &       'Write out 3D momentum horizontal X-viscosity.'
+          IF (Dout(idDu3d(M3yvis),ng).or.Dout(idDv3d(M3yvis),ng))       &
+     &       WRITE (out,170) .TRUE., 'Dout(M3yvis)',                    &
+     &       'Write out 3D momentum horizontal Y-viscosity.'
 #  endif
           IF (Dout(idDu3d(M3vvis),ng).or.Dout(idDv3d(M3vvis),ng))       &
      &       WRITE (out,170) .TRUE., 'Dout(M3vvis)',                    &
@@ -5419,6 +5439,11 @@
             END DO
           ELSE IF (TRIM(KeyWord).eq.'LNM_flag') THEN
             Npts=load_i(Nval, Rval, 1, LNM_flag)
+#  if defined WEAK_CONSTRAINT && \
+     (defined ARRAY_MODES     || defined CLIPPING)
+          ELSE IF (TRIM(KeyWord).eq.'Nvct') THEN
+            Npts=load_i(Nval, Rval, 1, Nvct)
+#  endif
           ELSE IF (TRIM(KeyWord).eq.'GradErr') THEN
             Npts=load_r(Nval, Rval, 1, GradErr)
           ELSE IF (TRIM(KeyWord).eq.'HevecErr') THEN
@@ -5874,7 +5899,25 @@
         END DO
       END DO
 #  endif
-
+#  if defined WEAK_CONSTRAINT && \
+     (defined ARRAY_MODES     || defined CLIPPING)
+!
+!-----------------------------------------------------------------------
+!  Check array modes parameter
+!-----------------------------------------------------------------------
+!
+!  Array modes parameter must be greater than zero and less or equal
+!  to Ninner.
+!
+      IF ((Nvct.lt.1).or.(Nvct.gt.Ninner)) THEN
+        IF (Lwrite) THEN
+          WRITE (out,55) 'Illegal parameter for array modes, Nvct = ',  &
+     &                   Nvct, Ninner, '1 =< Nvct =< Ninner.'
+        END IF
+        exit_flag=6
+        RETURN
+      END IF
+#  endif
 #  ifdef BALANCE_OPERATOR
 !
 !-----------------------------------------------------------------------
@@ -5976,6 +6019,15 @@
 #    else
           WRITE (out,70) balance(isVbar), 'balance(isVbar)',            &
                   'Switch to include 2D momentum in balance operator.'
+#    endif
+#   endif
+#   ifdef WEAK_CONSTRAINT
+#    if defined ARRAY_MODES
+          WRITE (out,80) Nvct, 'Nvct',                                  &
+     &            'Representer array mode eigenvector to process.'
+#    elif defined CLIPPING
+          WRITE (out,80) Nvct, 'Nvct',                                  &
+     &            'Representer cut-off eigenvector to process.'
 #    endif
 #   endif
 #   if defined POSTERIOR_EOFS && defined WEAK_CONSTRAINT
@@ -6312,37 +6364,71 @@
      &                    TRIM(fname)
 #    endif
 #   endif
-#   if defined SENSITIVITY_4DVAR || \
-       defined TL_W4DPSAS        || defined TL_W4DVAR || \
-       defined W4DPSAS           || defined W4DVAR
+#   if defined SENSITIVITY_4DVAR || defined TL_W4DPSAS  || \
+       defined TL_W4DVAR         || defined W4DPSAS     || \
+       defined W4DVAR
           fname=NRMname(2,ng)
           WRITE (out,160) '              Model Norm File:  ',           &
      &                    TRIM(fname)
           IF (.not.LdefNRM(2,ng)) THEN
             IF (.not.find_file(ng, fname)) GO TO 30
           END IF
+#   elif defined CORRELATION
+          fname=NRMname(2,ng)
+          WRITE (out,160) '              Model Norm File:  ',           &
+     &                    TRIM(fname)
+          IF (.not.LdefNRM(2,ng).and.LwrtNRM(2,ng)) THEN
+            IF (.not.find_file(ng, fname)) GO TO 30
+          END IF
 #   endif
+#   if defined CORRELATION
+          fname=NRMname(1,ng)
+          WRITE (out,160) ' Initial Conditions Norm File:  ',           &
+     &                    TRIM(fname)
+          IF (.not.LdefNRM(1,ng).and.LwrtNRM(1,ng)) THEN
+            IF (.not.find_file(ng, fname)) GO TO 30
+          END IF
+#   else
           fname=NRMname(1,ng)
           WRITE (out,160) ' Initial Conditions Norm File:  ',           &
      &                    TRIM(fname)
           IF (.not.LdefNRM(1,ng)) THEN
             IF (.not.find_file(ng, fname)) GO TO 30
           END IF
+#   endif
 #   ifdef ADJUST_BOUNDARY
+#    ifdef CORRELATION
+          fname=NRMname(3,ng)
+          WRITE (out,160) 'Boundary Conditions Norm File:  ',           &
+     &                    TRIM(fname)
+          IF (.not.LdefNRM(3,ng).and.LwrtNRM(3,ng)) THEN
+            IF (.not.find_file(ng, fname)) GO TO 30
+          END IF
+#    else
           fname=NRMname(3,ng)
           WRITE (out,160) 'Boundary Conditions Norm File:  ',           &
      &                    TRIM(fname)
           IF (.not.LdefNRM(3,ng)) THEN
             IF (.not.find_file(ng, fname)) GO TO 30
           END IF
+#    endif
 #   endif
 #   if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
+#    ifdef CORRELATION
+          fname=NRMname(4,ng)
+          WRITE (out,160) '    Surface Forcing Norm File:  ',           &
+     &                    TRIM(fname)
+          IF (.not.LdefNRM(4,ng).and.LwrtNRM(4,ng)) THEN
+            IF (.not.find_file(ng, fname)) GO TO 30
+          END IF
+#    else
           fname=NRMname(4,ng)
           WRITE (out,160) '    Surface Forcing Norm File:  ',           &
      &                    TRIM(fname)
           IF (.not.LdefNRM(4,ng)) THEN
             IF (.not.find_file(ng, fname)) GO TO 30
           END IF
+#    endif
 #   endif
 #   if !(defined CORRELATION || defined CONVOLUTION || \
          defined OPT_OBSERVATIONS)
@@ -6379,6 +6465,7 @@
       END IF
 
   50  FORMAT (/,' READ_AssPar - Error while processing line: ',/,a)
+  55  FORMAT (/,' READ_AssPar - ',a,i4,2x,i4,/,15x,a)
   60  FORMAT (/,/,' Assimilation Parameters, Grid: ',i2.2,              &
      &        /,  ' =================================',/)
   70  FORMAT (10x,l1,2x,a,t30,a)

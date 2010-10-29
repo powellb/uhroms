@@ -53,6 +53,7 @@
       integer :: ivelHadv = 0
       integer :: ivelVadv = 0
       integer :: ivmix = 0
+      integer :: nearshore = 0
 
       integer :: is, lstr, ng
 !
@@ -92,28 +93,28 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' ADJOINT,'
 #endif
-#if defined ADJUST_BOUNDARY   && \
-   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
-    defined W4DVAR)
+#if defined ADJUST_BOUNDARY     && \
+   (defined CORRELATION         || defined IS4DVAR           || \
+    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
+    defined W4DPSAS             || defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_BOUNDARY',                  &
      &   'Including boundary conditions in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' ADJUST_BOUNDARY,'
 #endif
-#if defined ADJUST_STFLUX     && \
-   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
-    defined W4DVAR)
+#if defined ADJUST_STFLUX       && \
+   (defined CORRELATION         || defined IS4DVAR           || \
+    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
+    defined W4DPSAS             || defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_STFLUX',                    &
      &   'Including surface tracer flux in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' ADJUST_STFLUX,'
 #endif
-#if defined ADJUST_WSTRESS    && \
-   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
-    defined W4DVAR)
+#if defined ADJUST_WSTRESS      && \
+   (defined CORRELATION         || defined IS4DVAR           || \
+    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
+    defined W4DPSAS             || defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_WSTRESS',                   &
      &   'Including surface wind stress in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
@@ -152,6 +153,19 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+8)=' ALBEDO,'
 #endif
+#ifdef ARRAY_MODES
+      IF (Master) WRITE (stdout,20) 'ARRAY_MODES',                      &
+     &   'Stabilized Representer Matrix Array Modes.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' ARRAY_MODES,'
+      idriver=idriver+1
+# ifdef ARRAY_MODES_SPLIT
+      IF (Master) WRITE (stdout,20) 'ARRAY_MODES_SPLIT',                &
+     &   'Separate analysis due to IC, surface forcing, and OBC'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+19)=' ARRAY_MODES_SPLIT,'
+# endif
+#endif
 #ifdef ATM_PRESS
       IF (Master) WRITE (stdout,20) 'ATM_PRESS',                        &
      &   'Impose atmospheric pressure onto sea surface.'
@@ -163,6 +177,19 @@
      &   'Error Covariance Multivariate Balance Operator.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+18)=' BALANCE_OPERATOR,'
+#endif
+#ifdef CLIPPING
+      IF (Master) WRITE (stdout,20) 'CLIPPING',                         &
+     &   'Stabilized Representer Matrix clipping spectrum analysis.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+10)=' CLIPPING,'
+      idriver=idriver+1
+# ifdef CLIPPING_SPLIT
+      IF (Master) WRITE (stdout,20) 'CLIPPING_SPLIT',                   &
+     &   'Separate analysis due to IC, surface forcing, and OBC'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' CLIPPING_SPLIT,'
+# endif
 #endif
 #ifdef CONVOLUTION
       IF (Master) WRITE (stdout,20) 'CONVOLUTION',                      &
@@ -1244,11 +1271,12 @@
       Coptions(is:is+13)=' MY25_MIXING,'
       ivmix=ivmix+1
 #endif
-#ifdef NEARSHORE_MELLOR
-      IF (Master) WRITE (stdout,20) 'NEARSHORE_MELLOR',                 &
-     &   'Nearshore RAdiation Stress Terms.'
+#ifdef NEARSHORE_MELLOR05
+      IF (Master) WRITE (stdout,20) 'NEARSHORE_MELLOR05',               &
+     &   'Nearshore Radiation Stress Terms (Mellor 2005).'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+18)=' NEARSHORE_MELLOR,'
+      Coptions(is:is+20)=' NEARSHORE_MELLOR05,'
+      nearshore=nearshore+1
 #endif
 #ifdef NEMURO
       IF (Master) WRITE (stdout,20) 'NEMURO',                           &
@@ -1730,6 +1758,12 @@
      &   'Reading data at water points only.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' READ_WATER,'
+#endif
+#if defined RECOMPUTE_4DVAR && defined FOUR_DVAR
+      IF (Master) WRITE (stdout,20) 'RECOMPUTE_4DVAR',                  &
+     &   'Recomputing 4DVar during data assimilation analysis.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' RECOMPUTE_4DVAR,'
 #endif
 #ifdef R_SYMMETRY
       IF (Master) WRITE (stdout,20) 'REP_MATRIX',                       &
@@ -3098,11 +3132,22 @@
       END IF
 # endif
 #endif
+#ifdef NEARSHORE
+!
+!  Stop if more that one radiation stress formulation is activated.
+!
+      IF (Master.and.(nearshore.gt.1)) THEN
+        WRITE (stdout,170)
+ 170    FORMAT (/,' CHECKDEFS - only one radiation stress formulation'  &
+     &            ' is allowed.')
+        exit_flag=5
+      END IF
+#endif
 #ifdef PARALLEL_IO
 # if !(defined HDF5 || defined PNETCDF)
       IF (Master) THEN
-        WRITE (stdout,170)
- 170    FORMAT (/,' CHECKDEFS - Need to activate either HDF5 or',       &
+        WRITE (stdout,180)
+ 180    FORMAT (/,' CHECKDEFS - Need to activate either HDF5 or',       &
      &            ' PNETCDF options',/,13x,'for parallel I/O',          &
      &            ' processing.')
         exit_flag=5
@@ -3110,8 +3155,8 @@
 # endif
 # if defined HDF5 && defined PNETCDF
       IF (Master) THEN
-        WRITE (stdout,180)
- 180    FORMAT (/,' CHECKDEFS - Both HDF5 and PNETCDF options',         &
+        WRITE (stdout,190)
+ 190    FORMAT (/,' CHECKDEFS - Both HDF5 and PNETCDF options',         &
      &            ' selected',/,13x,'for parallel I/O processing.',     &
      &          /,13x,'Choose only one.')
         exit_flag=5

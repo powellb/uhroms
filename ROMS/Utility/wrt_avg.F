@@ -629,6 +629,8 @@
           RETURN
         END IF
       END IF
+
+#   ifdef NEARSHORE_MELLOR05
 !
 !  Write out 3D radiation stress, Szx-component.
 !
@@ -638,9 +640,9 @@
         status=nf_fwrite3d(ng, iNLM, ncAVGid(ng), avgVid(idW3zx,ng),    &
      &                     tAVGindx(ng), gtype,                         &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
-#   ifdef MASKING
+#    ifdef MASKING
      &                     GRID(ng) % rmask,                            &
-#   endif
+#    endif
      &                     AVERAGE(ng) % avgSzx3d)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
@@ -660,9 +662,9 @@
         status=nf_fwrite3d(ng, iNLM, ncAVGid(ng), avgVid(idW3zy,ng),    &
      &                     tAVGindx(ng), gtype,                         &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
-#   ifdef MASKING
+#    ifdef MASKING
      &                     GRID(ng) % rmask,                            &
-#   endif
+#    endif
      &                     AVERAGE(ng) % avgSzy3d)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
@@ -673,6 +675,7 @@
           RETURN
         END IF
       END IF
+#   endif
 !
 !  Write out 3D radiation stress in the XI-direction, u_Rstress.
 !
@@ -1321,7 +1324,8 @@
 #   ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 #   endif
-     &                     AVERAGE(ng) % avgAKv)
+     &                     AVERAGE(ng) % avgAKv,                        &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idVvis)), tAVGindx(ng)
@@ -1343,7 +1347,8 @@
 #   ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 #   endif
-     &                     AVERAGE(ng) % avgAKt)
+     &                     AVERAGE(ng) % avgAKt,                        &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idTdif)), tAVGindx(ng)
@@ -1365,7 +1370,8 @@
 #   ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 #   endif
-     &                     AVERAGE(ng) % avgAKs)
+     &                     AVERAGE(ng) % avgAKs,                        &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idSdif)), tAVGindx(ng)

@@ -874,7 +874,8 @@
      &                     GRID(ng) % rmask,                            &
 #  endif
 # endif
-     &                     MIXING(ng) % Akv)
+     &                     MIXING(ng) % Akv,                            &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idVvis)), tHISindx(ng)
@@ -896,7 +897,8 @@
 # ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 # endif
-     &                     MIXING(ng) % Akt(:,:,:,itemp))
+     &                     MIXING(ng) % Akt(:,:,:,itemp),               &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idTdif)), tHISindx(ng)
@@ -919,7 +921,8 @@
 #  ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 #  endif
-     &                     MIXING(ng) % Akt(:,:,:,isalt))
+     &                     MIXING(ng) % Akt(:,:,:,isalt),               &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idSdif)), tHISindx(ng)
@@ -943,7 +946,8 @@
 #  ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 #  endif
-     &                     MIXING(ng) % tke(:,:,:,NOUT))
+     &                     MIXING(ng) % tke(:,:,:,NOUT),                &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idMtke)), tHISindx(ng)
@@ -984,7 +988,9 @@
 #  ifdef MASKING
      &                     GRID(ng) % rmask,                            &
 #  endif
-     &                     MIXING(ng) % gls(:,:,:,NOUT))
+     &                     MIXING(ng) % gls(:,:,:,NOUT),                &
+     &                     SetFillVal = .FALSE.)
+
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idMtls)), tHISindx(ng)
@@ -1969,6 +1975,8 @@
           RETURN
         END IF
       END IF
+
+# ifdef NEARSHORE_MELLOR05
 !
 !  Write out 3D radiation stress, Szx-vertical component.
 !
@@ -1978,13 +1986,13 @@
         status=nf_fwrite3d(ng, iNLM, ncHISid(ng), hisVid(idW3zx,ng),    &
      &                     tHISindx(ng), gtype,                         &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
-# ifdef MASKING
-#  ifdef WET_DRY
+#  ifdef MASKING
+#   ifdef WET_DRY
      &                     GRID(ng) % rmask_full,                       &
-#  else
+#   else
      &                     GRID(ng) % rmask,                            &
+#   endif
 #  endif
-# endif
      &                     MIXING(ng) % Szx)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
@@ -2004,13 +2012,13 @@
         status=nf_fwrite3d(ng, iNLM, ncHISid(ng), hisVid(idW3zy,ng),    &
      &                     tHISindx(ng), gtype,                         &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
-# ifdef MASKING
-#  ifdef WET_DRY
+#  ifdef MASKING
+#   ifdef WET_DRY
      &                     GRID(ng) % rmask_full,                       &
-#  else
+#   else
      &                     GRID(ng) % rmask,                            &
+#   endif
 #  endif
-# endif
      &                     MIXING(ng) % Szy)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
@@ -2021,6 +2029,7 @@
           RETURN
         END IF
       END IF
+# endif
 !
 !  Write out 3D total U-radiation stress.
 !
