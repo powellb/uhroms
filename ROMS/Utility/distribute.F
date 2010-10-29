@@ -21,7 +21,7 @@
 !  mp_barrier        barrier sychronization                            !
 !  mp_bcastf         broadcast floating point variables                !
 !  mp_bcasti         broadcast integer variables                       !
-!  mp_bcastl         broadcast local variable                          !
+!  mp_bcastl         broadcast logical variables                       !
 !  mp_bcasts         broadcast character variables                     !
 !  mp_boundary       exchange boundary data between tiles              !
 !  mp_collect        collect 1D vector data from tiles                 !
@@ -2362,7 +2362,9 @@
 !     A          Field to read in (real).                              !
 !     mp_ncread  Error flag (integer).                                 !
 !                                                                      !
-!  Note: We cannot use mod_netcdf here because of cyclic dependency.   !
+!  Note: We cannot include "USE mod_netcdf" here because of cyclic     !
+!        dependency. Instead we need original NetCDF library module    !
+!        "USE netcdf".                                                 !
 !                                                                      !
 !***********************************************************************
 !
@@ -2596,7 +2598,9 @@
 !                                                                      !
 !     mp_ncwrite Error flag (integer).                                 !
 !                                                                      !
-!  Note: We cannot use mod_netcdf here because of cyclic dependency.   !
+!  Note: We cannot include "USE mod_netcdf" here because of cyclic     !
+!        dependency. Instead we need original NetCDF library module    !
+!        "USE netcdf".                                                 !
 !                                                                      !
 !***********************************************************************
 !
