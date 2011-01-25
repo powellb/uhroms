@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -45,10 +45,6 @@
       USE set_massflux_mod, ONLY : set_massflux
 #endif
       USE stiffness_mod, ONLY : stiffness
-#if defined PROPAGATOR || \
-   (defined MASKING && (defined READ_WATER || defined WRITE_WATER ))
-      USE wpoints_mod, ONLY : wpoints
-#endif
 #ifdef WAVES_OCEAN
       USE ocean_coupler_mod, ONLY : ocn2wav_coupling
 #endif
@@ -273,10 +269,6 @@
           subs=NtileX(ng)*NtileE(ng)/numthreads
           DO tile=subs*thread,subs*(thread+1)-1
             CALL metrics (ng, TILE, iNLM)
-#if defined PROPAGATOR || \
-   (defined MASKING && (defined READ_WATER || defined WRITE_WATER ))
-            CALL wpoints (ng, TILE, iNLM)
-#endif
           END DO
         END DO
 !$OMP END PARALLEL DO
@@ -320,12 +312,12 @@
 !-----------------------------------------------------------------------
 !
 !$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_hmixcoef (ng, TILE, iNLM)
-          END DO
+      DO thread=0,numthreads-1
+        subs=NtileX(ng)*NtileE(ng)/numthreads
+        DO tile=subs*thread,subs*(thread+1)-1
+          CALL ana_hmixcoef (ng, TILE, iNLM)
         END DO
+      END DO
 !$OMP END PARALLEL DO
 #endif
 !
@@ -339,12 +331,12 @@
 !  Clear state variables.
 !
 !$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL initialize_ocean (ng, TILE, iNLM)
-          END DO
+      DO thread=0,numthreads-1
+        subs=NtileX(ng)*NtileE(ng)/numthreads
+        DO tile=subs*thread,subs*(thread+1)-1
+          CALL initialize_ocean (ng, TILE, iNLM)
         END DO
+      END DO
 !$OMP END PARALLEL DO
 #endif
 
@@ -580,7 +572,6 @@
 !  If applicable, read in input data.
 !
 # ifdef TIMELESS_DATA
-!
       CALL get_idata (ng)
 # endif
       CALL get_data (ng)
@@ -605,6 +596,24 @@
         CALL mp_bcasti (ng, iTLM, exit_flag)
 # endif
         IF (exit_flag.ne.NoError) RETURN
+      END IF
+#endif
+
+#if defined ANA_DRAG && defined UV_DRAG_GRID
+!
+!-----------------------------------------------------------------------
+!  Set analytical spatially varying bottom friction parameter.
+!-----------------------------------------------------------------------
+!
+      IF (Nrun.eq.ERstr) THEN
+!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
+        DO thread=0,numthreads-1
+          subs=NtileX(ng)*NtileE(ng)/numthreads
+          DO tile=subs*thread,subs*(thread+1)-1
+            CALL ana_drag (ng, TILE, iNLM)
+          END DO
+        END DO
+!$OMP END PARALLEL DO
       END IF
 #endif
 !
@@ -654,7 +663,7 @@
 #ifdef PROFILE
 !
 !-----------------------------------------------------------------------
-!  Turn off initiialization time wall clock.
+!  Turn off initialization time wall clock.
 !-----------------------------------------------------------------------
 !
 !$OMP PARALLEL DO PRIVATE(thread) SHARED(ng,numthreads)

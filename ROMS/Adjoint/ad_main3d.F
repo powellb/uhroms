@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -131,6 +131,13 @@
       USE rho_eos_mod, ONLY : rho_eos
       USE set_depth_mod, ONLY : set_depth
       USE set_massflux_mod
+# ifdef MASKING
+      USE set_masks_mod, ONLY : set_masks
+# endif
+# if defined PROPAGATOR || \
+    (defined MASKING    && (defined READ_WATER || defined WRITE_WATER))
+      USE wpoints_mod, ONLY : wpoints
+# endif
 !!    USE wvelocity_mod, ONLY : wvelocity
 !
       implicit none
@@ -189,6 +196,38 @@
       END DO
 !$OMP END PARALLEL DO
       IF (exit_flag.ne.NoError) RETURN
+
+# if defined MASKING || defined PROPAGATOR
+!
+!  If first entry, initialize I/O masks.
+!
+      IF (iic(ng).ne.ntstart(ng)) THEN
+#  ifdef MASKING
+!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(numthreads)
+        DO thread=0,numthreads-1
+          subs=NtileX(ng)*NtileE(ng)/numthreads
+          DO tile=subs*thread,subs*(thread+1)-1,+1
+            CALL set_masks (ng, TILE, iADM)
+          END DO
+        END DO
+!$OMP END PARALLEL DO
+#  endif
+#  if defined PROPAGATOR || \
+    (defined MASKING    && (defined READ_WATER || defined WRITE_WATER ))
+!
+!  Compute water point indices.
+!
+!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(numthreads)
+        DO thread=0,numthreads-1
+          subs=NtileX(ng)*NtileE(ng)/numthreads
+          DO tile=subs*(thread+1)-1,subs*thread,-1
+            CALL wpoints (ng, TILE, iADM)
+          END DO
+        END DO
+!$OMP END PARALLEL DO
+#  endif
+      END IF
+# endif
 
 # ifdef FORWARD_READ
 !

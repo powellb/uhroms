@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !=======================================================================
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -523,8 +523,8 @@
 !
       cff1=1.0_r8       ! computation of off-diagonal nonlinear terms
       cff2=2.0_r8
-      DO j=Jstr,Jend
-        DO i=Istr,Iend
+      DO j=Jstr,JendR
+        DO i=Istr,IendR
           IF ((rmask(i-1,j  ).gt.0.5_r8).and.                           &
      &        (rmask(i  ,j  ).gt.0.5_r8).and.                           &
      &        (rmask(i-1,j-1).gt.0.5_r8).and.                           &
