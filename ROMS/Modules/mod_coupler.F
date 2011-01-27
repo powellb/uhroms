@@ -5,7 +5,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -119,11 +119,11 @@
 !
 !  Standard input file name for each coupled model.
 !
-      character (len=80), allocatable :: INPname(:)
+      character (len=256), allocatable :: INPname(:)
 !
 !  Export/Import fields information file name.
 !
-      character (len=80) :: CPLname
+      character (len=256) :: CPLname
 !
 !  Number of parallel nodes assigned to each model in the coupled model.
 !  Their sum must be equal to the total number of processors.
@@ -245,9 +245,9 @@
 
       real(r8) :: add_offset, scale
 
-      character (len=40) :: code
-      character (len=80) :: string
-      character (len=80), dimension(5) :: Vinfo
+      character (len=40 ) :: code
+      character (len=80 ) :: string
+      character (len=120), dimension(5) :: Vinfo
 !
 !-----------------------------------------------------------------------
 !  Read in coupling export/import variable information.

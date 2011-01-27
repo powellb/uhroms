@@ -1,6 +1,6 @@
 # svn $Id$
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2010 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2011 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -61,6 +61,9 @@ endif
        NETCDF_LIB := $(NETCDF_LIBDIR)/libnetcdf.a
 ifdef USE_NETCDF4
        NETCDF_LIB += -L$(HDF5_LIBDIR) -lhdf5_hl -lhdf5 -lz
+ ifdef USE_DAP
+             LIBS += $(shell curl-config --libs)
+ endif
 endif
 
 ifdef USE_ARPACK

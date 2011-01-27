@@ -1,11 +1,11 @@
 #include "cppdefs.h"
 #define SASHA
       MODULE lmd_bkpp_mod
-#if defined NONLINEAR && defined LMD_BKPP
+#if defined NONLINEAR && defined LMD_BKPP && defined SOLVE3D
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group       Scott M. Durski   !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Scott M. Durski   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

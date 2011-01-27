@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -42,8 +42,6 @@
       real(r8), parameter :: IniVal = 0.0_r8
 # endif
       real(r8) :: tend
-
-      character (len=80) :: fname
 !
       SourceFile='obs_initial.F'
 !

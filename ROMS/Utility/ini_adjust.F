@@ -22,7 +22,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -47,7 +47,9 @@
 # ifdef TLM_CHECK
       PUBLIC :: ini_perturb
 # endif
-# if defined TL_W4DVAR ||  defined W4DVAR || defined W4DVAR_SENSITIVITY
+# if defined TL_W4DVAR          || defined W4DVAR      || \
+     defined W4DVAR_SENSITIVITY || defined ARRAY_MODES || \
+     defined CLIPPING
       PUBLIC :: rp_ini_adjust
 # endif
 # ifdef TLM_CHECK
@@ -505,7 +507,9 @@
       END SUBROUTINE ini_adjust_tile
 #  endif
 
-#  if defined TL_W4DVAR || defined W4DVAR || defined W4DVAR_SENSITIVITY
+#  if defined TL_W4DVAR          || defined W4DVAR      || \
+      defined W4DVAR_SENSITIVITY || defined ARRAY_MODES || \
+      defined CLIPPING
       SUBROUTINE rp_ini_adjust (ng, tile, Linp, Lout)
 !
 !=======================================================================

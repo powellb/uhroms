@@ -2,7 +2,7 @@
 !
 !! svn $Id$
 !!======================================================================
-!! Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -57,6 +57,9 @@
       USE mod_scalars
       USE mod_boundary
       USE mod_ocean
+#ifdef SEDIMENT
+      USE mod_sediment
+#endif
 !
 !  Imported variable declarations.
 !

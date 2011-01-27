@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -482,7 +482,7 @@
           DO iobs=Mstr,Mend
 #  if defined IS4DVAR
             misfit(iobs)=ObsScale(iobs)*SQRT(ObsErr(iobs))*             &
-     &                   (NLmodVal(iobs)+TLmodVal(iobs)-ObsVal(iobs))
+     &                   (NLmodVal(iobs)-ObsVal(iobs))
 #  elif defined WEAK_CONSTRAINT
             misfit(iobs)=ObsScale(iobs)/SQRT(ObsErr(iobs))*             &
      &                   (TLmodVal(iobs)-ObsVal(iobs))
@@ -677,7 +677,7 @@
      &                       0, r2dvar,                                 &
      &                       LBi, UBi, LBj, UBj, 1.0_r8,                &
 #  ifdef MASKING
-     &                       GRID(ng) % rmask,                          &
+     &                       GRID(ng) % rmask_io,                       &
 #  endif
      &                       FOURDVAR(ng) % zeta_ref)
           IF (exit_flag.ne.NoError) RETURN

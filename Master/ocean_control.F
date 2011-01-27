@@ -2,7 +2,7 @@
 !!
 !!svn $Id$
 !!================================================= Hernan G. Arango ===
-!! Copyright (c) 2002-2010 The ROMS/TOMS Group       Andrew M. Moore   !
+!! Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !!======================================================================
@@ -12,6 +12,7 @@
 !!  ad_ocean.h             Adjoint model driver                        !
 !!  adsen_ocean.h          Adjoint sensitivity analysis driver         !
 !!  afte_ocean.h           Adjoint finite time eigenmodes driver       !
+!!  array_modes_w4dvar.h   W4DVAR array modes driver
 !!  convolution.h          Error covariance convolution driver         !
 !!  correlation.h          Error covariance correlation driver         !
 !!  fte_ocean.h            Finite time eigenmodes driver               !
@@ -89,6 +90,8 @@
 # include "obs_sen_w4dvar.h"
 #elif defined TL_W4DVAR
 # include "tl_w4dvar_ocean.h"
+#elif defined ARRAY_MODES || defined CLIPPING
+# include "array_modes_w4dvar.h"
 #else
 # if defined TLM_DRIVER
 #  include "tl_ocean.h"

@@ -1,7 +1,7 @@
 /*
 ** svn $Id$
 *******************************************************************************
-** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -35,12 +35,6 @@
 #define MASKING
 #define SPLINES
 #define AVERAGES
-#ifdef AVERAGES
-# define AVERAGES_AKV
-# define AVERAGES_AKT
-# define AVERAGES_AKS
-# define AVERAGES_FLUXES
-#endif
 #define STATIONS
 #undef  FLOATS
 

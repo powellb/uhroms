@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -108,14 +108,13 @@
 #  endif
             DO i=1,mc
               l=FLT(ng)%Findex(i)
-              FLT(ng)%Tinfo(ixgrd,l)=MIN(MAX(0.5_r8,Iflt(i)),           &
-     &                               REAL(Lm(ng),r8)+0.5_r8)
-              FLT(ng)%Tinfo(iygrd,l)=MIN(MAX(0.5_r8,Jflt(i)),           &
-     &                               REAL(Mm(ng),r8)+0.5_r8)
+              FLT(ng)%Tinfo(ixgrd,l)=Iflt(i)
+              FLT(ng)%Tinfo(iygrd,l)=Jflt(i)
             END DO
           END IF
         END IF
       END IF
+
 #  ifdef SOLVE3D
 !
 !  Determine which node bounds the initial float location.
@@ -141,16 +140,20 @@
 #  endif
 !
 !-----------------------------------------------------------------------
-!  Set float initial vertical level position.  If the initial float
-!  depth (in meters) is not found, release float at the surface model
-!  level.
+!  Set float initial vertical level position, if inside application
+!  grid.  If the initial float depth (in meters) is not found, release
+!  float at the surface model level.
 !-----------------------------------------------------------------------
 !
       DO l=1,Nfloats(ng)
         IF (Lfloats(ng)) THEN
 #  ifdef SOLVE3D
           FLT(ng)%Fz0(l)=spv
-          IF (MyThread(l)) THEN
+          IF (MyThread(l).and.                                          &
+     &        ((FLT(ng)%Tinfo(ixgrd,l).ge.0.5_r8).and.                  &
+     &         (FLT(ng)%Tinfo(iygrd,l).ge.0.5_r8).and.                  &
+     &         (FLT(ng)%Tinfo(ixgrd,l).le.REAL(Lm(ng),r8)+0.5_r8).and.  &
+     &         (FLT(ng)%Tinfo(iygrd,l).le.REAL(Mm(ng),r8)+0.5_r8))) THEN
             zfloat=FLT(ng)%Tinfo(izgrd,l)
             FLT(ng)%Fz0(l)=zfloat               ! Save original value
             Kflt(l)=zfloat

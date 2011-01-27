@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -40,6 +40,9 @@
       USE omega_mod, ONLY : omega
       USE set_depth_mod, ONLY : set_depth
       USE set_massflux_mod, ONLY : set_massflux
+# endif
+# ifdef MASKING
+      USE set_masks_mod, ONLY : set_masks
 # endif
 # ifdef BIOLOGY
       USE rp_biology_mod, ONLY : rp_biology
@@ -88,9 +91,7 @@
 # ifdef AVERAGES
 !!    USE rp_set_avg_mod, ONLY : rp_set_avg
 # endif
-# ifdef MOVE_SET_DEPTH
       USE rp_set_depth_mod, ONLY : rp_set_depth
-# endif
       USE rp_set_massflux_mod, ONLY : rp_set_massflux
 # if defined SSH_TIDES_NOT_YET || defined UV_TIDES_NOT_YET
 !!    USE rp_set_tides_mod, ONLY : rp_set_tides
@@ -107,6 +108,10 @@
 # endif
 # ifdef WEAK_CONSTRAINT
       USE tl_forcing_mod, ONLY : tl_forcing
+# endif
+# if defined PROPAGATOR || \
+    (defined MASKING    && (defined READ_WATER || defined WRITE_WATER))
+      USE wpoints_mod, ONLY : wpoints
 # endif
 !!    USE wvelocity_mod, ONLY : wvelocity
 !
@@ -205,13 +210,18 @@
 !
       IF (iic(ng).eq.ntstart(ng)) THEN
 !
-!  Initialize free-surface.
+!  Initialize free-surface and compute initial level thicknesses and
+!  depths.
 !
 !$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
         DO thread=0,numthreads-1
           subs=NtileX(ng)*NtileE(ng)/numthreads
           DO tile=subs*thread,subs*(thread+1)-1,+1
             CALL rp_ini_zeta (ng, TILE, iRPM)
+            CALL rp_set_depth (ng, TILE)
+# ifdef MASKING
+            CALL set_masks (ng, TILE, iRPM)
+# endif
           END DO
         END DO
 !$OMP END PARALLEL DO
@@ -223,6 +233,10 @@
           subs=NtileX(ng)*NtileE(ng)/numthreads
           DO tile=subs*(thread+1)-1,subs*thread,-1
             CALL rp_ini_fields (ng, TILE, iRPM)
+# if defined PROPAGATOR || \
+    (defined MASKING    && (defined READ_WATER || defined WRITE_WATER ))
+            CALL wpoints (ng, TILE, iRPM)
+# endif
           END DO
         END DO
 !$OMP END PARALLEL DO

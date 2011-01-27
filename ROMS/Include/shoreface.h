@@ -1,7 +1,7 @@
 /*
 ** svn $Id$
 *******************************************************************************
-** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -16,16 +16,15 @@
 #define UV_VIS2
 #define MIX_S_UV
 #define DIAGNOSTICS_UV
+#define DIAGNOSTICS_TS
 #define AVERAGES
-#define AVERAGES_NEARSHORE
-#define AVERAGES_BEDLOAD
 #define WET_DRY
-#define NEARSHORE_MELLOR
+#define NEARSHORE_MELLOR05
 #define OUT_DOUBLE
 #define UV_ADV
 #define TS_MPDATA
 #define DJ_GRADPS
-#undef  SALINITY
+#define SALINITY
 #define SOLVE3D
 #define SPLINES
 #define NS_PERIODIC

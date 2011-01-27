@@ -1,6 +1,6 @@
 # $Id$
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
-# Copyright (c) 2002-2010 The ROMS/TOMS Group             Kate Hedstrom :::
+# Copyright (c) 2002-2011 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -28,7 +28,7 @@
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-NEED_VERSION := 3.80 3.81
+NEED_VERSION := 3.80 3.81 3.82
 $(if $(filter $(MAKE_VERSION),$(NEED_VERSION)),,        \
  $(error This makefile requires one of GNU make version $(NEED_VERSION).))
 
@@ -121,6 +121,12 @@ MY_CPP_FLAGS ?=
 #  library needs both the HDF5 and MPI libraries.
 
  USE_NETCDF4 ?=
+
+#  If applicable, activate Data Access Protocol (like OPeNDAP) support
+#  for input NetCDF files.  This is only possible for NetCDF library
+#  version 4.1.1 or higher.
+
+     USE_DAP ?=
 
 #--------------------------------------------------------------------------
 #  We are going to include a file with all the settings that depend on

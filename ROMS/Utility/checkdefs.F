@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -53,6 +53,7 @@
       integer :: ivelHadv = 0
       integer :: ivelVadv = 0
       integer :: ivmix = 0
+      integer :: nearshore = 0
 
       integer :: is, lstr, ng
 !
@@ -92,28 +93,28 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' ADJOINT,'
 #endif
-#if defined ADJUST_BOUNDARY   && \
-   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
-    defined W4DVAR)
+#if defined ADJUST_BOUNDARY     && \
+   (defined CORRELATION         || defined IS4DVAR           || \
+    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
+    defined W4DPSAS             || defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_BOUNDARY',                  &
      &   'Including boundary conditions in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' ADJUST_BOUNDARY,'
 #endif
-#if defined ADJUST_STFLUX     && \
-   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
-    defined W4DVAR)
+#if defined ADJUST_STFLUX       && \
+   (defined CORRELATION         || defined IS4DVAR           || \
+    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
+    defined W4DPSAS             || defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_STFLUX',                    &
      &   'Including surface tracer flux in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' ADJUST_STFLUX,'
 #endif
-#if defined ADJUST_WSTRESS    && \
-   (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-    defined SENSITIVITY_4DVAR || defined W4DPSAS             || \
-    defined W4DVAR)
+#if defined ADJUST_WSTRESS      && \
+   (defined CORRELATION         || defined IS4DVAR           || \
+    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
+    defined W4DPSAS             || defined W4DVAR)
       IF (Master) WRITE (stdout,20) 'ADJUST_WSTRESS',                   &
      &   'Including surface wind stress in 4DVar state estimation.'
       is=LEN_TRIM(Coptions)+1
@@ -152,6 +153,19 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+8)=' ALBEDO,'
 #endif
+#ifdef ARRAY_MODES
+      IF (Master) WRITE (stdout,20) 'ARRAY_MODES',                      &
+     &   'Stabilized Representer Matrix Array Modes.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' ARRAY_MODES,'
+      idriver=idriver+1
+# ifdef ARRAY_MODES_SPLIT
+      IF (Master) WRITE (stdout,20) 'ARRAY_MODES_SPLIT',                &
+     &   'Separate analysis due to IC, surface forcing, and OBC'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+19)=' ARRAY_MODES_SPLIT,'
+# endif
+#endif
 #ifdef ATM_PRESS
       IF (Master) WRITE (stdout,20) 'ATM_PRESS',                        &
      &   'Impose atmospheric pressure onto sea surface.'
@@ -163,6 +177,19 @@
      &   'Error Covariance Multivariate Balance Operator.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+18)=' BALANCE_OPERATOR,'
+#endif
+#ifdef CLIPPING
+      IF (Master) WRITE (stdout,20) 'CLIPPING',                         &
+     &   'Stabilized Representer Matrix clipping spectrum analysis.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+10)=' CLIPPING,'
+      idriver=idriver+1
+# ifdef CLIPPING_SPLIT
+      IF (Master) WRITE (stdout,20) 'CLIPPING_SPLIT',                   &
+     &   'Separate analysis due to IC, surface forcing, and OBC'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' CLIPPING_SPLIT,'
+# endif
 #endif
 #ifdef CONVOLUTION
       IF (Master) WRITE (stdout,20) 'CONVOLUTION',                      &
@@ -190,14 +217,6 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' ANA_BIOLOGY,'
 #endif
-#if defined SEDIMENT && !defined ANA_SEDIMENT
-# ifdef ANA_BMFLUX
-      IF (Master) WRITE (stdout,20) 'ANA_BMFLUX',                       &
-     &   'Analytical spatially varying bottom roughness.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+12)=' ANA_BMFLUX,'
-# endif
-#endif
 #if defined SEDIMENT || defined BIOLOGY
 # ifdef ANA_BPFLUX
       IF (Master) WRITE (stdout,20) 'ANA_BPFLUX',                       &
@@ -223,6 +242,18 @@
      &   'Analytical cloud fraction.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' ANA_CLOUD,'
+#endif
+#if defined ANA_DRAG && defined UV_DRAG_GRID
+      IF (Master) WRITE (stdout,20) 'ANA_DRAG_GRID',                    &
+# if defined UV_LOGDRAG
+     &   'Analytical spatially varying bottom roughness length.'
+# elif defined UV_LDRAG
+     &   'Analytical spatially varying linear drag coefficient.'
+# elif defined UV_QDRAG
+     &   'Analytical spatially varying quadratic drag coefficient.'
+# endif
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+10)=' ANA_DRAG,'
 #endif
 #ifdef ANA_DIAG
       IF (Master) WRITE (stdout,20) 'ANA_DIAG',                         &
@@ -457,47 +488,11 @@
      &   'Writing out time-averaged fields.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' AVERAGES,'
-# ifdef AVERAGES_AKS
-      IF (Master) WRITE (stdout,20) 'AVERAGES_AKS',                     &
-     &   'Writing out time-averaged vertical S-diffusion.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+14)=' AVERAGES_AKS,'
-# endif
-# ifdef AVERAGES_AKT
-      IF (Master) WRITE (stdout,20) 'AVERAGES_AKT',                     &
-     &   'Writing out time-averaged vertical T-diffusion.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+14)=' AVERAGES_AKT,'
-# endif
-# if defined AVERAGES_BEDLOAD && defined SEDIMENT && defined BEDLOAD
-      IF (Master) WRITE (stdout,20) 'AVERAGES_BELOAD',                  &
-     &   'Writing out time-averaged bed load.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+18)=' AVERAGES_BEDLOAD,'
-# endif
 # if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
       IF (Master) WRITE (stdout,20) 'AVERAGES_DETIDE',                  &
      &   'Writing out time-averaged detided fields.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' AVERAGES_DETIDE,'
-# endif
-# ifdef AVERAGES_FLUXES
-      IF (Master) WRITE (stdout,20) 'AVERAGES_FLUXES',                  &
-     &   'Writing out time-averaged surface fluxes.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+17)=' AVERAGES_FLUXES,'
-# endif
-# ifdef AVERAGES_NEARSHORE
-      IF (Master) WRITE (stdout,20) 'AVERAGES_NEARSHORE',               &
-     &   'Writing out time-averaged nearshore radiation fields.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+20)=' AVERAGES_NEARSHORE,'
-# endif
-# ifdef AVERAGES_QUADRATIC
-      IF (Master) WRITE (stdout,20) 'AVERAGES_QUADRATIC',               &
-     &   'Writing out time-averaged quadratic terms.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+20)=' AVERAGES_QUADRATIC,'
 # endif
 #endif
 #if defined BACKGROUND && defined FOUR_DVAR
@@ -920,6 +915,12 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+8)=' FLOATS,'
 #endif
+#if defined FLOATS && defined FLOAT_STICKY && defined SOLVE3D
+      IF (Master) WRITE (stdout,20) 'FLOAT_STICKY',                     &
+     &   'Reflect (stick) floats that hit the surface (bottom).'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+14)=' FLOAT_STICKY,'
+#endif
 #if defined FLOATS && defined FLOAT_VWALK && defined SOLVE3D
       IF (Master) WRITE (stdout,20) 'FLOAT_VWALK',                      &
      &   'Lagrangian drifters with vertical diffusion, random walk.'
@@ -1221,6 +1222,12 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' MCT_LIB,'
 #endif
+#if defined MINRES && defined FOUR_DVAR
+      IF (Master) WRITE (stdout,20) 'MINRES',                           &
+     &   'Minimal Residual Method for 4D-Var minimization.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+8)=' MINRES,'
+#endif
 #if (defined TS_DIF2 || defined TS_DIF4) && defined SOLVE3D
 # ifdef MIX_GEO_TS
       IF (Master) WRITE (stdout,20) 'MIX_GEO_TS',                       &
@@ -1274,11 +1281,12 @@
       Coptions(is:is+13)=' MY25_MIXING,'
       ivmix=ivmix+1
 #endif
-#ifdef NEARSHORE_MELLOR
-      IF (Master) WRITE (stdout,20) 'NEARSHORE_MELLOR',                 &
-     &   'Nearshore RAdiation Stress Terms.'
+#ifdef NEARSHORE_MELLOR05
+      IF (Master) WRITE (stdout,20) 'NEARSHORE_MELLOR05',               &
+     &   'Nearshore Radiation Stress Terms (Mellor 2005).'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+18)=' NEARSHORE_MELLOR,'
+      Coptions(is:is+20)=' NEARSHORE_MELLOR05,'
+      nearshore=nearshore+1
 #endif
 #ifdef NEMURO
       IF (Master) WRITE (stdout,20) 'NEMURO',                           &
@@ -1623,9 +1631,9 @@
 #endif
 #if defined PARALLEL_IO && defined DISTRIBUTE
       IF (Master) WRITE (stdout,20) 'PARALLEL_IO',                      &
-     &   'Parallel I/O processing with NetCDF-4/HDF5 libraries.'
+     &   'Parallel I/O processing.'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+17)=' PERFECT_RESTART,'
+      Coptions(is:is+13)=' PARALLEL_IO,'
 #endif
 #ifdef PERFECT_RESTART
       IF (Master) WRITE (stdout,20) 'PERFECT_RESTART',                  &
@@ -1760,6 +1768,12 @@
      &   'Reading data at water points only.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' READ_WATER,'
+#endif
+#if defined RECOMPUTE_4DVAR && defined FOUR_DVAR
+      IF (Master) WRITE (stdout,20) 'RECOMPUTE_4DVAR',                  &
+     &   'Recomputing 4DVar during data assimilation analysis.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' RECOMPUTE_4DVAR,'
 #endif
 #ifdef R_SYMMETRY
       IF (Master) WRITE (stdout,20) 'REP_MATRIX',                       &
@@ -2505,6 +2519,18 @@
 #  endif
 # endif
 #endif
+#ifdef UV_DRAG_GRID
+      IF (Master) WRITE (stdout,20) 'UV_DRAG_GRID',                     &
+# if defined UV_LOGDRAG
+     &   'Spatially varying bottom roughness length.'
+# elif defined UV_LDRAG
+     &   'Spatially varying linear drag coefficient.'
+# elif defined UV_QDRAG
+     &   'Spatially varying quadratic drag coefficient.'
+# endif
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+14)=' UV_DRAG_GRID,'
+#endif
 #ifdef UV_LDRAG
       IF (Master) WRITE (stdout,20) 'UV_LDRAG',                         &
      &   'Linear bottom stress.'
@@ -2550,7 +2576,7 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' UV_VIS4,'
 #endif
-#if defined UV_SMAGORINSKY && (defined UV_DIF2 || defined UV_DIF4)
+#if defined UV_SMAGORINSKY && (defined UV_VIS2 || defined UV_VIS4)
       IF (Master) WRITE (stdout,20) 'UV_SMAGORINSKY',                   &
      &   'Smagorinksy-like time-dependent viscosity coefficients.'
       is=LEN_TRIM(Coptions)+1
@@ -3119,14 +3145,62 @@
 #if defined SOLVE3D && defined NEMURO
 # if !(defined IVLEV_EXPLICIT || defined HOLLING_GRAZING)
       IF (Master) THEN
-        WRITE (stdout,160)
+        WRITE (stdout,160) uppercase('ivlev_explicit'),                 &
+     &                     uppercase('holling_grazing')
  160    FORMAT (/,' CHECKDEFS - Need to choose a zooplankton grazing',  &
-     &            ' option;',/,13x,'use either IVLEV_EXPLICIT or',      &
-     &            ' implicit HOLLING_GRAZING.',/,13x,'The default',     &
-     &            ' implicit IVLEV algorithm does not work well yet.')
+     &            ' option;',/,13x,'use either ',a,' or implicit ',a,   &
+     &            '.',/,13x,'The default implicit IVLEV algorithm',     &
+     &            ' does not work well yet.')
         exit_flag=5
       END IF
 # endif
+#endif
+#ifdef NEARSHORE
+!
+!  Stop if more that one radiation stress formulation is activated.
+!
+      IF (Master.and.(nearshore.gt.1)) THEN
+        WRITE (stdout,170)
+ 170    FORMAT (/,' CHECKDEFS - only one radiation stress formulation'  &
+     &            ' is allowed.')
+        exit_flag=5
+      END IF
+#endif
+#ifdef PARALLEL_IO
+# if !(defined HDF5 || defined PNETCDF)
+      IF (Master) THEN
+        WRITE (stdout,180) uppercase('hdf5'),                           &
+     &                     uppercase('pnetcdf')
+ 180    FORMAT (/,' CHECKDEFS - Need to activate either ',a,' or ',a,   &
+     &            ' options',/,13x,'for parallel I/O processing.')
+        exit_flag=5
+      END IF
+# endif
+# if defined HDF5 && defined PNETCDF
+      IF (Master) THEN
+        WRITE (stdout,190) uppercase('hdf5'),                           &
+     &                     uppercase('pnetcdf')
+ 190    FORMAT (/,' CHECKDEFS - Both ',a,' and ',a,' options',          &
+     &            ' selected',/,13x,'for parallel I/O processing.',     &
+     &          /,13x,'Choose only one.')
+        exit_flag=5
+      END IF
+# endif
+#endif
+#if defined WRITE_WATER && defined WET_DRY
+!
+!  Stop if writting only water points when wetting and drying is
+!  activated.  This is not possible since the Land/Sea masking is
+!  time dependent.
+!
+      IF (Master) THEN
+        WRITE (stdout,200) uppercase('write_water'),                    &
+     &                     uppercase('wet_dry')
+ 200    FORMAT (/,' CHECKDEFS - cannot activate ',a,' and ',a,          &
+     &            ' together',/,13x,'because of time dependent ',       &
+     &            ' Land/Sea masking.')
+        exit_flag=5
+      END IF
 #endif
 
       RETURN

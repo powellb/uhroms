@@ -1,7 +1,7 @@
 /*
 ** svn $Id$
 *******************************************************************************
-** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -36,7 +36,7 @@
 #define SOLVE3D
 #define SPLINES
 #define SWAN_COUPLING
-#define NEARSHORE_MELLOR
+#define NEARSHORE_MELLOR05
 #define ANA_INITIAL
 #define ANA_SMFLUX
 #define ANA_FSOBC

@@ -2,7 +2,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -37,9 +37,9 @@
 
       real(r8), dimension(100) :: Rval
 
-      character (len=40) :: KeyWord
-      character (len=160) :: line
-      character (len=160), dimension(100) :: Cval
+      character (len=40 ) :: KeyWord
+      character (len=256) :: line
+      character (len=256), dimension(100) :: Cval
 !
 !-----------------------------------------------------------------------
 !  Read in NPZD biological model (Powell et al., 2006) parameters.
@@ -197,6 +197,102 @@
                 Hout(i,ng)=Ltrc(itrc,ng)
               END DO
             END DO
+#ifdef AVERAGES
+          ELSE IF (TRIM(KeyWord).eq.'Aout(idTvar)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO itrc=1,NBT
+                i=idTvar(idbio(itrc))
+                Aout(i,ng)=Ltrc(itrc,ng)
+              END DO
+            END DO
+#endif
+#ifdef DIAGNOSTICS_TS
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTrate)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTrate),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iThadv)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iThadv),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTxadv)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTxadv),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTyadv)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTyadv),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTvadv)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTvadv),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+# if defined TS_DIF2 || defined TS_DIF4
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iThdif)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iThdif),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTxdif)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTxdif),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTydif)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTydif),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+#  if defined MIX_GEO_TS || defined MIX_ISO_TS
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTsdif)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTsdif),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+#  endif
+# endif
+          ELSE IF (TRIM(KeyWord).eq.'Dout(iTvdif)') THEN
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO i=1,NBT
+                itrc=idbio(i)
+                Dout(idDtrc(itrc,iTvdif),ng)=Ltrc(i,ng)
+              END DO
+            END DO
+#endif
           END IF
         END IF
       END DO
@@ -331,7 +427,7 @@
 #ifdef TS_PSOURCE
             DO itrc=1,NBT
               i=idbio(itrc)
-              WRITE (out,100) LtracerSrc(i), 'LtracerSrc',              &
+              WRITE (out,100) LtracerSrc(i,ng), 'LtracerSrc',           &
      &              i, 'Processing point sources/Sink on tracer ', i,   &
      &              TRIM(Vname(1,idTvar(i)))
             END DO
@@ -348,6 +444,93 @@
      &            Hout(idTsur(i),ng), 'Hout(idTsur)',                   &
      &            'Write out tracer flux ', i, TRIM(Vname(1,idTvar(i)))
             END DO
+#ifdef AVERAGES
+            WRITE (out,'(1x)')
+            DO itrc=1,NBT
+              i=idbio(itrc)
+              IF (Aout(idTvar(i),ng)) WRITE (out,110)                   &
+     &            Aout(idTvar(i),ng), 'Aout(idTvar)',                   &
+     &            'Write out averaged tracer ', i,                      &
+     &            TRIM(Vname(1,idTvar(i)))
+            END DO
+#endif
+#ifdef DIAGNOSTICS_TS
+            WRITE (out,'(1x)')
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTrate),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTrate)',                 &
+     &            'Write out rate of change of tracer ', itrc,          &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iThadv),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iThadv)',                 &
+     &            'Write out horizontal advection, tracer ', itrc,      &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTxadv),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTxadv)',                 &
+     &            'Write out horizontal X-advection, tracer ', itrc,    &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTyadv),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTyadv)',                 &
+     &            'Write out horizontal Y-advection, tracer ', itrc,    &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTvadv),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTvadv)',                 &
+     &            'Write out vertical advection, tracer ', itrc,        &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+# if defined TS_DIF2 || defined TS_DIF4
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iThdif),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iThdif)',                 &
+     &            'Write out horizontal diffusion, tracer ', itrc,      &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(i,iTxdif),ng))                            &
+     &          WRITE (out,110) .TRUE., 'Dout(iTxdif)',                 &
+     &            'Write out horizontal X-diffusion, tracer ', itrc,    &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTydif),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTydif)',                 &
+     &            'Write out horizontal Y-diffusion, tracer ', itrc,    &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+#  if defined MIX_GEO_TS || defined MIX_ISO_TS
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTsdif),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTsdif)',                 &
+     &            'Write out horizontal S-diffusion, tracer ', itrc,    &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+#  endif
+# endif
+            DO i=1,NBT
+              itrc=idbio(i)
+              IF (Dout(idDtrc(itrc,iTvdif),ng))                         &
+     &          WRITE (out,110) .TRUE., 'Dout(iTvdif)',                 &
+     &            'Write out vertical diffusion, tracer ', itrc,        &
+     &            TRIM(Vname(1,idTvar(itrc)))
+            END DO
+#endif
           END IF
         END DO
       END IF

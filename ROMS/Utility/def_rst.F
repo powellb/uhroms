@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -67,11 +67,10 @@
       integer :: r3dgrd(4), ru3dgrd(5), rv3dgrd(5)
       integer :: u3dgrd(5), v3dgrd(5), w3dgrd(4)
 #endif
-
       real(r8) :: Aval(6)
 
-      character (len=80) :: Vinfo(Natt)
-      character (len=80) :: fname, ncname
+      character (len=120) :: Vinfo(Natt)
+      character (len=256) :: ncname
 !
       SourceFile='def_rst.F'
 !
@@ -658,10 +657,6 @@
         Vinfo( 3)=Vname(3,idbath)
         Vinfo(14)=Vname(4,idbath)
         Vinfo(16)=Vname(1,idtime)
-# if !defined PERFECT_RESTART && \
-     (defined WRITE_WATER && defined MASKING)
-        Vinfo(20)='mask_rho'
-# endif
         Vinfo(22)='coordinates'
         Aval(5)=REAL(Iinfo(1,idbath,ng),r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idbath,ng),        &
@@ -678,7 +673,7 @@
         Vinfo(14)=Vname(4,idFsur)
         Vinfo(16)=Vname(1,idtime)
 #if defined WRITE_WATER && defined MASKING
-# if defined PERFECT_RESTART
+# if !defined WET_DRY && defined PERFECT_RESTART
         Vinfo(24)='_FillValue'
         Aval(6)=spval
 # else
@@ -861,6 +856,9 @@
 # ifdef PERFECT_RESTART
 !
 !  Define RHS of 3D momentum equation in the XI-direction.
+!  Although this variable is a U-points, a negative value is used
+!  here to set "s_w" in the "coordinate" attribute.  The k=0 index
+!  is used during coupling in step2d.
 !
         Vinfo( 1)=Vname(1,idRu3d)
         Vinfo( 2)=Vname(2,idRu3d)
@@ -876,7 +874,7 @@
 #   endif
 #  endif
         Vinfo(22)='coordinates'
-        Aval(5)=REAL(Iinfo(1,idRu3d,ng),r8)
+        Aval(5)=REAL(-u3dvar, r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idRu3d,ng),        &
      &                 NF_FRST, nvd5, ru3dgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
@@ -911,6 +909,9 @@
 # ifdef PERFECT_RESTART
 !
 !  Define RHS of 3D momentum equation in the ETA-direction.
+!  Although this variable is a V-points, a negative value is used
+!  here to set "s_w" in the "coordinate" attribute.  The k=0 index
+!  is used during coupling in step2d.
 !
         Vinfo( 1)=Vname(1,idRv3d)
         Vinfo( 2)=Vname(2,idRv3d)
@@ -926,7 +927,7 @@
 #   endif
 #  endif
         Vinfo(22)='coordinates'
-        Aval(5)=REAL(Iinfo(1,idRv3d,ng),r8)
+        Aval(5)=REAL(-v3dvar,r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idRv3d,ng),        &
      &                 NF_FRST, nvd5, rv3dgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
@@ -941,16 +942,16 @@
           Vinfo(14)=Vname(4,idTvar(itrc))
           Vinfo(16)=Vname(1,idtime)
 # ifdef SEDIMENT
-            DO i=1,NST
-              IF (itrc.eq.idsed(i)) THEN
-                WRITE (Vinfo(19),20) 1000.0_r8*Sd50(i,ng)
-              END IF
-            END DO
+          DO i=1,NST
+            IF (itrc.eq.idsed(i)) THEN
+              WRITE (Vinfo(19),20) 1000.0_r8*Sd50(i,ng)
+            END IF
+          END DO
 # endif
 # if defined WRITE_WATER && defined MASKING
 #  if defined PERFECT_RESTART
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
+          Vinfo(24)='_FillValue'
+          Aval(6)=spval
 #  else
           Vinfo(20)='mask_rho'
 #  endif
@@ -1045,18 +1046,11 @@
         Vinfo( 3)=Vname(3,idVvis)
         Vinfo(14)=Vname(4,idVvis)
         Vinfo(16)=Vname(1,idtime)
-#  if defined WRITE_WATER && defined MASKING
-#   if defined PERFECT_RESTART
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
-#   else
-        Vinfo(20)='mask_rho'
-#   endif
-#  endif
         Vinfo(22)='coordinates'
         Aval(5)=REAL(Iinfo(1,idVvis,ng),r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idVvis,ng),        &
-     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname)
+     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
         IF (exit_flag.ne.NoError) RETURN
 !
 !  Define vertical diffusion coefficient for potential temperature.
@@ -1066,18 +1060,12 @@
         Vinfo( 3)=Vname(3,idTdif)
         Vinfo(14)=Vname(4,idTdif)
         Vinfo(16)=Vname(1,idtime)
-#  if defined WRITE_WATER && defined MASKING
-#   if defined PERFECT_RESTART
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
-#   else
-        Vinfo(20)='mask_rho'
-#   endif
-#  endif
         Vinfo(22)='coordinates'
         Aval(5)=REAL(Iinfo(1,idTdif,ng),r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idTdif,ng),        &
-     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname)
+     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
+
         IF (exit_flag.ne.NoError) RETURN
 
 #  ifdef SALINITY
@@ -1089,18 +1077,11 @@
         Vinfo( 3)=Vname(3,idSdif)
         Vinfo(14)=Vname(4,idSdif)
         Vinfo(16)=Vname(1,idtime)
-#   if defined WRITE_WATER && defined MASKING
-#    if defined PERFECT_RESTART
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
-#    else
-        Vinfo(20)='mask_rho'
-#    endif
-#   endif
         Vinfo(22)='coordinates'
         Aval(5)=REAL(Iinfo(1,idSdif,ng),r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idSdif,ng),        &
-     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname)
+     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
         IF (exit_flag.ne.NoError) RETURN
 #  endif
 # endif
@@ -1114,18 +1095,12 @@
         Vinfo( 3)=Vname(3,idMtke)
         Vinfo(14)=Vname(4,idMtke)
         Vinfo(16)=Vname(1,idtime)
-#  if defined WRITE_WATER && defined MASKING
-#   if defined PERFECT_RESTART
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
-#   else
-        Vinfo(20)='mask_rho'
-#   endif
-#  endif
         Vinfo(22)='coordinates'
         Aval(5)=REAL(Iinfo(1,idMtke,ng),r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idMtke,ng),        &
-     &                 NF_FRST, nvd5, k3dgrd, Aval, Vinfo, ncname)
+     &                 NF_FRST, nvd5, k3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
+
         IF (exit_flag.ne.NoError) RETURN
 !
 !  Define turbulent kinetic energy time length scale.
@@ -1135,18 +1110,11 @@
         Vinfo( 3)=Vname(3,idMtls)
         Vinfo(14)=Vname(4,idMtls)
         Vinfo(16)=Vname(1,idtime)
-#  if defined WRITE_WATER && defined MASKING
-#   if defined PERFECT_RESTART
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
-#   else
-        Vinfo(20)='mask_rho'
-#   endif
-#  endif
         Vinfo(22)='coordinates'
         Aval(5)=REAL(Iinfo(1,idMtls,ng),r8)
         status=def_var(ng, iNLM, ncRSTid(ng), rstVid(idMtls,ng),        &
-     &                 NF_FRST, nvd5, k3dgrd, Aval, Vinfo, ncname)
+     &                 NF_FRST, nvd5, k3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
         IF (exit_flag.ne.NoError) RETURN
 !
 !  Define vertical mixing turbulent length scale.

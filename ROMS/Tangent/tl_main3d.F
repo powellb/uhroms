@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -44,13 +44,16 @@
       USE set_depth_mod, ONLY : set_depth
       USE set_massflux_mod, ONLY : set_massflux
 # endif
+# ifdef MASKING
+      USE set_masks_mod, ONLY : set_masks
+# endif
 # ifdef BIOLOGY
       USE tl_biology_mod, ONLY : tl_biology
 # endif
 # ifdef BBL_MODEL_NOT_YET
 !!    USE tl_bbl_mod, ONLY : tl_bblm
 # endif
-# ifdef BULK_FLUXES_NOT_YET && !defined NL_BULK_FLUXES
+# if defined BULK_FLUXES_NOT_YET && !defined NL_BULK_FLUXES
 !!    USE tl_bulk_flux_mod, ONLY : tl_bulk_flux
 # endif
 # ifdef BVF_MIXING_NOT_YET
@@ -94,9 +97,7 @@
 # ifdef AVERAGES
 !!    USE tl_set_avg_mod, ONLY : tl_set_avg
 # endif
-# ifdef MOVE_SET_DEPTH
       USE tl_set_depth_mod, ONLY : tl_set_depth
-# endif
       USE tl_set_massflux_mod, ONLY : tl_set_massflux
 # if defined SSH_TIDES_NOT_YET || defined UV_TIDES_NOT_YET
 !!    USE tl_set_tides_mod, ONLY : tl_set_tides
@@ -112,6 +113,10 @@
 !!    USE tl_step_floats_mod, ONLY : tl_step_floats
 # endif
 !!    USE wvelocity_mod, ONLY : wvelocity
+# if defined PROPAGATOR || \
+    (defined MASKING    && (defined READ_WATER || defined WRITE_WATER))
+      USE wpoints_mod, ONLY : wpoints
+# endif
 !
       implicit none
 !
@@ -211,13 +216,18 @@
 !
       IF (iic(ng).eq.ntstart(ng)) THEN
 !
-!  Initialize free-surface.
+!  Initialize free-surface and compute initial level thicknesses and
+!  depths.
 !
 !$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
         DO thread=0,numthreads-1
           subs=NtileX(ng)*NtileE(ng)/numthreads
           DO tile=subs*thread,subs*(thread+1)-1,+1
             CALL tl_ini_zeta (ng, TILE, iTLM)
+            CALL tl_set_depth (ng, TILE)
+# ifdef MASKING
+            CALL set_masks (ng, TILE, iTLM)
+# endif
           END DO
         END DO
 !$OMP END PARALLEL DO
@@ -229,6 +239,10 @@
           subs=NtileX(ng)*NtileE(ng)/numthreads
           DO tile=subs*(thread+1)-1,subs*thread,-1
             CALL tl_ini_fields (ng, TILE, iTLM)
+# if defined PROPAGATOR || \
+    (defined MASKING    && (defined READ_WATER || defined WRITE_WATER ))
+            CALL wpoints (ng, TILE, iTLM)
+# endif
           END DO
         END DO
 !$OMP END PARALLEL DO

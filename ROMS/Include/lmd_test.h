@@ -1,7 +1,7 @@
 /*
 ** svn $Id$
 *******************************************************************************
-** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -23,9 +23,6 @@
 #define NONLIN_EOS
 #define SALINITY
 #define AVERAGES
-#define AVERAGES_AKS
-#define AVERAGES_AKT
-#define AVERAGES_AKV
 #define STATIONS
 #define SOLVE3D
 #define SPLINES

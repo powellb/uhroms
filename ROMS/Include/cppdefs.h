@@ -3,7 +3,7 @@
 **
 ** svn $Id$
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -39,6 +39,7 @@
 ** UV_VIS2             use to turn ON or OFF harmonic horizontal mixing      **
 ** UV_VIS4             use to turn ON or OFF biharmonic horizontal mixing    **
 ** UV_SMAGORINSKY      use to turn ON or OFF Smagorinsky-like viscosity      **
+** UV_DRAG_GRID        use if spatially varying bottom friction parameters   **
 ** UV_LOGDRAG          use to turn ON or OFF logarithmic bottom friction     **
 ** UV_LDRAG            use to turn ON or OFF linear bottom friction          **
 ** UV_QDRAG            use to turn ON or OFF quadratic bottom friction       **
@@ -173,14 +174,7 @@
 ** BODYFORCE           use if applying stresses as bodyforces                **
 ** PROFILE             use if time profiling                                 **
 ** AVERAGES            use if writing out time-averaged data                 **
-** AVERAGES_AKV        use if writing out time-averaged AKv                  **
-** AVERAGES_AKT        use if writing out time-averaged AKt                  **
-** AVERAGES_AKS        use if writing out time-averaged AKs                  **
 ** AVERAGES_DETIDE     use if writing out time-averaged detided fields       **
-** AVERAGES_FLUXES     use if writing out time-averaged fluxes               **
-** AVERAGES_NEARSHORE  use if writing out time-averaged nearshore stresses   **
-** AVERAGES_QUADRATIC  use if writing out quadratic terms                    **
-** AVERAGES_BEDLOAD    use if writing out time-averaged bed load             **
 ** DIAGNOSTICS_BIO     use if writing out biological diagnostics             **
 ** DIAGNOSTICS_UV      use if writing out momentum diagnostics               **
 ** DIAGNOSTICS_TS      use if writing out tracer diagnostics                 **
@@ -192,6 +186,7 @@
 ** OPTIONS for Lagrangian drifters:                                          **
 **                                                                           **
 ** FLOATS              use to activate simulated Lagrangian drifters         **
+** FLOAT_STICKY        use to reflect/stick floats that hit surface/bottom   **
 ** FLOAT_VWALK         use if vertical random walk                           **
 ** VWALK_FORWARD       use if forward time stepping vertical random walk     **
 **                                                                           **
@@ -206,12 +201,12 @@
 **    Any of the analytical expressions are coded in "analytical.F".         **
 **                                                                           **
 ** ANA_BIOLOGY         use if analytical biology initial conditions          **
-** ANA_BMFLUX          use if analytical spatially varying bottom roughness  **
 ** ANA_BPFLUX          use if analytical bottom passive tracers fluxes       **
 ** ANA_BSFLUX          use if analytical bottom salinity flux                **
 ** ANA_BTFLUX          use if analytical bottom temperature flux             **
 ** ANA_CLOUD           use if analytical cloud fraction                      **
 ** ANA_DIAG            use if customized diagnostics                         **
+** ANA_DRAG            use if analytical spatially varying drag parameters   **
 ** ANA_FSOBC           use if analytical free-surface boundary conditions    **
 ** ANA_GRID            use if analytical model grid set-up                   **
 ** ANA_HUMIDITY        use if analytical surface air humidity                **
@@ -235,7 +230,7 @@
 ** ANA_SSH             use if analytical sea surface height                  **
 ** ANA_SSS             use if analytical sea surface salinity                **
 ** ANA_SST             use if analytical SST and dQdSST                      **
-** ANA_STFLUX          use if analytical surface temperature flux            **
+** ANA_STFLUX          use if analytical surface net heat flux               **
 ** ANA_TAIR            use if analytical surface air temperature             **
 ** ANA_TCLIMA          use if analytical tracers climatology                 **
 ** ANA_TOBC            use if analytical tracers boundary conditions         **
@@ -529,6 +524,8 @@
 ** ADM_DRIVER          use if generic adjoint model driver                   **
 ** AD_SENSITIVITY      use if adjoint sensitivity driver                     **
 ** AFT_EIGENMODES      use if adjoint finite time eingenmodes driver         **
+** ARRAY_MODES         use if W4DVAR representer matrix array modes          **
+** CLIPPING            use if W4DVAR representer matrix clipping analysis    **
 ** CONVOLUTION         use if adjoint convolution driver                     **
 ** CORRELATION         use if background-error correlation model driver      **
 ** ENSEMBLE            use if ensemble prediction driver                     **
@@ -559,8 +556,10 @@
 ** AD_IMPULSE          use to force adjoint model with intermittent impulses **
 ** ADJUST_STFLUX       use if including surface tracer flux in 4DVar state   **
 ** ADJUST_WSTRESS      use if including wind-stress in 4DVar state           **
+** ARRAY_MODES_SPLIT   use to separate analysis due to IC, forcing, and OBC  **
 ** BALANCE_OPERATOR    use if error covariance multivariate balance term     **
 ** CELERITY_WRITE      use if writing radiation celerity in forward file     **
+** CLIPPING_SPLIT      use to separate analysis due to IC, forcing, and OBC  **
 ** CONVOLVE            use if convolving solution with diffusion operators   **
 ** DATALESS_LOOPS      use if testing convergence of Picard iterations       **
 ** FORWARD_MIXING      use if processing forward vertical mixing coefficient **
@@ -569,13 +568,15 @@
 ** FORWARD_RHS         use if processing forward right-hand-side terms       **
 ** IMPLICIT_VCONV      use if implicit vertical convolution algorithm        **
 ** IMPULSE             use if processing adjoint impulse forcing             **
+** MINRES              use if Minimal Residual Method for 4DVar minimization **
 ** MULTIPLE_TLM        use if multiple TLM history files in 4DVAR            **
 ** NLM_OUTER           use if nonlinear model as basic state in outer loop   **
 ** OBS_IMPACT          use if observation impact to 4DVAR data assimilation  **
 ** OBS_IMPACT_SPLIT    use to separate impact due to IC, forcing, and OBC    **
-** POSTERIOR_EOFS      Use if posterior analysis error covariance EOFS       **
-** POSTERIOR_ERROR_F   Use if final posterior analysis error covariance      **
-** POSTERIOR_ERROR_I   Use if initial posterior analysis error covariance    **
+** POSTERIOR_EOFS      use if posterior analysis error covariance EOFS       **
+** POSTERIOR_ERROR_F   use if final posterior analysis error covariance      **
+** POSTERIOR_ERROR_I   use if initial posterior analysis error covariance    **
+** RECOMPUTE_4DVAR     use if recomputing 4DVar in analysis algorithms       **
 ** RPM_RELAXATION      use if Picard iterations, Diffusive Relaxation of RPM **
 ** SO_SEMI_WHITE       use to activate white/red noise processes             **
 ** SPLINES_VCONV       use to activate implicit splines vertical convolution **
@@ -640,15 +641,17 @@
 ** Nearshore and shallow water model OPTIONS:                                **
 **                                                                           **
 ** WET_DRY             use to activate wetting and drying                    **
-** NEARSHORE_MELLOR    use to activate radiation stress terms.               **
+** NEARSHORE_MELLOR05  use to activate radiation stress terms (Mellor 2005). **
 **                                                                           **
 ** NetCDF input/output OPTIONS:                                              **
 **                                                                           **
 ** DEFLATE             use to set compression NetCDF-4/HDF5 format files     **
-** NETCDF4             use to create NetCDF-4/HDF5 format files              **
+** HDF5                use to create NetCDF-4/HDF5 format files              **
 ** NO_READ_GHOST       use to not include ghost points during read/scatter   **
 ** NO_WRITE_GRID       use if not writing grid arrays                        **
+** PARALLEL_IO         use if parallel I/O via HDF5 or pnetcdf libraries     **
 ** PERFECT_RESTART     use to include perfect restart variables              **
+** PNETCDF             use if parallel I/O with pnetcdf (classic format)     **
 ** READ_WATER          use if only reading water points data                 **
 ** WRITE_WATER         use if only writing water points data                 **
 ** RST_SINGLE          use if writing single precision restart fields        **
@@ -718,6 +721,7 @@
 **                                                                           **
 ** ADRIA02             Adriatic Sea Application                              **
 ** NJ_BIGHT            New Jersey Bight Application                          **
+** WC13                California Current System, 1/3 degree resolution      **
 **                                                                           **
 *******************************************************************************
 *******************************************************************************

@@ -3,7 +3,7 @@
 **
 ** svn $Id$
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2010 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -37,14 +37,6 @@
 
 #if defined UNICOS_SN
 # define NO_4BYTE_REALS
-#endif
-
-/*
-** If parallel I/O and applicable, turn on NetCDF-4 type files.
-*/
-
-#if !defined NETCDF4 && defined PARALLEL_IO
-# define NETCDF4
 #endif
 
 /*
@@ -161,7 +153,7 @@
 #  define UPPER_BOUND_J Jm(ng)+1
 # endif
 #endif
-#define XI_DIM LOWER_BOUND_I:UPPER_BOUND_I
+#define XI_DIM  LOWER_BOUND_I:UPPER_BOUND_I
 #define ETA_DIM LOWER_BOUND_J:UPPER_BOUND_J
 #define GLOBAL_2D_ARRAY XI_DIM,ETA_DIM
 #define PRIVATE_1D_SCRATCH_ARRAY IminS:ImaxS
@@ -301,7 +293,8 @@
     defined SANITY_CHECK        || defined SENSITIVITY_4DVAR  || \
     defined TLM_CHECK           || defined TLM_DRIVER         || \
     defined TL_W4DPSAS          || defined TL_W4DVAR          || \
-    defined W4DPSAS             || defined W4DVAR
+    defined W4DPSAS             || defined W4DVAR             || \
+    defined ARRAY_MODES         || defined CLIPPING
 # define TANGENT
 #endif
 #if defined AD_SENSITIVITY      || defined ADM_DRIVER         || \
@@ -313,12 +306,14 @@
     defined SANITY_CHECK        || defined SENSITIVITY_4DVAR  || \
     defined SO_SEMI             || defined TLM_CHECK          || \
     defined TL_W4DPSAS          || defined TL_W4DVAR          || \
-    defined W4DPSAS             || defined W4DVAR
+    defined W4DPSAS             || defined W4DVAR             || \
+    defined ARRAY_MODES         || defined CLIPPING
 # define ADJOINT
 #endif
 #if defined PICARD_TEST        || defined RPM_DRIVER         || \
     defined TL_W4DVAR          || defined W4DVAR             || \
-    defined W4DVAR_SENSITIVITY
+    defined W4DVAR_SENSITIVITY || defined ARRAY_MODES        || \
+    defined CLIPPING
 # define TL_IOMS
 #endif
 #if !defined ANA_PERTURB                                 && \
@@ -476,7 +471,8 @@
     (defined CONVOLUTION         || defined R_SYMMETRY         || \
      defined TL_W4DPSAS          || defined TL_W4DVAR          || \
      defined W4DPSAS             || defined W4DVAR             || \
-     defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY)
+     defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY || \
+     defined ARRAY_MODES         || defined CLIPPING )
 # define WEAK_CONSTRAINT
 #endif
 #if !defined WEAK_CONSTRAINT     && defined RPM_RELAXATION
@@ -516,7 +512,8 @@
     defined SENSITIVITY_4DVAR  || defined TLM_CHECK           || \
     defined TL_W4DPSAS         || defined TL_W4DVAR           || \
     defined VERIFICATION       || defined W4DPSAS             || \
-    defined W4DVAR
+    defined W4DVAR             || defined ARRAY_MODES         || \
+    defined CLIPPING
 # define OBSERVATIONS
 #endif
 
@@ -524,7 +521,8 @@
     defined R_SYMMETRY         || defined SENSITIVITY_4DVAR   || \
     defined TLM_CHECK          || defined TL_W4DPSAS          || \
     defined TL_W4DVAR          || defined W4DPSAS             || \
-    defined W4DVAR
+    defined W4DVAR             || defined ARRAY_MODES         || \
+    defined CLIPPING
 # define TLM_OBS
 #endif
 
@@ -536,14 +534,16 @@
     (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
      defined SENSITIVITY_4DVAR || defined TL_W4DPSAS          || \
      defined TL_W4DVAR         || defined W4DPSAS             || \
-     defined W4DVAR)
+     defined W4DVAR            || defined ARRAY_MODES         || \
+     defined CLIPPING)
 # define FORWARD_READ
 #endif
 #if !defined FORWARD_WRITE     && \
     (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
      defined SENSITIVITY_4DVAR || defined TL_W4DPSAS          || \
      defined TL_W4DVAR         || defined W4DPSAS             || \
-     defined W4DVAR)
+     defined W4DVAR            || defined ARRAY_MODES         || \
+     defined CLIPPING)
 # define FORWARD_WRITE
 #endif
 
@@ -614,6 +614,20 @@
 
 #if defined SSW_BBL || defined MB_BBL || defined SG_BBL
 # define BBL_MODEL
+#endif
+
+/*
+** Check if spatially varying bottom friction parameters are needed.
+*/
+
+#if defined UV_DRAG_GRID && \
+  !(defined BBL_MODEL    || defined SEDIMENT || \
+    defined UV_LOGDRAG   || defined UV_LDRAG || \
+    defined UV_QDRAG)
+# undef UV_DRAG_GRID
+#endif
+#if defined ANA_DRAG     && !defined UV_DRAG_GRID
+# undef ANA_DRAG
 #endif
 
 /*
@@ -704,7 +718,7 @@
 # define NORTH_FSOBC
 #endif
 
-#if defined FSOBC_REDUCED && \
+#if defined FSOBC_REDUCED   && \
   !(defined WEST_M2REDUCED  || defined EAST_M2REDUCED  || \
     defined NORTH_M2REDUCED || defined SOUTH_M2REDUCED || \
     defined WEST_M2FLATHER  || defined EAST_M2FLATHER  || \
@@ -771,16 +785,16 @@
 ** NetCDF file.
 */
 
-#if (!defined ANA_FSOBC && \
+#if (!defined ANA_FSOBC   && \
      (defined WEST_FSOBC  || defined EAST_FSOBC    || \
       defined SOUTH_FSOBC || defined NORTH_FSOBC)) || \
-    (!defined ANA_M2OBC && \
+    (!defined ANA_M2OBC   && \
      (defined WEST_M2OBC  || defined EAST_M2OBC    || \
       defined SOUTH_M2OBC || defined NORTH_M2OBC)) || \
-    (!defined ANA_M3OBC && \
+    (!defined ANA_M3OBC   && \
      (defined WEST_M3OBC  || defined EAST_M3OBC    || \
       defined SOUTH_M3OBC || defined NORTH_M3OBC)) || \
-    (!defined ANA_TOBC && \
+    (!defined ANA_TOBC    && \
      (defined WEST_TOBC   || defined EAST_TOBC    || \
       defined SOUTH_TOBC  || defined NORTH_TOBC))
 # define OBC_DATA
@@ -807,28 +821,6 @@
 #if defined NUDGING_SST   || defined NUDGING_T   || \
     defined NUDGING_UVsur || defined NUDGING_UV
 # define NUDGING
-#endif
-
-/*
-** Check if it is meaningful to write out time-averaged vertical
-** mixing coefficients.
-*/
-
-#if !defined LMD_MIXING && !defined MY25_MIXING && !defined GLS_MIXING
-# if defined AVERAGES
-#  if defined AVERAGES_AKV
-#    undef AVERAGES_AKV
-#  endif
-#  if defined AVERAGES_AKT
-#    undef AVERAGES_AKT
-#  endif
-#  if defined AVERAGES_AKS && !defined SALINITY
-#    undef AVERAGES_AKS
-#  endif
-# endif
-#endif
-#if defined AVERAGES_NEARSHORE && !defined NEARSHORE_MELLOR
-# undef AVERAGES_NEARSHORE
 #endif
 
 /*
@@ -860,10 +852,21 @@
 #endif
 
 /*
+** Define internal option for radiation stress forcing.
+*/
+
+#if defined NEARSHORE_MELLOR05
+# define NEARSHORE_MELLOR
+#endif
+#if defined NEARSHORE_MELLOR
+# define NEARSHORE
+#endif
+
+/*
 ** Define internal option to process wave data.
 */
 
-#if defined BBL_MODEL   || defined NEARSHORE_MELLOR || \
+#if defined BBL_MODEL   || defined NEARSHORE || \
     defined WAVES_OCEAN
 # define WAVES_DIR
 #endif
@@ -875,10 +878,15 @@
 #endif
 
 #if (defined BBL_MODEL        && !defined WAVES_UB) ||  \
-     defined NEARSHORE_MELLOR || \
+     defined NEARSHORE        || \
      defined ZOS_HSIG         || defined COARE_TAYLOR_YELLAND || \
      defined BEDLOAD_SOULSBY  || defined WAVES_OCEAN
 # define WAVES_HEIGHT
+#endif
+
+#if defined NEARSHORE || defined BEDLOAD_SOULSBY || \
+    defined WAVES_OCEAN
+# define WAVES_LENGTH
 #endif
 
 #if (!defined DEEPWATER_WAVES      && \

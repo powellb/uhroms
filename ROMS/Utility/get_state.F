@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -210,7 +210,7 @@
 !
       CALL netcdf_open (ng, IDmod, ncname, 0, ncINPid)
       IF (exit_flag.ne.NoError) THEN
-        WRITE (stdout,20) TRIM(ncname)
+        IF (Master) WRITE (stdout,20) TRIM(ncname)
         RETURN
       END IF
 !

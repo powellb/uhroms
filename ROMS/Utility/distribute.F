@@ -10,7 +10,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -21,7 +21,7 @@
 !  mp_barrier        barrier sychronization                            !
 !  mp_bcastf         broadcast floating point variables                !
 !  mp_bcasti         broadcast integer variables                       !
-!  mp_bcastl         broadcast local variable                          !
+!  mp_bcastl         broadcast logical variables                       !
 !  mp_bcasts         broadcast character variables                     !
 !  mp_boundary       exchange boundary data between tiles              !
 !  mp_collect        collect 1D vector data from tiles                 !
@@ -32,6 +32,7 @@
 !  mp_ncread         read in state vector/matrix from NetCDF file      !
 !  mp_ncwrite        write out state vector/matrix into NetCDF file    !
 !  mp_reduce         global reduction operations                       !
+!  mp_reduce2        global reduction operations (MINLOC, MAXLOC)      !
 !  mp_scatter2d      scatter input data to a 2D tiled array            !
 !  mp_scatter3d      scatter input data to a 3D tiled array            !
 !  mp_scatter_state  scatter global data for packing of state vector   !
@@ -1514,7 +1515,7 @@
 # ifdef MASKING
      &                        Amask,                                    &
 # endif
-     &                        A, Npts, Aout, SetFillVal)
+     &                        A, Npts, Awrk, SetFillVal)
 !
 !***********************************************************************
 !                                                                      !
@@ -1541,8 +1542,8 @@
 !                                                                      !
 !  On Output:                                                          !
 !                                                                      !
-!     Npts       Number of points processed in Aout.                   !
-!     Aout       Collected data from each node packed into 1D array    !
+!     Npts       Number of points processed in Awrk.                   !
+!     Awrk       Collected data from each node packed into 1D array    !
 !                  in column-major order. That is, in the same way     !
 !                  that Fortran multi-dimensional arrays are stored    !
 !                  in memory.                                          !
@@ -1571,7 +1572,7 @@
       real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
 # endif
       real(r8), intent(in)  :: A(LBi:UBi,LBj:UBj)
-      real(r8), intent(out) :: Aout(:)
+      real(r8), intent(out) :: Awrk(:)
 !
 !  Local variable declarations.
 !
@@ -1755,7 +1756,7 @@
           DO i=Imin,Imax
             np=np+1
             ic=i+Ioff+jc
-            Aout(ic)=Asend(np)
+            Awrk(ic)=Asend(np)
           END DO
         END DO
       END IF
@@ -1791,7 +1792,7 @@
             DO i=Imin,Imax
               np=np+1
               ic=i+Ioff+jc
-              Aout(ic)=Arecv(np,rank)
+              Awrk(ic)=Arecv(np,rank)
             END DO
           END DO
         END DO
@@ -1816,9 +1817,9 @@
         ic=0
         np=Ilen*Jlen
         DO i=1,np
-          IF (Aout(i).lt.spval) THEN
+          IF (Awrk(i).lt.spval) THEN
             ic=ic+1
-            Aout(ic)=Aout(i)
+            Awrk(ic)=Awrk(i)
           END IF
         END DO
         Npts=ic
@@ -1841,7 +1842,7 @@
 # ifdef MASKING
      &                        Amask,                                    &
 # endif
-     &                        A, Npts, Aout, SetFillVal)
+     &                        A, Npts, Awrk, SetFillVal)
 !
 !***********************************************************************
 !                                                                      !
@@ -1870,8 +1871,8 @@
 !                                                                      !
 !  On Output:                                                          !
 !                                                                      !
-!     Npts       Number of points processed in Aout.                   !
-!     Aout       Collected data from each node packed into 1D array    !
+!     Npts       Number of points processed in Awrk.                   !
+!     Awrk       Collected data from each node packed into 1D array    !
 !                  in column-major order. That is, in the same way     !
 !                  that Fortran multi-dimensional arrays are stored    !
 !                  in memory.                                          !
@@ -1900,7 +1901,7 @@
       real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
 # endif
       real(r8), intent(in)  :: A(LBi:UBi,LBj:UBj,LBk:UBk)
-      real(r8), intent(out) :: Aout(:)
+      real(r8), intent(out) :: Awrk(:)
 !
 !  Local variable declarations.
 !
@@ -2101,7 +2102,7 @@
             DO i=Imin,Imax
               np=np+1
               ic=i+Ioff+jc
-              Aout(ic)=Asend(np)
+              Awrk(ic)=Asend(np)
             END DO
           END DO
         END DO
@@ -2140,7 +2141,7 @@
               DO i=Imin,Imax
                 np=np+1
                 ic=i+Ioff+jc
-                Aout(ic)=Arecv(np,rank)
+                Awrk(ic)=Arecv(np,rank)
               END DO
             END DO
           END DO
@@ -2166,9 +2167,9 @@
         ic=0
         np=IJlen*Klen
         DO i=1,np
-          IF (Aout(i).lt.spval) THEN
+          IF (Awrk(i).lt.spval) THEN
             ic=ic+1
-            Aout(ic)=Aout(i)
+            Awrk(ic)=Awrk(i)
           END IF
         END DO
         Npts=ic
@@ -2187,7 +2188,7 @@
       END SUBROUTINE mp_gather3d
 
       SUBROUTINE mp_gather_state (ng, model, Nstr, Nend, Asize,         &
-     &                            A, Aout)
+     &                            A, Awrk)
 !
 !***********************************************************************
 !                                                                      !
@@ -2206,7 +2207,7 @@
 !                                                                      !
 !  On Output:                                                          !
 !                                                                      !
-!     Aout       Collected data from each node packed into 1D full     !
+!     Awrk       Collected data from each node packed into 1D full     !
 !                  state array.                                        !
 !                                                                      !
 !***********************************************************************
@@ -2225,7 +2226,7 @@
       integer, intent(in) :: Nstr, Nend, Asize
 
       real(r8), intent(in)  :: A(Nstr:Nend)
-      real(r8), intent(out) :: Aout(Asize)
+      real(r8), intent(out) :: Awrk(Asize)
 !
 !  Local variable declarations.
 !
@@ -2274,7 +2275,7 @@
         DO rank=1,NtileI(ng)*NtileJ(ng)-1
           np=Abounds(2,rank)-Abounds(1,rank)+1
           LB=Abounds(1,rank)
-          CALL mpi_irecv (Aout(LB:), np, MP_FLOAT, rank, rank+5,        &
+          CALL mpi_irecv (Awrk(LB:), np, MP_FLOAT, rank, rank+5,        &
      &                    OCN_COMM_WORLD, request, MyError)
           CALL mpi_wait (request, status, MyError)
           IF (MyError.ne.MPI_SUCCESS) THEN
@@ -2289,7 +2290,7 @@
 !  Load master node contribution.
 !
         DO i=Nstr,Nend
-          Aout(i)=A(i)
+          Awrk(i)=A(i)
         END DO
 !
 !  Otherwise, send data to master node.
@@ -2310,7 +2311,7 @@
 !
 !  Broadcast collected data to all nodes.
 !
-      CALL mpi_bcast (Aout, Asize, MP_FLOAT, MyMaster, OCN_COMM_WORLD,  &
+      CALL mpi_bcast (Awrk, Asize, MP_FLOAT, MyMaster, OCN_COMM_WORLD,  &
      &                MyError)
       IF (MyError.ne.MPI_SUCCESS) THEN
         CALL mpi_error_string (MyError, string, Lstr, Serror)
@@ -2362,7 +2363,9 @@
 !     A          Field to read in (real).                              !
 !     mp_ncread  Error flag (integer).                                 !
 !                                                                      !
-!  Note: We cannot use mod_netcdf here because of cyclic dependency.   !
+!  Note: We cannot include "USE mod_netcdf" here because of cyclic     !
+!        dependency. Instead we need original NetCDF library module    !
+!        "USE netcdf".                                                 !
 !                                                                      !
 !***********************************************************************
 !
@@ -2596,7 +2599,9 @@
 !                                                                      !
 !     mp_ncwrite Error flag (integer).                                 !
 !                                                                      !
-!  Note: We cannot use mod_netcdf here because of cyclic dependency.   !
+!  Note: We cannot include "USE mod_netcdf" here because of cyclic     !
+!        dependency. Instead we need original NetCDF library module    !
+!        "USE netcdf".                                                 !
 !                                                                      !
 !***********************************************************************
 !
@@ -3189,19 +3194,134 @@
       RETURN
       END SUBROUTINE mp_reduce_1d
 
+      SUBROUTINE mp_reduce2 (ng, model, Isize, Jsize, A, op_handle)
+!
+!***********************************************************************
+!                                                                      !
+!  This routine computes the global minimum/maximum and its associated !
+!  qualifiers like: location and/or other scalar components.  Then, it !
+!  it broadcasts reduced variables to all nodes in the group.          !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng         Nested grid number.                                   !
+!     model      Calling model identifier.                             !
+!     Isize      Size of I-dimension: the minimum/maximum to reduce    !
+!                  is in location A(1,:) and qualifiers A(2:Isize,:).  !
+!     Jsize      Size of J-dimension: number of different sets of      !
+!                  minimum and/or maximum to process.                  !
+!     A          Matrix of variables and qualifiers to reduce.         !
+!     op_handle  Reduction operation handle (string) of size Jsize.    !
+!                  The following  reduction operations are supported:  !
+!                  'MINLOC', 'MAXLOC'                                  !
+!                                                                      !
+!  On Output:                                                          !
+!                                                                      !
+!     A          Matrix of reduced variables and qualifiers.           !
+!                                                                      !
+!***********************************************************************
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      implicit none
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, Isize, Jsize
+
+      character (len=*), intent(in) :: op_handle(Jsize)
+
+      real(r8), intent(inout) :: A(Isize,Jsize)
+!
+!  Local variable declarations.
+!
+      integer :: Lstr, MyError, Serror
+      integer :: handle, i, j
+
+      real(r8), dimension(2,Isize) :: Areduce
+      real(r8), dimension(2,Isize) :: Asend
+
+      character (len=MPI_MAX_ERROR_STRING) :: string
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_on (ng, model, 43)
+# endif
+!
+!-----------------------------------------------------------------------
+!  Reduce requested variables and qualifiers.
+!-----------------------------------------------------------------------
+!
+!  Pack and reduce.
+!
+      DO j=1,Jsize
+        DO i=1,Isize
+          Asend(1,i)=A(1,j)
+          Asend(2,i)=A(i,j)
+        END DO
+        IF (op_handle(j)(1:6).eq.'MINLOC') THEN
+          handle=MPI_MINLOC
+        ELSE IF (op_handle(j)(1:6).eq.'MAXLOC') THEN
+          handle=MPI_MAXLOC
+        END IF
+        CALL mpi_allreduce (Asend, Areduce, Isize,                      &
+# ifdef DOUBLE_PRECISION
+     &                      MPI_2DOUBLE_PRECISION,                      &
+# else
+     &                      MPI_2REAL,                                  &
+# endif
+     &                      handle, OCN_COMM_WORLD, MyError)
+        IF (MyError.ne.MPI_SUCCESS) THEN
+          CALL mpi_error_string (MyError, string, Lstr, Serror)
+          Lstr=LEN_TRIM(string)
+          WRITE (stdout,10) 'MPI_ALLREDUCE', MyRank, MyError,           &
+     &                      string(1:Lstr)
+ 10       FORMAT (/,' MP_REDUCE2 - error during ',a,' call, Node = ',   &
+     &            i3.3,' Error = ',i3,/,16x,a)
+          exit_flag=2
+          RETURN
+        END IF
+!
+!  Unpack.
+!
+        A(1,j)=Areduce(1,1)
+        DO i=2,Isize
+          A(i,j)=Areduce(2,i)
+        END DO
+      END DO
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_off (ng, model, 43)
+# endif
+
+      RETURN
+      END SUBROUTINE mp_reduce2
+
       SUBROUTINE mp_scatter2d (ng, model, LBi, UBi, LBj, UBj,           &
      &                         Nghost, gtype, Amin, Amax,               &
 # if defined READ_WATER && defined MASKING
      &                         NWpts, IJ_water,                         &
 # endif
-     &                         Npts, A, Aout)
+     &                         Npts, A, Awrk)
 !
 !***********************************************************************
 !                                                                      !
 !  This routine broadcasts input global data, packed as 1D real array, !
 !  to each spawned MPI node.  Because this routine is also used by the !
 !  adjoint model,  the ghost-points in the halo region are NOT updated !
-!  in the ouput tile array (Aout).  It is used by the  master node  to !
+!  in the ouput tile array (Awrk).  It is used by the  master node  to !
 !  scatter input global data to each tiled node.                       !
 !                                                                      !
 !  On Input:                                                           !
@@ -3228,7 +3348,7 @@
 !                                                                      !
 !  On Output:                                                          !
 !                                                                      !
-!     Aout       2D tiled, floating-point array.                       !
+!     Awrk       2D tiled, floating-point array.                       !
 !                                                                      !
 !***********************************************************************
 !
@@ -3252,7 +3372,7 @@
 # endif
       real(r8), intent(inout) :: Amin, Amax
       real(r8), intent(inout) :: A(Npts+2)
-      real(r8), intent(out) :: Aout(LBi:UBi,LBj:UBj)
+      real(r8), intent(out) :: Awrk(LBi:UBi,LBj:UBj)
 !
 !  Local variable declarations.
 !
@@ -3439,7 +3559,7 @@
         jc=(j-Joff)*Ilen
         DO i=Imin,Imax
           ic=i+Ioff+jc
-          Aout(i,j)=Arecv(ic)
+          Awrk(i,j)=Arecv(ic)
         END DO
       END DO
       Amin=A(MySize-1)
@@ -3461,14 +3581,14 @@
 # if defined READ_WATER && defined MASKING
      &                         NWpts, IJ_water,                         &
 # endif
-     &                         Npts, A, Aout)
+     &                         Npts, A, Awrk)
 !
 !***********************************************************************
 !                                                                      !
 !  This routine broadcasts input global data, packed as 1D real array, !
 !  to each spawned MPI node.  Because this routine is also used by the !
 !  adjoint model,  the ghost-points in the halo region are NOT updated !
-!  in the ouput tile array (Aout).  It is used by the  master node  to !
+!  in the ouput tile array (Awrk).  It is used by the  master node  to !
 !  scatter input global data to each tiled node.                       !
 !                                                                      !
 !  On Input:                                                           !
@@ -3497,7 +3617,7 @@
 !                                                                      !
 !  On Output:                                                          !
 !                                                                      !
-!     Aout       3D tiled, floating-point array.                       !
+!     Awrk       3D tiled, floating-point array.                       !
 !                                                                      !
 !***********************************************************************
 !
@@ -3521,7 +3641,7 @@
 # endif
       real(r8), intent(inout) :: Amin, Amax
       real(r8), intent(inout) :: A(Npts+2)
-      real(r8), intent(out) :: Aout(LBi:UBi,LBj:UBj,LBk:UBk)
+      real(r8), intent(out) :: Awrk(LBi:UBi,LBj:UBj,LBk:UBk)
 !
 !  Local variable declarations.
 !
@@ -3720,7 +3840,7 @@
           jc=(j-Joff)*Ilen+kc
           DO i=Imin,Imax
             ic=i+Ioff+jc
-            Aout(i,j,k)=Arecv(ic)
+            Awrk(i,j,k)=Arecv(ic)
           END DO
         END DO
       END DO
@@ -3739,7 +3859,7 @@
       END SUBROUTINE mp_scatter3d
 
       SUBROUTINE mp_scatter_state (ng, model, Nstr, Nend, Asize,        &
-     &                             A, Aout)
+     &                             A, Awrk)
 !
 !***********************************************************************
 !                                                                      !
@@ -3761,7 +3881,7 @@
 !  On Output:                                                          !
 !                                                                      !
 !     A          Collected data from all nodes.                        !
-!     Aout       Threaded block of data.                               !
+!     Awrk       Threaded block of data.                               !
 !                                                                      !
 !***********************************************************************
 !
@@ -3780,7 +3900,7 @@
 
       real(r8), intent(inout)  :: A(Asize)
 
-      real(r8), intent(out) :: Aout(Nstr:Nend)
+      real(r8), intent(out) :: Awrk(Nstr:Nend)
 !
 !  Local variable declarations.
 !
@@ -3879,7 +3999,7 @@
 !  Load appropriate data block into output array.
 !
       DO i=Nstr,Nend
-        Aout(i)=A(i)
+        Awrk(i)=A(i)
       END DO
 
 # ifdef PROFILE
@@ -4047,20 +4167,20 @@
 
       real(r8) :: Ascl
 
-      real(r8), dimension((Lm(ng)+2)*(Mm(ng)+2)*(UBk-LBk+1)) :: Aout
+      real(r8), dimension((Lm(ng)+2)*(Mm(ng)+2)*(UBk-LBk+1)) :: Awrk
 !
-!------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 !  Aggregate all tile data into a single array.
-!------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 !
       Ascl=1.0_r8
-      CALL mp_gather3d (ng, model, LBi, UBi, LBj, UBj, LBk, UBk,         &
-     &                  tindex, gtype, Ascl,                             &
+      CALL mp_gather3d (ng, model, LBi, UBi, LBj, UBj, LBk, UBk,        &
+     &                  tindex, gtype, Ascl,                            &
 # ifdef MASKING
-     &                  Amask(LBi:,LBj:),                                &
+     &                  Amask(LBi:,LBj:),                               &
 # endif
-     &                  A(LBi:,LBj:,LBk:),                               &
-     &                  Npts, Aout, .FALSE.)
+     &                  A(LBi:,LBj:,LBk:),                              &
+     &                  Npts, Awrk, .FALSE.)
 
       RETURN
       END SUBROUTINE mp_aggregate

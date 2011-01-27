@@ -1,7 +1,7 @@
 /*
 ** svn $Id$
 *******************************************************************************
-** Copyright (c) 2002-2010 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -16,7 +16,7 @@
 
 #undef  CURVGRID
 #define WET_DRY
-#define NEARSHORE_MELLOR
+#define NEARSHORE_MELLOR05
 #define SWAN_COUPLING
 #define MASKING
 #define OUT_DOUBLE
@@ -84,7 +84,6 @@
 #  define SUSPLOAD
 #  define BEDLOAD_MPM
 #  undef  BEDLOAD_SOULSBY
-#  define AVERAGES_BEDLOAD
 # endif
 # if defined SEDIMENT || defined SG_BBL || defined MB_BBL || defined SSW_BBL
 #  undef ANA_SEDIMENT

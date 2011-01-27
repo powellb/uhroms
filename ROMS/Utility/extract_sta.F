@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -41,6 +41,16 @@
 !  On Output:                                                          !
 !                                                                      !
 !     Apos       Extracted values.                                     !
+!                                                                      !
+!  Note:                                                               !
+!                                                                      !
+!  Starting F95 zero values can be signed (-0 or +0) following the     !
+!  IEEE 754 floating point standard. This can be advantageous in       !
+!  some computations but not here when "Ascl" is negative and "Apos"   !
+!  is zero.  This will produce different output files in serial        !
+!  and distributed memory applications. Since comparing serial and     !
+!  parallel output is essential for tracking parallel partition        !
+!  bugs, "positive zero" is enforced.                                  !
 !                                                                      !
 !=======================================================================
 !
@@ -150,6 +160,7 @@
      &                     w211*A(i2,j1)+                               &
      &                     w121*A(i1,j2)+                               &
      &                     w221*A(i2,j2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF
@@ -218,6 +229,7 @@
      &                     w211*A(i2,j1)+                               &
      &                     w121*A(i1,j2)+                               &
      &                     w221*A(i2,j2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF
@@ -286,6 +298,7 @@
      &                     w211*A(i2,j1)+                               &
      &                     w121*A(i1,j2)+                               &
      &                     w221*A(i2,j2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF
@@ -474,6 +487,7 @@
      &                     w212*A(i2,j1,k2)+                            &
      &                     w122*A(i1,j2,k2)+                            &
      &                     w222*A(i2,j2,k2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF
@@ -607,6 +621,7 @@
      &                     w212*A(i2,j1,k2)+                            &
      &                     w122*A(i1,j2,k2)+                            &
      &                     w222*A(i2,j2,k2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF
@@ -740,6 +755,7 @@
      &                     w212*A(i2,j1,k2)+                            &
      &                     w122*A(i1,j2,k2)+                            &
      &                     w222*A(i2,j2,k2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF
@@ -856,6 +872,7 @@
      &                     w212*A(i2,j1,k2)+                            &
      &                     w122*A(i1,j2,k2)+                            &
      &                     w222*A(i2,j2,k2))
+            IF (ABS(Apos(ng)).eq.0.0_r8) Apos(ng)=0.0_r8
           ELSE
             Apos(np)=Aspv
           END IF

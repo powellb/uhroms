@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -140,6 +140,8 @@
 !
 !  Switches indicating which variables are written to output files.
 !
+        logical  :: Aout(NV,Ngrids) ! average file switches
+        logical  :: Dout(NV,Ngrids) ! diagnostic file switches
         logical  :: Hout(NV,Ngrids) ! history file switches
         logical  :: Sout(NV,Ngrids) ! station file switches
 !
@@ -215,6 +217,8 @@
         integer  :: idRwet        ! wet/dry mask on RHO-points
         integer  :: idRzet        ! RHS of free-surface
         integer  :: idrain        ! rainfall rate
+        integer  :: idragL        ! bottom linear drag coefficient
+        integer  :: idragQ        ! bottom quadratic drag coefficient
         integer  :: idSdif        ! vertical S-diffusion coefficient
         integer  :: idSinW        ! SIN(omega(k)*t)
         integer  :: idSin2        ! SIN(omega(k)*t)*SIN(omega(l)*t)
@@ -327,6 +331,7 @@
         integer  :: idWpbt        ! wind-induced bottom wave period
         integer  :: idWorb        ! wind-induced wave orbital velocity
         integer  :: idWvel        ! true vertical velocity
+        integer  :: idZoBL        ! bottom roughness length
         integer  :: idZads        ! Free-surface adjoint sensitivity
         integer  :: idZtlf        ! Free-surface impulse forcing
         integer  :: id2dPV        ! 2D potential vorticity
@@ -441,6 +446,9 @@
 !  Output NetCDF variables IDs.
 !
         integer, allocatable :: idTvar(:)     ! tracers variables
+        integer, allocatable :: idTrcD(:)     ! detided tracer variables
+        integer, allocatable :: idTrcH(:)     ! tracer variables hamonics
+
         integer, allocatable :: adjTid(:,:)   ! adjoint tracers IDs
         integer, allocatable :: avgTid(:,:)   ! averages tracers IDs
         integer, allocatable :: errTid(:,:)   ! error tracer IDs
@@ -511,23 +519,23 @@
         character (len=40 ) :: varnam(MV)
         character (len=44 ) :: date_str
         character (len=46 ) :: Tname(0:NV)
-        character (len=80 ) :: Cinfo(NV,Ngrids)
         character (len=100) :: Vname(5,0:NV)
         character (len=120) :: history
+        character (len=256) :: Cinfo(NV,Ngrids)
 !
 !  Source code root directory, cpp header file and directory, and
 !  analytical expression directory.
 !
-        character (len=80 ) :: Rdir
-        character (len=80 ) :: Hdir
-        character (len=80 ) :: Hfile
-        character (len=80)  :: Adir
+        character (len=256) :: Rdir
+        character (len=256) :: Hdir
+        character (len=256) :: Hfile
+        character (len=256) :: Adir
 !
 !  Analyical header file logical and names.
 !
         logical :: Lanafile
 
-        character (len=200), dimension(37) :: ANANAME
+        character (len=256), dimension(37) :: ANANAME
 
 #ifdef BIOLOGY
 !
@@ -535,13 +543,13 @@
 !
         logical, dimension(4) :: Lbiofile
 
-        character (len=200), dimension(4) :: BIONAME
+        character (len=256), dimension(4) :: BIONAME
 #endif
 !
 !  SVN revision and repository root URL.
 !
         character (len=40 ) :: svn_rev
-        character (len=120) :: svn_url
+        character (len=256) :: svn_url
 
       CONTAINS
 
@@ -579,7 +587,7 @@
         real(r8), parameter :: spv = 0.0_r8
         real(r8) :: offset, scale
 
-        character (len=80), dimension(7) :: Vinfo
+        character (len=120), dimension(7) :: Vinfo
 !
 !-----------------------------------------------------------------------
 !  Allocate several indices variables.
@@ -592,6 +600,8 @@
         allocate ( idTclm(MT) )
         allocate ( idTerr(MT) )
         allocate ( idTobs(MT) )
+        allocate ( idTrcD(NAT) )
+        allocate ( idTrcH(NAT) )
         allocate ( idTsur(MT) )
         allocate ( idTtlf(MT) )
         allocate ( idTvar(MT) )
@@ -945,7 +955,7 @@
 !
         Lanafile=.TRUE.
         DO i=1,37
-          DO j=1,200
+          DO j=1,LEN(ANANAME(1))
             ANANAME(i)(j:j)=' '
           END DO
         END DO
@@ -956,7 +966,7 @@
 !
         DO i=1,4
           Lbiofile(i)=.TRUE.
-          DO j=1,200
+          DO j=1,LEN(BIONAME(1))
             BIONAME(i)(j:j)=' '
           END DO
         END DO
@@ -999,6 +1009,8 @@
             Linfo(2,i,ng)=.FALSE.
             Linfo(3,i,ng)=.FALSE.
             Linfo(4,i,ng)=.FALSE.
+            Aout(i,ng)=.FALSE.
+            Dout(i,ng)=.FALSE.
             Hout(i,ng)=.FALSE.
             Sout(i,ng)=.FALSE.
             Iinfo(1,i,ng)=0
@@ -1373,6 +1385,14 @@
                 idHsbl=varid
               CASE ('idHbbl')
                 idHbbl=varid
+#ifdef UV_DRAG_GRID
+              CASE ('idragL')
+                idragL=varid
+              CASE ('idragQ')
+                idragQ=varid
+              CASE ('idZoBL')
+                idZoBL=varid
+#endif
               CASE ('idUbot')
                 idUbot=varid
               CASE ('idVbot')
@@ -1497,19 +1517,23 @@
                 idv3dD=varid
               CASE ('idv3dH')
                 idv3dH=varid
+              CASE ('idTrcD(itemp)')
+                idTrcD(itemp)=varid
+              CASE ('idTrcH(itemp)')
+                idTrcH(itemp)=varid
+              CASE ('idTrcD(isalt)')
+                idTrcD(isalt)=varid
+              CASE ('idTrcH(isalt)')
+                idTrcH(isalt)=varid
 # endif
 #endif
-#ifdef AVERAGES_QUADRATIC
               CASE ('idU2av')
                 idU2av=varid
               CASE ('idV2av')
                 idV2av=varid
               CASE ('idZZav')
                 idZZav=varid
-#endif
 #ifdef SOLVE3D
-# ifdef AVERAGES_QUADRATIC
-
               CASE ('idTTav(itemp)')
                 idTTav(itemp)=varid
               CASE ('iHUTav(itemp)')
@@ -1530,9 +1554,7 @@
                 idUVav=varid
               CASE ('idVVav')
                 idVVav=varid
-# endif
 # ifdef SALINITY
-#  ifdef AVERAGES_QUADRATIC
               CASE ('idTTav(isalt)')
                 idTTav(isalt)=varid
               CASE ('iHUTav(isalt)')
@@ -1543,7 +1565,6 @@
                 idUTav(isalt)=varid
               CASE ('idVTav(isalt)')
                 idVTav(isalt)=varid
-#  endif
 # endif
 #endif
 #ifdef T_PASSIVE
@@ -1562,18 +1583,14 @@
                 load=.TRUE.
 # endif
 #endif
-#ifdef DIAGNOSTICS
               CASE ('id2dPV')
                 id2dPV=varid
               CASE ('id2dRV')
                 id2dRV=varid
-# ifdef SOLVE3D
               CASE ('id3dPV')
                 id3dPV=varid
               CASE ('id3dRV')
                 id3dRV=varid
-# endif
-#endif
 #ifdef DIAGNOSTICS_UV
               CASE ('idDu2d(M2pgrd)')
                 idDu2d(M2pgrd)=varid
