@@ -39,6 +39,9 @@
       USE mod_grid
       USE mod_ocean
       USE mod_stepping
+#ifdef POT_TIDES
+      USE mod_tides
+#endif
 !
 !  Imported variable declarations.
 !
@@ -68,6 +71,9 @@
 #ifdef ATM_PRESS
      &                  FORCES(ng) % Pair,                              &
 #endif
+#ifdef POT_TIDES
+     &                  TIDES(ng) % Ptide,                              &
+#endif
 #ifdef DIAGNOSTICS_UV
      &                  DIAGS(ng) % DiaRU,                              &
      &                  DIAGS(ng) % DiaRV,                              &
@@ -93,6 +99,9 @@
      &                        rho,                                      &
 #ifdef ATM_PRESS
      &                        Pair,                                     &
+#endif
+#ifdef POT_TIDES
+     &                        Ptide,                                    &
 #endif
 #ifdef DIAGNOSTICS_UV
      &                        DiaRU, DiaRV,                             &
@@ -120,9 +129,13 @@
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
       real(r8), intent(in) :: z_w(LBi:,LBj:,0:)
+
       real(r8), intent(in) :: rho(LBi:,LBj:,:)
 # ifdef ATM_PRESS
       real(r8), intent(in) :: Pair(LBi:,LBj:)
+# endif
+# ifdef POT_TIDES
+      real(r8), intent(in) :: Ptide(LBi:,LBj:)
 # endif
 # ifdef DIAGNOSTICS_UV
       real(r8), intent(inout) :: DiaRU(LBi:,LBj:,:,:,:)
@@ -143,6 +156,9 @@
       real(r8), intent(in) :: rho(LBi:UBi,LBj:UBj,N(ng))
 # ifdef ATM_PRESS
       real(r8), intent(in) :: Pair(LBi:UBi,LBj:UBj)
+# endif
+# ifdef POT_TIDES
+      real(r8), intent(in) :: Ptide(LBi:UBi,LBj:UBj)
 # endif
 # ifdef DIAGNOSTICS_UV
       real(r8), intent(inout) :: DiaRU(LBi:UBi,LBj:UBj,N(ng),2,NDrhs)
@@ -218,11 +234,14 @@
           cff2=0.5_r8*(rho(i,j,N(ng))-rho(i,j,N(ng)-1))*                &
      &         (z_w(i,j,N(ng))-z_r(i,j,N(ng)))*cff1
           P(i,j,N(ng))=GRho0*z_w(i,j,N(ng))+                            &
-#ifdef ATM_PRESS
-     &                 fac*(Pair(i,j)-OneAtm)+                          &
-#endif
      &                 GRho*(rho(i,j,N(ng))+cff2)*                      &
      &                 (z_w(i,j,N(ng))-z_r(i,j,N(ng)))
+#ifdef ATM_PRESS
+	  P(i,j,N(ng)) = P(i,j,N(ng) + fac*(Pair(i,j)-OneAtm)
+#endif
+#ifdef POT_TIDES
+          P(i,j,N(ng)) = P(i,j,N(ng)) - g*Ptide(i,j)
+#endif
         END DO
         DO k=N(ng)-1,1,-1
           DO i=IstrU-1,Iend

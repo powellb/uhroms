@@ -43,7 +43,7 @@
 !  nstp      Baroclinic (slow) time-step index to which the current    !
 !              changes are added to compute new 3D primitive equation  !
 !              variables.                                              !
-#if defined SSH_TIDES || defined UV_TIDES
+#if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
 !                                                                      !
 !  NTC       Number of tidal components to consider.                   !
 #endif
@@ -72,7 +72,7 @@
         integer, dimension(Ngrids) :: nfm1 = (/ (4, ig=1,Ngrids) /)
 #endif
 
-#if defined SSH_TIDES || defined UV_TIDES
+#if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
         integer, dimension(Ngrids) :: NTC
 #endif
 #ifdef ADJUST_BOUNDARY

@@ -3799,7 +3799,7 @@
 #endif
           WRITE (out,140) dstart, 'dstart',                             &
      &          'Time-stamp assigned to model initialization (days).'
-#if defined SSH_TIDES || defined UV_TIDES
+#if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
           WRITE (out,140) tide_start, 'tide_start',                     &
      &          'Reference time origin for tidal forcing (days).'
 #endif

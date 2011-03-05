@@ -93,7 +93,7 @@
 # endif
       USE set_depth_mod, ONLY : set_depth
       USE set_massflux_mod, ONLY : set_massflux
-# if defined SSH_TIDES || defined UV_TIDES
+# if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
       USE set_tides_mod, ONLY : set_tides
 # endif
       USE set_vbc_mod, ONLY : set_vbc
@@ -308,7 +308,7 @@
           CALL bblm (ng, TILE)
 # endif
           CALL set_vbc (ng, TILE)
-# if defined SSH_TIDES || defined UV_TIDES
+# if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
           CALL set_tides (ng, TILE)
 # endif
         END DO

@@ -46,7 +46,7 @@
 #if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
       USE mod_sources, ONLY : allocate_sources
 #endif
-#if defined SSH_TIDES || defined UV_TIDES
+#if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
       USE mod_tides, ONLY : allocate_tides, initialize_tides
 #endif
 #ifdef BBL_MODEL
@@ -110,7 +110,7 @@
 #if defined SEDIMENT || defined BBL_MODEL
           CALL allocate_sedbed (ng, LBi, UBi, LBj, UBj)
 #endif
-#if defined SSH_TIDES || defined UV_TIDES
+#if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
           CALL allocate_tides (ng, LBi, UBi, LBj, UBj)
 #endif
 #if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
@@ -162,7 +162,7 @@
 #if defined SEDIMENT || defined BBL_MODEL
             CALL initialize_sedbed (ng, TILE, model)
 #endif
-#if defined SSH_TIDES || defined UV_TIDES
+#if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
             CALL initialize_tides (ng, TILE)
 #endif
           END DO

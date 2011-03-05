@@ -1666,6 +1666,12 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' PJ_GRADPQ4,'
 #endif
+#ifdef POT_TIDES
+      IF (Master) WRITE (stdout,20) 'POT_TIDES',                        &
+     &   'Add tidal potential terms to the forcing.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+11)=' POT_TIDES,'
+#endif
 #if defined POSTERIOR_EOFS && defined WEAK_CONSTRAINT
       IF (Master) WRITE (stdout,20) 'POSTERIOR_EOFS',                   &
      &   'Estimating posterior analysis error covariace matrix EOFs.'
