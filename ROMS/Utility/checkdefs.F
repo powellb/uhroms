@@ -2237,6 +2237,12 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+14)=' TCLM_NUDGING,'
 #endif
+#if defined TIDES_ASTRO
+      IF (Master) WRITE (stdout,20) 'TIDES_ASTRO',                        &
+     &   'Compute astronomical (long-period tide) corrections.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' TIDES_ASTRO,'
+#endif
 #ifdef TLM_DRIVER
       IF (Master) WRITE (stdout,20) 'TLM_DRIVER',                       &
      &   'Generic tangent linear model driver.'

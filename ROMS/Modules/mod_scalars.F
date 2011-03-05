@@ -211,6 +211,9 @@
         logical, dimension(Ngrids) :: PerfectRST
         logical, dimension(Ngrids) :: PREDICTOR_2D_STEP
 
+#ifdef TIDES_ASTRO
+        logical, dimension(Ngrids) :: FIRST_TIDES_ASTRO
+#endif
         integer, dimension(Ngrids) :: indx1
         integer, dimension(Ngrids) :: iic
         integer, dimension(Ngrids) :: iif
@@ -1916,6 +1919,9 @@
         Lfloats(ng)=.TRUE.
         Lsediment(ng)=.TRUE.
         Lstations(ng)=.TRUE.
+#ifdef TIDES_ASTRO
+        FIRST_TIDES_ASTRO(ng) = .TRUE.
+#endif
       END DO
 
 #ifdef ADJUST_BOUNDARY
