@@ -424,6 +424,23 @@
           END DO
           uradial=IniVal
           vradial=IniVal
+#   ifdef CURVGRID
+! Get the grid angle for each observation location          
+          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        isRadial,                                 &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsScale,                        &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        GRID(ng)%angler,                          &
+#    ifdef MASKING
+     &                        GRID(ng)%rmask,                           &
+#    endif
+     &                        ObsAngler)
+#   endif
 ! Get the u-component
           CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
@@ -467,8 +484,15 @@
 ! Once both are loaded, compute the radial velocity
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.isRadial) THEN
-              NLmodVal(iobs)=uradial(iobs)*COS(ObsMeta(iobs))+          &
-                             vradial(iobs)*SIN(ObsMeta(iobs))         
+#   ifdef CURVGRID
+              NLmodVal(iobs)=                                           &
+     &         uradial(iobs)*COS(ObsMeta(iobs)-ObsAngler(iobs))+        &
+     &         vradial(iobs)*SIN(ObsMeta(iobs)-ObsAngler(iobs))         
+#   else
+              NLmodVal(iobs)=                                           &
+     &         uradial(iobs)*COS(ObsMeta(iobs))+                        &
+     &         vradial(iobs)*SIN(ObsMeta(iobs))         
+#   endif
             END IF
           END DO
         END IF
@@ -486,6 +510,24 @@
           END DO
           uradial=IniVal
           vradial=IniVal
+          rangler=IniVal
+#   ifdef CURVGRID
+! Get the grid angle for each observation location          
+          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        isRadial,                                 &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsScale,                        &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        GRID(ng)%angler,                          &
+#    ifdef MASKING
+     &                        GRID(ng)%rmask,                           &
+#    endif
+     &                        ObsAngler)
+#   endif
 ! Get the u-component
           CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
@@ -529,8 +571,15 @@
 ! Once both are loaded, compute the radial velocity
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.isRadial) THEN
-              TLmodVal(iobs)=uradial(iobs)*COS(ObsMeta(iobs))+          &
-                             vradial(iobs)*SIN(ObsMeta(iobs))
+#   ifdef CURVGRID
+              TLmodVal(iobs)=                                           &
+     &         uradial(iobs)*COS(ObsMeta(iobs)-ObsAngler(iobs))+        &
+     &         vradial(iobs)*SIN(ObsMeta(iobs)-ObsAngler(iobs))         
+#   else
+              TLmodVal(iobs)=                                           &
+     &         uradial(iobs)*COS(ObsMeta(iobs))+                        &
+     &         vradial(iobs)*SIN(ObsMeta(iobs))         
+#   endif
             END IF
           END DO
         END IF

@@ -396,18 +396,27 @@
 !
 !  Radial Velocity
 !
-! The forward problem is:
-!         r = u*cos(angle) + v*sin(angle)
-!
+! The forward problem for CURVGRID is:
+!         r = u*cos(meta-angler) + v*sin(meta-angler)
+! (if not CURVGRID, angler=0)
+! 
 ! We need to do the u and v separately, given by:
-!      f_v = f_v + ADmodVal*sin(angle)
-!      f_u = f_u + ADmodVal*cos(angle)
+!      f_v = f_v + ADmodVal*sin(meta-angler)
+!      f_u = f_u + ADmodVal*cos(meta-angler)
 !
         IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
+          ad_rangler=IniVal
           DO iobs=1,Nobs(ng)
             IF (ObsType(iobs).eq.isRadial) THEN
+#  ifdef CURVGRID
+              ad_uradial(iobs)=ADmodVal(iobs)*                          &
+     &                         COS(ObsMeta(iobs)-ObsAngler(iobs))
+              ad_vradial(iobs)=ADmodVal(iobs)*                          &
+     &                         SIN(ObsMeta(iobs)-ObsAngler(iobs))
+#  else
               ad_uradial(iobs)=ADmodVal(iobs)*COS(ObsMeta(iobs))
               ad_vradial(iobs)=ADmodVal(iobs)*SIN(ObsMeta(iobs))
+#  endif
             END IF
           END DO
           DO k=1,N(ng)

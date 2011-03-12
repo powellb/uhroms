@@ -63,6 +63,7 @@
 !  ObsType      Observation type identifier.                           !
 !  ObsVal       Observation values.                                    !
 !  ObsMeta      Observation meta values.                               !
+!  ObsAngler    Grid angle at observation locations                    !
 !  ObsVar       Global observation variance for each state variable.   !
 !  Optimality   normalized, optimal cost function minimum.             !
 !  Ritz         Ritz eigenvalues to compute approximated Hessian.      !
@@ -164,6 +165,9 @@
         real(r8), allocatable :: ObsScale(:)
         real(r8), allocatable :: ObsVal(:)
         real(r8), allocatable :: ObsMeta(:)
+#  ifdef CURVGRID
+        real(r8), allocatable :: ObsAngler(:)
+#  endif
         real(r8), allocatable :: Tobs(:)
         real(r8), allocatable :: Xobs(:)
         real(r8), allocatable :: Yobs(:)
@@ -911,6 +915,11 @@
 
       allocate ( ObsMeta(Mobs) )
       ObsMeta = IniVal
+
+#  ifdef CURVGRID
+      allocate ( ObsAngler(Mobs) )
+      ObsAngler = IniVal
+#  endif
 
       allocate ( Tobs(Mobs) )
       Tobs = IniVal
