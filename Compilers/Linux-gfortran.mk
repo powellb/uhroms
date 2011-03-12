@@ -1,6 +1,6 @@
 # svn $Id$
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2010 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2011 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -58,7 +58,11 @@ ifdef USE_NETCDF4
 endif
 
 ifdef USE_ARPACK
-    ARPACK_LIBDIR ?= /usr/local/lib
+ ifdef USE_MPI
+   PARPACK_LIBDIR ?= /opt/gfortransoft/PARPACK
+             LIBS += -L$(PARPACK_LIBDIR) -lparpack
+ endif
+    ARPACK_LIBDIR ?= /opt/gfortransoft/PARPACK
              LIBS += -L$(ARPACK_LIBDIR) -larpack
 endif
 

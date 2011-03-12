@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -218,6 +218,8 @@
         integer  :: idRwet        ! wet/dry mask on RHO-points
         integer  :: idRzet        ! RHS of free-surface
         integer  :: idrain        ! rainfall rate
+        integer  :: idragL        ! bottom linear drag coefficient
+        integer  :: idragQ        ! bottom quadratic drag coefficient
         integer  :: idSdif        ! vertical S-diffusion coefficient
         integer  :: idSinW        ! SIN(omega(k)*t)
         integer  :: idSin2        ! SIN(omega(k)*t)*SIN(omega(l)*t)
@@ -330,6 +332,7 @@
         integer  :: idWpbt        ! wind-induced bottom wave period
         integer  :: idWorb        ! wind-induced wave orbital velocity
         integer  :: idWvel        ! true vertical velocity
+        integer  :: idZoBL        ! bottom roughness length
         integer  :: idZads        ! Free-surface adjoint sensitivity
         integer  :: idZtlf        ! Free-surface impulse forcing
         integer  :: id2dPV        ! 2D potential vorticity
@@ -1080,7 +1083,11 @@
           IF ((Lvar.gt.0).and.(Vinfo(1)(1:1).eq.CHAR(36))) THEN
             is=INDEX(Vinfo(1),'https')
             ie=INDEX(Vinfo(1),'/ROMS')-1
-            svn_url=Vinfo(1)(is:ie)
+            IF (ie.gt.is) THEN
+              svn_url=Vinfo(1)(is:ie)
+            ELSE
+              svn_url='https:://myroms.org/svn/src'
+            END IF
 #ifdef SVN_REV
             svn_rev=SVN_REV
 #endif
@@ -1384,6 +1391,14 @@
                 idHsbl=varid
               CASE ('idHbbl')
                 idHbbl=varid
+#ifdef UV_DRAG_GRID
+              CASE ('idragL')
+                idragL=varid
+              CASE ('idragQ')
+                idragQ=varid
+              CASE ('idZoBL')
+                idZoBL=varid
+#endif
               CASE ('idUbot')
                 idUbot=varid
               CASE ('idVbot')

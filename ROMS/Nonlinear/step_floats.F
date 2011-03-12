@@ -4,7 +4,7 @@
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group        John M. Klinck   !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group        John M. Klinck   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -49,6 +49,9 @@
      &                       FLT(ng) % Ftype,                           &
      &                       FLT(ng) % Tinfo,                           &
      &                       FLT(ng) % Fz0,                             &
+# if defined SOLVE3D && defined FLOAT_STICKY
+     &                       FLT(ng) % stuck,                           &
+# endif
      &                       FLT(ng) % track)
 # ifdef PROFILE
       CALL wclock_off (ng, iNLM, 10)
@@ -60,7 +63,11 @@
       SUBROUTINE step_floats_tile (ng, Lstr, Lend,                      &
      &                             knew, nnew,                          &
      &                             nfm3, nfm2, nfm1, nf, nfp1,          &
-     &                             bounded, Ftype, Tinfo, Fz0, track)
+     &                             bounded, Ftype, Tinfo, Fz0,          &
+# if defined SOLVE3D && defined FLOAT_STICKY
+     &                             stuck,                               &
+# endif
+     &                             track)
 !***********************************************************************
 !
       USE mod_param
@@ -90,6 +97,9 @@
       real(r8), intent(in) :: Fz0(:)
 
       logical, intent(inout) :: bounded(:)
+#  if defined SOLVE3D && defined FLOAT_STICKY
+      logical, intent(inout) :: stuck(:)
+#  endif
       real(r8), intent(inout) :: track(:,0:,:)
 # else
       integer, intent(in) :: Ftype(Nfloats(ng))
@@ -97,6 +107,9 @@
       real(r8), intent(in) :: Fz0(Nfloats(ng))
 
       logical, intent(inout) :: bounded(Nfloats(ng))
+#  if defined SOLVE3D && defined FLOAT_STICKY
+      logical, intent(inout) :: stuck(Nfloats(ng))
+#  endif
       real(r8), intent(inout) :: track(NFV(ng),0:NFT,Nfloats(ng))
 # endif
 !
@@ -126,7 +139,7 @@
       real(r8), dimension(Nfloats(ng)*NFV(ng)*(NFT+1)) :: Fwrk
 # endif
 !
-! Set tile array bounds.
+!  Set tile array bounds.
 !
       LBi=LBOUND(GRID(ng)%h,DIM=1)
       UBi=UBOUND(GRID(ng)%h,DIM=1)
@@ -136,17 +149,17 @@
 # ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-! In distributed-memory configuration, determine which node bounds the
-! current location of the floats. Assign unbounded floats to the master
-! node.
+!  In distributed-memory configuration, determine which node bounds the
+!  current location of the floats. Assign unbounded floats to the master
+!  node.
 !-----------------------------------------------------------------------
 !
-! The strategy here is to build a switch that processes only the floats
-! contained within the tile node. The trajectory data for unbounded
-! floats is initialized to Fspv. These values are used during the
-! collection step at the end of the routine.  Since a SUM reduction is
-! carried-out, setting Fspv to zero means the floats only contribute in
-! their own tile.
+!  The strategy here is to build a switch that processes only the floats
+!  contained within the tile node. The trajectory data for unbounded
+!  floats is initialized to Fspv. These values are used during the
+!  collection step at the end of the routine.  Since a SUM reduction is
+!  carried-out, setting Fspv to zero means the floats only contribute in
+!  their own tile.
 !
       Npts=NFV(ng)*(NFT+1)*Nfloats(ng)
 
@@ -172,6 +185,11 @@
         END IF
       END DO
 # else
+!
+!-----------------------------------------------------------------------
+!  Initialize.
+!-----------------------------------------------------------------------
+!
       DO l=Lstr,Lend
         MyThread(l)=.TRUE.
       END DO
@@ -576,20 +594,6 @@
         END IF
       END DO
 # endif
-# ifdef SOLVE3D
-!
-!  Reflect floats at surface or bottom.
-!
-      DO l=Lstr,Lend
-        IF (MyThread(l).and.bounded(l)) THEN
-          IF (track(izgrd,nfp1,l).gt.REAL(N(ng),r8))                    &
-     &      track(izgrd,nfp1,l)=2.0_r8*REAL(N(ng),r8)-                  &
-     &                          track(izgrd,nfp1,l)
-          IF (track(izgrd,nfp1,l).lt.0.0_r8)                            &
-     &      track(izgrd,nfp1,l)=-track(izgrd,nfp1,l)
-        END IF
-      END DO
-# endif
 !
 !-----------------------------------------------------------------------
 !  If appropriate, activate the release of new floats and set initial
@@ -603,11 +607,20 @@
      &      (time(ng)-HalfDT.le.Tinfo(itstr,l).and.                     &
      &       time(ng)+HalfDT.gt.Tinfo(itstr,l))) THEN
           bounded(l)=.TRUE.
+          IF ((Tinfo(ixgrd,l).lt.0.5_r8).or.                            &
+     &        (Tinfo(iygrd,l).lt.0.5_r8).or.                            &
+     &        (Tinfo(ixgrd,l).gt.REAL(Lm(ng),r8)+0.5_r8).or.            &
+     &        (Tinfo(iygrd,l).gt.REAL(Mm(ng),r8)+0.5_r8)) THEN
+            bounded(l)=.FALSE.               ! outside application grid
+          END IF
+# if defined SOLVE3D && defined FLOAT_STICKY
+          stuck(l)=.FALSE.
+# endif
 # ifdef DISTRIBUTE
           IF ((Xstr.le.Tinfo(ixgrd,l)).and.                             &
      &        (Tinfo(ixgrd,l).lt.Xend).and.                             &
      &        (Ystr.le.Tinfo(iygrd,l)).and.                             &
-     &        (Tinfo(iygrd,l).lt.Yend)) THEN
+     &        (Tinfo(iygrd,l).lt.Yend).and.bounded(l)) THEN
             DO j=0,NFT
               track(ixgrd,j,l)=Tinfo(ixgrd,l)
               track(iygrd,j,l)=Tinfo(iygrd,l)
@@ -625,14 +638,16 @@
             END DO
           END IF
 # else
-          MyThread(l)=.TRUE.
-          DO j=0,NFT
-            track(ixgrd,j,l)=Tinfo(ixgrd,l)
-            track(iygrd,j,l)=Tinfo(iygrd,l)
+          IF (bounded(l)) THEN
+            MyThread(l)=.TRUE.
+            DO j=0,NFT
+              track(ixgrd,j,l)=Tinfo(ixgrd,l)
+              track(iygrd,j,l)=Tinfo(iygrd,l)
 #  ifdef SOLVE3D
-            track(izgrd,j,l)=Tinfo(izgrd,l)
+              track(izgrd,j,l)=Tinfo(izgrd,l)
 #  endif
-          END DO
+            END DO
+          END IF
 # endif
         END IF
       END DO
@@ -832,6 +847,52 @@
 !-----------------------------------------------------------------------
 !
       CALL vwalk_floats (ng, Lstr, Lend, .FALSE., MyThread, nudg)
+# endif
+# ifdef SOLVE3D
+#  ifdef FLOAT_STICKY
+!
+!  Floats that hit the surface are reflected; floats that hit the bottom
+!  get stuck.
+!
+      DO l=Lstr,Lend
+        IF (MyThread(l).and.bounded(l)) THEN
+          IF (stuck(l)) THEN
+            track(ixgrd,nfp1,l)=track(ixgrd,nf,l)
+            track(iygrd,nfp1,l)=track(iygrd,nf,l)
+            track(izgrd,nfp1,l)=track(izgrd,nf,l)
+          ELSE
+            IF (track(izgrd,nfp1,l).gt.REAL(N(ng),r8)) THEN
+              DO j=0,NFT
+                track(izgrd,j,l)=2.0_r8*REAL(N(ng),r8)-                 &
+     &                           track(izgrd,j,l)
+              END DO
+            ELSE IF (track(izgrd,nfp1,l).lt.0.0_r8) THEN
+              DO j=0,NFT
+                track(izgrd,j,l)=0.0_r8
+              END DO
+              stuck(l)=.TRUE.
+            END IF
+          END IF
+        END IF
+      END DO
+#  else
+!
+!  Floats that hit the surface or bottom are reflected
+!
+      DO l=Lstr,Lend
+        IF (MyThread(l).and.bounded(l)) THEN
+          IF (track(izgrd,nfp1,l).gt.REAL(N(ng),r8)) THEN
+            DO j=0,NFT
+              track(izgrd,j,l)=2.0_r8*REAL(N(ng),r8)-track(izgrd,j,l)
+            END DO
+          ELSE IF (track(izgrd,nfp1,l).lt.0.0_r8) THEN
+            DO j=0,NFT
+              track(izgrd,:,l)=-track(izgrd,:,l)
+            END DO
+          END IF
+        END IF
+      END DO
+#  endif
 # endif
 # ifdef DISTRIBUTE
 !

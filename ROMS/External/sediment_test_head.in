@@ -3,7 +3,7 @@
 !
 !svn $Id$
 !========================================================= Hernan G. Arango ===
-!  Copyright (c) 2002-2010 The ROMS/TOMS Group                                !
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
 !    See License_ROMS.txt                                                     !
 !==============================================================================
@@ -123,7 +123,7 @@ MUD_MORPH_FAC == 10.0d0                   ! nondimensional
 
  MUD_Ltracer == F
 
-! Logical switch (TRUE/FALSE) to activate writing of cohesive sediment
+! Logical switches (TRUE/FALSE) to activate writing of cohesive sediment
 ! fields into HISTORY output file.
 
 Hout(idmud)  == T                               ! suspended concentration
@@ -132,7 +132,7 @@ Hout(iMmass) == T                               ! bed layer mass
 Hout(iMUbld) == T                               ! bed load at U-points
 Hout(iMVbld) == T                               ! bed load at V-points
 
-! Logical switch (TRUE/FALSE) to activate writing of time-averaged
+! Logical switches (TRUE/FALSE) to activate writing of time-averaged
 ! cohesive sediment fields into AVERAGE output file.
 
 Aout(idmud)  == T                               ! suspended concentration

@@ -1,6 +1,6 @@
 # svn $Id$
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2010 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2011 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -70,7 +70,7 @@ endif
 ifdef USE_MPI
          CPPFLAGS += -DMPI
  ifdef USE_MPIF90
-               FC := /usr/local/openmpi-pgi/bin/mpif90
+               FC := mpif90
  else
              LIBS += -Bdynamic -lfmpi-pgi -lmpi-pgi -Bstatic
  endif
