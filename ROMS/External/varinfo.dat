@@ -1626,6 +1626,24 @@
   'r2dvar'
   1.0d0
 
+'tide_Pamp'                                        ! Input
+  'tidal potential elevation amplitude'
+  'meter'                                          ! [m]
+  'SSH_Pamp, scalar, series'
+  'tide_period'
+  'idTpam'
+  'r2dvar'
+  1.0d0
+
+'tide_Pphase'                                      ! Input
+  'tidal potential elevation phase angle'
+  'degrees'                                        ! [radians]
+  'SSH_Pphase, scalar, series'
+  'tide_period'
+  'idTpph'
+  'r2dvar'
+  0.017453292519943295                             ! pi/180
+
 !
 !------------------------------------------------------------------------------
 !  River forcing variables.
