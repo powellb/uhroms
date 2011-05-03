@@ -1,26 +1,13 @@
       SUBROUTINE biology (ng,tile)
 !
 !svn $Id$
-!************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group        Craig V. Lewis   !
+!************************************************** Brian Powell ***
+!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
 !                                                                      !
-!  Nutrient-Phytoplankton-Zooplankton-Detritus Model.                  !
-!                                                                      !
-!  This routine computes the biological sources and sinks and adds     !
-!  then the global biological fields.                                  !
-!                                                                      !
-!  Reference:                                                          !
-!                                                                      !
-!    Powell, T.M., C.V.W. Lewis, E. Curchitser, D. Haidvogel,          !
-!      Q. Hermann and E. Dobbins, 2006: Results from a three-          !
-!      dimensional,  nested biological-physical model of the           !
-!      California Current System: Comparisons with Statistics          !
-!      from Satellite Imagery, J. Geophys. Res.                        !
-!                                                                      !
-!  Adapted from code written originally by Craig V. Lewis.             !
+!  Enterococcus Model.                                                 !
 !                                                                      !
 !***********************************************************************
 !

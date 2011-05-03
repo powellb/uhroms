@@ -13,7 +13,7 @@
 !              the nonlinear solution.                                 !
 !  BioIni    Initial concentration for analytical initial (uniform)    !
 !              conditions.                                             !
-!  Vm_NO3    Nitrate uptake rate, [1/day].                             !
+!  Ent_Att   Decay of Enterococcus due to UV.                          !
 !                                                                      !
 !=======================================================================
 !

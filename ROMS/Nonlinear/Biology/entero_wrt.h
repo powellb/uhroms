@@ -13,7 +13,7 @@
 */
 
 !
-!  Write out NPZD (Powell et al., 2006) biological model parameters.
+!  Write out Enterococcus biological model parameters.
 !
       CALL netcdf_put_ivar (ng, model, ncname, 'BioIter',               &
      &                      BioIter(ng), (/0/), (/0/),                  &
@@ -26,6 +26,6 @@
       IF (exit_flag.ne.NoError) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'Ent_Att',               &
-     &                      Vm_NO3(ng), (/0/), (/0/),                   &
+     &                      Ent_Att(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN

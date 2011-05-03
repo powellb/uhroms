@@ -7,8 +7,8 @@
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  This routine reads in Powell et al. (2006) ecosystem model input    !
-!  parameters. They are specified in input script "npzd_Powell.in".    !
+!  This routine reads in enterococcus ecosystem model input    !
+!  parameters. They are specified in input script "entero.in".    !
 !                                                                      !
 !=======================================================================
 !
@@ -64,8 +64,8 @@
             Npts=load_r(Nval, Rval, Ngrids, PARfrac)
           ELSE IF (TRIM(KeyWord).eq.'AttSW') THEN
             Npts=load_r(Nval, Rval, Ngrids, AttSW)
-          ELSE IF (TRIM(KeyWord).eq.'Vm_NO3') THEN
-            Npts=load_r(Nval, Rval, Ngrids, Vm_NO3)
+          ELSE IF (TRIM(KeyWord).eq.'Ent_Att') THEN
+            Npts=load_r(Nval, Rval, Ngrids, Ent_Att)
           ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
@@ -287,7 +287,7 @@
             WRITE (out,70) AttSW(ng), 'AttSW',                          &
      &            'Light attenuation of seawater (m-1).'
             WRITE (out,70) Vm_NO3(ng), 'Ent_Att',                       &
-     &            'Nitrate upatake rate (day-1).'
+     &            'Decay Rate due to Attenuation (day-1).'
 #ifdef TS_DIF2
             DO itrc=1,NBT
               i=idbio(itrc)
