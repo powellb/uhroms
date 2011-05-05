@@ -106,11 +106,9 @@
 !
 !  Local variable declarations.
 !
-      integer, parameter :: Nsink = 2
+      integer, parameter :: Nsink = 1
 
       integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks
-
-      integer, dimension(Nsink) :: idsink
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
@@ -118,6 +116,7 @@
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
 
+      integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
 
       integer, dimension(IminS:ImaxS,N(ng)) :: ksource
@@ -153,14 +152,12 @@
 !
 !  Set vertical sinking indentification vector.
 !
-      idsink(1)=iphyt                 ! Phytoplankton
-      idsink(2)=iSdet                 ! Small detritus
+      idsink(1)=iEntero
 !
 !  Set vertical sinking velocity vector in the same order as the
 !  identification vector, IDSINK.
 !
-      Wbio(1)=wPhy(ng)                ! Phytoplankton
-      Wbio(2)=wDet(ng)                ! Small detritus
+      Wbio(1)=wEntero(ng)                ! Enterococcus
 !
 !  Compute inverse thickness to avoid repeated divisions.
 !
@@ -308,11 +305,9 @@
               DO k=N(ng),1,-1
 !
 !  Compute average light attenuation for each grid cell. Here, AttSW is
-!  the light attenuation due to seawater and AttPhy is the attenuation
-!  due to phytoplankton (self-shading coefficient).
+!  the light attenuation due to seawater.
 !
-                Att=(AttSW(ng)+AttPhy(ng)*Bio(i,k,iPhyt))*              &
-     &              (z_w(i,j,k)-z_w(i,j,k-1))
+                Att=AttSW(ng)*(z_w(i,j,k)-z_w(i,j,k-1))
                 ExpAtt=EXP(-Att)
                 Itop=PAR
                 PAR=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
@@ -330,105 +325,17 @@
             END IF
           END DO
 !
-!  Phytoplankton photosynthetic growth and nitrate uptake (Vm_NO3 rate).
-!  The Michaelis-Menten curve is used to describe the change in uptake
-!  rate as a function of nitrate concentration. Here, PhyIS is the
-!  initial slope of the P-I curve and K_NO3 is the half saturation of
-!  phytoplankton nitrate uptake.
+!  Enterococcus mortality to UV exposure
 !
-#ifdef SPITZ
-          cff1=dtdays*Vm_NO3(ng)*PhyIS(ng)
-          cff2=Vm_NO3(ng)*Vm_NO3(ng)
-          cff3=PhyIS(ng)*PhyIS(ng)
-#else
-          cff1=dtdays*Vm_NO3(ng)
-#endif
           DO k=1,N(ng)
             DO i=Istr,Iend
-#ifdef SPITZ
-              cff4=1.0_r8/SQRT(cff2+cff3*Light(i,k)*Light(i,k))
-              cff=Bio(i,k,iPhyt)*                                       &
-     &            cff1*cff4*Light(i,k)/                                 &
-     &            (K_NO3(ng)+Bio(i,k,iNO3_))
-#else
-              cff=Bio(i,k,iPhyt)*                                       &
-     &            cff1*Light(i,k)/                                      &
-     &            (K_NO3(ng)+Bio(i,k,iNO3_))
-#endif
-              Bio(i,k,iNO3_)=Bio(i,k,iNO3_)/(1.0_r8+cff)
-              Bio(i,k,iPhyt)=Bio(i,k,iPhyt)+                            &
-     &                       Bio(i,k,iNO3_)*cff
-            END DO
-          END DO
-!
-!  Grazing on phytoplankton by zooplankton (ZooGR rate) using the Ivlev
-!  formulation (Ivlev, 1955) and lost of phytoplankton to the nitrate
-!  pool as function of "sloppy feeding" and metabolic processes
-!  (ZooEEN and ZooEED fractions).
-!
-          cff1=dtdays*ZooGR(ng)
-          cff2=1.0_r8-ZooEEN(ng)-ZooEED(ng)
-          DO k=1,N(ng)
-            DO i=Istr,Iend
-              cff=Bio(i,k,iZoop)*                                       &
-     &            cff1*(1.0_r8-EXP(-Ivlev(ng)*Bio(i,k,iPhyt)))/         &
-     &            Bio(i,k,iPhyt)
-              Bio(i,k,iPhyt)=Bio(i,k,iPhyt)/(1.0_r8+cff)
-              Bio(i,k,iZoop)=Bio(i,k,iZoop)+                            &
-     &                       Bio(i,k,iPhyt)*cff2*cff
-              Bio(i,k,iNO3_)=Bio(i,k,iNO3_)+                            &
-     &                       Bio(i,k,iPhyt)*ZooEEN(ng)*cff
-              Bio(i,k,iSDet)=Bio(i,k,iSDet)+                            &
-     &                       Bio(i,k,iPhyt)*ZooEED(ng)*cff
-            END DO
-          END DO
-!
-!  Phytoplankton mortality to nutrients (PhyMRN rate) and detritus
-!  (PhyMRD rate).
-!
-          cff3=dtdays*PhyMRD(ng)
-          cff2=dtdays*PhyMRN(ng)
-          cff1=1.0_r8/(1.0_r8+cff2+cff3)
-          DO k=1,N(ng)
-            DO i=Istr,Iend
-              Bio(i,k,iPhyt)=Bio(i,k,iPhyt)*cff1
-              Bio(i,k,iNO3_)=Bio(i,k,iNO3_)+                            &
-     &                       Bio(i,k,iPhyt)*cff2
-              Bio(i,k,iSDet)=Bio(i,k,iSDet)+                            &
-     &                       Bio(i,k,iPhyt)*cff3
-            END DO
-          END DO
-!
-!  Zooplankton mortality to nutrients (ZooMRN rate) and Detritus
-!  (ZooMRD rate).
-!
-          cff3=dtdays*ZooMRD(ng)
-          cff2=dtdays*ZooMRN(ng)
-          cff1=1.0_r8/(1.0_r8+cff2+cff3)
-          DO k=1,N(ng)
-            DO i=Istr,Iend
-              Bio(i,k,iZoop)=Bio(i,k,iZoop)*cff1
-              Bio(i,k,iNO3_)=Bio(i,k,iNO3_)+                            &
-     &                       Bio(i,k,iZoop)*cff2
-              Bio(i,k,iSDet)=Bio(i,k,iSDet)+                            &
-     &                       Bio(i,k,iZoop)*cff3
-            END DO
-          END DO
-!
-!  Detritus breakdown to nutrients: remineralization (DetRR rate).
-!
-          cff2=dtdays*DetRR(ng)
-          cff1=1.0_r8/(1.0_r8+cff2)
-          DO k=1,N(ng)
-            DO i=Istr,Iend
-              Bio(i,k,iSDet)=Bio(i,k,iSDet)*cff1
-              Bio(i,k,iNO3_)=Bio(i,k,iNO3_)+                            &
-     &                       Bio(i,k,iSDet)*cff2
+              cff1=dtdays*Light(i,k)*Ent_Att(ng)*Bio(i,k,iEntero)
+              Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
             END DO
           END DO
 !
 !-----------------------------------------------------------------------
-!  Vertical sinking terms: Phytoplankton and Detritus
+!  Vertical sinking terms: Enterococcus
 !-----------------------------------------------------------------------
 !
 !  Reconstruct vertical profile of selected biological constituents

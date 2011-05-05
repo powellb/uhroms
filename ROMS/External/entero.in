@@ -1,7 +1,7 @@
-!  Nutrient-Phytoplankton-Zooplankton-Detritus Biological Model Parameters.
+!  Enterococcus Biological Model Parameters.
 !
 !svn $Id$
-!========================================================= Hernan G. Arango ===
+!========================================================= Brian Powell ===
 !  Copyright (c) 2002-2011 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
 !    See License_ROMS.txt                                                     !
@@ -51,151 +51,88 @@
 ! Initial concentration for analytical uniform initial conditions.
 ! [millimole/meter3].
 
-BioIni(iNO3_) == 17.0d0                          ! nitrate
-BioIni(iPhyt) == 1.0d0                           ! phytoplankton
-BioIni(iZoop) == 1.0d0                           ! zooplankton
-BioIni(iSDet) == 1.0d0                           ! detritus
+BioIni(iEntero) == 10.0d0                         ! Enterococcus
 
-! Fraction of shortwave radiation that is photosynthetically active
-! (nondimensional), {0.43d0}.
+! Fraction of shortwave radiation that is UV active
+! (nondimensional) {0.43d0}
 
      PARfrac == 0.43d0
 
 ! Light attenuation due to seawater [1/m], {0.067d0}.
 
-       AttSW == 0.067d0                          ! k_ext
+       AttSW == 0.7d0                          ! k_ext
 
-! Light attenuation due to phytoplankton, self-shading coefficient,
-! [m2/millimole_N], {0.0095d0}.
+! Decay of enterococcus due to UV light mmol/day
 
-      AttPhy == 0.0095d0                         ! k_extP
+       Ent_Att == 0.03384d0                    ! k_i
 
-! Phytoplankton, initial slope of P-I curve [m2/W], {0.025d0}.
+! Enterococcus sinking rate, [m/day], {0.0d0}.
 
-       PhyIS == 0.025d0                          ! alpha
-
-! Nitrate uptake rate, [1/day], {1.5d0}.
-
-       Vm_NO3 == 1.5d0                           ! Vm
-
-! Phytoplankton mortality rate to Detritus pool [1/day], {0.1d0}.
-
-      PhyMRD == 0.1d0                            ! sigmaD
-
-! Phytoplankton mortality rate to Nitrogen pool [1/day], {0.0d0}.
-
-      PhyMRN == 0.0d0                            ! sigmaN
-
-! Inverse half-saturation for phytoplankton nitrate uptake
-! [millimole_N m-3)], {1.0d0}.
-
-        K_NO3 == 1.0d0                           ! k_N
-
-! Ivlev constant for zooplankton grazing parameterization
-! [Nondimensional], {14*0.06=0.84d0}
-
-        Ivlev == 0.84d0
-
-! Zooplankton grazing rate, [1/day], {0.52}.
-
-        ZooGR == 0.52d0                          ! R_m
-
-! Zooplankton excretion efficiency to Detritus pool [nondimensional],
-! {0.3d0}
-
-       ZooEED == 0.0d0                           ! gammaD
-
-! Zooplankton excretion efficiency to Nitrogen pool [nondimensional],
-! {0.3d0}
-
-       ZooEEN == 0.3d0                           ! gammaN
-
-! Zooplankton mortality rate to Detritus pool, [1/day], {0.0d0}.
-
-       ZooMRD == 0.145d0                         ! zetaD
-
-! Zooplankton mortality rate to Nitrogen pool, [1/day], {0.145d0}.
-
-       ZooMRN == 0.0d0                           ! zetaN
-
-! Detritus remineralization rate, [1/day], {0.1d0}.
-
-        DetRR == 1.03d0                          ! delta
-
-! Phytoplankton sinking rate, [m/day], {0.0d0}.
-
-         wPhy == 0.0d0                           ! wP
-
-! Detrital sinking rate, [m/day], {8.0d0}.
-
-         wDet == 8.0d0                           ! wD
+         wEntero == 0.1d0
 
 ! Harmonic/biharmonic horizontal diffusion of biological tracer for
 ! nonlinear model and adjoint-based algorithms: [1:NBT,Ngrids].
 
-         TNU2 == 4*0.0d0                         ! m2/s
-         TNU4 == 4*0.0d0                         ! m4/s
+         TNU2 == 1*1.0d0                         ! m2/s
+         TNU4 == 1*1.0d0                         ! m4/s
 
-      ad_TNU2 == 4*0.0d0                         ! m2/s
-      ad_TNU4 == 4*0.0d0                         ! m4/s
+      ad_TNU2 == 1*1.0d0                         ! m2/s
+      ad_TNU4 == 1*1.0d0                         ! m4/s
 
 ! Vertical mixing coefficients for biological tracers for nonlinear
 ! model and basic state scale factor in adjoint-based algorithms:
 ! [1:NBT,Ngrids].
 
-      AKT_BAK == 4*5.0d-6                        ! m2/s
+      AKT_BAK == 1*5.0d-2                        ! m2/s
 
-   ad_AKT_fac == 4*1.0d0                         ! nondimensional
+   ad_AKT_fac == 1*1.0d0                         ! nondimensional
 
 ! Nudging/relaxation time scales, inverse scales will be computed
 ! internally: [1:NBT,Ngrids].
 
-        TNUDG == 4*0.0d0                         ! days
+        TNUDG == 1*0.0d0                         ! days
 
 ! Logical switches (TRUE/FALSE) to specify which variables to consider on
 ! tracers point Sources/Sinks (like river runoff): [NBT,Ngrids] values are
 ! expected. See glossary below for details.
 
-  LtracerSrc == 4*F
+  LtracerSrc == 1*F
 
 ! Logical switches (TRUE/FALSE) to activate writing of biological fields
 ! into HISTORY output files: [1:NBT,Ngrids].
 
-Hout(idTvar) == 4*T     ! NO3, ...                biological tracer
-Hout(idTsur) == 4*F     ! NO3_sflux, ...          surface tracer flux
+Hout(idTvar) == 1*T     ! entero, ...                biological tracer
+Hout(idTsur) == 1*F     ! entero_sflux, ...          surface tracer flux
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged fields
 ! into AVERAGE output file: [1:NBT,Ngrids].
 
-Aout(idTvar) == 4*T     ! NO3, ...                biological tracer
+Aout(idTvar) == 1*T     ! entero, ...                biological tracer
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged,
 ! biological tracer diagnostic terms into DIAGNOSTIC output file:
 ! [1:NBT,Ngrids].
 
-Dout(iTrate) == 4*T     ! NO3_rate, ...           time rate of change
-Dout(iThadv) == 4*T     ! NO3_hadv, ...           horizontal total advection
-Dout(iTxadv) == 4*T     ! NO3_xadv, ...           horizontal XI-advection
-Dout(iTyadv) == 4*T     ! NO3_yadv, ...           horizontal ETA-advection
-Dout(iTvadv) == 4*T     ! NO3_vadv, ...           vertical advection
-Dout(iThdif) == 4*T     ! NO3_hdiff, ...          horizontal total diffusion
-Dout(iTxdif) == 4*T     ! NO3_xdiff, ...          horizontal XI-diffusion
-Dout(iTydif) == 4*T     ! NO3_ydiff, ...          horizontal ETA-diffusion
-Dout(iTsdif) == 4*T     ! NO3_sdiff, ...          horizontal S-diffusion
-Dout(iTvdif) == 4*T     ! NO3_vdiff, ...          vertical diffusion
+Dout(iTrate) == 1*T     ! entero_rate, ...           time rate of change
+Dout(iThadv) == 1*T     ! entero_hadv, ...           horizontal total advection
+Dout(iTxadv) == 1*T     ! entero_xadv, ...           horizontal XI-advection
+Dout(iTyadv) == 1*T     ! entero_yadv, ...           horizontal ETA-advection
+Dout(iTvadv) == 1*T     ! entero_vadv, ...           vertical advection
+Dout(iThdif) == 1*T     ! entero_hdiff, ...          horizontal total diffusion
+Dout(iTxdif) == 1*T     ! entero_xdiff, ...          horizontal XI-diffusion
+Dout(iTydif) == 1*T     ! entero_ydiff, ...          horizontal ETA-diffusion
+Dout(iTsdif) == 1*T     ! entero_sdiff, ...          horizontal S-diffusion
+Dout(iTvdif) == 1*T     ! entero_vdiff, ...          vertical diffusion
 
 !
 !  GLOSSARY:
 !  =========
 !
 !------------------------------------------------------------------------------
-! NPZD (Powell et al, 2006) Biological Model Parameters. Currently, it is
-! configured with 4 biological tracers:
+! Enterococcus Biological Model Parameters. Currently, it is
+! configured with 1 biological tracers:
 !
-! idbio(1)      NO3               Nitrate concentration
-! idbio(2)      phytoplankton     Phytoplankton biomass
-! idbio(3)      zooplankton       Zooplankton biomass
-! idbio(4)      detritus          Detritus concentration
+! idbio(1)      enterococcus      concentration
 !
 !------------------------------------------------------------------------------
 !
@@ -216,51 +153,16 @@ Dout(iTvdif) == 4*T     ! NO3_vdiff, ...          vertical diffusion
 !                   conditions, [millimole/meter3]. It is only used when
 !                   ANA_BIOLOGY is activated.
 !
-!                     BioIni(iNO3_)          Nitrate concentration
-!                     BioIni(iPhyt)          Phytoplankton biomass
-!                     BioIni(iZoop)          Zooplankton biomass
-!                     BioIni(iSDet)          Detritus concentration
+!                     BioIni(iEntero)        Enterococcus concentration
 !
-!  PARfrac        Fraction of shortwave radiation that is photosynthetically
+!  PARfrac        Fraction of shortwave radiation that is UV
 !                   active (nondimensional).
 !
 !  AttSW          Light attenuation due to seawater [1/m].
 !
-!  AttPhy         Light attenuation by phytoplankton, self-shading
-!                   coefficient, [m2/millimole_N].
+!  Ent_Att        Decay of enterococcus due to absorption of UV
 !
-!  PhyIS          Phytoplankton, initial slope of P-I curve [m2/W].
-!
-!  Vm_NO3         Nitrate uptake rate, [1/day].
-!
-!  PhyMRD         Phytoplankton mortality rate to Detritus, [1/day].
-!
-!  PhyMRN         Phytoplankton mortality rate to Nitrogen, [1/day].
-!
-!  K_NO3          Inverse half-saturation for phytoplankton nitrate uptake
-!                   [1/(millimole_N m-3)].
-!
-!  Ivlev          Ivlev constant for zooplankton grazing parameterization,
-!                   [nondimensional].
-!
-!  ZooGR          Zooplankton grazing rate, [1/day].
-!
-!  ZooEED         Zooplankton excretion efficiency to Detritus pool,
-!                   [nondimensional].
-!
-!  ZooEEN         Zooplankton excretion efficiency to Nitrogen pool,
-!                   [nondimensional].
-!
-!  ZooMRD         Zooplankton mortality rate to Detritus pool, [1/day].
-!
-!  ZooMRN         Zooplankton mortality rate to Nitrogen pool, [1/day].
-!
-!  DetRR          Detritus remineralization rate, [1/day].
-!
-!  wPhy           Phytoplankton sinking rate, [m/day].
-!
-!  wDet           Detrital sinking rate, [m/day].
-!
+!  wEntero        Enterococcus sinking rate, [m/day].
 !
 !------------------------------------------------------------------------------
 ! Physical Parameters, [1:NBT,1:Ngrids] values are expected.

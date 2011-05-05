@@ -104,6 +104,8 @@
 #  include <npzd_iron_mod.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_mod.h>
+# elif defined ENTEROCOCCUS
+#  include <entero_mod.h>
 # endif
 #endif
 

@@ -1740,6 +1740,15 @@
   'nulvar'
   1.0d0
 
+'river_entero'                                     ! Input
+  'river runoff enterococcus'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'river_entero, scalar, series'
+  'river_time'
+  'idRtrc(iEntero)'
+  'nulvar'
+  1.0d0
+
 'river_NO3'                                        ! Input
   'river runoff NO3'
   'millimole_nitrogen meter-3'                     ! [millimole/m3]
@@ -2834,6 +2843,24 @@
 !---------------------------------------------------------------------
 !
 
+'enterococcus'                                     ! Input/Output
+  'enterococcus concentration'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'Entero, scalar, series'
+  'ocean_time'
+  'idTvar(iEntero)'
+  'r3dvar'
+  1.0d0
+
+'enterococcus'                                     ! Input
+  'enterococcus concentration function'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'Entero, scalar, series'
+  'ocean_time'
+  'idTads(iEntero)'
+  'r3dvar'
+  1.0d0
+
 'NO3'                                              ! Input/Output
   'nitrate concentration'
   'millimole_nitrogen meter-3'                     ! [millimole/m3]
@@ -3246,6 +3273,42 @@
 !
 !  Boundary variables.
 !
+
+'entero_east'                                      ! Input
+  'enterococcus eastern boundary condition'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'Entero_east, scalar, series'
+  'entero_time'
+  'idTbry(ieast,iEntero)'
+  'nulvar'
+  1.0d0
+
+'entero_west'                                      ! Input
+  'enterococcus western boundary condition'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'Entero_west, scalar, series'
+  'entero_time'
+  'idTbry(iwest,iEntero)'
+  'nulvar'
+  1.0d0
+
+'entero_north'                                      ! Input
+  'enterococcus northern boundary condition'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'Entero_north, scalar, series'
+  'entero_time'
+  'idTbry(inorth,iEntero)'
+  'nulvar'
+  1.0d0
+
+'entero_south'                                      ! Input
+  'enterococcus southern boundary condition'
+  'millimole_nitrogen meter-3'                     ! [millimole/m3]
+  'Entero_south, scalar, series'
+  'entero_time'
+  'idTbry(isouth,iEntero)'
+  'nulvar'
+  1.0d0
 
 'NO3_east'                                         ! Input
   'nitrate eastern boundary condition'

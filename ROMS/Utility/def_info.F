@@ -2475,6 +2475,8 @@
 #  include <npzd_iron_def.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_def.h>
+# elif defined ENTEROCOCCUS
+#  include <entero_def.h>
 # endif
 #endif
 

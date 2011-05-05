@@ -27,7 +27,7 @@
 */
 
               CASE ('idTads(iEntero)')
-                idTads(iNO3_)=varid
+                idTads(iEntero)=varid
 #endif
 
 /*

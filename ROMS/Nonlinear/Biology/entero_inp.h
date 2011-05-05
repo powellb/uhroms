@@ -42,7 +42,7 @@
       character (len=256), dimension(100) :: Cval
 !
 !-----------------------------------------------------------------------
-!  Read in NPZD biological model (Powell et al., 2006) parameters.
+!  Read in Enterococcus model parameters.
 !-----------------------------------------------------------------------
 !
 #ifdef ANA_BIOLOGY
@@ -66,6 +66,8 @@
             Npts=load_r(Nval, Rval, Ngrids, AttSW)
           ELSE IF (TRIM(KeyWord).eq.'Ent_Att') THEN
             Npts=load_r(Nval, Rval, Ngrids, Ent_Att)
+          ELSE IF (TRIM(KeyWord).eq.'wEntero') THEN
+            Npts=load_r(Nval, Rval, Ngrids, wEntero)
           ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
@@ -278,16 +280,18 @@
             WRITE (out,60) BioIter(ng), 'BioIter',                      &
      &            'Number of iterations for nonlinear convergence.'
 #ifdef ANA_BIOLOGY
-            WRITE (out,70) BioIni(iNO3_,ng), 'BioIni(iEntero)',         &
-     &            'Nitrate initial concentration (mmol/m3).'
+            WRITE (out,70) BioIni(iEntero,ng), 'BioIni(iEntero)',       &
+     &            'Enterococcus initial concentration (mmol/m3).'
 #endif
             WRITE (out,80) PARfrac(ng), 'PARfrac',                      &
      &            'Fraction of shortwave radiation that is',            &
      &            'photosynthetically active (nondimensional).'
             WRITE (out,70) AttSW(ng), 'AttSW',                          &
      &            'Light attenuation of seawater (m-1).'
-            WRITE (out,70) Vm_NO3(ng), 'Ent_Att',                       &
+            WRITE (out,70) Ent_Att(ng), 'Ent_Att',                      &
      &            'Decay Rate due to Attenuation (day-1).'
+            WRITE (out,70) wEntero(ng), 'wEntero',                      &
+     &            'Enterococcus sinking rate (m/day).'
 #ifdef TS_DIF2
             DO itrc=1,NBT
               i=idbio(itrc)

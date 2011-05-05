@@ -1804,6 +1804,8 @@
 #  include <npzd_Powell_var.h>
 # elif defined NPZD_IRON
 #  include <npzd_iron_var.h>
+# elif defined ENTEROCOCCUS
+#  include <entero_var.h>
 # endif
 #endif
 
