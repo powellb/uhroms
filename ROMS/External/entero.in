@@ -51,17 +51,17 @@
 ! Initial concentration for analytical uniform initial conditions.
 ! [millimole/meter3].
 
-BioIni(iEntero) == 10.0d0                         ! Enterococcus
+BioIni(iEntero) == 10.0d0                       ! Enterococcus mmol m^{-3}
 
 ! Fraction of shortwave radiation that is UV active
 ! (nondimensional) {0.43d0}
 
-     PARfracUV == 0.43d0
+     PARfracUV == 0.25d0
 
 ! Fraction of shortwave radiation that is Blue-light active
-! (nondimensional) {0.43d0}
+! (nondimensional) {0.05d0}
 
-     PARfracBlue == 0.43d0
+     PARfracBlue == 0.05d0
 
 ! UV Light attenuation due to seawater [1/m], {0.067d0}.
 
@@ -69,11 +69,11 @@ BioIni(iEntero) == 10.0d0                         ! Enterococcus
 
 ! Blue Light attenuation due to seawater [1/m], {0.067d0}.
 
-       AttSWBlue == 0.7d0                          ! k_ext
+       AttSWBlue == 0.07d0                          ! k_ext
 
 ! Growth of enterococcus due to Blue light mmol/day
 
-       Ent_GrowthBlue == 0.03384d0              ! k_g
+       Ent_GrowthBlue == 0.003384d0              ! k_g
 
 ! Decay of enterococcus due to UV light mmol/day
 
