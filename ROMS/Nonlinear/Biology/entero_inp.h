@@ -60,12 +60,18 @@
           ELSE IF (TRIM(KeyWord).eq.'BioIni(iEntero)') THEN
             Npts=load_r(Nval, Rval, Ngrids, BioIni(iEntero,1))
 #endif
-          ELSE IF (TRIM(KeyWord).eq.'PARfrac') THEN
-            Npts=load_r(Nval, Rval, Ngrids, PARfrac)
-          ELSE IF (TRIM(KeyWord).eq.'AttSW') THEN
-            Npts=load_r(Nval, Rval, Ngrids, AttSW)
-          ELSE IF (TRIM(KeyWord).eq.'Ent_Att') THEN
-            Npts=load_r(Nval, Rval, Ngrids, Ent_Att)
+          ELSE IF (TRIM(KeyWord).eq.'PARfracUV') THEN
+            Npts=load_r(Nval, Rval, Ngrids, PARfracUV)
+          ELSE IF (TRIM(KeyWord).eq.'PARfracBlue') THEN
+            Npts=load_r(Nval, Rval, Ngrids, PARfracBlue)
+          ELSE IF (TRIM(KeyWord).eq.'AttSWUV') THEN
+            Npts=load_r(Nval, Rval, Ngrids, AttSWUV)
+          ELSE IF (TRIM(KeyWord).eq.'AttSWBlue') THEN
+            Npts=load_r(Nval, Rval, Ngrids, AttSWBlue)
+          ELSE IF (TRIM(KeyWord).eq.'Ent_DecayUV') THEN
+            Npts=load_r(Nval, Rval, Ngrids, Ent_DecayUV)
+          ELSE IF (TRIM(KeyWord).eq.'Ent_GrowthBlue') THEN
+            Npts=load_r(Nval, Rval, Ngrids, Ent_GrowthBlue)
           ELSE IF (TRIM(KeyWord).eq.'wEntero') THEN
             Npts=load_r(Nval, Rval, Ngrids, wEntero)
           ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
@@ -283,13 +289,20 @@
             WRITE (out,70) BioIni(iEntero,ng), 'BioIni(iEntero)',       &
      &            'Enterococcus initial concentration (mmol/m3).'
 #endif
-            WRITE (out,80) PARfrac(ng), 'PARfrac',                      &
+            WRITE (out,80) PARfracUV(ng), 'PARfracUV',                  &
      &            'Fraction of shortwave radiation that is',            &
-     &            'photosynthetically active (nondimensional).'
-            WRITE (out,70) AttSW(ng), 'AttSW',                          &
-     &            'Light attenuation of seawater (m-1).'
-            WRITE (out,70) Ent_Att(ng), 'Ent_Att',                      &
-     &            'Decay Rate due to Attenuation (day-1).'
+     &            'UV active (nondimensional).'
+            WRITE (out,80) PARfracBlue(ng), 'PARfracBlue',              &
+     &            'Fraction of shortwave radiation that is',            &
+     &            'Blue light active (nondimensional).'
+            WRITE (out,70) AttSWUV(ng), 'AttSWUV',                      &
+     &            'UV Light attenuation of seawater (m-1).'
+            WRITE (out,70) AttSWBlue(ng), 'AttSWBlue',                  &
+     &            'Blue Light attenuation of seawater (m-1).'
+            WRITE (out,70) Ent_GrowthBlue(ng), 'Ent_GrowthBlue',        &
+     &            'Enterococcus growth due to Blue Light (day-1).'
+            WRITE (out,70) Ent_DecayUV(ng), 'Ent_DecayUV',              &
+     &            'Enterococcus decay due to UV Absorption (day-1).'
             WRITE (out,70) wEntero(ng), 'wEntero',                      &
      &            'Enterococcus sinking rate (m/day).'
 #ifdef TS_DIF2

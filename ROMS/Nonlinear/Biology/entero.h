@@ -112,7 +112,7 @@
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
-      real(r8) :: Att, ExpAtt, Itop, PAR
+      real(r8) :: Att, ExpAtt, Itop, PARUV, PARBlue
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
 
@@ -121,7 +121,7 @@
 
       integer, dimension(IminS:ImaxS,N(ng)) :: ksource
 
-      real(r8), dimension(IminS:ImaxS) :: PARsur
+      real(r8), dimension(IminS:ImaxS) :: PARsurUV, PARsurBlue
 
       real(r8), dimension(NT(ng),2) :: BioTrc
 
@@ -133,7 +133,7 @@
       real(r8), dimension(IminS:ImaxS,N(ng)) :: Hz_inv
       real(r8), dimension(IminS:ImaxS,N(ng)) :: Hz_inv2
       real(r8), dimension(IminS:ImaxS,N(ng)) :: Hz_inv3
-      real(r8), dimension(IminS:ImaxS,N(ng)) :: Light
+      real(r8), dimension(IminS:ImaxS,N(ng)) :: UVLight, BlueLight
       real(r8), dimension(IminS:ImaxS,N(ng)) :: WL
       real(r8), dimension(IminS:ImaxS,N(ng)) :: WR
       real(r8), dimension(IminS:ImaxS,N(ng)) :: bL
@@ -232,12 +232,10 @@
 !
         DO i=Istr,Iend
 #ifdef CONST_PAR
-!
-!  Specify constant surface irradiance a la Powell and Spitz.
-!
-          PARsur(i)=158.075_r8
+          PARsurUV(i)=158.075_r8
 #else
-          PARsur(i)=PARfrac(ng)*srflx(i,j)*rho0*Cp
+          PARsurUV(i)=PARfracUV(ng)*srflx(i,j)*rho0*Cp
+          PARsurBlue(i)=PARfracBlue(ng)*srflx(i,j)*rho0*Cp
 #endif
         END DO
 !
@@ -300,36 +298,61 @@
 !  Compute light attenuation as function of depth.
 !
           DO i=Istr,Iend
-            PAR=PARsur(i)
-            IF (PARsur(i).gt.0.0_r8) THEN              ! day time
+!
+!  Make sure it is daytime
+!
+            PARUV=PARsurUV(i)
+            PARBlue=PARsurBlue(i)
+            IF (PARsurUV(i).gt.0.0_r8.and.PARsurBlue(i).gt.0.0_r8) THEN
               DO k=N(ng),1,-1
 !
 !  Compute average light attenuation for each grid cell. Here, AttSW is
 !  the light attenuation due to seawater.
 !
-                Att=AttSW(ng)*(z_w(i,j,k)-z_w(i,j,k-1))
+!  UV first
+                Att=AttSWUV(ng)*(z_w(i,j,k)-z_w(i,j,k-1))
                 ExpAtt=EXP(-Att)
-                Itop=PAR
-                PAR=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
-                Light(i,k)=PAR
+                Itop=PARUV
+                PARUV=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
+                UVLight(i,k)=PARUV
+                PARUV=Itop*ExpAtt
+!  Blue second
+                Att=AttSWBlue(ng)*(z_w(i,j,k)-z_w(i,j,k-1))
+                ExpAtt=EXP(-Att)
+                Itop=PARBlue
+                PARBlue=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
+                UVLight(i,k)=PARBlue
 !
 !  Light attenuation at the bottom of the grid cell. It is the starting
 !  PAR value for the next (deeper) vertical grid cell.
 !
-                PAR=Itop*ExpAtt
               END DO
             ELSE                                       ! night time
               DO k=1,N(ng)
-                Light(i,k)=0.0_r8
+                UVLight(i,k)=0.0_r8
+                BlueLight(i,k)=0.0_r8
               END DO
             END IF
           END DO
+
+!
+!  Enterococcus growth to blue-light exposure
+!
+          DO k=1,N(ng)
+            DO i=Istr,Iend
+              cff1=dtdays*BlueLight(i,k)*Ent_GrowthBlue(ng)*            &
+     &             Bio(i,k,iEntero)
+              Bio(i,k,iEntero)=Bio(i,k,iEntero)+cff1
+            END DO
+          END DO
+
 !
 !  Enterococcus mortality to UV exposure
 !
           DO k=1,N(ng)
             DO i=Istr,Iend
-              cff1=dtdays*Light(i,k)*Ent_Att(ng)*Bio(i,k,iEntero)
+              cff1=dtdays*UVLight(i,k)*Ent_DecayUV(ng)*                 &
+     &             Bio(i,k,iEntero)
               Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
             END DO
           END DO

@@ -34,16 +34,16 @@
 #ifdef ANA_BIOLOGY
       real(r8), allocatable :: BioIni(:,:)
 #endif
-      real(r8), dimension(Ngrids) :: AttSW           ! 1/m
-      real(r8), dimension(Ngrids) :: Ent_Att         ! mmol/day
-      real(r8), dimension(Ngrids) :: PARfrac         ! nondimensional
+      real(r8), dimension(Ngrids) :: AttSWUV, AttSWBlue  ! 1/m
+      real(r8), dimension(Ngrids) :: Ent_DecayUV, Ent_GrowthBlue ! mmol/day
+      real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
       real(r8), dimension(Ngrids) :: wEntero         ! m/day
 #ifdef TANGENT
-      real(r8), dimension(Ngrids) :: tl_PARfrac
+      real(r8), dimension(Ngrids) :: tl_PARfracUV, tl_PARfracBlue
       real(r8), dimension(Ngrids) :: tl_wEntero
 #endif
 #ifdef ADJOINT
-      real(r8), dimension(Ngrids) :: ad_PARfrac
+      real(r8), dimension(Ngrids) :: ad_PARfracUV, ad_PARfracBlue
       real(r8), dimension(Ngrids) :: ad_wEntero
 #endif
 

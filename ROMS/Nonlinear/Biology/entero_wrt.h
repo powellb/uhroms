@@ -20,13 +20,23 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_fvar (ng, model, ncname, 'AttSW',                 &
-     &                      AttSW(ng), (/0/), (/0/),                    &
+      CALL netcdf_put_fvar (ng, model, ncname, 'AttSWUV',               &
+     &                      AttSWUV(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_fvar (ng, model, ncname, 'Ent_Att',               &
-     &                      Ent_Att(ng), (/0/), (/0/),                  &
+      CALL netcdf_put_fvar (ng, model, ncname, 'AttSWBlue',             &
+     &                      AttSWBlue(ng), (/0/), (/0/),                &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'Ent_DecayUV',           &
+     &                      Ent_DecayUV(ng), (/0/), (/0/),              &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'Ent_GrowthBlue',        &
+     &                      Ent_GrowthBlue(ng), (/0/), (/0/),           &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
