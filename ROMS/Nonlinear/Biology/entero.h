@@ -321,7 +321,8 @@
                 ExpAtt=EXP(-Att)
                 Itop=PARBlue
                 PARBlue=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
-                UVLight(i,k)=PARBlue
+                BlueLight(i,k)=PARBlue
+                PARBlue=Itop*ExpAtt
 !
 !  Light attenuation at the bottom of the grid cell. It is the starting
 !  PAR value for the next (deeper) vertical grid cell.
@@ -336,21 +337,19 @@
           END DO
 
 !
-!  Enterococcus growth to blue-light exposure
+!  Time-Step the Enterococcus model
 !
           DO k=1,N(ng)
             DO i=Istr,Iend
+!
+!  Enterococcus growth to blue-light exposure
+!
               cff1=dtdays*BlueLight(i,k)*Ent_GrowthBlue(ng)*            &
      &             Bio(i,k,iEntero)
               Bio(i,k,iEntero)=Bio(i,k,iEntero)+cff1
-            END DO
-          END DO
-
 !
 !  Enterococcus mortality to UV exposure
 !
-          DO k=1,N(ng)
-            DO i=Istr,Iend
               cff1=dtdays*UVLight(i,k)*Ent_DecayUV(ng)*                 &
      &             Bio(i,k,iEntero)
               Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
