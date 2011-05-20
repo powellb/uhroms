@@ -287,7 +287,7 @@
      &            'Number of iterations for nonlinear convergence.'
 #ifdef ANA_BIOLOGY
             WRITE (out,70) BioIni(iEntero,ng), 'BioIni(iEntero)',       &
-     &            'Enterococcus initial concentration (mmol/m3).'
+     &            'Enterococcus initial concentration (nmol/m3).'
 #endif
             WRITE (out,80) PARfracUV(ng), 'PARfracUV',                  &
      &            'Fraction of shortwave radiation that is',            &
