@@ -45,9 +45,7 @@
 !  Read in Enterococcus model parameters.
 !-----------------------------------------------------------------------
 !
-#ifdef ANA_BIOLOGY
       IF (.not.allocated(BioIni)) allocate ( BioIni(MT,Ngrids) )
-#endif
       DO WHILE (.TRUE.)
         READ (inp,'(a)',ERR=10,END=20) line
         status=decode_line(line, KeyWord, Nval, Cval, Rval)
@@ -56,10 +54,8 @@
             Npts=load_l(Nval, Cval, Ngrids, Lbiology)
           ELSE IF (TRIM(KeyWord).eq.'BioIter') THEN
             Npts=load_i(Nval, Rval, Ngrids, BioIter)
-#ifdef ANA_BIOLOGY
           ELSE IF (TRIM(KeyWord).eq.'BioIni(iEntero)') THEN
             Npts=load_r(Nval, Rval, Ngrids, BioIni(iEntero,1))
-#endif
           ELSE IF (TRIM(KeyWord).eq.'PARfracUV') THEN
             Npts=load_r(Nval, Rval, Ngrids, PARfracUV)
           ELSE IF (TRIM(KeyWord).eq.'PARfracBlue') THEN
@@ -285,10 +281,8 @@
             WRITE (out,50) ng
             WRITE (out,60) BioIter(ng), 'BioIter',                      &
      &            'Number of iterations for nonlinear convergence.'
-#ifdef ANA_BIOLOGY
             WRITE (out,70) BioIni(iEntero,ng), 'BioIni(iEntero)',       &
      &            'Enterococcus initial concentration (mmol/m3).'
-#endif
             WRITE (out,80) PARfracUV(ng), 'PARfracUV',                  &
      &            'Fraction of shortwave radiation that is',            &
      &            'UV active (nondimensional).'

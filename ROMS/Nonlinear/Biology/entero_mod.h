@@ -31,9 +31,7 @@
 !
       integer, dimension(Ngrids) :: BioIter
 
-#ifdef ANA_BIOLOGY
       real(r8), allocatable :: BioIni(:,:)
-#endif
       real(r8), dimension(Ngrids) :: AttSWUV, AttSWBlue  ! 1/m
       real(r8), dimension(Ngrids) :: Ent_DecayUV, Ent_GrowthBlue ! mmol/day
       real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
