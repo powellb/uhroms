@@ -32,6 +32,9 @@
       USE mod_sources
 # endif
       USE mod_stepping
+# if defined POT_TIDES
+      USE mod_tides
+# endif
 !
 !  Imported variable declarations.
 !
@@ -116,6 +119,9 @@
      &                  FORCES(ng) % bustr,     FORCES(ng) % bvstr,     &
 #  ifdef ATM_PRESS
      &                  FORCES(ng) % Pair,                              &
+#  endif
+#  if defined POT_TIDES
+     &                  TIDES(ng) % Ptide,                              &
 #  endif
 # else
 #  ifdef VAR_RHO_2D
@@ -207,6 +213,9 @@
      &                        sustr, svstr, bustr, bvstr,               &
 #  ifdef ATM_PRESS
      &                        Pair,                                     &
+#  endif
+#  ifdef POT_TIDES
+     &                        Ptide,                                    &
 #  endif
 # else
 #  ifdef VAR_RHO_2D
@@ -342,6 +351,9 @@
 #   ifdef ATM_PRESS
       real(r8), intent(in) :: Pair(LBi:,LBj:)
 #   endif
+#   ifdef POT_TIDES
+      real(r8), intent(in) :: Ptide(LBi:,LBj:)
+#   endif
 #  else
 #   ifdef VAR_RHO_2D
       real(r8), intent(in) :: rhoA(LBi:,LBj:)
@@ -471,6 +483,9 @@
       real(r8), intent(in) :: bvstr(LBi:UBi,LBj:UBj)
 #   ifdef ATM_PRESS
       real(r8), intent(in) :: Pair(LBi:UBi,LBj:UBj)
+#   endif
+#   ifdef POT_TIDES
+      real(r8), intent(in) :: Ptide(LBi:UBi,LBj:UBj)
 #   endif
 #  else
 #   ifdef VAR_RHO_2D
@@ -1013,7 +1028,7 @@
 !
       cff1=0.5_r8*g
       cff2=1.0_r8/3.0_r8
-# if !defined SOLVE3D && defined ATM_PRESS
+# if !defined SOLVE3D && ( defined ATM_PRESS || defined POT_TIDES )
       fac3=0.5_r8*100.0_r8/rho0
 # endif
       DO j=Jstr,Jend
@@ -1041,6 +1056,13 @@
      &                  (h(i-1,j)+h(i,j)+                               &
      &                   gzeta(i-1,j)+gzeta(i,j))*                      &
      &                  (Pair(i-1,j)-Pair(i,j))
+# endif
+# if defined POT_TIDES && !defined SOLVE3D
+          rhs_ubar(i,j)=rhs_ubar(i,j)+                                  &
+     &                  fac3*on_u(i,j)*                                 &
+     &                  (h(i-1,j)+h(i,j)+                               &
+     &                   gzeta(i-1,j)+gzeta(i,j))*                      &
+     &                  (Ptide(i-1,j)-Ptide(i,j))
 # endif
 # ifdef DIAGNOSTICS_UV
           DiaU2rhs(i,j,M2pgrd)=rhs_ubar(i,j)
@@ -1071,6 +1093,13 @@
      &                    (h(i,j-1)+h(i,j)+                             &
      &                     gzeta(i,j-1)+gzeta(i,j))*                    &
      &                    (Pair(i,j-1)-Pair(i,j))
+# endif
+# if defined POT_TIDES && !defined SOLVE3D
+            rhs_vbar(i,j)=rhs_vbar(i,j)+                                &
+     &                    fac3*om_v(i,j)*                               &
+     &                    (h(i,j-1)+h(i,j)+                             &
+     &                     gzeta(i,j-1)+gzeta(i,j))*                    &
+     &                    (Ptide(i,j-1)-Ptide(i,j))
 # endif
 # ifdef DIAGNOSTICS_UV
             DiaV2rhs(i,j,M2pgrd)=rhs_vbar(i,j)

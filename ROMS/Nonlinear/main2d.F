@@ -55,7 +55,7 @@
 # if defined AVERAGES && !defined ADJOINT
       USE set_avg_mod, ONLY : set_avg
 # endif
-# if defined SSH_TIDES || defined UV_TIDES
+# if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
       USE set_tides_mod, ONLY : set_tides
 # endif
       USE set_vbc_mod, ONLY: set_vbc
@@ -295,7 +295,7 @@
         subs=NtileX(ng)*NtileE(ng)/numthreads
         DO tile=subs*thread,subs*(thread+1)-1,+1
           CALL set_vbc (ng, TILE)
-# if defined SSH_TIDES || defined UV_TIDES
+# if defined SSH_TIDES || defined UV_TIDES || defined POT_TIDES
           CALL set_tides (ng, TILE)
 # endif
         END DO
