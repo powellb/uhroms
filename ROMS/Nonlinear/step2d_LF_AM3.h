@@ -1028,7 +1028,7 @@
 !
       cff1=0.5_r8*g
       cff2=1.0_r8/3.0_r8
-# if !defined SOLVE3D && ( defined ATM_PRESS || defined POT_TIDES )
+# if !defined SOLVE3D && defined ATM_PRESS
       fac3=0.5_r8*100.0_r8/rho0
 # endif
       DO j=Jstr,Jend
@@ -1059,7 +1059,7 @@
 # endif
 # if defined POT_TIDES && !defined SOLVE3D
           rhs_ubar(i,j)=rhs_ubar(i,j)+                                  &
-     &                  fac3*on_u(i,j)*                                 &
+     &                  cff1*on_u(i,j)*                                 &
      &                  (h(i-1,j)+h(i,j)+                               &
      &                   gzeta(i-1,j)+gzeta(i,j))*                      &
      &                  (Ptide(i-1,j)-Ptide(i,j))
@@ -1096,7 +1096,7 @@
 # endif
 # if defined POT_TIDES && !defined SOLVE3D
             rhs_vbar(i,j)=rhs_vbar(i,j)+                                &
-     &                    fac3*om_v(i,j)*                               &
+     &                    cff1*om_v(i,j)*                               &
      &                    (h(i,j-1)+h(i,j)+                             &
      &                     gzeta(i,j-1)+gzeta(i,j))*                    &
      &                    (Ptide(i,j-1)-Ptide(i,j))
