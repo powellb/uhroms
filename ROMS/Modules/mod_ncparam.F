@@ -64,7 +64,7 @@
 !=======================================================================
 !
         USE mod_param
-
+!
         implicit none
 !
 !  Maximum number of variables in a generic NetCDF file (MV) and
@@ -550,9 +550,9 @@
 !
         character (len=40 ) :: svn_rev
         character (len=256) :: svn_url
-
+!
       CONTAINS
-
+!
       SUBROUTINE initialize_ncparam
 !
 !=======================================================================
@@ -974,31 +974,26 @@
 !
 !  Set IDs for state some state variables.
 !
-#if defined FORCING_SV || defined SO_SEMI
-        isUstr=1
-        isVstr=2
-        ic=2
-        DO i=1,MT
-          ic=ic+1
-          isTsur(i)=ic
-        END DO
-#else
-        ic=5
-        DO i=1,MT
-          ic=ic+1
-          isTvar(i)=ic
-        END DO
-# ifdef ADJUST_WSTRESS
-        isUstr=ic+1
-        isVstr=ic+2
-        ic=ic+2
-# endif
-# ifdef ADJUST_STFLUX
-        DO i=1,MT
-          ic=ic+1
-          isTsur(i)=ic
-        END DO
-# endif
+      ic=5
+      DO i=1,MT
+        ic=ic+1
+        isTvar(i)=ic
+      END DO
+      ic=5
+      DO i=1,MT
+        ic=ic+1
+        isTvar(i)=ic
+      END DO
+#if defined ADJUST_WSTRESS || defined FORCING_SV || defined SO_SEMI
+      isUstr=ic+1
+      isVstr=ic+2
+      ic=ic+2
+#endif
+#if defined ADJUST_STFLUX  || defined FORCING_SV || defined SO_SEMI
+      DO i=1,MT
+        ic=ic+1
+        isTsur(i)=ic
+      END DO
 #endif
 !
 !  Initialize IO information variables.
@@ -1081,7 +1076,11 @@
           IF ((Lvar.gt.0).and.(Vinfo(1)(1:1).eq.CHAR(36))) THEN
             is=INDEX(Vinfo(1),'https')
             ie=INDEX(Vinfo(1),'/ROMS')-1
-            svn_url=Vinfo(1)(is:ie)
+            IF (ie.gt.is) THEN
+              svn_url=Vinfo(1)(is:ie)
+            ELSE
+              svn_url='https:://myroms.org/svn/src'
+            END IF
 #ifdef SVN_REV
             svn_rev=SVN_REV
 #endif

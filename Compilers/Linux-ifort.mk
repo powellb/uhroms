@@ -27,7 +27,7 @@
            FFLAGS := -heap-arrays -fp-model precise
               CPP := /usr/bin/cpp
          CPPFLAGS := -P -traditional
-          LDFLAGS := -Vaxlib
+          LDFLAGS :=
                AR := ar
           ARFLAGS := r
             MKDIR := mkdir -p
@@ -43,19 +43,13 @@
 #
 
 ifdef USE_NETCDF4
-    NETCDF_INCDIR ?= /opt/intelsoft/netcdf4/include
-    NETCDF_LIBDIR ?= /opt/intelsoft/netcdf4/lib
-      HDF5_LIBDIR ?= /opt/intelsoft/hdf5/lib
+        NC_CONFIG ?= nc-config
+    NETCDF_INCDIR ?= $(shell $(NC_CONFIG) --prefix)/include
+             LIBS := $(shell $(NC_CONFIG) --flibs)
 else
-    NETCDF_INCDIR ?= /opt/intelsoft/netcdf/include
-    NETCDF_LIBDIR ?= /opt/intelsoft/netcdf/lib
-endif
+    NETCDF_INCDIR ?= /usr/local/include
+    NETCDF_LIBDIR ?= /usr/local/lib
              LIBS := -L$(NETCDF_LIBDIR) -lnetcdf
-ifdef USE_NETCDF4
-             LIBS += -L$(HDF5_LIBDIR) -lhdf5_hl -lhdf5 -lz
- ifdef USE_DAP
-             LIBS += $(shell curl-config --libs)
- endif
 endif
 
 ifdef USE_ARPACK
@@ -86,12 +80,6 @@ ifdef USE_DEBUG
            FFLAGS += -g -check uninit -ftrapuv -traceback
 else
            FFLAGS += -ip -O3
- ifeq ($(CPU),i686)
-           FFLAGS += -pc80 -xW
- endif
- ifeq ($(CPU),x86_64)
-           FFLAGS += -xW
- endif
 endif
 
 ifdef USE_MCT
