@@ -405,7 +405,6 @@
 !      f_u = f_u + ADmodVal*cos(meta-angler)
 !
         IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
-          ad_rangler=IniVal
           DO iobs=1,Nobs(ng)
             IF (ObsType(iobs).eq.isRadial) THEN
 #  ifdef CURVGRID
