@@ -824,7 +824,7 @@
       DO j=JstrR,JendR
         DO i=IstrR,IendR
           val1=(xr(i,j)-0.5_r8*Xsize)/40000.0_r8
-          val2=(yr(i,j)-0.5_r8*Ysize)/40000.0_r8
+          val2=(yr(i,j)-0.5_r8*Esize)/40000.0_r8
           h(i,j)=depth-4500.0_r8*EXP(-(val1*val1+val2*val2))
         END DO
       END DO
@@ -891,6 +891,7 @@
       END DO
       DO j=JstrR,JendR
         DO i=IstrR,IendR
+          h(i,j)=375.0_r8
           DO k=1,234
             IF ((xwrk(k).le.xr(i,1)).and.(xr(i,1).lt.xwrk(k+1))) THEN
                cff=1.0_r8/(xwrk(k+1)-xwrk(k))
@@ -984,15 +985,16 @@
 !-----------------------------------------------------------------------
 !
 # ifdef WEDDELL
-      val1=340.0_r8/16.0_r8
+      val1=340.0_r8
+      val2=val1/16.0_r8
       DO j=JstrR,JendR
         DO i=IstrR,IendR
           IF (i.gt.20) THEN
             zice(i,j)=0.0_r8
           ELSE IF (i.gt.4) THEN
-            zice(i,j)=-340.0_r8+REAL(i-1,r8)*val1
+            zice(i,j)=-val1+REAL(i-1,r8)*val2
           ELSE
-            zice(i,j)=-340.0_r8
+            zice(i,j)=-val1
           END IF
         END DO
       END DO

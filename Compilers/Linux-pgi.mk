@@ -32,7 +32,7 @@
             MKDIR := mkdir -p
                RM := rm -f
            RANLIB := ranlib
-	     PERL := perl
+             PERL := perl
              TEST := test
 
         MDEPFLAGS := --cpp --fext=f90 --file=- --objdir=$(SCRATCH_DIR)
@@ -51,19 +51,13 @@
 #
 
 ifdef USE_NETCDF4
-    NETCDF_INCDIR ?= /opt/pgisoft/netcdf4/include
-    NETCDF_LIBDIR ?= /opt/pgisoft/netcdf4/lib
-      HDF5_LIBDIR ?= /opt/pgisoft/hdf5/lib
+        NC_CONFIG ?= nc-config
+    NETCDF_INCDIR ?= $(shell $(NC_CONFIG) --prefix)/include
+             LIBS := $(shell $(NC_CONFIG) --flibs)
 else
-    NETCDF_INCDIR ?= /opt/pgisoft/netcdf/include
-    NETCDF_LIBDIR ?= /opt/pgisoft/netcdf/lib
-endif
+    NETCDF_INCDIR ?= /usr/local/include
+    NETCDF_LIBDIR ?= /usr/local/lib
              LIBS := -L$(NETCDF_LIBDIR) -lnetcdf
-ifdef USE_NETCDF4
-             LIBS += -L$(HDF5_LIBDIR) -lhdf5_hl -lhdf5 -lz
- ifdef USE_DAP
-             LIBS += $(shell curl-config --libs)
- endif
 endif
 
 ifdef USE_ARPACK
@@ -120,14 +114,8 @@ ifdef USE_MCT
 endif
 
 ifdef USE_ESMF
-#     ESMF_SUBDIR := $(ESMF_OS).$(ESMF_COMPILER).$(ESMF_ABI).$(ESMF_COMM).$(ESMF_SITE)
-#     ESMF_MK_DIR ?= $(ESMF_DIR)/lib/lib$(ESMF_BOPT)/$(ESMF_SUBDIR)
-#     ESMF_MK_DIR ?= /opt/pgisoft/esmf-2.2.2rp1/lib/libO/Linux.pgi.64.mpich.default
-#     ESMF_MK_DIR ?= /opt/pgisoft/esmf-3.0.2/lib/libO/Linux.pgi.64.mpich.default
-#     ESMF_MK_DIR ?= /opt/pgisoft/esmf-3.0.3/lib/libO/Linux.pgi.64.mpich.default
-      ESMF_MK_DIR ?= /opt/pgisoft/esmf-3.1.0/lib/libO/Linux.pgi.64.mpich.default
-#     ESMF_MK_DIR ?= /opt/pgisoft/esmfbeta/lib/libO/Linux.pgi.64.mpich.default
-#     ESMF_MK_DIR ?= /opt/pgisoft/esmf/lib/libO/Linux.pgi.64.mpich.default
+      ESMF_SUBDIR := $(ESMF_OS).$(ESMF_COMPILER).$(ESMF_ABI).$(ESMF_COMM).$(ESMF_SITE)
+      ESMF_MK_DIR ?= $(ESMF_DIR)/lib/lib$(ESMF_BOPT)/$(ESMF_SUBDIR)
                      include $(ESMF_MK_DIR)/esmf.mk
            FFLAGS += $(ESMF_F90COMPILEPATHS)
              LIBS += $(ESMF_F90LINKPATHS) -lesmf -lC
