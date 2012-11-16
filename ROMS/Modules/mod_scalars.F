@@ -344,8 +344,10 @@
         real(r8) :: StefBo = 5.67E-8_r8         ! Watts/m2/K4
         real(r8) :: emmiss = 0.97_r8            ! non_dimensional
         real(r8) :: rhow = 1000.0_r8            ! kg/m3
-#ifdef SOLITON
+#if defined SOLITON
         real(r8) :: g = 1.0_r8                  ! non-dimensional
+#elif defined SWE_MODEL
+        real(r8) :: g = 0.09_r8                 ! m/s2
 #else
         real(r8) :: g = 9.81_r8                 ! m/s2
 #endif
@@ -400,7 +402,7 @@
         integer, parameter :: linear = 0        ! linear interpolation
         integer, parameter :: cubic  = 1        ! cubic  interpolation
 !
-        integer :: InterpFlag = linear          ! interpolation flag
+        integer :: InterpFlag = cubic          ! interpolation flag
 !
 !  Shallowest and Deepest levels to apply bottom momemtum stresses as
 !  a bodyforce

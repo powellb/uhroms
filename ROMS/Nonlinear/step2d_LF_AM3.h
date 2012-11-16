@@ -859,6 +859,15 @@
 # ifdef MASKING
             zeta_new(i,j)=zeta_new(i,j)*rmask(i,j)
 # endif
+# ifdef SWE_MODEL
+            fac3=0.7_r8+3.3_r8*REAL(1-((Lm(ng)/2-i)*2/Lm(ng))**2,r8);
+            IF (zeta_new(i,j).GT.fac3*h(i,j)) THEN
+              zeta_new(i,j)=fac3*h(i,j)
+            END IF
+            IF (zeta_new(i,j).LT.-0.7_r8*h(i,j)) THEN
+              zeta_new(i,j)=-0.7_r8*h(i,j)
+            END IF
+# endif            
             Dnew(i,j)=zeta_new(i,j)+h(i,j)
 !
             zwrk(i,j)=0.5_r8*(zeta(i,j,kstp)+zeta_new(i,j))
@@ -885,6 +894,15 @@
 # ifdef MASKING
             zeta_new(i,j)=zeta_new(i,j)*rmask(i,j)
 # endif
+# ifdef SWE_MODEL
+            fac3=0.7_r8+3.3_r8*REAL(1-((Lm(ng)/2-i)*2/Lm(ng))**2,r8);
+            IF (zeta_new(i,j).GT.fac3*h(i,j)) THEN
+              zeta_new(i,j)=fac3*h(i,j)
+            END IF
+            IF (zeta_new(i,j).LT.-0.7_r8*h(i,j)) THEN
+              zeta_new(i,j)=-0.7_r8*h(i,j)
+            END IF
+# endif            
             Dnew(i,j)=zeta_new(i,j)+h(i,j)
 !
             zwrk(i,j)=cff5*zeta(i,j,krhs)+                              &
@@ -916,6 +934,15 @@
 # ifdef MASKING
             zeta_new(i,j)=zeta_new(i,j)*rmask(i,j)
 # endif
+# ifdef SWE_MODEL
+            fac3=0.7_r8+3.3_r8*REAL(1-((Lm(ng)/2-i)*2/Lm(ng))**2,r8);
+            IF (zeta_new(i,j).GT.fac3*h(i,j)) THEN
+              zeta_new(i,j)=fac3*h(i,j)
+            END IF
+            IF (zeta_new(i,j).LT.-0.7_r8*h(i,j)) THEN
+              zeta_new(i,j)=-0.7_r8*h(i,j)
+            END IF
+# endif            
             Dnew(i,j)=zeta_new(i,j)+h(i,j)
 !
             zwrk(i,j)=cff5*zeta_new(i,j)+cff4*zeta(i,j,krhs)
