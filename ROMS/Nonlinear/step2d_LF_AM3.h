@@ -864,8 +864,8 @@
             IF (zeta_new(i,j).GT.fac3*h(i,j)) THEN
               zeta_new(i,j)=fac3*h(i,j)
             END IF
-            IF (zeta_new(i,j).LT.-0.7_r8*h(i,j)) THEN
-              zeta_new(i,j)=-0.7_r8*h(i,j)
+            IF (zeta_new(i,j).LT.-0.85_r8*h(i,j)) THEN
+              zeta_new(i,j)=-0.85_r8*h(i,j)
             END IF
 # endif            
             Dnew(i,j)=zeta_new(i,j)+h(i,j)
@@ -899,8 +899,8 @@
             IF (zeta_new(i,j).GT.fac3*h(i,j)) THEN
               zeta_new(i,j)=fac3*h(i,j)
             END IF
-            IF (zeta_new(i,j).LT.-0.7_r8*h(i,j)) THEN
-              zeta_new(i,j)=-0.7_r8*h(i,j)
+            IF (zeta_new(i,j).LT.-0.85_r8*h(i,j)) THEN
+              zeta_new(i,j)=-0.85_r8*h(i,j)
             END IF
 # endif            
             Dnew(i,j)=zeta_new(i,j)+h(i,j)
