@@ -1216,9 +1216,11 @@
         DO k=1,N(ng)
           DO j=JstrR,JendR
             DO i=IstrR,IendR
-              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                    &
+              IF (z_r(i,j,k).GT.-3500.0_r8) THEN
+                t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                  &
      &                           dt(ng)*Tnudgcof(i,j,itrc)*             &
      &                           (tclm(i,j,k,itrc)-t(i,j,k,nnew,itrc))
+              END IF
             END DO
           END DO
         END DO

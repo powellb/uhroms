@@ -1139,27 +1139,16 @@
 !-----------------------------------------------------------------------
 !
       CALL mp_bcastf (ng, model, ADmodVal)
-#  if defined SENSITIVITY_4DVAR || \
-      defined TL_W4DPSAS        || defined TL_W4DVAR || \
-      defined W4DPSAS           || defined W4DVAR
-      CALL mp_bcastf (ng, model, TLmodVal_S(:,:,outLoop))
-#  endif
       CALL mp_bcasti (ng, model, info)
       CALL mp_bcastf (ng, model, cg_beta(:,outLoop))
       CALL mp_bcastf (ng, model, cg_QG(:,outLoop))
       CALL mp_bcastf (ng, model, cg_delta(:,outLoop))
-      CALL mp_bcastf (ng, model, cg_dla(:,outLoop))
       CALL mp_bcastf (ng, model, cg_Gnorm_y(:))
       CALL mp_bcastf (ng, model, cg_Gnorm_v(:))
-      CALL mp_bcastf (ng, model, cg_pxsave(:))
-      CALL mp_bcastf (ng, model, cg_innov(:))
-      CALL mp_bcastf (ng, model, zgrad0(:,outLoop))
-      CALL mp_bcastf (ng, model, zcglwk(:,:,outLoop))
       IF ((LhessianEV.or.Lprecond).and.(innLoop.eq.NinnLoop)) THEN
         CALL mp_bcastf (ng, model, cg_Ritz(:,outLoop))
         CALL mp_bcastf (ng, model, cg_RitzErr(:,outLoop))
         CALL mp_bcastf (ng, model, cg_zv(:,:,outLoop))
-        CALL mp_bcastf (ng, model, vcglev(:,:,outLoop))
       END IF
 # endif
 !

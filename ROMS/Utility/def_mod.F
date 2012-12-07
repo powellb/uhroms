@@ -119,7 +119,7 @@
         IF (exit_flag.ne.NoError) RETURN
 
         status=def_dim(ng, iNLM, ncMODid(ng), ncname, 'state_var',      &
-     &                 NstateVar(ng)+1, stateDim)
+     &                 NobsVar(ng)+1, stateDim)
         IF (exit_flag.ne.NoError) RETURN
 
         status=def_dim(ng, iNLM, ncMODid(ng), ncname, 'datum',          &

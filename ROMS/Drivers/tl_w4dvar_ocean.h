@@ -517,11 +517,13 @@
 !  Report data penalty function.
 !
           IF (Master) THEN
-            DO i=0,NstateVar(ng)
+            DO i=0,NobsVar(ng)
               IF (i.eq.0) THEN
                 string='Total'
-              ELSE
+              ELSE IF (i.le.NstateVar(ng))
                 string=Vname(1,idSvar(i))
+              ELSE IF (i.eq.20) THEN
+                string='Radials'
               END IF
               IF (FOURDVAR(ng)%DataPenalty(i).ne.0.0_r8) THEN
                 WRITE (stdout,30) outer, inner, 'RPM',                  &
@@ -1283,11 +1285,13 @@
 !  Report data penalty function.
 !
           IF (Master) THEN
-            DO i=0,NstateVar(ng)
+            DO i=0,NobsVar(ng)
               IF (i.eq.0) THEN
                 string='Total'
-              ELSE
+              ELSE IF (i.le.NstateVar(ng))
                 string=Vname(1,idSvar(i))
+              ELSE IF (i.eq.20) THEN
+                string='Radials'
               END IF
               IF (FOURDVAR(ng)%DataPenalty(i).ne.0.0_r8) THEN
                 WRITE (stdout,30) outer, inner, 'RPM',                  &

@@ -322,7 +322,6 @@
      defined R_SYMMETRY)
 # define ANA_PERTURB
 #endif
-
 /*
 ** Since some of the tracer advection alogorithms are highly nonlinear,
 ** it is possible to choose a simpler (less nonlinear) horizontal and

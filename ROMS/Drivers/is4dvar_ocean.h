@@ -467,7 +467,7 @@
           CALL netcdf_put_fvar (ng, iNLM, MODname(ng),                  &
      &                          'NLcost_function',                      &
      &                          FOURDVAR(ng)%NLobsCost(0:),             &
-     &                          (/1,outer/), (/NstateVar(ng)+1,1/),     &
+     &                          (/1,outer/), (/NobsVar(ng)+1,1/),     &
      &                          ncid = ncMODid(ng))
           IF (exit_flag.ne.NoError) RETURN
 !
@@ -694,12 +694,12 @@
 !  Compute current total cost function.
 !
             IF (Nrun.eq.1) THEN
-              DO i=0,NstateVar(ng)
+              DO i=0,NobsVar(ng)
                 FOURDVAR(ng)%CostFunOld(i)=FOURDVAR(ng)%CostNorm(i)
                 FOURDVAR(ng)%CostFun(i)=FOURDVAR(ng)%CostNorm(i)
               END DO
             ELSE
-              DO i=0,NstateVar(ng)
+              DO i=0,NobsVar(ng)
                 FOURDVAR(ng)%CostFunOld(i)=FOURDVAR(ng)%CostFun(i)
               END DO
             END IF
@@ -741,14 +741,14 @@
 !  Compute current total cost function.
 !
             IF (Nrun.eq.1) THEN
-              DO i=0,NstateVar(ng)
+              DO i=0,NobsVar(ng)
                 FOURDVAR(ng)%CostNorm(i)=FOURDVAR(ng)%CostNorm(i)+      &
      &                                   FOURDVAR(ng)%BackCost(i)
                 FOURDVAR(ng)%CostFunOld(i)=FOURDVAR(ng)%CostNorm(i)
                 FOURDVAR(ng)%CostFun(i)=FOURDVAR(ng)%CostNorm(i)
               END DO
             ELSE
-              DO i=0,NstateVar(ng)
+              DO i=0,NobsVar(ng)
                 FOURDVAR(ng)%CostFunOld(i)=FOURDVAR(ng)%CostFun(i)
               END DO
             END IF
@@ -800,17 +800,22 @@
      &                          FOURDVAR(ng)%CostNorm(0),               &
      &                          rate
               IF (inner.eq.0) THEN
-                DO i=0,NstateVar(ng)
+                DO i=0,NobsVar(ng)
                   IF (FOURDVAR(ng)%NLobsCost(i).ne.0.0_r8) THEN
                     IF (i.eq.0) THEN
                       WRITE (stdout,40) outer, inner,                   &
      &                                  FOURDVAR(ng)%NLobsCost(i)/      &
      &                                  FOURDVAR(ng)%CostNorm(i)
-                    ELSE
+                    ELSE IF (i.le.NstateVar(ng)) THEN
                       WRITE (stdout,50) outer, inner,                   &
      &                                  FOURDVAR(ng)%NLobsCost(i)/      &
      &                                  FOURDVAR(ng)%CostNorm(i),       &
      &                                  TRIM(Vname(1,idSvar(i)))
+                    ELSE IF (i.eq.20) THEN
+                      WRITE (stdout,50) outer, inner,                   &
+     &                                  FOURDVAR(ng)%NLobsCost(i)/      &
+     &                                  FOURDVAR(ng)%CostNorm(i),       &
+     &                                  'Radials'
                     END IF
                   END IF
                   FOURDVAR(ng)%NLobsCost(i)=0.0
@@ -1099,7 +1104,7 @@
 !
 ! Clear NLobsCost.
 !
-        DO i=0,NstateVar(ng)
+        DO i=0,NobsVar(ng)
           FOURDVAR(ng)%NLobsCost(i)=0.0
         END DO
 !
@@ -1131,24 +1136,29 @@
 
         CALL netcdf_put_fvar (ng, iNLM, MODname(ng), 'NLcost_function', &
      &                        FOURDVAR(ng)%NLobsCost(0:),               &
-     &                        (/1,Nouter+1/), (/NstateVar(ng)+1,1/),    &
+     &                        (/1,Nouter+1/), (/NobsVar(ng)+1,1/),    &
      &                        ncid = ncMODid(ng))
         IF (exit_flag.ne.NoError) RETURN
 !
 !  Report the final value of the nonlinear model misfit cost function.
 !
         IF (Master) THEN
-          DO i=0,NstateVar(ng)
+          DO i=0,NobsVar(ng)
             IF (FOURDVAR(ng)%NLobsCost(i).ne.0.0_r8) THEN
               IF (i.eq.0) THEN
                 WRITE (stdout,40) outer, inner,                         &
      &                            FOURDVAR(ng)%NLobsCost(i)/            &
      &                            FOURDVAR(ng)%CostNorm(i)
-              ELSE
+              ELSE IF (i.le.NstateVar(ng)) THEN
                 WRITE (stdout,50) outer, inner,                         &
      &                            FOURDVAR(ng)%NLobsCost(i)/            &
      &                            FOURDVAR(ng)%CostNorm(i),             &
      &                            TRIM(Vname(1,idSvar(i)))
+              ELSE IF (i.eq.20) THEN
+                WRITE (stdout,50) outer, inner,                         &
+     &                            FOURDVAR(ng)%NLobsCost(i)/            &
+     &                            FOURDVAR(ng)%CostNorm(i),             &
+     &                            'Radials'
               END IF
             END IF
           END DO

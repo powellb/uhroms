@@ -62,6 +62,8 @@
 !                 normalization of the observations.                   !
 !  ObsType      Observation type identifier.                           !
 !  ObsVal       Observation values.                                    !
+!  ObsMeta      Observation meta values.                               !
+!  ObsAngler    Grid angle at observation locations                    !
 !  ObsVar       Global observation variance for each state variable.   !
 !  Optimality   normalized, optimal cost function minimum.             !
 !  Ritz         Ritz eigenvalues to compute approximated Hessian.      !
@@ -162,6 +164,10 @@
         real(r8), allocatable :: ObsErr(:)
         real(r8), allocatable :: ObsScale(:)
         real(r8), allocatable :: ObsVal(:)
+        real(r8), allocatable :: ObsMeta(:)
+#  ifdef CURVGRID
+        real(r8), allocatable :: ObsAngler(:)
+#  endif
         real(r8), allocatable :: Tobs(:)
         real(r8), allocatable :: Xobs(:)
         real(r8), allocatable :: Yobs(:)
@@ -230,6 +236,7 @@
 !  Number of model state variables to process.
 !
         integer, dimension(Ngrids) :: NstateVar
+        integer, dimension(Ngrids) :: NobsVar
 !
 !  Number of interpolation weights and (I,J,K) indices offsets.
 !
@@ -745,7 +752,7 @@
 #  ifdef ADJUST_WSTRESS
         NstateVar(ng)=NstateVar(ng)+2
 #  endif
-
+        NobsVar(ng)=my_NstateVar
         allocate ( FOURDVAR(ng) % NobsSurvey(Nsurvey(ng)) )
         FOURDVAR(ng) % NobsSurvey = 0
 
@@ -753,34 +760,34 @@
         FOURDVAR(ng) % SurveyTime = IniVal
 
 #  ifdef FOUR_DVAR
-        allocate ( FOURDVAR(ng) % BackCost(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % BackCost(0:NobsVar(ng)) )
         FOURDVAR(ng) % BackCost = IniVal
 
         allocate ( FOURDVAR(ng) % Cost0(Nouter) )
         FOURDVAR(ng) % Cost0 = IniVal
 
-        allocate ( FOURDVAR(ng) % CostFun(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % CostFun(0:NobsVar(ng)) )
         FOURDVAR(ng) % CostFun = IniVal
 
-        allocate ( FOURDVAR(ng) % CostFunOld(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % CostFunOld(0:NobsVar(ng)) )
         FOURDVAR(ng) % CostFunOld = IniVal
 
-        allocate ( FOURDVAR(ng) % CostNorm(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % CostNorm(0:NobsVar(ng)) )
         FOURDVAR(ng) % CostNorm = IniVal
 
-        allocate ( FOURDVAR(ng) % ObsCost(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsCost(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsCost = IniVal
 
-        allocate ( FOURDVAR(ng) % DataPenalty(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % DataPenalty(0:NobsVar(ng)) )
         FOURDVAR(ng) % DataPenalty = IniVal
 
 #   if defined DATALESS_LOOPS || defined TL_W4DPSAS          || \
        defined W4DPSAS        || defined W4DPSAS_SENSITIVITY
-        allocate ( FOURDVAR(ng) % NLPenalty(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % NLPenalty(0:NobsVar(ng)) )
         FOURDVAR(ng) % NLPenalty = IniVal
 #   endif
 
-        allocate ( FOURDVAR(ng) % NLobsCost(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % NLobsCost(0:NobsVar(ng)) )
         FOURDVAR(ng) % NLobsCost = IniVal
 
 #   if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
@@ -843,13 +850,13 @@
 #   endif
 #  endif
 
-        allocate ( FOURDVAR(ng) % ObsVar(NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsVar(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsVar = 1.0_r8
 
-        allocate ( FOURDVAR(ng) % ObsCount(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsCount(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsCount = 0
 
-        allocate ( FOURDVAR(ng) % ObsReject(0:NstateVar(ng)) )
+        allocate ( FOURDVAR(ng) % ObsReject(0:NobsVar(ng)) )
         FOURDVAR(ng) % ObsReject = 0
 
       END DO
@@ -906,6 +913,14 @@
       allocate ( ObsVal(Mobs) )
       ObsVal = IniVal
 
+      allocate ( ObsMeta(Mobs) )
+      ObsMeta = IniVal
+
+#  ifdef CURVGRID
+      allocate ( ObsAngler(Mobs) )
+      ObsAngler = IniVal
+#  endif
+
       allocate ( Tobs(Mobs) )
       Tobs = IniVal
 
@@ -947,67 +962,69 @@
 !
 !  Allocate and initialize weak constraint conjugate gradient vectors.
 !
+      IF (Master) THEN
 #   if defined TL_W4DPSAS          || defined TL_W4DVAR          || \
        defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY
-      allocate ( ad_zcglwk(Mobs,Ninner+1) )
-      ad_zcglwk = IniVal
+        allocate ( ad_zcglwk(Mobs,Ninner+1) )
+        ad_zcglwk = IniVal
 
-      allocate ( ad_zgrad0(Mobs) )
-      ad_zgrad0 = IniVal
+        allocate ( ad_zgrad0(Mobs) )
+        ad_zgrad0 = IniVal
 
-      allocate ( ad_cg_innov(Mobs) )
-      ad_cg_innov = IniVal
+        allocate ( ad_cg_innov(Mobs) )
+        ad_cg_innov = IniVal
 
-      allocate ( ad_cg_pxsave(Mobs) )
-      ad_cg_pxsave = IniVal
+        allocate ( ad_cg_pxsave(Mobs) )
+        ad_cg_pxsave = IniVal
 
-      allocate ( tl_zcglwk(Mobs,Ninner+1) )
-      tl_zcglwk = IniVal
+        allocate ( tl_zcglwk(Mobs,Ninner+1) )
+        tl_zcglwk = IniVal
 
-      allocate ( tl_zgrad0(Mobs) )
-      tl_zgrad0 = IniVal
+        allocate ( tl_zgrad0(Mobs) )
+        tl_zgrad0 = IniVal
 
-      allocate ( tl_cg_innov(Mobs) )
-      tl_cg_innov = IniVal
+        allocate ( tl_cg_innov(Mobs) )
+        tl_cg_innov = IniVal
 
-      allocate ( tl_cg_pxsave(Mobs) )
-      tl_cg_pxsave = IniVal
+        allocate ( tl_cg_pxsave(Mobs) )
+        tl_cg_pxsave = IniVal
 
-      allocate ( tl_ObsVal(Mobs) )
-      tl_ObsVal = IniVal
+        allocate ( tl_ObsVal(Mobs) )
+        tl_ObsVal = IniVal
 
-      allocate ( ad_ObsVal(Mobs) )
-      ad_ObsVal = IniVal
+        allocate ( ad_ObsVal(Mobs) )
+        ad_ObsVal = IniVal
 #   endif
-      allocate ( cg_dla(Ninner,Nouter) )
-      cg_dla = IniVal
+        allocate ( cg_dla(Ninner,Nouter) )
+        cg_dla = IniVal
 
-      allocate ( zcglwk(Mobs,Ninner+1,Nouter) )
-      zcglwk = IniVal
+        allocate ( zcglwk(Mobs,Ninner+1,Nouter) )
+        zcglwk = IniVal
 
-      allocate ( vcglev(Mobs,Ninner,Nouter) )
-      vcglev = IniVal
+        allocate ( vcglev(Mobs,Ninner,Nouter) )
+        vcglev = IniVal
 
-      allocate ( zgrad0(Mobs,Nouter) )
-      zgrad0 = IniVal
+        allocate ( zgrad0(Mobs,Nouter) )
+        zgrad0 = IniVal
 
-      allocate ( vgrad0(Mobs) )
-      vgrad0 = IniVal
+        allocate ( vgrad0(Mobs) )
+        vgrad0 = IniVal
 
-      allocate ( vgrad0s(Mobs) )
-      vgrad0s = IniVal
+        allocate ( vgrad0s(Mobs) )
+        vgrad0s = IniVal
 
-      allocate ( gdgw(Mobs) )
-      gdgw = IniVal
+        allocate ( gdgw(Mobs) )
+        gdgw = IniVal
 
-      allocate ( vgnorm(Nouter) )
-      vgnorm = IniVal
+        allocate ( vgnorm(Nouter) )
+        vgnorm = IniVal
 
-      allocate ( cg_innov(Mobs) )
-      cg_innov = IniVal
+        allocate ( cg_innov(Mobs) )
+        cg_innov = IniVal
 
-      allocate ( cg_pxsave(Mobs) )
-      cg_pxsave = IniVal
+        allocate ( cg_pxsave(Mobs) )
+        cg_pxsave = IniVal
+      END IF
 #  endif
 
 # else
