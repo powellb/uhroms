@@ -177,10 +177,14 @@
 !
       IF (iic(ng).eq.ntend(ng)) THEN
         Kfrc=knew
+# ifdef SOLVE3D
         Nfrc=nstp
+# endif
       ELSE
         Kfrc=1
+# ifdef SOLVE3D
         Nfrc=nnew
+# endif
       END IF
 
 # ifdef AD_IMPULSE

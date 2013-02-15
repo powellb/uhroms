@@ -22,7 +22,6 @@
 
       PRIVATE
       PUBLIC  :: ad_set_vbc
-
       CONTAINS
 
 # ifdef SOLVE3D
@@ -1128,6 +1127,7 @@
       SUBROUTINE ad_set_vbc (ng, tile)
 !***********************************************************************
 !
+      USE mod_grid
       USE mod_param
       USE mod_forces
       USE mod_ocean
