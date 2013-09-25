@@ -101,21 +101,22 @@
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,UBk)
       real(r8), intent(in) :: z_w(LBi:UBi,LBj:UBj,0:UBk)
       real(r8), intent(in) :: srflx(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: t(LBi:UBi,LBj:UBj,UBk,3,UBt)
+      real(r8), intent(inout) :: t(LBi:UBi,LBj:UBj,UBk,:,UBt)
 #endif
 !
 !  Local variable declarations.
 !
-      integer, parameter :: Nsink = 1
+      integer, parameter :: Nsink = 3
 
-      integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks
+      integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, n
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
       real(r8) :: Att, ExpAtt, Itop, PARUV, PARBlue
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
-
+      real(r8) :: dt, ds
+      
       integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
 
@@ -152,12 +153,16 @@
 !
 !  Set vertical sinking indentification vector.
 !
-      idsink(1)=iEntero
+      idsink(1)=iEntero                  ! Enterococcus
+      idsink(2)=iVulA                    ! Vulnificus A
+      idsink(3)=iVulB                    ! Vulnificus B
 !
 !  Set vertical sinking velocity vector in the same order as the
 !  identification vector, IDSINK.
 !
       Wbio(1)=wEntero(ng)                ! Enterococcus
+      Wbio(2)=wVulA(ng)                  ! Vulnificus A
+      Wbio(3)=wVulB(ng)                  ! Vulnificus B
 !
 !  Compute inverse thickness to avoid repeated divisions.
 !
@@ -179,9 +184,7 @@
         END DO
 !
 !  Restrict biological tracer to be positive definite. If a negative
-!  concentration is detected, nitrogen is drawn from the most abundant
-!  pool to supplement the negative pools to a lower limit of MinVal
-!  which is set to 1E-6 above.
+!  concentration is detected, set to a minimum concentration
 !
         DO k=1,N(ng)
           DO i=Istr,Iend
@@ -353,6 +356,29 @@
               cff1=dtdays*UVLight(i,k)*Ent_DecayUV(ng)*                 &
      &             Bio(i,k,iEntero)
               Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
+!
+!  Vibrio Vulnificus A growth. First, compute the growth rate
+!
+              cff1=0.0_r8
+              DO n=1,NvulAWeights
+                dt=vulAtemp(n) - t(i,j,k,nstp,itemp)
+                ds=vulAsalt(n) - t(i,j,k,nstp,isalt)
+                cff1=cff1 + vulAwght(n)*SQRT(0.25*(dt*dt+ds*ds)+1)
+              END DO
+              cff1=dtdays*cff1*Bio(i,k,iVulA)
+              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
+
+!
+!  Vibrio Vulnificus B growth. First, compute the growth rate
+!
+              cff1=0.0_r8
+              DO n=1,NvulAWeights
+                dt=vulAtemp(n) - t(i,j,k,nstp,itemp)
+                ds=vulAsalt(n) - t(i,j,k,nstp,isalt)
+                cff1=cff1 + vulBwght(n)*SQRT(0.25*(dt*dt+ds*ds)+1)
+              END DO
+              cff1=dtdays*cff1*Bio(i,k,iVulB)
+              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
             END DO
           END DO
 !

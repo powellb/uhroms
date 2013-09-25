@@ -99,6 +99,9 @@
 
       integer :: biodim(2)
 #endif
+#if defined BIOLOGY && defined MICROBE
+      integer :: wghtdimA, wghtdimB
+#endif
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer :: ibuffer(2)
 #endif
@@ -2475,8 +2478,8 @@
 #  include <npzd_iron_def.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_def.h>
-# elif defined ENTEROCOCCUS
-#  include <entero_def.h>
+# elif defined MICROBE
+#  include <microbe_def.h>
 # endif
 #endif
 

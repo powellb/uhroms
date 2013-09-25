@@ -28,6 +28,10 @@
 
               CASE ('idTads(iEntero)')
                 idTads(iEntero)=varid
+              CASE ('idTads(iVulA)')
+                idTads(iVulA)=varid
+              CASE ('idTads(iVulB)')
+                idTads(iVulB)=varid
 #endif
 
 /*
@@ -43,6 +47,24 @@
               CASE ('idTbry(inorth,iEntero)')
                 idTbry(inorth,iEntero)=varid
 
+              CASE ('idTbry(iwest,iVulA)')
+                idTbry(iwest,iVulA)=varid
+              CASE ('idTbry(ieast,iVulA)')
+                idTbry(ieast,iVulA)=varid
+              CASE ('idTbry(isouth,iVulA)')
+                idTbry(isouth,iVulA)=varid
+              CASE ('idTbry(inorth,iVulA)')
+                idTbry(inorth,iVulA)=varid
+
+              CASE ('idTbry(iwest,iVulB)')
+                idTbry(iwest,iVulB)=varid
+              CASE ('idTbry(ieast,iVulB)')
+                idTbry(ieast,iVulB)=varid
+              CASE ('idTbry(isouth,iVulB)')
+                idTbry(isouth,iVulB)=varid
+              CASE ('idTbry(inorth,iVulB)')
+                idTbry(inorth,iVulB)=varid
+
 #ifdef TS_PSOURCE
 
 /*
@@ -52,4 +74,8 @@
 
               CASE ('idRtrc(iEntero)')
                 idRtrc(iEntero)=varid
+              CASE ('idRtrc(iVulA)')
+                idRtrc(iVulA)=varid
+              CASE ('idRtrc(iVulB)')
+                idRtrc(iVulB)=varid
 #endif

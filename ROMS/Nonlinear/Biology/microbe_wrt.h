@@ -44,3 +44,40 @@
      &                      wEntero(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'wVulnificusA',          &
+     &                      wVulA(ng), (/0/), (/0/),                    &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'wVulnificusB',          &
+     &                      wVulB(ng), (/0/), (/0/),                    &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+
+!
+!  Vulnificus Weights
+!
+      IF (NvulAWeights.GT.0) THEN
+        CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusA_weights', &
+     &                        vulAwght, (/1/), (/NvulAWeights/),        &
+     &                        ncid = ncid)
+        CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusA_temp',    &
+     &                        vulAtemp, (/1/), (/NvulAWeights/),        &
+     &                        ncid = ncid)
+        CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusA_salt',    &
+     &                        vulAsalt, (/1/), (/NvulAWeights/),        &
+     &                        ncid = ncid)
+      END IF
+      IF (NvulBWeights.GT.0) THEN
+        CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusB_weights', &
+     &                        vulBwght, (/1/), (/NvulBWeights/),        &
+     &                        ncid = ncid)
+        CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusB_temp',    &
+     &                        vulBtemp, (/1/), (/NvulBWeights/),        &
+     &                        ncid = ncid)
+        CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusB_salt',    &
+     &                        vulBsalt, (/1/), (/NvulBWeights/),        &
+     &                        ncid = ncid)
+      END IF

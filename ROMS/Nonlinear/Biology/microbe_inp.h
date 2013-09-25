@@ -70,6 +70,28 @@
             Npts=load_r(Nval, Rval, Ngrids, Ent_GrowthBlue)
           ELSE IF (TRIM(KeyWord).eq.'wEntero') THEN
             Npts=load_r(Nval, Rval, Ngrids, wEntero)
+          ELSE IF (TRIM(KeyWord).eq.'wVulnificusA') THEN
+            Npts=load_r(Nval, Rval, Ngrids, wVulA)
+          ELSE IF (TRIM(KeyWord).eq.'wVulnificusB') THEN
+            Npts=load_r(Nval, Rval, Ngrids, wVulB)
+          ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
+            Npts=load_i(Nval, Rval, 1, NvulAWeights)
+            NvulAWeights=MIN(40,NvulAWeights)
+          ELSE IF (TRIM(KeyWord).eq.'vulnificusA_weights') THEN
+            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAwght)
+          ELSE IF (TRIM(KeyWord).eq.'vulnificusA_temp') THEN
+            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAtemp)
+          ELSE IF (TRIM(KeyWord).eq.'vulnificusA_salt') THEN
+            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAsalt)
+          ELSE IF (TRIM(KeyWord).eq.'NvulBWeights') THEN
+            Npts=load_i(Nval, Rval, 1, NvulBWeights)
+            NvulBWeights=MIN(40,NvulBWeights)
+          ELSE IF (TRIM(KeyWord).eq.'vulnificusB_weights') THEN
+            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBwght)
+          ELSE IF (TRIM(KeyWord).eq.'vulnificusB_temp') THEN
+            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBtemp)
+          ELSE IF (TRIM(KeyWord).eq.'vulnificusB_salt') THEN
+            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBsalt)
           ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
@@ -299,6 +321,26 @@
      &            'Enterococcus decay due to UV Absorption (day-1).'
             WRITE (out,70) wEntero(ng), 'wEntero',                      &
      &            'Enterococcus sinking rate (m/day).'
+            WRITE (out,70) wVulA(ng), 'wVulnificusA',                   &
+     &            'vibrio vulnificus A sinking rate (m/day).'
+            WRITE (out,70) wVulB(ng), 'wVulnificusB',                   &
+     &            'vibrio vulnificus B sinking rate (m/day).'
+            IF (NvulAWeights.GT.0) THEN
+              WRITE  (out, 60) NvulAWeights, 'NvulAWeights',            &
+     &            'number of weights to use for microbes.'
+              WRITE (out, *) 'VIBRIO VULNIFICUS A WEIGHTS'
+              DO i=1,NvulWeights
+                WRITE (out,251) vulAtemp(i), vulAsalt(i), vulAwght(i), i
+              END DO
+            END IF
+            IF (NvulBWeights.GT.0) THEN
+              WRITE  (out, 60) NvulBWeights, 'NvulBWeights',            &
+     &            'number of weights to use for microbes.'
+              WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
+              DO i=1,NvulWeights
+                WRITE (out,251) vulBtemp(i), vulBsalt(i), vulBwght(i), i
+              END DO
+            END IF
 #ifdef TS_DIF2
             DO itrc=1,NBT
               i=idbio(itrc)
@@ -504,7 +546,7 @@
   30  FORMAT (/,' read_BioPar - variable info not yet loaded, ',        &
      &        a,i2.2,a)
   40  FORMAT (/,' read_BioPar - Error while processing line: ',/,a)
-  50  FORMAT (/,/,' NPZD Model Parameters, Grid: ',i2.2,                &
+  50  FORMAT (/,/,' Microbial Model Parameters, Grid: ',i2.2,                &
      &        /,  ' ===============================',/)
   60  FORMAT (1x,i10,2x,a,t30,a)
   70  FORMAT (1p,e11.4,2x,a,t30,a)
@@ -512,6 +554,7 @@
   90  FORMAT (1p,e11.4,2x,a,'(',i2.2,')',t30,a,/,t32,a,i2.2,':',1x,a)
  100  FORMAT (10x,l1,2x,a,'(',i2.2,')',t30,a,i2.2,':',1x,a)
  110  FORMAT (10x,l1,2x,a,t30,a,i2.2,':',1x,a)
+ 251  FORMAT (1p,e11.4,', ',e11.4,', ',e11.4,2x,'weight A ',i2.2,'.')
 
       RETURN
       END SUBROUTINE read_BioPar

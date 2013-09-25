@@ -49,9 +49,11 @@
      BioIter == 1
 
 ! Initial concentration for analytical uniform initial conditions.
-! [millimole/meter3].
+! [nanomole/meter3].
 
 BioIni(iEntero) == 4.163d0                       ! Enterococcus nmol m^{-3}
+BioIni(iVulnificusA) == 4                        ! Vibrio Vulnif. A nmol m^{-3}
+BioIni(iVulnificusB) == 4                        ! Vibrio Vulnif. B nmol m^{-3}
 
 ! Fraction of shortwave radiation that is UV active
 ! (nondimensional) {0.43d0}
@@ -79,63 +81,78 @@ BioIni(iEntero) == 4.163d0                       ! Enterococcus nmol m^{-3}
 
        Ent_DecayUV == 0.03384d0                 ! k_d
 
-! Enterococcus sinking rate, [m/day], {0.0d0}.
+! Bacterial sinking rate, [m/day], {0.0d0}.
 
          wEntero == 0.1d0
+         wVulnificusA == 0.1d0
+         wVulnificusB == 0.1d0
 
 ! Harmonic/biharmonic horizontal diffusion of biological tracer for
 ! nonlinear model and adjoint-based algorithms: [1:NBT,Ngrids].
 
-         TNU2 == 1*1.0d0                         ! m2/s
-         TNU4 == 1*1.0d0                         ! m4/s
-
-      ad_TNU2 == 1*1.0d0                         ! m2/s
-      ad_TNU4 == 1*1.0d0                         ! m4/s
+         TNU2 == 1.0d0 1.0d0 1.0d0          ! m2/s
+         TNU4 == 1.0d0 1.0d0 1.0d0          ! m4/s
+                        
+      ad_TNU2 == 1.0d0 1.0d0 1.0d0          ! m2/s
+      ad_TNU4 == 1.0d0 1.0d0 1.0d0          ! m4/s
 
 ! Vertical mixing coefficients for biological tracers for nonlinear
 ! model and basic state scale factor in adjoint-based algorithms:
 ! [1:NBT,Ngrids].
 
-      AKT_BAK == 1*5.0d-2                        ! m2/s
-
-   ad_AKT_fac == 1*1.0d0                         ! nondimensional
+      AKT_BAK == 5.0d-2 5.0d-2 5.0d-2       ! m2/s
+                         
+   ad_AKT_fac == 1.0d0  1.0d0  1.0d0        ! nondimensional
 
 ! Nudging/relaxation time scales, inverse scales will be computed
 ! internally: [1:NBT,Ngrids].
 
-        TNUDG == 1*0.0d0                         ! days
+        TNUDG == 0.0d0 0.0d0 0.0d0          ! days
+
+! Radial Basis Function Weights for Vibrio Growth Rates based on temperature
+! and salinity
+
+        NvulAWeights == 5
+        vulnificusA_weights == 1.0d0 1.0d0 1.0d0 1.0d0 1.0d0
+        vulnificusA_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
+        vulnificusA_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
+
+        NvulBWeights == 5
+        vulnificusB_weights == 1.0d0 1.0d0 1.0d0 1.0d0 1.0d0
+        vulnificusB_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
+        vulnificusB_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
 
 ! Logical switches (TRUE/FALSE) to specify which variables to consider on
 ! tracers point Sources/Sinks (like river runoff): [NBT,Ngrids] values are
 ! expected. See glossary below for details.
 
-  LtracerSrc == 1*F
+  LtracerSrc == F F F
 
 ! Logical switches (TRUE/FALSE) to activate writing of biological fields
 ! into HISTORY output files: [1:NBT,Ngrids].
 
-Hout(idTvar) == 1*T     ! entero, ...                biological tracer
-Hout(idTsur) == 1*F     ! entero_sflux, ...          surface tracer flux
+Hout(idTvar) == F T T     ! entero, ...                biological tracer
+Hout(idTsur) == F F F     ! entero_sflux, ...          surface tracer flux
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged fields
 ! into AVERAGE output file: [1:NBT,Ngrids].
 
-Aout(idTvar) == 1*T     ! entero, ...                biological tracer
+Aout(idTvar) == F T T     ! entero, ...                biological tracer
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged,
 ! biological tracer diagnostic terms into DIAGNOSTIC output file:
 ! [1:NBT,Ngrids].
 
-Dout(iTrate) == 1*T     ! entero_rate, ...           time rate of change
-Dout(iThadv) == 1*T     ! entero_hadv, ...           horizontal total advection
-Dout(iTxadv) == 1*T     ! entero_xadv, ...           horizontal XI-advection
-Dout(iTyadv) == 1*T     ! entero_yadv, ...           horizontal ETA-advection
-Dout(iTvadv) == 1*T     ! entero_vadv, ...           vertical advection
-Dout(iThdif) == 1*T     ! entero_hdiff, ...          horizontal total diffusion
-Dout(iTxdif) == 1*T     ! entero_xdiff, ...          horizontal XI-diffusion
-Dout(iTydif) == 1*T     ! entero_ydiff, ...          horizontal ETA-diffusion
-Dout(iTsdif) == 1*T     ! entero_sdiff, ...          horizontal S-diffusion
-Dout(iTvdif) == 1*T     ! entero_vdiff, ...          vertical diffusion
+Dout(iTrate) == F T T     ! entero_rate, ...    time rate of change
+Dout(iThadv) == F T T     ! entero_hadv, ...    horizontal total advection
+Dout(iTxadv) == F T T     ! entero_xadv, ...    horizontal XI-advection
+Dout(iTyadv) == F T T     ! entero_yadv, ...    horizontal ETA-advection
+Dout(iTvadv) == F T T     ! entero_vadv, ...    vertical advection
+Dout(iThdif) == F T T     ! entero_hdiff, ...   horizontal total diffusion
+Dout(iTxdif) == F T T     ! entero_xdiff, ...   horizontal XI-diffusion
+Dout(iTydif) == F T T     ! entero_ydiff, ...   horizontal ETA-diffusion
+Dout(iTsdif) == F T T     ! entero_sdiff, ...   horizontal S-diffusion
+Dout(iTvdif) == F T T     ! entero_vdiff, ...   vertical diffusion
 
 !
 !  GLOSSARY:

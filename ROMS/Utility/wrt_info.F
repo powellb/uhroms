@@ -1201,8 +1201,8 @@
 #  include <npzd_iron_wrt.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_wrt.h>
-# elif defined ENTEROCOCCUS
-#  include <entero_wrt.h>
+# elif defined MICROBE
+#  include <microbe_wrt.h>
 # endif
 #endif
 

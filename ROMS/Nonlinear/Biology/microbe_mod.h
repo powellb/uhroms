@@ -25,7 +25,7 @@
 !  Set biological tracer identification indices.
 !
       integer, allocatable :: idbio(:)  ! Biological tracers
-      integer :: iEntero                ! Enterococcus concentration
+      integer :: iEntero, iVulA, iVulB  ! Microbial Concentrations
 !
 !  Biological parameters.
 !
@@ -35,14 +35,21 @@
       real(r8), dimension(Ngrids) :: AttSWUV, AttSWBlue  ! 1/m
       real(r8), dimension(Ngrids) :: Ent_DecayUV, Ent_GrowthBlue ! nmol/day
       real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
-      real(r8), dimension(Ngrids) :: wEntero         ! m/day
+      real(r8), dimension(Ngrids) :: wEntero, wVulA, wVulB      ! m/day
+
+      integer :: NvulAWeights, NvulBWeights
+      real(r8), dimension(40) :: vulAwght, vulAtemp, vulAsalt
+      real(r8), dimension(40) :: vulBwght, vulBtemp, vulBsalt
+      
 #ifdef TANGENT
       real(r8), dimension(Ngrids) :: tl_PARfracUV, tl_PARfracBlue
       real(r8), dimension(Ngrids) :: tl_wEntero
+      real(r8), dimension(Ngrids) :: tl_wVulA, tl_wVulB
 #endif
 #ifdef ADJOINT
       real(r8), dimension(Ngrids) :: ad_PARfracUV, ad_PARfracBlue
       real(r8), dimension(Ngrids) :: ad_wEntero
+      real(r8), dimension(Ngrids) :: ad_wVulA, ad_wVul
 #endif
 
       CONTAINS
@@ -64,7 +71,7 @@
 !  Set number of biological tracers.
 !-----------------------------------------------------------------------
 !
-      NBT=1
+      NBT=3
 !
 !-----------------------------------------------------------------------
 !  Initialize tracer identification indices.
@@ -82,7 +89,9 @@
       DO i=1,NBT
         idbio(i)=ic+i
       END DO
-      iEntero=ic+1
+      iEntero=idbio(1)
+      iVulA=idbio(2)
+      iVulB=idbio(3)
 
       RETURN
       END SUBROUTINE initialize_biology

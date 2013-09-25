@@ -617,8 +617,8 @@
 #  include <npzd_iron_inp.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_inp.h>
-# elif defined ENTEROCOCCUS
-#  include <entero_inp.h>
+# elif defined MICROBE
+#  include <microbe_inp.h>
 # endif
 #endif
 
