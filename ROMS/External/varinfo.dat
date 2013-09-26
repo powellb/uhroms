@@ -1749,6 +1749,24 @@
   'nulvar'
   1.0d0
 
+'river_vulA'                                      ! Input
+  'river runoff vibrio vulnificus type A'
+  'nanomole_nitrogen meter-3'                     ! [nanomole/m3]
+  'river_vulA, scalar, series'
+  'river_time'
+  'idRtrc(iVulA)'
+  'nulvar'
+  1.0d0
+
+'river_vulB'                                      ! Input
+  'river runoff vibrio vulnificus type B'
+  'nanomole_nitrogen meter-3'                     ! [nanomole/m3]
+  'river_vulB, scalar, series'
+  'river_time'
+  'idRtrc(iVulB)'
+  'nulvar'
+  1.0d0
+
 'river_NO3'                                        ! Input
   'river runoff NO3'
   'millimole_nitrogen meter-3'                     ! [millimole/m3]
@@ -2852,12 +2870,48 @@
   'r3dvar'
   1.0d0
 
+'vulnificusA'                                     ! Input/Output
+  'vibrio vulnificus type A concentration'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'vulA, scalar, series'
+  'ocean_time'
+  'idTvar(iVulA)'
+  'r3dvar'
+  1.0d0
+
+'vulnificusB'                                     ! Input/Output
+  'vibrio vulnificus type B concentration'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'vulB, scalar, series'
+  'ocean_time'
+  'idTvar(iVulB)'
+  'r3dvar'
+  1.0d0
+
 'enterococcus'                                     ! Input
   'enterococcus concentration function'
   'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
   'Entero, scalar, series'
   'ocean_time'
   'idTads(iEntero)'
+  'r3dvar'
+  1.0d0
+
+'vulnificusA'                                     ! Input
+  'vibrio vulnificus type A concentration function'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'vulA, scalar, series'
+  'ocean_time'
+  'idTads(iVulA)'
+  'r3dvar'
+  1.0d0
+
+'vulnificusB'                                     ! Input
+  'vibrio vulnificus type B concentration function'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'vulB, scalar, series'
+  'ocean_time'
+  'idTads(iVulB)'
   'r3dvar'
   1.0d0
 
@@ -3278,7 +3332,7 @@
   'enterococcus eastern boundary condition'
   'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
   'Entero_east, scalar, series'
-  'entero_time'
+  'microbe_time'
   'idTbry(ieast,iEntero)'
   'nulvar'
   1.0d0
@@ -3287,7 +3341,7 @@
   'enterococcus western boundary condition'
   'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
   'Entero_west, scalar, series'
-  'entero_time'
+  'microbe_time'
   'idTbry(iwest,iEntero)'
   'nulvar'
   1.0d0
@@ -3296,7 +3350,7 @@
   'enterococcus northern boundary condition'
   'nanomole_nitrogen meter-3'                       ! [nanomole/m3]
   'Entero_north, scalar, series'
-  'entero_time'
+  'microbe_time'
   'idTbry(inorth,iEntero)'
   'nulvar'
   1.0d0
@@ -3305,10 +3359,83 @@
   'enterococcus southern boundary condition'
   'nanomole_nitrogen meter-3'                       ! [nanomole/m3]
   'Entero_south, scalar, series'
-  'entero_time'
+  'microbe_time'
   'idTbry(isouth,iEntero)'
   'nulvar'
   1.0d0
+
+'vulnificusA_east'                                      ! Input
+  'vibrio vulnificus type A eastern boundary condition'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'VulA_east, scalar, series'
+  'microbe_time'
+  'idTbry(ieast,iVulA)'
+  'nulvar'
+  1.0d0
+
+'vulnificusA_west'                                      ! Input
+  'vibrio vulnificus type A western boundary condition'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'VulA_west, scalar, series'
+  'microbe_time'
+  'idTbry(iwest,iVulA)'
+  'nulvar'
+  1.0d0
+
+'vulnificusA_north'                                      ! Input
+  'vibrio vulnificus type A northern boundary condition'
+  'nanomole_nitrogen meter-3'                       ! [nanomole/m3]
+  'VulA_north, scalar, series'
+  'microbe_time'
+  'idTbry(inorth,iVulA)'
+  'nulvar'
+  1.0d0
+
+'vulnificusA_south'                                      ! Input
+  'vibrio vulnificus type A southern boundary condition'
+  'nanomole_nitrogen meter-3'                       ! [nanomole/m3]
+  'VulA_south, scalar, series'
+  'microbe_time'
+  'idTbry(isouth,iVulA)'
+  'nulvar'
+  1.0d0
+
+'vulnificusB_east'                                      ! Input
+  'vibrio vulnificus type B eastern boundary condition'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'VulB_east, scalar, series'
+  'microbe_time'
+  'idTbry(ieast,iVulB)'
+  'nulvar'
+  1.0d0
+
+'vulnificusB_west'                                      ! Input
+  'vibrio vulnificus type B western boundary condition'
+  'nanomole_nitrogen meter-3'                      ! [nanomole/m3]
+  'VulB_west, scalar, series'
+  'microbe_time'
+  'idTbry(iwest,iVulB)'
+  'nulvar'
+  1.0d0
+
+'vulnificusB_north'                                      ! Input
+  'vibrio vulnificus type B northern boundary condition'
+  'nanomole_nitrogen meter-3'                       ! [nanomole/m3]
+  'VulB_north, scalar, series'
+  'microbe_time'
+  'idTbry(inorth,iVulB)'
+  'nulvar'
+  1.0d0
+
+'vulnificusB_south'                                      ! Input
+  'vibrio vulnificus type B southern boundary condition'
+  'nanomole_nitrogen meter-3'                       ! [nanomole/m3]
+  'VulB_south, scalar, series'
+  'microbe_time'
+  'idTbry(isouth,iVulB)'
+  'nulvar'
+  1.0d0
+
 
 'NO3_east'                                         ! Input
   'nitrate eastern boundary condition'

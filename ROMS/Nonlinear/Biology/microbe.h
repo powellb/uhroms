@@ -108,14 +108,14 @@
 !
       integer, parameter :: Nsink = 3
 
-      integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, n
+      integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, ii
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
       real(r8) :: Att, ExpAtt, Itop, PARUV, PARBlue
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
-      real(r8) :: dt, ds
+      real(r8) :: delt, dels
       
       integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
@@ -360,10 +360,10 @@
 !  Vibrio Vulnificus A growth. First, compute the growth rate
 !
               cff1=0.0_r8
-              DO n=1,NvulAWeights
-                dt=vulAtemp(n) - t(i,j,k,nstp,itemp)
-                ds=vulAsalt(n) - t(i,j,k,nstp,isalt)
-                cff1=cff1 + vulAwght(n)*SQRT(0.25*(dt*dt+ds*ds)+1)
+              DO ii=1,NvulAWeights
+                delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
+                dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
+                cff1=cff1 + vulAwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
               cff1=dtdays*cff1*Bio(i,k,iVulA)
               Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
@@ -372,10 +372,10 @@
 !  Vibrio Vulnificus B growth. First, compute the growth rate
 !
               cff1=0.0_r8
-              DO n=1,NvulAWeights
-                dt=vulAtemp(n) - t(i,j,k,nstp,itemp)
-                ds=vulAsalt(n) - t(i,j,k,nstp,isalt)
-                cff1=cff1 + vulBwght(n)*SQRT(0.25*(dt*dt+ds*ds)+1)
+              DO ii=1,NvulAWeights
+                delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
+                dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
+                cff1=cff1 + vulBwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
               cff1=dtdays*cff1*Bio(i,k,iVulB)
               Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1

@@ -80,7 +80,6 @@
 !
 !  Vulnificus weight parameters.
 !
-      IF (NvulAWeights.gt.0) THEN
         status=def_dim(ng, model, ncid, ncname, 'NvulnificusAFit',       &
      &                 25, wghtdimA)
         IF (exit_flag.ne.NoError) RETURN
@@ -107,9 +106,7 @@
      &                 1, (/wghtdimA/), Aval, Vinfo, ncname,             &
      &               SetParAccess = .FALSE.)
         IF (exit_flag.ne.NoError) RETURN
-      END IF
       
-      IF (NvulBWeights.gt.0) THEN
         status=def_dim(ng, model, ncid, ncname, 'NvulnificusBFit',       &
      &                 25, wghtdimB)
         IF (exit_flag.ne.NoError) RETURN
@@ -136,4 +133,3 @@
      &                 1, (/wghtdimB/), Aval, Vinfo, ncname,             &
      &               SetParAccess = .FALSE.)
         IF (exit_flag.ne.NoError) RETURN
-      END IF

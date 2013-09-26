@@ -6,14 +6,14 @@
 **   See License_ROMS.txt                                             **
 ************************************************************************
 **                                                                    **
-**  Writes enterococcus input parameters into                         **
+**  Writes microbial input parameters into                            **
 **  output NetCDF files. It is included in routine "wrt_info.F".      **
 **                                                                    **
 ************************************************************************
 */
 
 !
-!  Write out Enterococcus biological model parameters.
+!  Write out microbial biological model parameters.
 !
       CALL netcdf_put_ivar (ng, model, ncname, 'BioIter',               &
      &                      BioIter(ng), (/0/), (/0/),                  &

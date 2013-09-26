@@ -17,6 +17,10 @@
 
               CASE ('idTvar(iEntero)')
                 idTvar(iEntero)=varid
+              CASE ('idTvar(iVulA)')
+                idTvar(iVulA)=varid
+              CASE ('idTvar(iVulB)')
+                idTvar(iVulB)=varid
 
 #if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \

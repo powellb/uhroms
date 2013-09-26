@@ -7,8 +7,8 @@
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  This routine reads in enterococcus ecosystem model input    !
-!  parameters. They are specified in input script "entero.in".    !
+!  This routine reads in microbial ecosystem model input               !
+!  parameters. They are specified in input script "microbe.in".        !
 !                                                                      !
 !=======================================================================
 !
@@ -42,7 +42,7 @@
       character (len=256), dimension(100) :: Cval
 !
 !-----------------------------------------------------------------------
-!  Read in Enterococcus model parameters.
+!  Read in microbial model parameters.
 !-----------------------------------------------------------------------
 !
       IF (.not.allocated(BioIni)) allocate ( BioIni(MT,Ngrids) )
@@ -56,6 +56,10 @@
             Npts=load_i(Nval, Rval, Ngrids, BioIter)
           ELSE IF (TRIM(KeyWord).eq.'BioIni(iEntero)') THEN
             Npts=load_r(Nval, Rval, Ngrids, BioIni(iEntero,1))
+          ELSE IF (TRIM(KeyWord).eq.'BioIni(iVulA)') THEN
+            Npts=load_r(Nval, Rval, Ngrids, BioIni(iVulA,1))
+          ELSE IF (TRIM(KeyWord).eq.'BioIni(iVulB)') THEN
+            Npts=load_r(Nval, Rval, Ngrids, BioIni(iVulB,1))
           ELSE IF (TRIM(KeyWord).eq.'PARfracUV') THEN
             Npts=load_r(Nval, Rval, Ngrids, PARfracUV)
           ELSE IF (TRIM(KeyWord).eq.'PARfracBlue') THEN
@@ -305,6 +309,10 @@
      &            'Number of iterations for nonlinear convergence.'
             WRITE (out,70) BioIni(iEntero,ng), 'BioIni(iEntero)',       &
      &            'Enterococcus initial concentration (nmol/m3).'
+            WRITE (out,70) BioIni(iVulA,ng), 'BioIni(iVulA)',           &
+     &            'Vulnificus A initial concentration (nmol/m3).'
+            WRITE (out,70) BioIni(iVulB,ng), 'BioIni(iVulB)',           &
+     &            'Vulnificus B initial concentration (nmol/m3).'
             WRITE (out,80) PARfracUV(ng), 'PARfracUV',                  &
      &            'Fraction of shortwave radiation that is',            &
      &            'UV active (nondimensional).'
@@ -329,7 +337,8 @@
               WRITE  (out, 60) NvulAWeights, 'NvulAWeights',            &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS A WEIGHTS'
-              DO i=1,NvulWeights
+              write (out, *) 'TEMP,  SALT,  WEIGHT'
+              DO i=1,NvulAWeights
                 WRITE (out,251) vulAtemp(i), vulAsalt(i), vulAwght(i), i
               END DO
             END IF
@@ -337,7 +346,8 @@
               WRITE  (out, 60) NvulBWeights, 'NvulBWeights',            &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
-              DO i=1,NvulWeights
+              write (out, *) 'TEMP,  SALT,  WEIGHT'
+              DO i=1,NvulBWeights
                 WRITE (out,251) vulBtemp(i), vulBsalt(i), vulBwght(i), i
               END DO
             END IF

@@ -1,4 +1,4 @@
-!  Enterococcus Biological Model Parameters.
+!  Microbial Biological Model Parameters.
 !
 !svn $Id$
 !========================================================= Brian Powell ===
@@ -51,9 +51,9 @@
 ! Initial concentration for analytical uniform initial conditions.
 ! [nanomole/meter3].
 
-BioIni(iEntero) == 4.163d0                       ! Enterococcus nmol m^{-3}
-BioIni(iVulnificusA) == 4                        ! Vibrio Vulnif. A nmol m^{-3}
-BioIni(iVulnificusB) == 4                        ! Vibrio Vulnif. B nmol m^{-3}
+BioIni(iEntero) == 4.163d0               ! Enterococcus nmol m^{-3}
+BioIni(iVulA) == 4.0d0                   ! Vibrio Vulnif. A nmol m^{-3}
+BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 
 ! Fraction of shortwave radiation that is UV active
 ! (nondimensional) {0.43d0}
@@ -113,12 +113,12 @@ BioIni(iVulnificusB) == 4                        ! Vibrio Vulnif. B nmol m^{-3}
 ! and salinity
 
         NvulAWeights == 5
-        vulnificusA_weights == 1.0d0 1.0d0 1.0d0 1.0d0 1.0d0
+        vulnificusA_weights == 0.0d0 0.0d0 0.0d0 0.0d0 0.0d0
         vulnificusA_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
         vulnificusA_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
 
         NvulBWeights == 5
-        vulnificusB_weights == 1.0d0 1.0d0 1.0d0 1.0d0 1.0d0
+        vulnificusB_weights == 0.0d0 0.0d0 0.0d0 0.0d0 0.0d0
         vulnificusB_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
         vulnificusB_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
 
@@ -131,38 +131,40 @@ BioIni(iVulnificusB) == 4                        ! Vibrio Vulnif. B nmol m^{-3}
 ! Logical switches (TRUE/FALSE) to activate writing of biological fields
 ! into HISTORY output files: [1:NBT,Ngrids].
 
-Hout(idTvar) == F T T     ! entero, ...                biological tracer
+Hout(idTvar) == T T T     ! entero, ...                biological tracer
 Hout(idTsur) == F F F     ! entero_sflux, ...          surface tracer flux
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged fields
 ! into AVERAGE output file: [1:NBT,Ngrids].
 
-Aout(idTvar) == F T T     ! entero, ...                biological tracer
+Aout(idTvar) == T T T     ! entero, ...                biological tracer
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged,
 ! biological tracer diagnostic terms into DIAGNOSTIC output file:
 ! [1:NBT,Ngrids].
 
-Dout(iTrate) == F T T     ! entero_rate, ...    time rate of change
-Dout(iThadv) == F T T     ! entero_hadv, ...    horizontal total advection
-Dout(iTxadv) == F T T     ! entero_xadv, ...    horizontal XI-advection
-Dout(iTyadv) == F T T     ! entero_yadv, ...    horizontal ETA-advection
-Dout(iTvadv) == F T T     ! entero_vadv, ...    vertical advection
-Dout(iThdif) == F T T     ! entero_hdiff, ...   horizontal total diffusion
-Dout(iTxdif) == F T T     ! entero_xdiff, ...   horizontal XI-diffusion
-Dout(iTydif) == F T T     ! entero_ydiff, ...   horizontal ETA-diffusion
-Dout(iTsdif) == F T T     ! entero_sdiff, ...   horizontal S-diffusion
-Dout(iTvdif) == F T T     ! entero_vdiff, ...   vertical diffusion
+Dout(iTrate) == T T T     ! entero_rate, ...    time rate of change
+Dout(iThadv) == T T T     ! entero_hadv, ...    horizontal total advection
+Dout(iTxadv) == T T T     ! entero_xadv, ...    horizontal XI-advection
+Dout(iTyadv) == T T T     ! entero_yadv, ...    horizontal ETA-advection
+Dout(iTvadv) == T T T     ! entero_vadv, ...    vertical advection
+Dout(iThdif) == T T T     ! entero_hdiff, ...   horizontal total diffusion
+Dout(iTxdif) == T T T     ! entero_xdiff, ...   horizontal XI-diffusion
+Dout(iTydif) == T T T     ! entero_ydiff, ...   horizontal ETA-diffusion
+Dout(iTsdif) == T T T     ! entero_sdiff, ...   horizontal S-diffusion
+Dout(iTvdif) == T T T     ! entero_vdiff, ...   vertical diffusion
 
 !
 !  GLOSSARY:
 !  =========
 !
 !------------------------------------------------------------------------------
-! Enterococcus Biological Model Parameters. Currently, it is
-! configured with 1 biological tracers:
+! Microbial Biological Model Parameters. Currently, it is
+! configured with 3 biological tracers:
 !
-! idbio(1)      enterococcus      concentration
+! idbio(1)      enterococcus concentration
+! idbio(2)      vibrio vulnificus type A concentration
+! idbio(3)      vibrio vulnificus type B concentration
 !
 !------------------------------------------------------------------------------
 !
@@ -183,7 +185,9 @@ Dout(iTvdif) == F T T     ! entero_vdiff, ...   vertical diffusion
 !                   conditions, [millimole/meter3]. It is only used when
 !                   ANA_BIOLOGY is activated.
 !
-!                     BioIni(iEntero)        Enterococcus concentration
+!                     BioIni(iEntero)      Enterococcus concentration
+!                     BioIni(iVulA)        Vulnificus A concentration
+!                     BioIni(iVulB)        Vulnificus B concentration
 !
 !  PARfrac        Fraction of shortwave radiation that is UV
 !                   active (nondimensional).
@@ -193,6 +197,8 @@ Dout(iTvdif) == F T T     ! entero_vdiff, ...   vertical diffusion
 !  Ent_Att        Decay of enterococcus due to absorption of UV
 !
 !  wEntero        Enterococcus sinking rate, [m/day].
+!  wVulnificusA   Vulnificus A sinking rate, [m/day].
+!  wVulnificusB   Vulnificus B sinking rate, [m/day].
 !
 !------------------------------------------------------------------------------
 ! Physical Parameters, [1:NBT,1:Ngrids] values are expected.
