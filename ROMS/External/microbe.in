@@ -87,6 +87,11 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
          wVulnificusA == 0.1d0
          wVulnificusB == 0.1d0
 
+! Microbial mortality rates, [nmol/day], {0.0d0}.
+
+         zVulA == 0.1d0
+         zVulB == 0.1d0
+         
 ! Harmonic/biharmonic horizontal diffusion of biological tracer for
 ! nonlinear model and adjoint-based algorithms: [1:NBT,Ngrids].
 

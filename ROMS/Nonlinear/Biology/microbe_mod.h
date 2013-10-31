@@ -36,6 +36,7 @@
       real(r8), dimension(Ngrids) :: Ent_DecayUV, Ent_GrowthBlue ! nmol/day
       real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
       real(r8), dimension(Ngrids) :: wEntero, wVulA, wVulB      ! m/day
+      real(r8), dimension(Ngrids) :: zVulA, zVulB               ! nmol/day
 
       integer :: NvulAWeights, NvulBWeights
       real(r8), dimension(40) :: vulAwght, vulAtemp, vulAsalt
@@ -45,11 +46,13 @@
       real(r8), dimension(Ngrids) :: tl_PARfracUV, tl_PARfracBlue
       real(r8), dimension(Ngrids) :: tl_wEntero
       real(r8), dimension(Ngrids) :: tl_wVulA, tl_wVulB
+      real(r8), dimension(Ngrids) :: tl_zVulA, tl_zVulB
 #endif
 #ifdef ADJOINT
       real(r8), dimension(Ngrids) :: ad_PARfracUV, ad_PARfracBlue
       real(r8), dimension(Ngrids) :: ad_wEntero
       real(r8), dimension(Ngrids) :: ad_wVulA, ad_wVul
+      real(r8), dimension(Ngrids) :: ad_zVulA, ad_zVul
 #endif
 
       CONTAINS

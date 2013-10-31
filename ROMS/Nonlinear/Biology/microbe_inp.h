@@ -78,6 +78,10 @@
             Npts=load_r(Nval, Rval, Ngrids, wVulA)
           ELSE IF (TRIM(KeyWord).eq.'wVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, wVulB)
+          ELSE IF (TRIM(KeyWord).eq.'zVulnificusA') THEN
+            Npts=load_r(Nval, Rval, Ngrids, zVulA)
+          ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
+            Npts=load_r(Nval, Rval, Ngrids, zVulB)
           ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
             Npts=load_i(Nval, Rval, 1, NvulAWeights)
             NvulAWeights=MIN(40,NvulAWeights)

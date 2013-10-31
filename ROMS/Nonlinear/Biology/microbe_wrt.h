@@ -55,6 +55,16 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
+      CALL netcdf_put_fvar (ng, model, ncname, 'zVulnificusA',          &
+     &                      zVulA(ng), (/0/), (/0/),                    &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'zVulnificusB',          &
+     &                      zVulB(ng), (/0/), (/0/),                    &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
 
 !
 !  Vulnificus Weights

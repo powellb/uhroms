@@ -340,7 +340,7 @@
           END DO
 
 !
-!  Time-Step the Enterococcus model
+!  Time-Step the Microbial model
 !
           DO k=1,N(ng)
             DO i=Istr,Iend
@@ -365,6 +365,7 @@
                 dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulAwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
+!  Apply the growth-rate
               cff1=dtdays*cff1*Bio(i,k,iVulA)
               Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
 
@@ -377,10 +378,24 @@
                 dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulBwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
+!  Apply the growth-rate
               cff1=dtdays*cff1*Bio(i,k,iVulB)
               Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
+
+!
+!  Vibrio Vulnificus A mortality.
+!
+              cff1=1.0_r8+dtdays*zVulA
+              Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
+
+!
+!  Vibrio Vulnificus B mortality.
+!
+              cff1=1.0_r8+dtdays*zVulB
+              Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
             END DO
           END DO
+
 !
 !-----------------------------------------------------------------------
 !  Vertical sinking terms: Enterococcus
