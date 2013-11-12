@@ -385,13 +385,13 @@
 !
 !  Vibrio Vulnificus A mortality.
 !
-              cff1=1.0_r8+dtdays*zVulA
+              cff1=1.0_r8+dtdays*zVulA(ng)
               Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
 
 !
 !  Vibrio Vulnificus B mortality.
 !
-              cff1=1.0_r8+dtdays*zVulB
+              cff1=1.0_r8+dtdays*zVulB(ng)
               Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
             END DO
           END DO
