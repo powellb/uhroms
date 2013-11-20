@@ -337,6 +337,10 @@
      &            'vibrio vulnificus A sinking rate (m/day).'
             WRITE (out,70) wVulB(ng), 'wVulnificusB',                   &
      &            'vibrio vulnificus B sinking rate (m/day).'
+            WRITE (out,70) zVulA(ng), 'zVulnificusA',                   &
+     &            'vibrio vulnificus A mortality rate (nmol/day).'
+            WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
+     &            'vibrio vulnificus B mortality rate (nmol/day).'
             IF (NvulAWeights.GT.0) THEN
               WRITE  (out, 60) NvulAWeights, 'NvulAWeights',            &
      &            'number of weights to use for microbes.'
