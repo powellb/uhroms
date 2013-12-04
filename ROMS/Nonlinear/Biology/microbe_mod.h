@@ -92,9 +92,9 @@
       DO i=1,NBT
         idbio(i)=ic+i
       END DO
-      iEntero=idbio(1)
-      iVulA=idbio(2)
-      iVulB=idbio(3)
+      iEntero=ic+1
+      iVulA=ic+2
+      iVulB=ic+3
 
       RETURN
       END SUBROUTINE initialize_biology
