@@ -396,6 +396,29 @@
      &                FORCES(ng) % rainG(LBi,LBj,1))
 # endif
 
+# if !defined ANA_STFLUX && defined BULK_FLUXES && defined ISOTOPE
+!
+!-----------------------------------------------------------------------
+!  Isotope mass fraction for O18 and O16
+!-----------------------------------------------------------------------
+!
+      CALL get_2dfld (ng, iNLM, ido16frac, ncFRCid(ido16frac,ng),       &
+     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                LBi, UBi, LBj, UBj, 2, 1,                         &
+#  ifdef MASKING
+     &                GRID(ng) % rmask(LBi,LBj),                        &
+#  endif
+     &                FORCES(ng) % o16fracG(LBi,LBj,1))
+
+      CALL get_2dfld (ng, iNLM, ido18frac, ncFRCid(ido18frac,ng),       &
+     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                LBi, UBi, LBj, UBj, 2, 1,                         &
+#  ifdef MASKING
+     &                GRID(ng) % rmask(LBi,LBj),                        &
+#  endif
+     &                FORCES(ng) % o18fracG(LBi,LBj,1))
+# endif
+
 # if !defined ANA_STFLUX && !defined BULK_FLUXES
 !
 !-----------------------------------------------------------------------

@@ -24,10 +24,10 @@
 # First the defaults
 #
                FC := ifort
-           FFLAGS := -heap-arrays -fp-model precise
+           FFLAGS := -heap-arrays
               CPP := /usr/bin/cpp
          CPPFLAGS := -P -traditional-cpp
-          LDFLAGS :=
+          LDFLAGS := -Wl,-no_pie
                AR := ar
           ARFLAGS := r
             MKDIR := mkdir -p
@@ -77,7 +77,7 @@ endif
 
 ifdef USE_DEBUG
 #          FFLAGS += -g -traceback -check all -fp-stack-check
-           FFLAGS += -g -check bounds
+           FFLAGS += -g -check bounds -assume old_unit_star
 else
 #          FFLAGS += -ip -O3 -Wl,-stack_size,0x10000000
            FFLAGS += -ip -O3

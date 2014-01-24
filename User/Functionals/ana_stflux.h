@@ -1,6 +1,10 @@
       SUBROUTINE ana_stflux (ng, tile, model, itrc)
 !
 !! svn $Id$
+!================================================ Brian Powell, 2014 ===
+!
+! Code for atmospheric evaporation and rainfall of isotopes
+!
 !!======================================================================
 !! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -61,6 +65,8 @@
 !
       USE mod_param
       USE mod_scalars
+      USE mod_forces
+      USE mod_ocean
 !
 #if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_2d_mod, ONLY : exchange_r2d_tile
@@ -108,6 +114,8 @@
 # endif
 #endif
       integer :: i, j
+      real(r8) :: precip, evap, ustar, z0, rhoair, vmu, sc, reno
+      real(r8) :: cff1, cff2, cff3, kn18, alphoce, alphair, qsea
 
 #include "set_bounds.h"
 !
@@ -156,13 +164,128 @@
 !-----------------------------------------------------------------------
 !
       ELSE
-#if defined MY_APPLICATION
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
-            stflx(i,j,itrc)=???
+#if defined ISOTOPE && defined BULK_FLUXES
+        IF (itrc.eq.i16O) THEN
+!
+!-----------------------------------------------------------------------
+!  Despite checking for O16 tracer, this will compute all of the tracer
+!  fluxes at the same time. The check is to prevent recomputing in the
+!  same time-step.
+!
+!  Compute using model from Merlivat and Jouzel, "Global Climatic
+!  Interpretation of the Deuterium-Oxygen 18 Relationship for 
+!  Precipitation", JGR, vol. 84, 5029--5033, 1979.
+!-----------------------------------------------------------------------
+!
+          DO j=JstrR,JendR
+            DO i=IstrR,IendR
+!
+! Compute the frictional velocity
+!
+              cff1=SQRT(FORCES(ng) % Taux(i,j)*FORCES(ng) % Taux(i,j) + &
+     &               FORCES(ng) % Tauy(i,j)*FORCES(ng) % Tauy(i,j)) /   & 
+     &               (OCEAN(ng) % rho(i,j,N(ng)+rho0)
+              ustar=SQRT(cff1)
+!
+! Compute the roughness length equation: u*^2 / (81.1 * g)
+!
+              z0=cff1*0.00125693_r8
+!
+! Compute the density of surface air
+!
+              rhoair=FORCES(ng) % Pair(i,j) * 100.0_r8 /                &
+     &             (blk_Rgas*(FORCES(ng)%Tair(i,j)+273.16_r8)*          &
+     &                (1+0.61_r8*FORCES(ng)%Hair(i,j)))
+!
+! kinematic viscosity, sc, and reynold's number
+!
+              vmu=1.7E-5_r8/rhoair
+              sc=vmu*42372.881_r8
+              reno=ustar*z0/vmu
+!
+! Compute turbulent resistance based on the Reynold's number
+!
+              IF (reno.LT.0.13)
+                cff1=0.6666667_r8
+                cff2=(-2.5_r8 * LOG(ustar*blk_ZW/(30.0_r8*vmu))) /      &
+     &              (13.6_r8 * sc**cff1)
+              ELSE
+                cff1=0.5_r8
+                cff2=(-2.5_r8 * LOG(blk_ZW/z0) - 5.0_r8) /              &
+     &              (7.3_r8*(reno**0.25_r8)*(sc**cff1))
+              END IF
+!
+! The kinetic fractionation coefficient
+!
+              cff3=1.0323115_r8**cff1
+              kn18=(cff3-1.0_r8)/(cff3+cff2)
+!
+!  Compute water saturation vapor pressure (mb), using Teten formula.
+!
+              cff1=(1.0007_r8+2.115E-5_r8*FORCES(ng)%Pair(i,j))*        &
+     &         EXP(17.502_r8*OCEAN(ng) % t(i,j,N(ng),nrhs,itemp) /      &
+     &           (240.97_r8+(OCEAN(ng) % t(i,j,N(ng),nrhs,itemp)))) *   &
+     &             0.98_r8
+!
+!  Compute Qsea (kg/kg) from vapor pressure.
+!
+              qsea=0.62197_r8*(cff1/(FORCES(ng) % Pair(i,j) -           &
+     &                         0.378_r8*cff1))
+! 
+! Compute the evaporation for O16
+!
+              cff1=OCEAN(ng) % t(i,j,N(ng),nrhs,i16O) /                 &
+     &             (OCEAN(ng) % rho(i,j,N(ng) + rho0)
+              cff3=((qsea*cff1) - (FORCES(ng) % Hair(i,j) *             &
+     &              FORCES(ng) % o16frac(i,j))) /                       &
+     &              (qsea - FORCES(ng) % Hair(i,j))
+              evap=FORCES(ng) % evap(i,j) * cff3
+! 
+! Compute the precipitation for O16
+!
+              precip=FORCES(ng) % rain(i,j) *                           &
+     &                     FORCES(ng) % o16frac(i,j)
+!
+! Set the fluxes for O16              
+!
+              stflx(i,j,i16O)=evap-precip
+#ifdef TL_IOMS
+              tl_stflx(i,j,i16O)=evap-precip
+#endif
+! 
+! Compute the equilibrium fractionation coefficients
+!
+              cff1=(FORCES(ng) % Tair(i,j)+273.16_r8
+              alphair=EXP(1.137E3_r8/(cff1*cff1) -                      &
+     &                0.4156_r8/cff1 - 2.0667E-3_r8 )
+              cff1=(OCEAN(ng) % t(i,j,N(ng),nrhs,itemp)+273.16_r8
+              alphoce=EXP(1.137E3_r8/(cff1*cff1) -                      &
+     &                0.4156_r8/cff1 - 2.0667E-3_r8 )
+! 
+! Compute the evaporation for O18
+!
+              cff1=OCEAN(ng) % t(i,j,N(ng),nrhs,i18O) /                 &
+     &             (OCEAN(ng) % rho(i,j,N(ng) + rho0)
+              cff3=((qsea*cff1/alphoce) - (FORCES(ng) % Hair(i,j) *     &
+     &              FORCES(ng) % o18frac(i,j)/alphair)) /               &
+     &              (qsea - FORCES(ng) % Hair(i,j))
+              evap=FORCES(ng) % evap(i,j) * (1.0_r8 - kn18) * cff3
+
+! 
+! Compute the precipitation for O18
+!
+              precip=FORCES(ng) % rain(i,j) *                           &
+     &                     FORCES(ng) % o18frac(i,j)
+!
+! Set the fluxes for O18
+!
+              stflx(i,j,i18O)=evap-precip
+#ifdef TL_IOMS
+              tl_stflx(i,j,i18O)=evap-precip
+#endif
+            END DO
           END DO
-        END DO
-      END IF
+        END IF
 #else
         DO j=JstrR,JendR
           DO i=IstrR,IendR

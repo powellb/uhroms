@@ -308,6 +308,25 @@
 #   endif
 #  endif
 
+#  if defined BULK_FLUXES && defined ISOTOPE
+!
+!-----------------------------------------------------------------------
+!  Isotope mass fraction for O18 and O16
+!-----------------------------------------------------------------------
+!
+      CALL set_2dfld_tile (ng, tile, iNLM, ido16frac,                   &
+     &                     LBi, UBi, LBj, UBj,                          &
+     &                     FORCES(ng)%o16fracG,                         &
+     &                     FORCES(ng)%o16frac,                          &
+     &                     update)
+
+      CALL set_2dfld_tile (ng, tile, iNLM, ido18frac,                   &
+     &                     LBi, UBi, LBj, UBj,                          &
+     &                     FORCES(ng)%o18fracG,                         &
+     &                     FORCES(ng)%o18frac,                          &
+     &                     update)
+#  endif
+
 #  ifndef BULK_FLUXES
 !
 !-----------------------------------------------------------------------
@@ -462,7 +481,7 @@
 !-----------------------------------------------------------------------
 !
       DO itrc=NAT+1,NT(ng)
-#   ifdef ANA_SPFLUX
+#   if defined ANA_SPFLUX || defined ANA_ISOFLUX
         CALL ana_stflux (ng, tile, iNLM, itrc)
 #   else
         CALL set_2dfld_tile (ng, tile, iNLM, idTsur(itrc),              &

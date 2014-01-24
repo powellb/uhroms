@@ -1,13 +1,13 @@
       SUBROUTINE biology (ng,tile)
 !
 !svn $Id$
-!************************************************** Brian Powell ***
+!************************************************ Brian Powell, 2014 ***
 !  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
 !                                                                      !
-!  Enterococcus Model.                                                 !
+!  Isotope Model.                                                      !
 !                                                                      !
 !***********************************************************************
 !
@@ -122,8 +122,6 @@
 
       integer, dimension(IminS:ImaxS,N(ng)) :: ksource
 
-      real(r8), dimension(IminS:ImaxS) :: PARsurUV, PARsurBlue
-
       real(r8), dimension(NT(ng),2) :: BioTrc
 
       real(r8), dimension(IminS:ImaxS,N(ng),NT(ng)) :: Bio
@@ -153,16 +151,14 @@
 !
 !  Set vertical sinking indentification vector.
 !
-      idsink(1)=iEntero                  ! Enterococcus
-      idsink(2)=iVulA                    ! Vulnificus A
-      idsink(3)=iVulB                    ! Vulnificus B
+      idsink(1)=i16O                    ! O16
+      idsink(2)=i18O                    ! O18
 !
 !  Set vertical sinking velocity vector in the same order as the
 !  identification vector, IDSINK.
 !
-      Wbio(1)=wEntero(ng)                ! Enterococcus
-      Wbio(2)=wVulA(ng)                  ! Vulnificus A
-      Wbio(3)=wVulB(ng)                  ! Vulnificus B
+      Wbio(1)=w16O(ng)                  ! O16
+      Wbio(2)=w18O(ng)                  ! O18
 !
 !  Compute inverse thickness to avoid repeated divisions.
 !
@@ -229,19 +225,6 @@
           END DO
         END DO
 !
-!  Calculate surface Photosynthetically Available Radiation (PAR).  The
-!  net shortwave radiation is scaled back to Watts/m2 and multiplied by
-!  the fraction that is photosynthetically available, PARfrac.
-!
-        DO i=Istr,Iend
-#ifdef CONST_PAR
-          PARsurUV(i)=158.075_r8
-#else
-          PARsurUV(i)=PARfracUV(ng)*srflx(i,j)*rho0*Cp
-          PARsurBlue(i)=PARfracBlue(ng)*srflx(i,j)*rho0*Cp
-#endif
-        END DO
-!
 !=======================================================================
 !  Start internal iterations to achieve convergence of the nonlinear
 !  backward-implicit solution.
@@ -298,107 +281,16 @@
 !
         ITER_LOOP: DO Iter=1,BioIter(ng)
 !
-!  Compute light attenuation as function of depth.
+!  Time-Step the Isotope model
 !
-          DO i=Istr,Iend
-!
-!  Make sure it is daytime
-!
-            PARUV=PARsurUV(i)
-            PARBlue=PARsurBlue(i)
-            IF (PARsurUV(i).gt.0.0_r8.and.PARsurBlue(i).gt.0.0_r8) THEN
-              DO k=N(ng),1,-1
-!
-!  Compute average light attenuation for each grid cell. Here, AttSW is
-!  the light attenuation due to seawater.
-!
-!  UV first
-                Att=AttSWUV(ng)*(z_w(i,j,k)-z_w(i,j,k-1))
-                ExpAtt=EXP(-Att)
-                Itop=PARUV
-                PARUV=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
-                UVLight(i,k)=PARUV
-                PARUV=Itop*ExpAtt
-!  Blue second
-                Att=AttSWBlue(ng)*(z_w(i,j,k)-z_w(i,j,k-1))
-                ExpAtt=EXP(-Att)
-                Itop=PARBlue
-                PARBlue=Itop*(1.0_r8-ExpAtt)/Att    ! average at cell center
-                BlueLight(i,k)=PARBlue
-                PARBlue=Itop*ExpAtt
-!
-!  Light attenuation at the bottom of the grid cell. It is the starting
-!  PAR value for the next (deeper) vertical grid cell.
-!
-              END DO
-            ELSE                                       ! night time
-              DO k=1,N(ng)
-                UVLight(i,k)=0.0_r8
-                BlueLight(i,k)=0.0_r8
-              END DO
-            END IF
-          END DO
-
-!
-!  Time-Step the Microbial model
-!
-          DO k=1,N(ng)
-            DO i=Istr,Iend
-!
-!  Enterococcus growth to blue-light exposure
-!
-              cff1=dtdays*BlueLight(i,k)*Ent_GrowthBlue(ng)*            &
-     &             Bio(i,k,iEntero)
-              Bio(i,k,iEntero)=Bio(i,k,iEntero)+cff1
-!
-!  Enterococcus mortality to UV exposure
-!
-              cff1=dtdays*UVLight(i,k)*Ent_DecayUV(ng)*                 &
-     &             Bio(i,k,iEntero)
-              Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
-!
-!  Vibrio Vulnificus A growth. First, compute the growth rate
-!
-              cff1=0.0_r8
-              DO ii=1,NvulAWeights
-                delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
-                dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
-                cff1=cff1 + vulAwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
-              END DO
-!  Apply the growth-rate
-              cff1=dtdays*cff1*Bio(i,k,iVulA)
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
-
-!
-!  Vibrio Vulnificus B growth. First, compute the growth rate
-!
-              cff1=0.0_r8
-              DO ii=1,NvulAWeights
-                delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
-                dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
-                cff1=cff1 + vulBwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
-              END DO
-!  Apply the growth-rate
-              cff1=dtdays*cff1*Bio(i,k,iVulB)
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
-
-!
-!  Vibrio Vulnificus A mortality.
-!
-              cff1=1.0_r8+dtdays*zVulA(ng)
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
-
-!
-!  Vibrio Vulnificus B mortality.
-!
-              cff1=1.0_r8+dtdays*zVulB(ng)
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
-            END DO
-          END DO
+!           DO k=1,N(ng)
+!             DO i=Istr,Iend
+!             END DO
+!           END DO
 
 !
 !-----------------------------------------------------------------------
-!  Vertical sinking terms: Enterococcus
+!  Vertical sinking terms: Isotopes
 !-----------------------------------------------------------------------
 !
 !  Reconstruct vertical profile of selected biological constituents

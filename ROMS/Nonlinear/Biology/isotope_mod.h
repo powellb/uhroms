@@ -1,6 +1,6 @@
 !
 !svn $Id$
-!================================================== Hernan G. Arango ===
+!================================================ Brian Powell, 2014 ===
 !  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
@@ -25,34 +25,20 @@
 !  Set biological tracer identification indices.
 !
       integer, allocatable :: idbio(:)  ! Biological tracers
-      integer :: iEntero, iVulA, iVulB  ! Microbial Concentrations
+      integer :: i16O, i18O  ! Isotope Concentrations
 !
 !  Biological parameters.
 !
       integer, dimension(Ngrids) :: BioIter
 
       real(r8), allocatable :: BioIni(:,:)
-      real(r8), dimension(Ngrids) :: AttSWUV, AttSWBlue  ! 1/m
-      real(r8), dimension(Ngrids) :: Ent_DecayUV, Ent_GrowthBlue ! nmol/day
-      real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
-      real(r8), dimension(Ngrids) :: wEntero, wVulA, wVulB      ! m/day
-      real(r8), dimension(Ngrids) :: zVulA, zVulB               ! nmol/day
-
-      integer :: NvulAWeights, NvulBWeights
-      real(r8), dimension(40) :: vulAwght, vulAtemp, vulAsalt
-      real(r8), dimension(40) :: vulBwght, vulBtemp, vulBsalt
+      real(r8), dimension(Ngrids) :: w16O, w18O      ! m/day
       
 #ifdef TANGENT
-      real(r8), dimension(Ngrids) :: tl_PARfracUV, tl_PARfracBlue
-      real(r8), dimension(Ngrids) :: tl_wEntero
-      real(r8), dimension(Ngrids) :: tl_wVulA, tl_wVulB
-      real(r8), dimension(Ngrids) :: tl_zVulA, tl_zVulB
+      real(r8), dimension(Ngrids) :: tl_w16O, tl_w18O
 #endif
 #ifdef ADJOINT
-      real(r8), dimension(Ngrids) :: ad_PARfracUV, ad_PARfracBlue
-      real(r8), dimension(Ngrids) :: ad_wEntero
-      real(r8), dimension(Ngrids) :: ad_wVulA, ad_wVul
-      real(r8), dimension(Ngrids) :: ad_zVulA, ad_zVul
+      real(r8), dimension(Ngrids) :: ad_w16O, ad_w18O
 #endif
 
       CONTAINS
@@ -74,7 +60,7 @@
 !  Set number of biological tracers.
 !-----------------------------------------------------------------------
 !
-      NBT=3
+      NBT=2
 !
 !-----------------------------------------------------------------------
 !  Initialize tracer identification indices.
@@ -92,9 +78,8 @@
       DO i=1,NBT
         idbio(i)=ic+i
       END DO
-      iEntero=ic+1
-      iVulA=ic+2
-      iVulB=ic+3
+      i16O=ic+1
+      i18O=ic+2
 
       RETURN
       END SUBROUTINE initialize_biology

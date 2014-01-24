@@ -1,14 +1,14 @@
       SUBROUTINE read_BioPar (model, inp, out, Lwrite)
 !
 !svn $Id$
-!================================================== Hernan G. Arango ===
+!================================================ Brian Powell, 2014 ===
 !  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
 !  This routine reads in microbial ecosystem model input               !
-!  parameters. They are specified in input script "microbe.in".        !
+!  parameters. They are specified in input script "isotope.in".        !
 !                                                                      !
 !=======================================================================
 !
@@ -54,52 +54,14 @@
             Npts=load_l(Nval, Cval, Ngrids, Lbiology)
           ELSE IF (TRIM(KeyWord).eq.'BioIter') THEN
             Npts=load_i(Nval, Rval, Ngrids, BioIter)
-          ELSE IF (TRIM(KeyWord).eq.'BioIni(iEntero)') THEN
-            Npts=load_r(Nval, Rval, Ngrids, BioIni(iEntero,1))
-          ELSE IF (TRIM(KeyWord).eq.'BioIni(iVulA)') THEN
-            Npts=load_r(Nval, Rval, Ngrids, BioIni(iVulA,1))
-          ELSE IF (TRIM(KeyWord).eq.'BioIni(iVulB)') THEN
-            Npts=load_r(Nval, Rval, Ngrids, BioIni(iVulB,1))
-          ELSE IF (TRIM(KeyWord).eq.'PARfracUV') THEN
-            Npts=load_r(Nval, Rval, Ngrids, PARfracUV)
-          ELSE IF (TRIM(KeyWord).eq.'PARfracBlue') THEN
-            Npts=load_r(Nval, Rval, Ngrids, PARfracBlue)
-          ELSE IF (TRIM(KeyWord).eq.'AttSWUV') THEN
-            Npts=load_r(Nval, Rval, Ngrids, AttSWUV)
-          ELSE IF (TRIM(KeyWord).eq.'AttSWBlue') THEN
-            Npts=load_r(Nval, Rval, Ngrids, AttSWBlue)
-          ELSE IF (TRIM(KeyWord).eq.'Ent_DecayUV') THEN
-            Npts=load_r(Nval, Rval, Ngrids, Ent_DecayUV)
-          ELSE IF (TRIM(KeyWord).eq.'Ent_GrowthBlue') THEN
-            Npts=load_r(Nval, Rval, Ngrids, Ent_GrowthBlue)
-          ELSE IF (TRIM(KeyWord).eq.'wEntero') THEN
-            Npts=load_r(Nval, Rval, Ngrids, wEntero)
-          ELSE IF (TRIM(KeyWord).eq.'wVulnificusA') THEN
-            Npts=load_r(Nval, Rval, Ngrids, wVulA)
-          ELSE IF (TRIM(KeyWord).eq.'wVulnificusB') THEN
-            Npts=load_r(Nval, Rval, Ngrids, wVulB)
-          ELSE IF (TRIM(KeyWord).eq.'zVulnificusA') THEN
-            Npts=load_r(Nval, Rval, Ngrids, zVulA)
-          ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
-            Npts=load_r(Nval, Rval, Ngrids, zVulB)
-          ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
-            Npts=load_i(Nval, Rval, 1, NvulAWeights)
-            NvulAWeights=MIN(40,NvulAWeights)
-          ELSE IF (TRIM(KeyWord).eq.'vulnificusA_weights') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAwght)
-          ELSE IF (TRIM(KeyWord).eq.'vulnificusA_temp') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAtemp)
-          ELSE IF (TRIM(KeyWord).eq.'vulnificusA_salt') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAsalt)
-          ELSE IF (TRIM(KeyWord).eq.'NvulBWeights') THEN
-            Npts=load_i(Nval, Rval, 1, NvulBWeights)
-            NvulBWeights=MIN(40,NvulBWeights)
-          ELSE IF (TRIM(KeyWord).eq.'vulnificusB_weights') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBwght)
-          ELSE IF (TRIM(KeyWord).eq.'vulnificusB_temp') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBtemp)
-          ELSE IF (TRIM(KeyWord).eq.'vulnificusB_salt') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBsalt)
+          ELSE IF (TRIM(KeyWord).eq.'BioIni(i16O)') THEN
+            Npts=load_r(Nval, Rval, Ngrids, BioIni(i16O,1))
+          ELSE IF (TRIM(KeyWord).eq.'BioIni(i18O)') THEN
+            Npts=load_r(Nval, Rval, Ngrids, BioIni(i18O,1))
+          ELSE IF (TRIM(KeyWord).eq.'w16O') THEN
+            Npts=load_r(Nval, Rval, Ngrids, w16O)
+          ELSE IF (TRIM(KeyWord).eq.'w18O') THEN
+            Npts=load_r(Nval, Rval, Ngrids, w18O)
           ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
@@ -311,54 +273,14 @@
             WRITE (out,50) ng
             WRITE (out,60) BioIter(ng), 'BioIter',                      &
      &            'Number of iterations for nonlinear convergence.'
-            WRITE (out,70) BioIni(iEntero,ng), 'BioIni(iEntero)',       &
-     &            'Enterococcus initial concentration (nmol/m3).'
-            WRITE (out,70) BioIni(iVulA,ng), 'BioIni(iVulA)',           &
-     &            'Vulnificus A initial concentration (nmol/m3).'
-            WRITE (out,70) BioIni(iVulB,ng), 'BioIni(iVulB)',           &
-     &            'Vulnificus B initial concentration (nmol/m3).'
-            WRITE (out,80) PARfracUV(ng), 'PARfracUV',                  &
-     &            'Fraction of shortwave radiation that is',            &
-     &            'UV active (nondimensional).'
-            WRITE (out,80) PARfracBlue(ng), 'PARfracBlue',              &
-     &            'Fraction of shortwave radiation that is',            &
-     &            'Blue light active (nondimensional).'
-            WRITE (out,70) AttSWUV(ng), 'AttSWUV',                      &
-     &            'UV Light attenuation of seawater (m-1).'
-            WRITE (out,70) AttSWBlue(ng), 'AttSWBlue',                  &
-     &            'Blue Light attenuation of seawater (m-1).'
-            WRITE (out,70) Ent_GrowthBlue(ng), 'Ent_GrowthBlue',        &
-     &            'Enterococcus growth due to Blue Light (day-1).'
-            WRITE (out,70) Ent_DecayUV(ng), 'Ent_DecayUV',              &
-     &            'Enterococcus decay due to UV Absorption (day-1).'
-            WRITE (out,70) wEntero(ng), 'wEntero',                      &
-     &            'Enterococcus sinking rate (m/day).'
-            WRITE (out,70) wVulA(ng), 'wVulnificusA',                   &
-     &            'vibrio vulnificus A sinking rate (m/day).'
-            WRITE (out,70) wVulB(ng), 'wVulnificusB',                   &
-     &            'vibrio vulnificus B sinking rate (m/day).'
-            WRITE (out,70) zVulA(ng), 'zVulnificusA',                   &
-     &            'vibrio vulnificus A mortality rate (nmol/day).'
-            WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
-     &            'vibrio vulnificus B mortality rate (nmol/day).'
-            IF (NvulAWeights.GT.0) THEN
-              WRITE  (out, 60) NvulAWeights, 'NvulAWeights',            &
-     &            'number of weights to use for microbes.'
-              WRITE (out, *) 'VIBRIO VULNIFICUS A WEIGHTS'
-              write (out, *) 'TEMP,  SALT,  WEIGHT'
-              DO i=1,NvulAWeights
-                WRITE (out,251) vulAtemp(i), vulAsalt(i), vulAwght(i), i
-              END DO
-            END IF
-            IF (NvulBWeights.GT.0) THEN
-              WRITE  (out, 60) NvulBWeights, 'NvulBWeights',            &
-     &            'number of weights to use for microbes.'
-              WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
-              write (out, *) 'TEMP,  SALT,  WEIGHT'
-              DO i=1,NvulBWeights
-                WRITE (out,251) vulBtemp(i), vulBsalt(i), vulBwght(i), i
-              END DO
-            END IF
+            WRITE (out,70) BioIni(i16O,ng), 'BioIni(i16O)',             &
+     &            'O16 initial concentration (nmol/m3).'
+            WRITE (out,70) BioIni(i18O,ng), 'BioIni(i18O)',             &
+     &            'O18 initial concentration (nmol/m3).'
+            WRITE (out,70) w16O(ng), 'w16O',                            &
+     &            'O16 sinking rate (m/day).'
+            WRITE (out,70) w18O(ng), 'w18O',                            &
+     &            'O18 sinking rate (m/day).'
 #ifdef TS_DIF2
             DO itrc=1,NBT
               i=idbio(itrc)

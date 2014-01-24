@@ -1,7 +1,7 @@
-!  Microbial Biological Model Parameters.
+!  Isotope Model Parameters.
 !
 !svn $Id$
-!========================================================= Brian Powell ===
+!========================================================= Brian Powell ======!
 !  Copyright (c) 2002-2011 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
 !    See License_ROMS.txt                                                     !
@@ -51,55 +51,23 @@
 ! Initial concentration for analytical uniform initial conditions.
 ! [nanomole/meter3].
 
-BioIni(iEntero) == 4.163d0               ! Enterococcus nmol m^{-3}
-BioIni(iVulA) == 4.0d0                   ! Vibrio Vulnif. A nmol m^{-3}
-BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
+BioIni(i16O) == 4.0d0                   ! O18 initial concentration [kg/m3]
+BioIni(i18O) == 4.0d0                   ! O16 initial concentration [kg/m3]
 
-! Fraction of shortwave radiation that is UV active
-! (nondimensional) {0.43d0}
 
-     PARfracUV == 0.09d0
+! isotope sinking rate, [m/day], {0.0d0}.
 
-! Fraction of shortwave radiation that is Blue-light active
-! (nondimensional) {0.05d0}
+         w16O == 0.0d0
+         w18O == 0.0d0
 
-     PARfracBlue == 0.005d0
-
-! UV Light attenuation due to seawater [1/m], {0.067d0}.
-
-       AttSWUV == 0.212d0                          ! k_ext
-
-! Blue Light attenuation due to seawater [1/m], {0.067d0}.
-
-       AttSWBlue == 0.05d0                          ! k_ext
-
-! Growth of enterococcus due to Blue light mmol/day
-
-       Ent_GrowthBlue == 0.003384d0              ! k_g
-
-! Decay of enterococcus due to UV light mmol/day
-
-       Ent_DecayUV == 0.03384d0                 ! k_d
-
-! Bacterial sinking rate, [m/day], {0.0d0}.
-
-         wEntero == 0.1d0
-         wVulnificusA == 0.1d0
-         wVulnificusB == 0.1d0
-
-! Microbial mortality rates, [nmol/day], {0.0d0}.
-
-         zVulA == 0.1d0
-         zVulB == 0.1d0
-         
-! Harmonic/biharmonic horizontal diffusion of biological tracer for
+! Harmonic/biharmonic horizontal diffusion of isotope tracers for
 ! nonlinear model and adjoint-based algorithms: [1:NBT,Ngrids].
 
-         TNU2 == 1.0d0 1.0d0 1.0d0          ! m2/s
-         TNU4 == 1.0d0 1.0d0 1.0d0          ! m4/s
+         TNU2 == 1.0d0 1.0d0          ! m2/s
+         TNU4 == 1.0d0 1.0d0          ! m4/s
                         
-      ad_TNU2 == 1.0d0 1.0d0 1.0d0          ! m2/s
-      ad_TNU4 == 1.0d0 1.0d0 1.0d0          ! m4/s
+      ad_TNU2 == 1.0d0 1.0d0          ! m2/s
+      ad_TNU4 == 1.0d0 1.0d0          ! m4/s
 
 ! Vertical mixing coefficients for biological tracers for nonlinear
 ! model and basic state scale factor in adjoint-based algorithms:
@@ -114,19 +82,6 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 
         TNUDG == 0.0d0 0.0d0 0.0d0          ! days
 
-! Radial Basis Function Weights for Vibrio Growth Rates based on temperature
-! and salinity
-
-        NvulAWeights == 5
-        vulnificusA_weights == 0.0d0 0.0d0 0.0d0 0.0d0 0.0d0
-        vulnificusA_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
-        vulnificusA_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
-
-        NvulBWeights == 5
-        vulnificusB_weights == 0.0d0 0.0d0 0.0d0 0.0d0 0.0d0
-        vulnificusB_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
-        vulnificusB_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
-
 ! Logical switches (TRUE/FALSE) to specify which variables to consider on
 ! tracers point Sources/Sinks (like river runoff): [NBT,Ngrids] values are
 ! expected. See glossary below for details.
@@ -136,28 +91,28 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 ! Logical switches (TRUE/FALSE) to activate writing of biological fields
 ! into HISTORY output files: [1:NBT,Ngrids].
 
-Hout(idTvar) == T T T     ! entero, ...                biological tracer
-Hout(idTsur) == F F F     ! entero_sflux, ...          surface tracer flux
+Hout(idTvar) == T T     ! O16, O18
+Hout(idTsur) == F F     ! O16_sflux, O18_sflux          surface tracer flux
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged fields
 ! into AVERAGE output file: [1:NBT,Ngrids].
 
-Aout(idTvar) == T T T     ! entero, ...                biological tracer
+Aout(idTvar) == T T     ! O16, O18                isotope tracer
 
 ! Logical switches (TRUE/FALSE) to activate writing of time-averaged,
 ! biological tracer diagnostic terms into DIAGNOSTIC output file:
 ! [1:NBT,Ngrids].
 
-Dout(iTrate) == T T T     ! entero_rate, ...    time rate of change
-Dout(iThadv) == T T T     ! entero_hadv, ...    horizontal total advection
-Dout(iTxadv) == T T T     ! entero_xadv, ...    horizontal XI-advection
-Dout(iTyadv) == T T T     ! entero_yadv, ...    horizontal ETA-advection
-Dout(iTvadv) == T T T     ! entero_vadv, ...    vertical advection
-Dout(iThdif) == T T T     ! entero_hdiff, ...   horizontal total diffusion
-Dout(iTxdif) == T T T     ! entero_xdiff, ...   horizontal XI-diffusion
-Dout(iTydif) == T T T     ! entero_ydiff, ...   horizontal ETA-diffusion
-Dout(iTsdif) == T T T     ! entero_sdiff, ...   horizontal S-diffusion
-Dout(iTvdif) == T T T     ! entero_vdiff, ...   vertical diffusion
+Dout(iTrate) == T T      ! O_rate, ...    time rate of change
+Dout(iThadv) == T T      ! O_hadv, ...    horizontal total advection
+Dout(iTxadv) == T T      ! O_xadv, ...    horizontal XI-advection
+Dout(iTyadv) == T T      ! O_yadv, ...    horizontal ETA-advection
+Dout(iTvadv) == T T      ! O_vadv, ...    vertical advection
+Dout(iThdif) == T T      ! O_hdiff, ...   horizontal total diffusion
+Dout(iTxdif) == T T      ! O_xdiff, ...   horizontal XI-diffusion
+Dout(iTydif) == T T      ! O_ydiff, ...   horizontal ETA-diffusion
+Dout(iTsdif) == T T      ! O_sdiff, ...   horizontal S-diffusion
+Dout(iTvdif) == T T      ! O_vdiff, ...   vertical diffusion
 
 !
 !  GLOSSARY:

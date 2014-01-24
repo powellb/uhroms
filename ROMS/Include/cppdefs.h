@@ -224,6 +224,7 @@
 ** ANA_SEDIMENT        use if analytical sediment initial fields             **
 ** ANA_SMFLUX          use if analytical surface momentum stress             **
 ** ANA_SPFLUX          use if analytical surface passive tracers fluxes      **
+** ANA_SBFLUX          use if analytical surface biology tracers fluxes      **
 ** ANA_SPINNING        use if analytical time-varying rotation force         **
 ** ANA_SRFLUX          use if analytical surface shortwave radiation flux    **
 ** ANA_SSFLUX          use if analytical surface salinity flux               **
