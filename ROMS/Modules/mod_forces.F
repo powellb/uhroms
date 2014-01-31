@@ -303,7 +303,7 @@
 #  endif
 # endif
 
-# if defined BULK_FLUXES && defined ISOTOPE
+# if defined BULK_FLUXES && defined ISOTOPE && defined ANA_ISOFLUX
           real(r8), pointer :: o16frac(:,:)
           real(r8), pointer :: o16fracG(:,:,:)
           real(r8), pointer :: o18frac(:,:)
@@ -968,8 +968,8 @@
 #  endif
 # endif
 # if defined BULK_FLUXES && defined ISOTOPE
-            FORCES(ng) % o16frac(i,j,k) = IniVal
-            FORCES(ng) % o18frac(i,j,k) = IniVal
+            FORCES(ng) % o16frac(i,j) = IniVal
+            FORCES(ng) % o18frac(i,j) = IniVal
 #  ifndef ANA_STFLUX
             FORCES(ng) % o16fracG(i,j,k) = IniVal
             FORCES(ng) % o18fracG(i,j,k) = IniVal

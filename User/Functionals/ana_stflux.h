@@ -184,7 +184,7 @@
 !
               cff1=SQRT(FORCES(ng) % Taux(i,j)*FORCES(ng) % Taux(i,j) + &
      &               FORCES(ng) % Tauy(i,j)*FORCES(ng) % Tauy(i,j)) /   & 
-     &               (OCEAN(ng) % rho(i,j,N(ng)+rho0)
+     &               (OCEAN(ng) % rho(i,j,N(ng)+rho0))
               ustar=SQRT(cff1)
 !
 ! Compute the roughness length equation: u*^2 / (81.1 * g)
