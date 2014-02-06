@@ -199,6 +199,22 @@
         END DO
       END DO
 
+#elif defined ISOTOPE
+!
+!-----------------------------------------------------------------------
+!  NPZD biology model.
+!-----------------------------------------------------------------------
+!
+      DO k=1,N(ng)
+        DO j=JstrR,JendR
+          DO i=IstrR,IendR
+            t(i,j,k,1,i16O)=BioIni(i16O,ng)
+            t(i,j,k,1,i18O)=BioIni(i18O,ng)
+          END DO
+        END DO
+      END DO
+
+
 #elif defined ECOSIM
 !
 !---------------------------------------------------------------------
