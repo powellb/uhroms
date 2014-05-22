@@ -82,6 +82,14 @@
             Npts=load_r(Nval, Rval, Ngrids, zVulA)
           ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
+          ELSE IF (TRIM(KeyWord).eq.'NvulnificusA_lag') THEN
+            Npts=load_r(Nval, Rval, Ngrids, NvulA_lag)
+            IF (.not.allocated(zVulA_std)) allocate ( zVulA_avg(NvulA_lag, Ngrids) )
+            IF (.not.allocated(zVulA_std)) allocate ( zVulA_std(NvulA_lag, Ngrids) )
+          ELSE IF (TRIM(KeyWord).eq.'NvulnificusB_lag') THEN
+            Npts=load_r(Nval, Rval, Ngrids, NvulB_lag)
+            IF (.not.allocated(zVulB_std)) allocate ( zVulB_avg(NvulB_lag, Ngrids) )
+            IF (.not.allocated(zVulB_std)) allocate ( zVulB_std(NvulB_lag, Ngrids) )
           ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
             Npts=load_i(Nval, Rval, 1, NvulAWeights)
             NvulAWeights=MIN(40,NvulAWeights)
@@ -296,6 +304,10 @@
           END IF
         END IF
       END DO
+      zVulA_avg(:,:)=zVulA
+      zVulA_std(:,:)=1
+      zVulB_avg(:,:)=zVulB
+      zVulB_std(:,:)=1
   10  IF (Master) WRITE (out,40) line
       exit_flag=4
       RETURN

@@ -109,6 +109,7 @@
       integer, parameter :: Nsink = 3
 
       integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, ii
+      integer :: idxA, idxB, countA, countB
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
@@ -116,6 +117,7 @@
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
       real(r8) :: delt, dels
+      real(r8) :: zMeanA, zMeanB, zStdA, zStdB
       
       integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
@@ -340,6 +342,17 @@
           END DO
 
 !
+!  Determine the lag index, mean and std mortality
+!
+          idxA=MOD(iic(ng)-ntstart(ng),NvulA_lag(ng)+1
+          idxB=MOD(iic(ng)-ntstart(ng),NvulB_lag(ng)+1
+          zMeanA=zVulA_avg(NvulA_lag(ng)-idxA+1,ng)
+          zStdA=zVulA_std(NvulA_lag(ng)-idxA+1,ng)
+          zMeanB=zVulB_avg(NvulB_lag(ng)-idxB+1,ng)
+          zStdB=zVulB_std(NvulB_lag(ng)-idxB+1,ng)
+          countA=0
+          countB=0
+!
 !  Time-Step the Microbial model
 !
           DO k=1,N(ng)
@@ -365,10 +378,19 @@
                 dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulAwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
+!
 !  Apply the growth-rate
+!
               cff1=dtdays*cff1*Bio(i,k,iVulA)
               Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
-
+!
+! Build the statistics of the growth-rates relative to the decay
+!
+              IF cff1.GT.0.0_r8 THEN
+                countA = countA + 1
+                zVulA_avg(idxA,ng)=zVulA_avg(idxA,ng)+cff1
+                zVulA_std(idxA,ng)=zVulA_std(idxA,ng)+(cff1-zVulA(ng))*(cff1-zVulA(ng))
+              END IF
 !
 !  Vibrio Vulnificus B growth. First, compute the growth rate
 !
@@ -378,23 +400,42 @@
                 dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulBwght(ii)*SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
+!
 !  Apply the growth-rate
+!
               cff1=dtdays*cff1*Bio(i,k,iVulB)
               Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
-
+!
+! Build the statistics of the growth-rates relative to the decay
+!
+              IF cff1.GT.0.0_r8 THEN
+                countB = countB + 1
+                zVulB_avg(idxB,ng)=zVulB_avg(idxB,ng)+cff1
+                zVulB_std(idxB,ng)=zVulB_std(idxB,ng)+(cff1-zVulB(ng))*(cff1-zVulB(ng))
+              END IF
 !
 !  Vibrio Vulnificus A mortality.
 !
-              cff1=1.0_r8+dtdays*zVulA(ng)
+              cff2=zMeanA + zStdA*RAND()
+              cff1=1.0_r8+dtdays*cff2
               Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
 
 !
 !  Vibrio Vulnificus B mortality.
 !
-              cff1=1.0_r8+dtdays*zVulB(ng)
+              cff2=zMeanB + zStdB*RAND()
+              cff1=1.0_r8+dtdays*cff2
               Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
             END DO
           END DO
+
+!
+! Update the mortality statistics
+!
+          zVulA_avg(idxA,ng)=zVulA_avg(idxA,ng)/countA
+          zVulA_std(idxA,ng)=zVulA_std(idxA,ng)/countA
+          zVulB_avg(idxB,ng)=zVulB_avg(idxB,ng)/countB
+          zVulB_std(idxB,ng)=zVulB_std(idxB,ng)/countB
 
 !
 !-----------------------------------------------------------------------
