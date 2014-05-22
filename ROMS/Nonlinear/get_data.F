@@ -580,6 +580,7 @@
 !  Passive tracers surface fluxes.
 !-----------------------------------------------------------------------
 !
+# if !defined ANA_ISOFLUX
       DO i=NAT+1,NT(ng)
         CALL get_2dfld (ng, iNLM, idTsur(i), ncFRCid(idTsur(i),ng),     &
      &                  nFfiles(ng), FRCname(1,ng), update(1),          &
@@ -589,6 +590,7 @@
 #   endif
      &                  FORCES(ng) % stflxG(LBi,LBj,1,i))
       END DO
+#  endif
 #  endif
 
 #  ifndef ANA_BPFLUX
