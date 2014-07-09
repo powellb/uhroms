@@ -76,6 +76,7 @@
       USE mod_biology
       USE mod_ncparam
       USE mod_scalars
+      USE nrutil, ONLY : gasdev
 !
 !  Imported variable declarations.
 !
@@ -381,8 +382,8 @@
 !
 !  Apply the growth-rate
 !
-              cff1=dtdays*cff1*Bio(i,k,iVulA)
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
+              cff1=dtdays*cff1
+              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*Bio(i,k,iVulA)
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
@@ -416,14 +417,16 @@
 !
 !  Vibrio Vulnificus A mortality.
 !
-              cff2=zMeanA + zStdA*RAND()
+              CALL gasdev(cff3)
+              cff2=zMeanA + zStdA*cff3
               cff1=1.0_r8+dtdays*cff2
               Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
 
 !
 !  Vibrio Vulnificus B mortality.
 !
-              cff2=zMeanB + zStdB*RAND()
+              CALL gasdev(cff3)
+              cff2=zMeanB + zStdB*cff3
               cff1=1.0_r8+dtdays*cff2
               Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
             END DO
