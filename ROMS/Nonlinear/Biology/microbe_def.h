@@ -93,6 +93,21 @@
      &               SetParAccess = .FALSE.)
       IF (exit_flag.ne.NoError) RETURN
 
+      Vinfo( 1)='NvulnificusA_lag'
+      Vinfo( 2)='vibrio Vulnificus A mortality rate time-lag'
+      Vinfo( 3)='time-steps'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='NvulnificusB_lag'
+      Vinfo( 2)='vibrio Vulnificus B mortality rate time-lag'
+      Vinfo( 3)='time-steps'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
 !
 !  Vulnificus weight parameters.
 !
