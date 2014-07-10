@@ -404,8 +404,8 @@
 !
 !  Apply the growth-rate
 !
-              cff1=dtdays*cff1*Bio(i,k,iVulB)
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
+              cff1=dtdays*cff1
+              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
@@ -436,9 +436,9 @@
 ! Update the mortality statistics
 !
           zVulA_avg(idxA,ng)=zVulA_avg(idxA,ng)/countA
-          zVulA_std(idxA,ng)=zVulA_std(idxA,ng)/countA
+          zVulA_std(idxA,ng)=SQRT(zVulA_std(idxA,ng)/countA)
           zVulB_avg(idxB,ng)=zVulB_avg(idxB,ng)/countB
-          zVulB_std(idxB,ng)=zVulB_std(idxB,ng)/countB
+          zVulB_std(idxB,ng)=SQRT(zVulB_std(idxB,ng)/countB)
 
 !
 !-----------------------------------------------------------------------
