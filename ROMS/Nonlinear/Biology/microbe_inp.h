@@ -84,15 +84,32 @@
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
           ELSE IF (TRIM(KeyWord).eq.'NvulnificusA_lag') THEN
             Npts=load_r(Nval, Rval, Ngrids, NvulA_lag)
-            IF (.not.allocated(zVulA_std)) allocate ( zVulA_avg(NvulA_lag, Ngrids) )
-            IF (.not.allocated(zVulA_std)) allocate ( zVulA_std(NvulA_lag, Ngrids) )
+            Npts=0
+            DO ng=1,Ngrids
+              IF (NvulA_lag(ng).GT.Npts) Npts=NvulA_lag(ng)
+            END DO
+            IF (.not.allocated(zVulA_avg)) THEN
+              allocate ( zVulA_avg(Npts, Ngrids) )
+            END IF
+            IF (.not.allocated(zVulA_std)) THEN
+              allocate ( zVulA_std(Npts, Ngrids) )
+            END IF
           ELSE IF (TRIM(KeyWord).eq.'NvulnificusB_lag') THEN
             Npts=load_r(Nval, Rval, Ngrids, NvulB_lag)
-            IF (.not.allocated(zVulB_std)) allocate ( zVulB_avg(NvulB_lag, Ngrids) )
-            IF (.not.allocated(zVulB_std)) allocate ( zVulB_std(NvulB_lag, Ngrids) )
+            DO ng=1,Ngrids
+              IF (NvulB_lag(ng).GT.Npts) Npts=NvulB_lag(ng)
+            END DO
+            IF (.not.allocated(zVulB_avg)) THEN
+              allocate ( zVulB_avg(Npts, Ngrids) )
+            END IF
+            IF (.not.allocated(zVulB_std)) THEN
+              allocate ( zVulB_std(Npts, Ngrids) )
+            END IF
           ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
-            Npts=load_i(Nval, Rval, 1, NvulAWeights)
-            NvulAWeights=MIN(40,NvulAWeights)
+            Npts=load_r(Nval, Rval, Ngrids, NvulAWeights)
+            DO ng=1,Ngrids
+              NvulAWeights(ng)=MIN(40,NvulAWeights(ng))
+            END DO
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_weights') THEN
             Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAwght)
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_temp') THEN
@@ -100,8 +117,10 @@
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_salt') THEN
             Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAsalt)
           ELSE IF (TRIM(KeyWord).eq.'NvulBWeights') THEN
-            Npts=load_i(Nval, Rval, 1, NvulBWeights)
-            NvulBWeights=MIN(40,NvulBWeights)
+            Npts=load_r(Nval, Rval, Ngrids, NvulBWeights)
+            DO ng=1,Ngrids
+              NvulBWeights(ng)=MIN(40,NvulBWeights(ng))
+            END DO
           ELSE IF (TRIM(KeyWord).eq.'vulnificusB_weights') THEN
             Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBwght)
           ELSE IF (TRIM(KeyWord).eq.'vulnificusB_temp') THEN
@@ -304,10 +323,12 @@
           END IF
         END IF
       END DO
-      zVulA_avg(:,:)=zVulA
-      zVulA_std(:,:)=1
-      zVulB_avg(:,:)=zVulB
-      zVulB_std(:,:)=1
+      DO ng=1,Ngrids
+        zVulA_avg(ng,:)=zVulA(ng)
+        zVulB_avg(ng,:)=zVulB(ng)
+      END DO
+      zVulA_std=1
+      zVulB_std=1
   10  IF (Master) WRITE (out,40) line
       exit_flag=4
       RETURN
@@ -353,21 +374,21 @@
      &            'vibrio vulnificus A mortality rate (nmol/day).'
             WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
      &            'vibrio vulnificus B mortality rate (nmol/day).'
-            IF (NvulAWeights.GT.0) THEN
-              WRITE  (out, 60) NvulAWeights, 'NvulAWeights',            &
+            IF (NvulAWeights(ng).GT.0) THEN
+              WRITE  (out, 60) NvulAWeights(ng), 'NvulAWeights',            &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS A WEIGHTS'
               write (out, *) 'TEMP,  SALT,  WEIGHT'
-              DO i=1,NvulAWeights
+              DO i=1,NvulAWeights(ng)
                 WRITE (out,251) vulAtemp(i), vulAsalt(i), vulAwght(i), i
               END DO
             END IF
-            IF (NvulBWeights.GT.0) THEN
-              WRITE  (out, 60) NvulBWeights, 'NvulBWeights',            &
+            IF (NvulBWeights(ng).GT.0) THEN
+              WRITE  (out, 60) NvulBWeights(ng), 'NvulBWeights',            &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
               write (out, *) 'TEMP,  SALT,  WEIGHT'
-              DO i=1,NvulBWeights
+              DO i=1,NvulBWeights(ng)
                 WRITE (out,251) vulBtemp(i), vulBsalt(i), vulBwght(i), i
               END DO
             END IF
