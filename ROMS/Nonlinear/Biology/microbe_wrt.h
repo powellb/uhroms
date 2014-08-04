@@ -65,12 +65,12 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_fvar (ng, model, ncname, 'zVulnificusA_lag',          &
+      CALL netcdf_put_ivar (ng, model, ncname, 'zVulnificusA_lag',          &
      &                      NvulA_lag(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_fvar (ng, model, ncname, 'zVulnificusB_lag',          &
+      CALL netcdf_put_ivar (ng, model, ncname, 'zVulnificusB_lag',          &
      &                      NvulB_lag(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
@@ -79,7 +79,7 @@
 !
 !  Vulnificus Weights
 !
-      IF (NvulAWeights.GT.0) THEN
+      IF (NvulAWeights(ng).GT.0) THEN
         CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusA_weights', &
      &                        vulAwght, (/1/), (/NvulAWeights/),        &
      &                        ncid = ncid)
@@ -90,7 +90,7 @@
      &                        vulAsalt, (/1/), (/NvulAWeights/),        &
      &                        ncid = ncid)
       END IF
-      IF (NvulBWeights.GT.0) THEN
+      IF (NvulBWeights(ng).GT.0) THEN
         CALL netcdf_put_fvar (ng, model, ncname, 'vulnificusB_weights', &
      &                        vulBwght, (/1/), (/NvulBWeights/),        &
      &                        ncid = ncid)
