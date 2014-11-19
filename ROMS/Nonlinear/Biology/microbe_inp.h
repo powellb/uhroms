@@ -82,7 +82,7 @@
             Npts=load_r(Nval, Rval, Ngrids, zVulA)
           ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
-          ELSE IF (TRIM(KeyWord).eq.'NvulnificusA_lag') THEN
+          ELSE IF (TRIM(KeyWord).eq.'nVulnificusA_lag') THEN
             Npts=load_r(Nval, Rval, Ngrids, NvulA_lag)
             Npts=0
             DO ng=1,Ngrids
@@ -94,7 +94,7 @@
             IF (.not.allocated(zVulA_std)) THEN
               allocate ( zVulA_std(Npts, Ngrids) )
             END IF
-          ELSE IF (TRIM(KeyWord).eq.'NvulnificusB_lag') THEN
+          ELSE IF (TRIM(KeyWord).eq.'nVulnificusB_lag') THEN
             Npts=load_r(Nval, Rval, Ngrids, NvulB_lag)
             DO ng=1,Ngrids
               IF (NvulB_lag(ng).GT.Npts) Npts=NvulB_lag(ng)

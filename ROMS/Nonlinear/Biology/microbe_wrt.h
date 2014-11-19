@@ -65,12 +65,12 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_ivar (ng, model, ncname, 'zVulnificusA_lag',          &
+      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusA_lag',          &
      &                      NvulA_lag(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_ivar (ng, model, ncname, 'zVulnificusB_lag',          &
+      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusB_lag',          &
      &                      NvulB_lag(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
