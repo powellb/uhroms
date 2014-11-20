@@ -374,8 +374,12 @@
      &            'vibrio vulnificus A mortality rate (nmol/day).'
             WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
      &            'vibrio vulnificus B mortality rate (nmol/day).'
+            WRITE (out,70) NvulA_lag(ng), 'nVulnificusA_lag',           &
+     &         'vibrio vulnificus A mortality lag from growth (steps).'
+            WRITE (out,70) NvulB_lag(ng), 'nVulnificusB_lag',           &
+     &         'vibrio vulnificus B mortality lag from growth (steps).'
             IF (NvulAWeights(ng).GT.0) THEN
-              WRITE  (out, 60) NvulAWeights(ng), 'NvulAWeights',            &
+              WRITE  (out, 60) NvulAWeights(ng), 'NvulAWeights',        &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS A WEIGHTS'
               write (out, *) 'TEMP,  SALT,  WEIGHT'
@@ -384,7 +388,7 @@
               END DO
             END IF
             IF (NvulBWeights(ng).GT.0) THEN
-              WRITE  (out, 60) NvulBWeights(ng), 'NvulBWeights',            &
+              WRITE  (out, 60) NvulBWeights(ng), 'NvulBWeights',        &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
               write (out, *) 'TEMP,  SALT,  WEIGHT'
