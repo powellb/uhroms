@@ -83,10 +83,11 @@
           ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusA_lag') THEN
-            Npts=load_r(Nval, Rval, Ngrids, NvulA_lag)
+            Npts=load_i(Nval, Rval, Ngrids, NvulA_lag)
             Npts=0
             DO ng=1,Ngrids
-              IF (NvulA_lag(ng).GT.Npts) Npts=NvulA_lag(ng)
+              NvulA_lag(ng)=MAX(1,NvulA_lag(ng))
+              Npts=MAX(Npts,NvulA_lag(ng))
             END DO
             IF (.not.allocated(zVulA_avg)) THEN
               allocate ( zVulA_avg(Npts, Ngrids) )
@@ -95,9 +96,11 @@
               allocate ( zVulA_std(Npts, Ngrids) )
             END IF
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusB_lag') THEN
-            Npts=load_r(Nval, Rval, Ngrids, NvulB_lag)
+            Npts=load_i(Nval, Rval, Ngrids, NvulB_lag)
+            Npts=0
             DO ng=1,Ngrids
-              IF (NvulB_lag(ng).GT.Npts) Npts=NvulB_lag(ng)
+              NvulB_lag(ng)=MAX(1,NvulB_lag(ng))
+              Npts=MAX(Npts,NvulB_lag(ng))
             END DO
             IF (.not.allocated(zVulB_avg)) THEN
               allocate ( zVulB_avg(Npts, Ngrids) )
@@ -106,7 +109,7 @@
               allocate ( zVulB_std(Npts, Ngrids) )
             END IF
           ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
-            Npts=load_r(Nval, Rval, Ngrids, NvulAWeights)
+            Npts=load_i(Nval, Rval, Ngrids, NvulAWeights)
             DO ng=1,Ngrids
               NvulAWeights(ng)=MIN(40,NvulAWeights(ng))
             END DO
@@ -117,7 +120,7 @@
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_salt') THEN
             Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAsalt)
           ELSE IF (TRIM(KeyWord).eq.'NvulBWeights') THEN
-            Npts=load_r(Nval, Rval, Ngrids, NvulBWeights)
+            Npts=load_i(Nval, Rval, Ngrids, NvulBWeights)
             DO ng=1,Ngrids
               NvulBWeights(ng)=MIN(40,NvulBWeights(ng))
             END DO
@@ -374,10 +377,10 @@
      &            'vibrio vulnificus A mortality rate (nmol/day).'
             WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
      &            'vibrio vulnificus B mortality rate (nmol/day).'
-            WRITE (out,70) NvulA_lag(ng), 'nVulnificusA_lag',           &
-     &         'vibrio vulnificus A mortality lag from growth (steps).'
-            WRITE (out,70) NvulB_lag(ng), 'nVulnificusB_lag',           &
-     &         'vibrio vulnificus B mortality lag from growth (steps).'
+            WRITE (out,60) NvulA_lag(ng), 'nVulnificusA_lag',           &
+     &         ' vibrio vulnificus A mortality lag from growth (steps).'
+            WRITE (out,60) NvulB_lag(ng), 'nVulnificusB_lag',           &
+     &         ' vibrio vulnificus B mortality lag from growth (steps).'
             IF (NvulAWeights(ng).GT.0) THEN
               WRITE  (out, 60) NvulAWeights(ng), 'NvulAWeights',        &
      &            'number of weights to use for microbes.'
@@ -393,7 +396,7 @@
               WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
               write (out, *) 'TEMP,  SALT,  WEIGHT'
               DO i=1,NvulBWeights(ng)
-                WRITE (out,251) vulBtemp(i), vulBsalt(i), vulBwght(i), i
+                WRITE (out,252) vulBtemp(i), vulBsalt(i), vulBwght(i), i
               END DO
             END IF
 #ifdef TS_DIF2
@@ -610,6 +613,7 @@
  100  FORMAT (10x,l1,2x,a,'(',i2.2,')',t30,a,i2.2,':',1x,a)
  110  FORMAT (10x,l1,2x,a,t30,a,i2.2,':',1x,a)
  251  FORMAT (1p,e11.4,', ',e11.4,', ',e11.4,2x,'weight A ',i2.2,'.')
+ 252  FORMAT (1p,e11.4,', ',e11.4,', ',e11.4,2x,'weight B ',i2.2,'.')
 
       RETURN
       END SUBROUTINE read_BioPar
