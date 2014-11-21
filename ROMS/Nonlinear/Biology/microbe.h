@@ -200,8 +200,8 @@
         countB(k)=0
         zVulA_avg(idxA,k,ng)=0.0_r8
         zVulA_std(idxA,k,ng)=0.0_r8
-        zVulB_avg(idxA,k,ng)=0.0_r8
-        zVulB_std(idxA,k,ng)=0.0_r8
+        zVulB_avg(idxB,k,ng)=0.0_r8
+        zVulB_std(idxB,k,ng)=0.0_r8
       END DO
 
 !
@@ -449,7 +449,7 @@
 !  Vibrio Vulnificus A mortality.
 !
               CALL gasdev(cff3)
-              cff2=zMeanA(k) + zStdA(k)*cff3
+              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
               cff1=1.0_r8+cff2
               Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
 
@@ -457,7 +457,7 @@
 !  Vibrio Vulnificus B mortality.
 !
               CALL gasdev(cff3)
-              cff2=zMeanB(k) + zStdB(k)*cff3
+              cff2=ABS(zMeanB(k) + zStdB(k)*cff3)
               cff1=1.0_r8+cff2
               Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
             END DO
