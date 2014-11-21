@@ -89,13 +89,13 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 
 ! Microbial mortality rates, [nmol/day], {0.0d0}.
 
-         zVulnificusA == 0.1d0
-         zVulnificusB == 0.1d0
+         zVulnificusA == 2.0d-4
+         zVulnificusB == 2.0d-4
 
-! Microbial randomization time-lag. At each time-step the std of the growth-rate is computed
-! and stored for the number of time-lags. The mortality for each point is then a random
-! sample from this distribution with a mean of the mortality defined above. If DT==60s, then
-! a lag of 60 is a time-lag of 1 hour
+! Microbial mortality time-lag. At each time-step the std of the growth-rate
+! is computed and stored for the number of time-lags. The mortality for each
+! point is then a random sample from this distribution with a mean of the
+! mortality defined above. If DT==60s, then a lag of 60 is a time-lag of 1 hour
         nVulnificusA_lag = 60                      ! number of time-steps
         nVulnificusB_lag = 60                      ! number of time-steps
          
@@ -124,12 +124,12 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 ! Radial Basis Function Weights for Vibrio Growth Rates based on temperature
 ! and salinity
 
-        NvulAWeights == 5
+        nVulAWeights == 5
         vulnificusA_weights == 0.0d0 0.0d0 0.0d0 0.0d0 0.0d0
         vulnificusA_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
         vulnificusA_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
 
-        NvulBWeights == 5
+        nVulBWeights == 5
         vulnificusB_weights == 0.0d0 0.0d0 0.0d0 0.0d0 0.0d0
         vulnificusB_temp == 10.0d0 20.0d0 25.0d0 30.0d0 35.0d0
         vulnificusB_salt == 1.0d0 5.0d0 10.0d0 20.0d0 30.0d0
