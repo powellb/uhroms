@@ -110,7 +110,7 @@
       integer, parameter :: Nsink = 3
 
       integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, ii
-      integer :: idxA, idxB, countA, countB
+      integer :: idxA, idxB, idxAlag, idxBlag, countA, countB
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
@@ -343,31 +343,49 @@
           END DO
 
 !
-!  Determine the lag index, mean and std mortality
+!  Determine the lag index
 !
           idxA=MOD(iic(ng)-ntstart(ng),NvulA_lag(ng))+1
-          idxB=MOD(iic(ng)-ntstart(ng),NvulB_lag(ng))+1
-          IF (iic(ng)-ntstart(ng).LT.NvulA_lag(ng)) THEN
-            zMeanA=zVulA(ng)*dtdays
-            zStdA=zMeanA/10.0
-            zMeanB=zVulB(ng)*dtdays
-            zStdB=zMeanB/10.0
-          ELSE
-            zMeanA=zVulA_avg(NvulA_lag(ng)-idxA+1,ng)
-            zStdA=zVulA_std(NvulA_lag(ng)-idxA+1,ng)
-            zMeanB=zVulB_avg(NvulB_lag(ng)-idxB+1,ng)
-            zStdB=zVulB_std(NvulB_lag(ng)-idxB+1,ng)
+          idxAlag=idxA+1
+          IF (idxAlag.GT.nVulA_lag(ng)) THEN
+            idxAlag=1
           END IF
-          countA=0
-          countB=0
-          zVulA_avg(idxA,ng)=0.0_r8
-          zVulA_std(idxA,ng)=0.0_r8
-          zVulB_avg(idxA,ng)=0.0_r8
-          zVulB_std(idxA,ng)=0.0_r8
+          idxB=MOD(iic(ng)-ntstart(ng),NvulB_lag(ng))+1
+          idxBlag=idxB+1
+          IF (idxBlag.GT.nVulB_lag(ng)) THEN
+            idxBlag=1
+          END IF
 !
-!  Time-Step the Microbial model
+!  Loop over depths in the Microbial model
 !
           DO k=1,N(ng)
+!
+!  Determine the mean and std mortality
+!
+            IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
+              zMeanA=zVulA(ng)*dtdays
+              zStdA=zMeanA/3.0
+            ELSE
+              zMeanA=zVulA_avg(idxAlag,k,ng)
+              zStdA=zVulA_std(idxAlag,k,ng)
+            END IF
+            IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
+              zMeanB=zVulB(ng)*dtdays
+              zStdB=zMeanB/3.0
+            ELSE
+              zMeanB=zVulB_avg(idxBlag,k,ng)
+              zStdB=zVulB_std(idxBlag,k,ng)
+            END IF
+            countA=0
+            countB=0
+            zVulA_avg(idxA,k,ng)=0.0_r8
+            zVulA_std(idxA,k,ng)=0.0_r8
+            zVulB_avg(idxA,k,ng)=0.0_r8
+            zVulB_std(idxA,k,ng)=0.0_r8
+
+!
+!  Loop over i-points in the Microbial model
+!
             DO i=Istr,Iend
 !
 !  Enterococcus growth to blue-light exposure
@@ -401,8 +419,8 @@
 !
               IF (Bio(i,k,iVulA).GT.0.0_r8) THEN
                 countA = countA + 1
-                zVulA_avg(idxA,ng)=zVulA_avg(idxA,ng)+cff1
-                zVulA_std(idxA,ng)=zVulA_std(idxA,ng)+                  &
+                zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)+cff1
+                zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng)+              &
      &              (cff1-zVulA(ng)*dtdays)*(cff1-zVulA(ng)*dtdays)
               END IF
 !
@@ -425,8 +443,8 @@
 !
               IF (Bio(i,k,iVulB).GT.0.0_r8) THEN
                 countB = countB + 1
-                zVulB_avg(idxB,ng)=zVulB_avg(idxB,ng)+cff1
-                zVulB_std(idxB,ng)=zVulB_std(idxB,ng)+                  &
+                zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)+cff1
+                zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng)+              &
      &              (cff1-zVulB(ng)*dtdays)*(cff1-zVulB(ng)*dtdays)
               END IF
 !
@@ -450,10 +468,10 @@
 !
 ! Update the mortality statistics
 !
-          zVulA_avg(idxA,ng)=zVulA_avg(idxA,ng)/countA
-          zVulA_std(idxA,ng)=SQRT(zVulA_std(idxA,ng)/countA)
-          zVulB_avg(idxB,ng)=zVulB_avg(idxB,ng)/countB
-          zVulB_std(idxB,ng)=SQRT(zVulB_std(idxB,ng)/countB)
+          zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)/countA
+          zVulA_std(idxA,k,ng)=SQRT(zVulA_std(idxA,k,ng)/countA)
+          zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)/countB
+          zVulB_std(idxB,k,ng)=SQRT(zVulB_std(idxB,k,ng)/countB)
 
 !
 !-----------------------------------------------------------------------

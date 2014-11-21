@@ -37,11 +37,11 @@
       real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
       real(r8), dimension(Ngrids) :: wEntero, wVulA, wVulB      ! m/day
       real(r8), dimension(Ngrids) :: zVulA, zVulB               ! nmol/day
-      real(r8), allocatable :: zVulA_avg(:,:), zVulB_avg(:,:)
-      real(r8), allocatable :: zVulA_std(:,:), zVulB_std(:,:)
+      real(r8), allocatable :: zVulA_avg(:,:,:), zVulB_avg(:,:,:)
+      real(r8), allocatable :: zVulA_std(:,:,:), zVulB_std(:,:,:)
 
-      integer, dimension(Ngrids) :: NvulA_lag, NvulB_lag
-      integer, dimension(Ngrids) :: NvulAWeights, NvulBWeights
+      integer, dimension(Ngrids) :: nVulA_lag, nVulB_lag
+      integer, dimension(Ngrids) :: nVulAWeights, nVulBWeights
       real(r8), dimension(40) :: vulAwght, vulAtemp, vulAsalt
       real(r8), dimension(40) :: vulBwght, vulBtemp, vulBsalt
       

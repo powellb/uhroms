@@ -27,7 +27,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: Npts, Nval, i, itrc, ng, status
+      integer :: Npts, Nval, Nmax, i, itrc, ng, status
 
       integer :: decode_line, load_i, load_l, load_r
 
@@ -83,53 +83,57 @@
           ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusA_lag') THEN
-            Npts=load_i(Nval, Rval, Ngrids, NvulA_lag)
+            Npts=load_i(Nval, Rval, Ngrids, nVulA_lag)
             Npts=0
+            Nmax=0
             DO ng=1,Ngrids
-              NvulA_lag(ng)=MAX(1,NvulA_lag(ng))
-              Npts=MAX(Npts,NvulA_lag(ng))
+              nVulA_lag(ng)=MAX(1,nVulA_lag(ng))
+              Npts=MAX(Npts,nVulA_lag(ng))
+              Nmax=MAX(Nmax,N(ng))
             END DO
             IF (.not.allocated(zVulA_avg)) THEN
-              allocate ( zVulA_avg(Npts, Ngrids) )
+              allocate ( zVulA_avg(Npts, Nmax, Ngrids) )
             END IF
             IF (.not.allocated(zVulA_std)) THEN
-              allocate ( zVulA_std(Npts, Ngrids) )
+              allocate ( zVulA_std(Npts, Nmax, Ngrids) )
             END IF
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusB_lag') THEN
-            Npts=load_i(Nval, Rval, Ngrids, NvulB_lag)
+            Npts=load_i(Nval, Rval, Ngrids, nVulB_lag)
             Npts=0
+            Nmax=0
             DO ng=1,Ngrids
-              NvulB_lag(ng)=MAX(1,NvulB_lag(ng))
-              Npts=MAX(Npts,NvulB_lag(ng))
+              nVulB_lag(ng)=MAX(1,nVulB_lag(ng))
+              Npts=MAX(Npts,nVulB_lag(ng))
+              Nmax=MAX(Nmax,N(ng))
             END DO
             IF (.not.allocated(zVulB_avg)) THEN
-              allocate ( zVulB_avg(Npts, Ngrids) )
+              allocate ( zVulB_avg(Npts, Nmax, Ngrids) )
             END IF
             IF (.not.allocated(zVulB_std)) THEN
-              allocate ( zVulB_std(Npts, Ngrids) )
+              allocate ( zVulB_std(Npts, Nmax, Ngrids) )
             END IF
-          ELSE IF (TRIM(KeyWord).eq.'NvulAWeights') THEN
-            Npts=load_i(Nval, Rval, Ngrids, NvulAWeights)
+          ELSE IF (TRIM(KeyWord).eq.'nVulAWeights') THEN
+            Npts=load_i(Nval, Rval, Ngrids, nVulAWeights)
             DO ng=1,Ngrids
-              NvulAWeights(ng)=MIN(40,NvulAWeights(ng))
+              nVulAWeights(ng)=MIN(40,nVulAWeights(ng))
             END DO
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_weights') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAwght)
+            Npts=load_r(Nval, Rval, MAX(1,nVulAWeights), vulAwght)
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_temp') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAtemp)
+            Npts=load_r(Nval, Rval, MAX(1,nVulAWeights), vulAtemp)
           ELSE IF (TRIM(KeyWord).eq.'vulnificusA_salt') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulAWeights), vulAsalt)
-          ELSE IF (TRIM(KeyWord).eq.'NvulBWeights') THEN
-            Npts=load_i(Nval, Rval, Ngrids, NvulBWeights)
+            Npts=load_r(Nval, Rval, MAX(1,nVulAWeights), vulAsalt)
+          ELSE IF (TRIM(KeyWord).eq.'nVulBWeights') THEN
+            Npts=load_i(Nval, Rval, Ngrids, nVulBWeights)
             DO ng=1,Ngrids
-              NvulBWeights(ng)=MIN(40,NvulBWeights(ng))
+              nVulBWeights(ng)=MIN(40,nVulBWeights(ng))
             END DO
           ELSE IF (TRIM(KeyWord).eq.'vulnificusB_weights') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBwght)
+            Npts=load_r(Nval, Rval, MAX(1,nVulBWeights), vulBwght)
           ELSE IF (TRIM(KeyWord).eq.'vulnificusB_temp') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBtemp)
+            Npts=load_r(Nval, Rval, MAX(1,nVulBWeights), vulBtemp)
           ELSE IF (TRIM(KeyWord).eq.'vulnificusB_salt') THEN
-            Npts=load_r(Nval, Rval, MAX(1,NvulBWeights), vulBsalt)
+            Npts=load_r(Nval, Rval, MAX(1,nVulBWeights), vulBsalt)
           ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
