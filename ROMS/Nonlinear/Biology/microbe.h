@@ -110,7 +110,7 @@
       integer, parameter :: Nsink = 3
 
       integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, ii
-      integer :: idxA, idxB, idxAlag, idxBlag, countA, countB
+      integer :: idxA, idxB, idxAlag, idxBlag
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
@@ -118,7 +118,8 @@
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
       real(r8) :: delt, dels
-      real(r8) :: zMeanA, zMeanB, zStdA, zStdB
+      real(r8), dimension(N(ng)) :: zMeanA, zMeanB, zStdA, zStdB
+      integer, dimension(N(ng)) :: countA, countB
       
       integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
@@ -166,6 +167,43 @@
       Wbio(1)=wEntero(ng)                ! Enterococcus
       Wbio(2)=wVulA(ng)                  ! Vulnificus A
       Wbio(3)=wVulB(ng)                  ! Vulnificus B
+
+!
+!  Set up the growth/mortality statistics for each layer
+!
+      idxA=MOD(iic(ng)-ntstart(ng),nVulA_lag(ng))+1
+      idxAlag=idxA+1
+      IF (idxAlag.GT.nVulA_lag(ng)) THEN
+        idxAlag=1
+      END IF
+      idxB=MOD(iic(ng)-ntstart(ng),nVulB_lag(ng))+1
+      idxBlag=idxB+1
+      IF (idxBlag.GT.nVulB_lag(ng)) THEN
+        idxBlag=1
+      END IF
+      DO k=1,N(ng)
+        IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
+          zMeanA(k)=zVulA(ng)*dtdays
+          zStdA(k)=zMeanA(k)/3.0
+        ELSE
+          zMeanA(k)=zVulA_avg(idxAlag,k,ng)
+          zStdA(k)=zVulA_std(idxAlag,k,ng)
+        END IF
+        IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
+          zMeanB(k)=zVulB(ng)*dtdays
+          zStdB(k)=zMeanB(k)/3.0
+        ELSE
+          zMeanB(k)=zVulB_avg(idxBlag,k,ng)
+          zStdB(k)=zVulB_std(idxBlag,k,ng)
+        END IF
+        countA(k)=0
+        countB(k)=0
+        zVulA_avg(idxA,k,ng)=0.0_r8
+        zVulA_std(idxA,k,ng)=0.0_r8
+        zVulB_avg(idxA,k,ng)=0.0_r8
+        zVulB_std(idxA,k,ng)=0.0_r8
+      END DO
+
 !
 !  Compute inverse thickness to avoid repeated divisions.
 !
@@ -343,49 +381,9 @@
           END DO
 
 !
-!  Determine the lag index
-!
-          idxA=MOD(iic(ng)-ntstart(ng),NvulA_lag(ng))+1
-          idxAlag=idxA+1
-          IF (idxAlag.GT.nVulA_lag(ng)) THEN
-            idxAlag=1
-          END IF
-          idxB=MOD(iic(ng)-ntstart(ng),NvulB_lag(ng))+1
-          idxBlag=idxB+1
-          IF (idxBlag.GT.nVulB_lag(ng)) THEN
-            idxBlag=1
-          END IF
-!
-!  Loop over depths in the Microbial model
+!  Integrate the Microbial model
 !
           DO k=1,N(ng)
-!
-!  Determine the mean and std mortality
-!
-            IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
-              zMeanA=zVulA(ng)*dtdays
-              zStdA=zMeanA/3.0
-            ELSE
-              zMeanA=zVulA_avg(idxAlag,k,ng)
-              zStdA=zVulA_std(idxAlag,k,ng)
-            END IF
-            IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
-              zMeanB=zVulB(ng)*dtdays
-              zStdB=zMeanB/3.0
-            ELSE
-              zMeanB=zVulB_avg(idxBlag,k,ng)
-              zStdB=zVulB_std(idxBlag,k,ng)
-            END IF
-            countA=0
-            countB=0
-            zVulA_avg(idxA,k,ng)=0.0_r8
-            zVulA_std(idxA,k,ng)=0.0_r8
-            zVulB_avg(idxA,k,ng)=0.0_r8
-            zVulB_std(idxA,k,ng)=0.0_r8
-
-!
-!  Loop over i-points in the Microbial model
-!
             DO i=Istr,Iend
 !
 !  Enterococcus growth to blue-light exposure
@@ -403,7 +401,7 @@
 !  Vibrio Vulnificus A growth. First, compute the growth rate
 !
               cff1=0.0_r8
-              DO ii=1,NvulAWeights(ng)
+              DO ii=1,nVulAWeights(ng)
                 delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
                 dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulAwght(ii)*                               &
@@ -418,16 +416,16 @@
 ! Build the statistics of the growth-rates relative to the decay
 !
               IF (Bio(i,k,iVulA).GT.0.0_r8) THEN
-                countA = countA + 1
+                countA(k) = countA(k) + 1
                 zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)+cff1
                 zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng)+              &
-     &              (cff1-zVulA(ng)*dtdays)*(cff1-zVulA(ng)*dtdays)
+     &              (cff1-zMeanA(k)*dtdays)*(cff1-zMeanA(k)*dtdays)
               END IF
 !
 !  Vibrio Vulnificus B growth. First, compute the growth rate
 !
               cff1=0.0_r8
-              DO ii=1,NvulBWeights(ng)
+              DO ii=1,nVulBWeights(ng)
                 delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
                 dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulBwght(ii)*                               &
@@ -445,13 +443,13 @@
                 countB = countB + 1
                 zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)+cff1
                 zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng)+              &
-     &              (cff1-zVulB(ng)*dtdays)*(cff1-zVulB(ng)*dtdays)
+     &              (cff1-zMeanB(k)*dtdays)*(cff1-zMeanB(k)*dtdays)
               END IF
 !
 !  Vibrio Vulnificus A mortality.
 !
               CALL gasdev(cff3)
-              cff2=zMeanA + zStdA*cff3
+              cff2=zMeanA(k) + zStdA(k)*cff3
               cff1=1.0_r8+cff2
               Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
 
@@ -459,19 +457,11 @@
 !  Vibrio Vulnificus B mortality.
 !
               CALL gasdev(cff3)
-              cff2=zMeanB + zStdB*cff3
+              cff2=zMeanB(k) + zStdB(k)*cff3
               cff1=1.0_r8+cff2
               Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
             END DO
           END DO
-
-!
-! Update the mortality statistics
-!
-          zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)/countA
-          zVulA_std(idxA,k,ng)=SQRT(zVulA_std(idxA,k,ng)/countA)
-          zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)/countB
-          zVulB_std(idxB,k,ng)=SQRT(zVulB_std(idxB,k,ng)/countB)
 
 !
 !-----------------------------------------------------------------------
@@ -676,5 +666,15 @@
 
       END DO J_LOOP
 
+!
+! Update the mortality statistics
+!
+      DO k=1,N(ng)
+        zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)/countA(k)
+        zVulA_std(idxA,k,ng)=SQRT(zVulA_std(idxA,k,ng)/countA)
+        zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)/countB(k)
+        zVulB_std(idxB,k,ng)=SQRT(zVulB_std(idxB,k,ng)/countB)
+      END DO
+      
       RETURN
       END SUBROUTINE biology_tile

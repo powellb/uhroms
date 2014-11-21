@@ -331,8 +331,10 @@
         END IF
       END DO
       DO ng=1,Ngrids
-        zVulA_avg(:,:,ng)=zVulA(ng)
-        zVulB_avg(:,:,ng)=zVulB(ng)
+        zVulA_avg(:,:,ng)=0.0_r8
+        zVulA_std(:,:,ng)=0.0_r8
+        zVulB_avg(:,:,ng)=0.0_r8
+        zVulB_std(:,:,ng)=0.0_r8
       END DO
       zVulA_std=1
       zVulB_std=1
