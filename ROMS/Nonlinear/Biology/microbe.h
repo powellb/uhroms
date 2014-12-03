@@ -419,7 +419,7 @@
                 countA(k) = countA(k) + 1
                 zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)+cff1
                 zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng)+              &
-     &              (cff1-zMeanA(k)*dtdays)*(cff1-zMeanA(k)*dtdays)
+     &              (cff1-zMeanA(k))*(cff1-zMeanA(k))
               END IF
 !
 !  Vibrio Vulnificus B growth. First, compute the growth rate
@@ -443,7 +443,7 @@
                 countB = countB + 1
                 zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)+cff1
                 zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng)+              &
-     &              (cff1-zMeanB(k)*dtdays)*(cff1-zMeanB(k)*dtdays)
+     &              (cff1-zMeanB(k))*(cff1-zMeanB(k))
               END IF
 !
 !  Vibrio Vulnificus A mortality.
