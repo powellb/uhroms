@@ -184,14 +184,14 @@
       DO k=1,N(ng)
         IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
           zMeanA(k)=zVulA(ng)*dtdays
-          zStdA(k)=zMeanA(k)/3.0
+          zStdA(k)=zMeanA(k)*0.025_r8
         ELSE
           zMeanA(k)=zVulA_avg(idxAlag,k,ng)
           zStdA(k)=zVulA_std(idxAlag,k,ng)
         END IF
         IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
           zMeanB(k)=zVulB(ng)*dtdays
-          zStdB(k)=zMeanB(k)/3.0
+          zStdB(k)=zMeanB(k)*0.025_r8
         ELSE
           zMeanB(k)=zVulB_avg(idxBlag,k,ng)
           zStdB(k)=zVulB_std(idxBlag,k,ng)
@@ -671,9 +671,11 @@
 !
       DO k=1,N(ng)
         zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)/countA(k)
-        zVulA_std(idxA,k,ng)=SQRT(zVulA_std(idxA,k,ng)/countA(k))
+        zVulA_std(idxA,k,ng)=MIN(0.025_r8*zVulA_avg(idxA,k,ng),
+                                 SQRT(zVulA_std(idxA,k,ng)/countA(k))/2.0_r8)
         zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)/countB(k)
-        zVulB_std(idxB,k,ng)=SQRT(zVulB_std(idxB,k,ng)/countB(k))
+        zVulB_std(idxB,k,ng)=MIN(0.025_r8*zVulB_avg(idxB,k,ng),
+                                 SQRT(zVulB_std(idxB,k,ng)/countB(k))/2.0_r8)
       END DO
       
       RETURN
