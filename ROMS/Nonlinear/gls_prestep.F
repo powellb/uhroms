@@ -2,9 +2,9 @@
       MODULE gls_prestep_mod
 #if defined NONLINEAR && defined GLS_MIXING && defined SOLVE3D
 !
-!svn $Id$
+!svn $Id: gls_prestep.F 645 2013-01-22 23:21:54Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license           Hernan G. Arango   !
 !    See License_ROMS.txt                   Alexander F. Shchepetkin   !
 !==================================================== John C. Warner ===
@@ -81,11 +81,10 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_ncparam
       USE mod_scalars
 !
-# if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_3d_mod, ONLY : exchange_w3d_tile
-# endif
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange3d
 # endif
@@ -130,18 +129,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, indx, j, k
 
       real(r8), parameter :: Gamma = 1.0_r8/6.0_r8
@@ -215,13 +202,8 @@
 !
 !  Fourth-order, centered differences advection.
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-1,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-1,1),MIN(Iend+2,Lm(ng)+1)
-#  endif
         DO j=Jstr,Jend
-          DO i=I_RANGE
+          DO i=Istrm1,Iendp2
             grad (i,j)=(tke(i,j,k,nstp)-tke(i-1,j,k,nstp))
 #  ifdef MASKING
             grad (i,j)=grad (i,j)*umask(i,j)
@@ -232,21 +214,22 @@
 #  endif
           END DO
         END DO
-#  undef I_RANGE
-#  ifndef EW_PERIODIC
-        IF (WESTERN_EDGE) THEN
-          DO j=Jstr,Jend
-            grad (Istr-1,j)=grad (Istr,j)
-            gradL(Istr-1,j)=gradL(Istr,j)
-          END DO
+        IF (.not.ComposedGrid(ng)) THEN
+          IF (.not.EWperiodic(ng)) THEN
+            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+              DO j=Jstr,Jend
+                grad (Istr-1,j)=grad (Istr,j)
+                gradL(Istr-1,j)=gradL(Istr,j)
+              END DO
+            END IF
+            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+              DO j=Jstr,Jend
+                grad (Iend+2,j)=grad (Iend+1,j)
+                gradL(Iend+2,j)=gradL(Iend+1,j)
+              END DO
+            END IF
+          END IF
         END IF
-        IF (EASTERN_EDGE) THEN
-          DO j=Jstr,Jend
-            grad (Iend+2,j)=grad (Iend+1,j)
-            gradL(Iend+2,j)=gradL(Iend+1,j)
-          END DO
-        END IF
-#  endif
         cff=1.0_r8/6.0_r8
         DO j=Jstr,Jend
           DO i=Istr,Iend+1
@@ -260,12 +243,7 @@
           END DO
         END DO
 !
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-1,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-1,1),MIN(Jend+2,Mm(ng)+1)
-#  endif
-        DO j=J_RANGE
+        DO j=Jstrm1,Jendp2
           DO i=Istr,Iend
             grad (i,j)=(tke(i,j,k,nstp)-tke(i,j-1,k,nstp))
 #  ifdef MASKING
@@ -277,21 +255,22 @@
 #  endif
           END DO
         END DO
-#  undef J_RANGE
-#  ifndef NS_PERIODIC
-        IF (SOUTHERN_EDGE) THEN
-          DO i=Istr,Iend
-            grad (i,Jstr-1)=grad (i,Jstr)
-            gradL(i,Jstr-1)=gradL(i,Jstr)
-          END DO
+        IF (.not.ComposedGrid(ng)) THEN
+          IF (.not.NSperiodic(ng)) THEN
+            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+              DO i=Istr,Iend
+                grad (i,Jstr-1)=grad (i,Jstr)
+                gradL(i,Jstr-1)=gradL(i,Jstr)
+              END DO
+            END IF
+            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+              DO i=Istr,Iend
+                grad (i,Jend+2)=grad (i,Jend+1)
+                gradL(i,Jend+2)=gradL(i,Jend+1)
+              END DO
+            END IF
+          END IF
         END IF
-        IF (NORTHERN_EDGE) THEN
-          DO i=Istr,Iend
-            grad (i,Jend+2)=grad (i,Jend+1)
-            gradL(i,Jend+2)=gradL(i,Jend+1)
-          END DO
-        END IF
-#  endif
         cff=1.0_r8/6.0_r8
         DO j=Jstr,Jend+1
           DO i=Istr,Iend
@@ -416,18 +395,21 @@
      &                 IminS, ImaxS, JminS, JmaxS,                      &
      &                 3, nstp,                                         &
      &                 gls, tke)
-# if defined EW_PERIODIC || defined NS_PERIODIC
-      CALL exchange_w3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 0, N(ng),             &
-     &                        tke(:,:,:,3))
-      CALL exchange_w3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 0, N(ng),             &
-     &                        gls(:,:,:,3))
-# endif
+
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        CALL exchange_w3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 0, N(ng),           &
+     &                          tke(:,:,:,3))
+        CALL exchange_w3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 0, N(ng),           &
+     &                          gls(:,:,:,3))
+      END IF
+
 # ifdef DISTRIBUTE
       CALL mp_exchange3d (ng, tile, iNLM, 2,                            &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tke(:,:,:,3),                                 &
      &                    gls(:,:,:,3))
 # endif

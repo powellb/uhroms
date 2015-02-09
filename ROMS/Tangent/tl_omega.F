@@ -2,9 +2,9 @@
       MODULE tl_omega_mod
 #if defined TANGENT && defined SOLVE3D
 !
-!svn $Id$
+!svn $Id: tl_omega.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -24,10 +24,10 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: tl_omega
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -74,7 +74,7 @@
 # if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
      &                    GRID(ng) % omn,                               &
      &                    SEDBED(ng) % bed_thick,                       &
-     &                    SEDBED(ng) % tl_bed_thick,                   &
+     &                    SEDBED(ng) % tl_bed_thick,                    &
 # endif
      &                    GRID(ng) % Huon,                              &
      &                    GRID(ng) % Hvom,                              &
@@ -87,6 +87,7 @@
 # ifdef PROFILE
       CALL wclock_off (ng, iTLM, 13)
 # endif
+
       RETURN
       END SUBROUTINE tl_omega
 !
@@ -180,18 +181,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, j, k
 # ifdef Q_PSOURCE
       integer :: ii, jj, is
@@ -302,14 +291,17 @@
       CALL bc_w3d_tile (ng, tile,                                       &
      &                  LBi, UBi, LBj, UBj, 0, N(ng),                   &
      &                  tl_W)
+
 # ifdef DISTRIBUTE
       CALL mp_exchange3d (ng, tile, iTLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    W)
       CALL mp_exchange3d (ng, tile, iTLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_W)
 # endif
 

@@ -3,9 +3,9 @@
 #if defined NONLINEAR && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id$
+!svn $Id: pre_step3d.F 645 2013-01-22 23:21:54Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -29,10 +29,10 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: pre_step3d
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -118,6 +118,7 @@
 # ifdef PROFILE
       CALL wclock_off (ng, iNLM, 22)
 # endif
+
       RETURN
       END SUBROUTINE pre_step3d
 !
@@ -161,9 +162,7 @@
       USE mod_param
       USE mod_scalars
 !
-# if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_3d_mod, ONLY : exchange_r3d_tile
-# endif
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange4d
 # endif
@@ -292,23 +291,15 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, indx, is, itrc, j, k, ltrc
 # if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
       integer :: idiag
 # endif
+# ifdef TS_MPDATA
+      real(r8), parameter :: Gamma = 0.5_r8
+# else
       real(r8), parameter :: Gamma = 1.0_r8/6.0_r8
+# endif
       real(r8), parameter :: eps = 1.0E-16_r8
 
       real(r8) :: cff, cff1, cff2, cff3, cff4
@@ -355,7 +346,6 @@
         END DO
       END DO
 #  endif
-#  ifndef TS_MPDATA
 !
 !-----------------------------------------------------------------------
 !  Compute intermediate tracer at n+1/2 time-step, t(i,j,k,3,itrc).
@@ -367,7 +357,7 @@
       T_LOOP1 :DO itrc=1,NT(ng)
         K_LOOP: DO k=1,N(ng)
 
-#   if defined TS_C2HADVECTION
+#  if defined TS_C2HADVECTION
 !
 !  Second-order, centered differences horizontal advective fluxes.
 !
@@ -385,58 +375,75 @@
      &                        t(i,j  ,k,nstp,itrc))
             END DO
           END DO
-#   else
+
+#  elif defined TS_MPDATA
 !
-#    if defined TS_U3HADVECTION
-!  Third-order, uptream-biased horizontal advective fluxes.
-#    elif defined TS_A4HADVECTION
-!  Fourth-order, Akima horizontal advective fluxes.
-#    else
-!  Fourth-order, centered differences horizontal advective fluxes.
-#    endif
+!  First-order, upstream differences horizontal advective fluxes.
 !
-#    ifdef EW_PERIODIC
-#     define I_RANGE Istr-1,Iend+2
-#    else
-#     define I_RANGE MAX(Istr-1,1),MIN(Iend+2,Lm(ng)+1)
-#    endif
           DO j=Jstr,Jend
-            DO i=I_RANGE
-              FX(i,j)=t(i  ,j,k,nstp,itrc)-                             &
-     &                t(i-1,j,k,nstp,itrc)
-#    ifdef MASKING
-              FX(i,j)=FX(i,j)*umask(i,j)
-#    endif
+            DO i=Istr,Iend+1
+              cff1=MAX(Huon(i,j,k),0.0_r8)
+              cff2=MIN(Huon(i,j,k),0.0_r8)
+              FX(i,j)=cff1*t(i-1,j,k,nstp,itrc)+                        &
+     &                cff2*t(i  ,j,k,nstp,itrc)
             END DO
           END DO
-#    undef I_RANGE
-#    ifndef EW_PERIODIC
-          IF (WESTERN_EDGE) THEN
-            DO j=Jstr,Jend
-              FX(Istr-1,j)=FX(Istr,j)
+          DO j=Jstr,Jend+1
+            DO i=Istr,Iend
+              cff1=MAX(Hvom(i,j,k),0.0_r8)
+              cff2=MIN(Hvom(i,j,k),0.0_r8)
+              FE(i,j)=cff1*t(i,j-1,k,nstp,itrc)+                        &
+     &                cff2*t(i,j  ,k,nstp,itrc)
             END DO
-          END IF
-          IF (EASTERN_EDGE) THEN
-            DO j=Jstr,Jend
-              FX(Iend+2,j)=FX(Iend+1,j)
+          END DO
+#  else
+!
+#   if defined TS_U3HADVECTION
+!  Third-order, uptream-biased horizontal advective fluxes.
+#   elif defined TS_A4HADVECTION
+!  Fourth-order, Akima horizontal advective fluxes.
+#   else
+!  Fourth-order, centered differences horizontal advective fluxes.
+#   endif
+!
+          DO j=Jstr,Jend
+            DO i=Istrm1,Iendp2
+              FX(i,j)=t(i  ,j,k,nstp,itrc)-                             &
+     &                t(i-1,j,k,nstp,itrc)
+#   ifdef MASKING
+              FX(i,j)=FX(i,j)*umask(i,j)
+#   endif
             END DO
+          END DO
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.EWperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+                DO j=Jstr,Jend
+                  FX(Istr-1,j)=FX(Istr,j)
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+                DO j=Jstr,Jend
+                  FX(Iend+2,j)=FX(Iend+1,j)
+                END DO
+              END IF
+            END IF
           END IF
-#    endif
 !
           DO j=Jstr,Jend
             DO i=Istr-1,Iend+1
-#    if defined TS_U3HADVECTION
+#   if defined TS_U3HADVECTION
               curv(i,j)=FX(i+1,j)-FX(i,j)
-#    elif defined TS_A4HADVECTION
+#   elif defined TS_A4HADVECTION
               cff=2.0_r8*FX(i+1,j)*FX(i,j)
               IF (cff.gt.eps) THEN
                 grad(i,j)=cff/(FX(i+1,j)+FX(i,j))
               ELSE
                 grad(i,j)=0.0_r8
               END IF
-#    else
+#   else
               grad(i,j)=0.5_r8*(FX(i+1,j)+FX(i,j))
-#    endif
+#   endif
             END DO
           END DO
 !
@@ -444,64 +451,60 @@
           cff2=1.0_r8/3.0_r8
           DO j=Jstr,Jend
             DO i=Istr,Iend+1
-#    ifdef TS_U3HADVECTION
+#   ifdef TS_U3HADVECTION
               FX(i,j)=Huon(i,j,k)*0.5_r8*                               &
      &                (t(i-1,j,k,nstp,itrc)+                            &
      &                 t(i  ,j,k,nstp,itrc))-                           &
      &                cff1*(curv(i-1,j)*MAX(Huon(i,j,k),0.0_r8)+        &
      &                      curv(i  ,j)*MIN(Huon(i,j,k),0.0_r8))
-#    else
+#   else
               FX(i,j)=Huon(i,j,k)*0.5_r8*                               &
      &                (t(i-1,j,k,nstp,itrc)+                            &
      &                 t(i  ,j,k,nstp,itrc)-                            &
      &                 cff2*(grad(i  ,j)-                               &
      &                       grad(i-1,j)))
-#    endif
+#   endif
             END DO
           END DO
 !
-#    ifdef NS_PERIODIC
-#     define J_RANGE Jstr-1,Jend+2
-#    else
-#     define J_RANGE MAX(Jstr-1,1),MIN(Jend+2,Mm(ng)+1)
-#    endif
-          DO j=J_RANGE
+          DO j=Jstrm1,Jendp2
             DO i=Istr,Iend
               FE(i,j)=t(i,j  ,k,nstp,itrc)-                             &
      &                t(i,j-1,k,nstp,itrc)
-#    ifdef MASKING
+#   ifdef MASKING
               FE(i,j)=FE(i,j)*vmask(i,j)
-#    endif
+#   endif
             END DO
           END DO
-#    undef J_RANGE
-#    ifndef NS_PERIODIC
-          IF (SOUTHERN_EDGE) THEN
-            DO i=Istr,Iend
-              FE(i,Jstr-1)=FE(i,Jstr)
-            END DO
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.NSperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+                DO i=Istr,Iend
+                  FE(i,Jstr-1)=FE(i,Jstr)
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+                DO i=Istr,Iend
+                  FE(i,Jend+2)=FE(i,Jend+1)
+                END DO
+              END IF
+            END IF
           END IF
-          IF (NORTHERN_EDGE) THEN
-            DO i=Istr,Iend
-              FE(i,Jend+2)=FE(i,Jend+1)
-            END DO
-          END IF
-#    endif
 !
           DO j=Jstr-1,Jend+1
             DO i=Istr,Iend
-#    if defined TS_U3HADVECTION
+#   if defined TS_U3HADVECTION
               curv(i,j)=FE(i,j+1)-FE(i,j)
-#    elif defined TS_A4HADVECTION
+#   elif defined TS_A4HADVECTION
               cff=2.0_r8*FE(i,j+1)*FE(i,j)
               IF (cff.gt.eps) THEN
                 grad(i,j)=cff/(FE(i,j+1)+FE(i,j))
               ELSE
                 grad(i,j)=0.0_r8
               END IF
-#    else
+#   else
               grad(i,j)=0.5_r8*(FE(i,j+1)+FE(i,j))
-#    endif
+#   endif
             END DO
           END DO
 !
@@ -509,24 +512,24 @@
           cff2=1.0_r8/3.0_r8
           DO j=Jstr,Jend+1
             DO i=Istr,Iend
-#    ifdef TS_U3HADVECTION
+#   ifdef TS_U3HADVECTION
               FE(i,j)=Hvom(i,j,k)*0.5_r8*                               &
      &                (t(i,j-1,k,nstp,itrc)+                            &
      &                 t(i,j  ,k,nstp,itrc))-                           &
      &                cff1*(curv(i,j-1)*MAX(Hvom(i,j,k),0.0_r8)+        &
      &                      curv(i,j  )*MIN(Hvom(i,j,k),0.0_r8))
-#    else
+#   else
               FE(i,j)=Hvom(i,j,k)*0.5_r8*                               &
      &                (t(i,j-1,k,nstp,itrc)+                            &
      &                 t(i,j  ,k,nstp,itrc)-                            &
      &                 cff2*(grad(i,j  )-                               &
      &                       grad(i,j-1)))
-#    endif
+#   endif
             END DO
           END DO
-#   endif
+#  endif
 
-#   if defined TS_PSOURCE && !defined Q_PSOURCE
+#  if defined TS_PSOURCE && !defined Q_PSOURCE
 !
 !  Apply tracers point sources to the horizontal advection terms.
 !
@@ -543,7 +546,7 @@
               END IF
             END IF
           END DO
-#   endif
+#  endif
 !
 !  Time-step horizontal advection (m Tunits).
 !
@@ -594,20 +597,20 @@
 !
         T_LOOP2: DO itrc=1,NT(ng)
 
-#   ifdef TS_SVADVECTION
+#  ifdef TS_SVADVECTION
 !
 !  Build conservative parabolic splines for the vertical derivatives
 !  "FC" of the tracer.  Then, the interfacial "FC" values are
 !  converted to vertical advective flux.
 !
           DO i=Istr,Iend
-#    ifdef NEUMANN
+#   ifdef NEUMANN
             FC(i,0)=1.5_r8*t(i,j,1,nstp,itrc)
             CF(i,1)=0.5_r8
-#    else
+#   else
             FC(i,0)=2.0_r8*t(i,j,1,nstp,itrc)
             CF(i,1)=1.0_r8
-#    endif
+#   endif
           END DO
           DO k=1,N(ng)-1
             DO i=Istr,Iend
@@ -620,13 +623,13 @@
             END DO
           END DO
           DO i=Istr,Iend
-#    ifdef NEUMANN
+#   ifdef NEUMANN
             FC(i,N(ng))=(3.0_r8*t(i,j,N(ng),nstp,itrc)-                 &
      &                   FC(i,N(ng)-1))/(2.0_r8-CF(i,N(ng)))
-#    else
+#   else
             FC(i,N(ng))=(2.0_r8*t(i,j,N(ng),nstp,itrc)-                 &
      &                   FC(i,N(ng)-1))/(1.0_r8-CF(i,N(ng)))
-#    endif
+#   endif
           END DO
           DO k=N(ng)-1,0,-1
             DO i=Istr,Iend
@@ -638,7 +641,8 @@
             FC(i,N(ng))=0.0_r8
             FC(i,0)=0.0_r8
           END DO
-#   elif defined TS_A4VADVECTION
+
+#  elif defined TS_A4VADVECTION
 !
 !  Fourth-order, Akima vertical advective flux.
 !
@@ -672,14 +676,15 @@
             END DO
           END DO
           DO i=Istr,Iend
-#    ifdef SED_MORPH
+#   ifdef SED_MORPH
             FC(i,0)=W(i,j,0)*t(i,j,1,nstp,itrc)
-#    else
+#   else
             FC(i,0)=0.0_r8
-#    endif
+#   endif
             FC(i,N(ng))=0.0_r8
           END DO
-#   elif defined TS_C2VADVECTION
+
+#  elif defined TS_C2VADVECTION
 !
 !  Second-order, central differences vertical advective flux.
 !
@@ -691,6 +696,27 @@
             END DO
           END DO
           DO i=Istr,Iend
+#   ifdef SED_MORPH
+            FC(i,0)=W(i,j,0)*t(i,j,1,nstp,itrc)
+#   else
+            FC(i,0)=0.0_r8
+#   endif
+            FC(i,N(ng))=0.0_r8
+          END DO
+
+#  elif defined TS_MPDATA
+!
+!  First_order, upstream differences vertical advective flux.
+!
+          DO k=1,N(ng)-1
+            DO i=Istr,Iend
+              cff1=MAX(W(i,j,k),0.0_r8)
+              cff2=MIN(W(i,j,k),0.0_r8)
+              FC(i,k)=cff1*t(i,j,k  ,nstp,itrc)+                        &
+     &                cff2*t(i,j,k+1,nstp,itrc)
+            END DO
+          END DO
+          DO i=Istr,Iend
 #    ifdef SED_MORPH
             FC(i,0)=W(i,j,0)*t(i,j,1,nstp,itrc)
 #    else
@@ -698,7 +724,7 @@
 #    endif
             FC(i,N(ng))=0.0_r8
           END DO
-#   else
+#  else
 !
 !  Fourth-order, central differences vertical advective flux.
 !
@@ -715,13 +741,13 @@
             END DO
           END DO
           DO i=Istr,Iend
-#    ifdef SED_MORPH
+#   ifdef SED_MORPH
             FC(i,0)=W(i,j,0)*2.0_r8*                                    &
      &              (cff2*t(i,j,1,nstp,itrc)-                           &
      &               cff3*t(i,j,2,nstp,itrc))
-#    else
+#   else
             FC(i,0)=0.0_r8
-#    endif
+#   endif
             FC(i,1)=W(i,j,1)*                                           &
      &              (cff1*t(i,j,1,nstp,itrc)+                           &
      &               cff2*t(i,j,2,nstp,itrc)-                           &
@@ -732,7 +758,7 @@
      &                     cff3*t(i,j,N(ng)-2,nstp,itrc))
             FC(i,N(ng))=0.0_r8
           END DO
-#   endif
+#  endif
 !
 ! Time-step vertical advection of tracers (Tunits).
 !
@@ -751,7 +777,6 @@
           END DO
         END DO T_LOOP2
       END DO J_LOOP1
-#  endif /* !TS_MPDATA */
 !
 !-----------------------------------------------------------------------
 !  Start computation of tracers at n+1 time-step, t(i,j,k,nnew,itrc).
@@ -759,7 +784,7 @@
 !
 !  Compute vertical diffusive fluxes "FC" of the tracer fields at
 !  current time step n, and at horizontal RHO-points and vertical
-!  W-points. Notice that the vertical diffusion coefficients for
+!  W-points.  Notice that the vertical diffusion coefficients for
 !  passive tracers is the same as that for salinity (ltrc=NAT).
 !
       DO j=Jstr,Jend
@@ -819,9 +844,6 @@
               cff1=Hz(i,j,k)*t(i,j,k,nstp,itrc)
               cff2=FC(i,k)-FC(i,k-1)
               t(i,j,k,nnew,itrc)=cff1+cff2
-#  ifdef TS_MPDATA
-              t(i,j,k,3,itrc)=t(i,j,k,nnew,itrc)/Hz(i,j,k)
-#  endif
 #  ifdef DIAGNOSTICS_TS
               DiaTwrk(i,j,k,itrc,iTrate)=cff1
               DiaTwrk(i,j,k,itrc,iTvdif)=cff2
@@ -1046,7 +1068,7 @@
 # ifndef TS_FIXED
 !
 !=======================================================================
-!  Apply tracers lateral boundary conditions.
+!  Apply intermediate tracers lateral boundary conditions.
 !=======================================================================
 !
       DO itrc=1,NT(ng)
@@ -1055,25 +1077,23 @@
      &                   IminS, ImaxS, JminS, JmaxS,                    &
      &                   nstp, 3,                                       &
      &                   t)
-#  if defined EW_PERIODIC || defined NS_PERIODIC
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          t(:,:,:,3,itrc))
-#  endif
+
+        IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            t(:,:,:,3,itrc))
+        END IF
       END DO
+
 #  ifdef DISTRIBUTE
-#   ifdef TS_MPDATA
       CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
-     &                    t(:,:,:,nnew,:))
-#   endif
-      CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
-     &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    t(:,:,:,3,:))
 #  endif
 # endif
+
       RETURN
       END SUBROUTINE pre_step3d_tile
 #endif

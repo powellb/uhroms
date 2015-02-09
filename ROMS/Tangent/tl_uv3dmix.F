@@ -4,9 +4,9 @@
 #if defined TANGENT && defined SOLVE3D && \
    (defined UV_VIS2 || defined UV_VIS4)
 !
-!svn $Id$
+!svn $Id: tl_uv3dmix.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

@@ -2,9 +2,9 @@
       MODULE lmd_vmix_mod
 #if defined NONLINEAR && defined LMD_MIXING && defined SOLVE3D
 !
-!svn $Id$
+!svn $Id: lmd_vmix.F 645 2013-01-22 23:21:54Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -37,6 +37,7 @@
       USE mod_grid
       USE mod_mixing
       USE mod_ocean
+      USE mod_scalars
       USE mod_stepping
 !
 # ifdef LMD_SKPP
@@ -57,31 +58,33 @@
 # ifdef PROFILE
       CALL wclock_on (ng, iNLM, 18)
 # endif
-      CALL lmd_vmix_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    nstp(ng),                                     &
-     &                    GRID(ng) % Hz,                                &
+      IF (.not.PerfectRST(ng).or.iic(ng).ne.ntstart(ng)) THEN
+        CALL lmd_vmix_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      nstp(ng),                                   &
+     &                      GRID(ng) % Hz,                              &
 # ifndef SPLINES
-     &                    GRID(ng) % z_r,                               &
+     &                      GRID(ng) % z_r,                             &
 # endif
-     &                    OCEAN(ng) % rho,                              &
-     &                    OCEAN(ng) % u,                                &
-     &                    OCEAN(ng) % v,                                &
+     &                      OCEAN(ng) % rho,                            &
+     &                      OCEAN(ng) % u,                              &
+     &                      OCEAN(ng) % v,                              &
 # ifdef LMD_DDMIX
-     &                    OCEAN(ng) % t,                                &
-     &                    MIXING(ng) % alfaobeta,                       &
+     &                      OCEAN(ng) % t,                              &
+     &                      MIXING(ng) % alfaobeta,                     &
 # endif
-     &                    MIXING(ng) % bvf,                             &
-     &                    MIXING(ng) % Akt,                             &
-     &                    MIXING(ng) % Akv)
+     &                      MIXING(ng) % bvf,                           &
+     &                      MIXING(ng) % Akt,                           &
+     &                      MIXING(ng) % Akv)
 # ifdef LMD_SKPP
-      CALL lmd_skpp (ng, tile)
+        CALL lmd_skpp (ng, tile)
 # endif
 # ifdef LMD_BKPP
-      CALL lmd_bkpp (ng, tile)
+        CALL lmd_bkpp (ng, tile)
 # endif
-      CALL lmd_finish (ng, tile)
+        CALL lmd_finish (ng, tile)
+      END IF
 # ifdef PROFILE
       CALL wclock_off (ng, iNLM, 18)
 # endif
@@ -237,36 +240,36 @@
 #  endif
 #  ifdef RI_HORAVG
       DO k=1,N(ng)-1
-        IF (WESTERN_EDGE) THEN
+        IF (DOMAIN(ng)%Western_Edge(tile)) THEN
           DO j=MAX(1,Jstr-1),MIN(Jend+1,Mm(ng))
             Rig(Istr-1,j,k)=Rig(Istr,j,k)
           END DO
         END IF
-        IF (EASTERN_EDGE) THEN
+        IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
           DO j=MAX(1,Jstr-1),MIN(Jend+1,Mm(ng))
             Rig(Iend+1,j,k)=Rig(Iend,j,k)
           END DO
         END IF
-        IF (SOUTHERN_EDGE) THEN
+        IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
           DO i=MAX(1,Istr-1),MIN(Iend+1,Lm(ng))
             Rig(i,Jstr-1,k)=Rig(i,Jstr,k)
           END DO
         END IF
-        IF (NORTHERN_EDGE) THEN
+        IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
           DO i=MAX(1,Istr-1),MIN(Iend+1,Lm(ng))
             Rig(i,Jend+1,k)=Rig(i,Jend,k)
           END DO
         END IF
-        IF (SOUTH_WEST_CORNER) THEN
+        IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
           Rig(Istr-1,Jstr-1,k)=Rig(Istr,Jstr,k)
         END IF
-        IF (NORTH_WEST_CORNER) THEN
+        IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
           Rig(Istr-1,Jend+1,k)=Rig(Istr,Jend,k)
         END IF
-        IF (SOUTH_EAST_CORNER) THEN
+        IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
           Rig(Iend+1,Jstr-1,k)=Rig(Iend,Jstr,k)
         END IF
-        IF (NORTH_EAST_CORNER) THEN
+        IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
           Rig(Iend+1,Jend+1,k)=Rig(Iend,Jend,k)
         END IF
 !
@@ -504,18 +507,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, itrc, j, k
 
       real(r8), parameter :: eps = 1.0E-14_r8
@@ -572,11 +563,13 @@
 # ifdef DISTRIBUTE
       CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    Akv)
       CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 0, N(ng), 1, NAT,         &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    Akt)
 # endif
       RETURN

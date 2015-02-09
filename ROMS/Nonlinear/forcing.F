@@ -4,9 +4,9 @@
 #if defined NLM_OUTER  || defined SENSITIVITY_4DVAR || \
     defined TL_W4DPSAS || defined W4DPSAS
 !
-!svn $Id$
+!svn $Id: forcing.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -164,7 +164,7 @@
 !  Add adjoint impulse forcing to nonlinear linear state.
 !-----------------------------------------------------------------------
 !
-      IF (SOUTH_WEST_CORNER) THEN
+      IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
         IF (Master) WRITE (stdout,10) time_code(ng)
  10     FORMAT (3x,'NL_FORCING   - added convolved adjoint impulse,',   &
      &          t62,'t = ', a)

@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# svn $Id$
+# svn $Id: build.bash 645 2013-01-22 23:21:54Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2011 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2013 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
@@ -47,7 +47,7 @@ do
     -j )
       shift
       parallel=1
-      test=`echo $1 | grep -P '^\d+$'`
+      test=`echo $1 | grep '^[0-9]\+$'`
       if [ "$test" != "" ]; then
         NCPUS="-j $1"
         shift
@@ -81,11 +81,6 @@ done
 # CPP definitions.
 
 export   ROMS_APPLICATION=UPWELLING
-
-# Set number of nested/composed/mosaic grids.  Currently, only one grid
-# is supported.
-
-export        NestedGrids=1
 
 # Set a local environmental variable to define the path to the directories
 # where all this project's files are kept.

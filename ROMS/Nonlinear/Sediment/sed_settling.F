@@ -6,9 +6,9 @@
 
 #if defined NONLINEAR && defined SEDIMENT && defined SUSPLOAD
 !
-!svn $Id$
+!svn $Id: sed_settling.F 645 2013-01-22 23:21:54Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license           Hernan G. Arango   !
 !    See License_ROMS.txt                   Alexander F. Shchepetkin   !
 !==================================================== John C. Warner ===
@@ -68,7 +68,7 @@
      &                        nstp(ng), nnew(ng),                       &
      &                        GRID(ng) % Hz,                            &
      &                        GRID(ng) % z_w,                           &
-     &                        SEDBED(ng) % settling_flux,                &
+     &                        SEDBED(ng) % settling_flux,               &
      &                        OCEAN(ng) % t)
 # ifdef PROFILE
       CALL wclock_off (ng, iNLM, 16)
@@ -112,18 +112,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, indx, ised, j, k, ks
 
       real(r8) :: cff, cu, cffL, cffR, dltL, dltR
@@ -175,11 +163,7 @@
           indx=idsed(ised)
           DO k=1,N(ng)
             DO i=Istr,Iend
-# ifdef TS_MPDATA
-              qc(i,k)=t(i,j,k,3,indx)
-# else
               qc(i,k)=t(i,j,k,nnew,indx)*Hz_inv(i,k)
-# endif
             END DO
           END DO
 !
@@ -343,9 +327,6 @@
           DO i=Istr,Iend
             DO k=1,N(ng)
               t(i,j,k,nnew,indx)=qc(i,k)*Hz(i,j,k)+(FC(i,k)-FC(i,k-1))
-# ifdef TS_MPDATA
-              t(i,j,k,3,indx)=qc(i,k)+(FC(i,k)-FC(i,k-1))*Hz_inv(i,k)
-# endif
             END DO
             settling_flux(i,j,ised)=FC(i,0)
           END DO

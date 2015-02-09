@@ -2,9 +2,9 @@
       SUBROUTINE checkvars (ng, model, ncname, string, Nrec, Nvar,      &
      &                      tvarnam, get_var, have_var)
 !
-!svn $Id$
+!svn $Id: checkvars.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -327,6 +327,20 @@
           have_var(idTdif)=.TRUE.
         ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idSdif))) THEN
           have_var(idSdif)=.TRUE.
+#  ifdef LMD_SKPP
+        ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idHsbl))) THEN
+          have_var(idHsbl)=.TRUE.
+#  endif
+#  ifdef LMD_BKPP
+        ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idHbbl))) THEN
+          have_var(idHbbl)=.TRUE.
+#  endif
+#  ifdef LMD_NONLOCAL
+        ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idGhat(itemp)))) THEN
+          have_var(idGhat(itemp))=.TRUE.
+        ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idGhat(isalt)))) THEN
+          have_var(idGhat(isalt))=.TRUE.
+#  endif
 # endif
 # if defined GLS_MIXING || defined MY25_MIXING
         ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idMtke))) THEN

@@ -1,8 +1,8 @@
       SUBROUTINE ana_psource (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_psource.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -197,14 +197,14 @@
 !  should range from 1 =< Isrc =< L  and  1 =< Jsrc =< M.
 !
 #if defined RIVERPLUME1
-        IF (Master.and.SOUTH_WEST_TEST) THEN
+        IF (Master.and.DOMAIN(ng)%SouthWest_Test(tile)) THEN
           Nsrc=1
           Dsrc(Nsrc)=0.0_r8
           Isrc(Nsrc)=1
           Jsrc(Nsrc)=50
         END IF
 #elif defined RIVERPLUME2
-        IF (Master.and.SOUTH_WEST_TEST) THEN
+        IF (Master.and.DOMAIN(ng)%SouthWest_Test(tile)) THEN
           Nsrc=1+Lm(ng)*2
           DO is=1,(Nsrc-1)/2
             Dsrc(is)=1.0_r8
@@ -221,7 +221,7 @@
           Jsrc(Nsrc)=60
         END IF
 #elif defined SED_TEST1
-        IF (Master.and.SOUTH_WEST_TEST) THEN
+        IF (Master.and.DOMAIN(ng)%SouthWest_Test(tile)) THEN
           Nsrc=Mm(ng)*2
           DO is=1,Nsrc/2
             Dsrc(is)=0.0_r8
@@ -306,7 +306,7 @@
           END IF
         END DO
       END DO
-      IF (Master.and.SOUTH_WEST_TEST) THEN
+      IF (Master.and.DOMAIN(ng)%SouthWest_Test(tile)) THEN
         DO k=1,N(ng)
           Qshape(Nsrc,k)=1.0_r8/REAL(N(ng),r8)
         END DO
@@ -322,7 +322,7 @@
 !!  here since the computation below does not have a parallel tile
 !!  dependency. All the nodes are computing this simple statement.
 !!
-      IF (NORTH_EAST_TEST) THEN
+      IF (DOMAIN(ng)%NorthEast_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc
             Qshape(is,k)=1.0_r8/REAL(N(ng),r8)
@@ -372,7 +372,7 @@
      &                      zeta(i  ,j,knew)+h(i  ,j)))
         END IF
       END DO
-      IF (Master.and.SOUTH_WEST_TEST) THEN
+      IF (Master.and.DOMAIN(ng)%SouthWest_Test(tile)) THEN
         Qbar(Nsrc)=1500.0_r8                 ! West wall
       END IF
 #  ifdef DISTRIBUTE
@@ -407,12 +407,16 @@
         END IF
       END DO
 !
-      IF (SOUTH_WEST_CORNER.and.                                        &
-     &    NORTH_EAST_CORNER) THEN
+#  ifdef DISTRIBUTE
+      NSUB=1                             ! distributed-memory
+#  else
+      IF (DOMAIN(ng)%SouthWest_Corner(tile).and.                        &
+     &    DOMAIN(ng)%NorthEast_Corner(tile)) THEN
         NSUB=1                           ! non-tiled application
       ELSE
         NSUB=NtileX(ng)*NtileE(ng)       ! tiled application
       END IF
+#  endif
 !$OMP CRITICAL (PSOURCE)
       IF (tile_count.eq.0) THEN
         area_west=0.0_r8
@@ -454,7 +458,7 @@
 !
 !$OMP BARRIER
 
-      IF (NORTH_EAST_TEST) THEN
+      IF (DOMAIN(ng)%NorthEast_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc
             Qsrc(is,k)=Qbar(is)*Qshape(is,k)
@@ -469,7 +473,7 @@
 !  Set-up tracer (tracer units) point Sources/Sinks.
 !
 # if defined RIVERPLUME1
-      IF (NORTH_EAST_TEST) THEN
+      IF (DOMAIN(ng)%NorthEast_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc
             Tsrc(is,k,itemp)=T0(ng)
@@ -483,7 +487,7 @@
         END DO
       END IF
 # elif defined RIVERPLUME2
-      IF (NORTH_EAST_TEST) THEN
+      IF (DOMAIN(ng)%NorthEast_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc-1
             Tsrc(is,k,itemp)=T0(ng)

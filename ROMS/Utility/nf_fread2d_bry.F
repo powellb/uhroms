@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE nf_fread2d_bry_mod
 !
-!svn $Id$
+!svn $Id: nf_fread2d_bry.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -159,10 +159,10 @@
 !
 !  Set switch to process boundary data by their associated tiles.
 !
-      bounded(iwest )=WESTERN_EDGE
-      bounded(ieast )=EASTERN_EDGE
-      bounded(isouth)=SOUTHERN_EDGE
-      bounded(inorth)=NORTHERN_EDGE
+      bounded(iwest )=DOMAIN(ng)%Western_Edge(tile)
+      bounded(ieast )=DOMAIN(ng)%Eastern_Edge(tile)
+      bounded(isouth)=DOMAIN(ng)%Southern_Edge(tile)
+      bounded(inorth)=DOMAIN(ng)%Northern_Edge(tile)
 !
 !  Set NetCDF dimension counters for processing requested field.
 !

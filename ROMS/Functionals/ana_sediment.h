@@ -1,8 +1,8 @@
       SUBROUTINE ana_sediment (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_sediment.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -74,15 +74,9 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_ncparam
       USE mod_scalars
       USE mod_sediment
-!
-#if defined EW_PERIODIC || defined NS_PERIODIC
-      USE exchange_3d_mod, ONLY : exchange_r3d_tile
-#endif
-#ifdef DISTRIBUTE
-      USE mp_exchange_mod, ONLY : mp_exchange3d, mp_exchange4d
-#endif
 !
 !  Imported variable declarations.
 !
@@ -125,18 +119,6 @@
 !  Local variable declarations.
 !
 #ifdef DISTRIBUTE
-# ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-# else
-      logical :: EWperiodic=.FALSE.
-# endif
-# ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-# else
-      logical :: NSperiodic=.FALSE.
-# endif
-#endif
-#ifdef DISTRIBUTE
       integer :: Tstr, Tend
 #endif
       integer :: i, ised, j, k
@@ -176,6 +158,7 @@
       ana_sediment.h: no values provided for bottom(:,:,isd50) and
                                              bottom(:,:,idens)
 # endif
+
 # if defined MB_BBL || defined SSW_BBL
 #  undef YALIN
 !
@@ -275,7 +258,7 @@
             bed(i,j,k,ithck)=0.10_r8
             bed(i,j,k,iporo)=0.90_r8
             DO ised=1,NST
-              bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+              bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
             END DO
           END DO
 !
@@ -297,7 +280,7 @@
             bed(i,j,k,ithck)=0.001_r8
             bed(i,j,k,iporo)=0.90_r8
             DO ised=1,NST
-              bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+              bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
             END DO
           END DO
 !
@@ -319,7 +302,7 @@
              bed(i,j,k,ithck)=10.0_r8
              bed(i,j,k,iporo)=0.50_r8
              DO ised=1,NST
-               bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+               bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
              ENDDO
           END DO
 !
@@ -341,7 +324,7 @@
              bed(i,j,k,ithck)=0.01_r8
              bed(i,j,k,iporo)=0.30_r8
 !!           DO ised=1,NST
-!!             bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+!!             bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
 !!           END DO
              bed_frac(i,j,k,1)=1.0_r8
              bed_frac(i,j,k,2)=0.0_r8
@@ -369,7 +352,7 @@
              bed(i,j,k,ithck)=15.00_r8
              bed(i,j,k,iporo)=0.50_r8
              DO ised=1,NST
-               bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+               bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
              END DO
           END DO
 !
@@ -391,7 +374,7 @@
             bed(i,j,k,ithck)=5.0_r8
             bed(i,j,k,iporo)=0.50_r8
             DO ised=1,NST
-              bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+              bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
             END DO
           END DO
 !
@@ -413,7 +396,7 @@
             bed(i,j,k,ithck)=1.0_r8
             bed(i,j,k,iporo)=0.90_r8
             DO ised=1,NST
-              bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+              bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
             END DO
           END DO
 !
@@ -442,9 +425,9 @@
 !
              DO ised=1,NST
                bed_mass(i,j,k,1,ised)=bed(i,j,k,ithck)*                 &
-     &                                 Srho(ised,ng)*                   &
-     &                                 (1.0_r8-bed(i,j,k,iporo))*       &
-     &                                 bed_frac(i,j,k,ised)
+     &                                Srho(ised,ng)*                    &
+     &                                (1.0_r8-bed(i,j,k,iporo))*        &
+     &                                bed_frac(i,j,k,ised)
              END DO
           END DO
         END DO
@@ -481,5 +464,6 @@
         END DO
       END DO
 #endif
+
       RETURN
       END SUBROUTINE ana_sediment_tile

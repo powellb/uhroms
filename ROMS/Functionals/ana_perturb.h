@@ -1,8 +1,8 @@
       SUBROUTINE ana_perturb (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_perturb.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -771,10 +771,10 @@
 !  Perturb open boundary conditions.
 !-----------------------------------------------------------------------
 !
-      Lperturb(iwest )=WESTERN_EDGE
-      Lperturb(ieast )=EASTERN_EDGE
-      Lperturb(isouth)=SOUTHERN_EDGE
-      Lperturb(inorth)=NORTHERN_EDGE
+      Lperturb(iwest )=DOMAIN(ng)%Western_Edge (tile)
+      Lperturb(ieast )=DOMAIN(ng)%Eastern_Edge (tile)
+      Lperturb(isouth)=DOMAIN(ng)%Southern_Edge(tile)
+      Lperturb(inorth)=DOMAIN(ng)%Northern_Edge(tile)
 
       DO ir=1,Nbrec(ng)
         DO ib=1,4

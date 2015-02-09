@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE nf_fwrite2d_mod
 !
-!svn $Id$
+!svn $Id: nf_fwrite2d.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -33,6 +33,14 @@
 !                                                                      !
 !     nf_fwrite  Error flag (integer).                                 !
 !                                                                      !
+#ifdef POSITIVE_ZERO
+!  Starting F95 zero values can be signed (-0 or +0) following the     !
+!  IEEE 754 floating point standard.  This may produce different       !
+!  output data in serial and parallel applications. Since comparing    !
+!  serial and parallel output is essential for tracking parallel       !
+!  partition  bugs, "positive zero" is enforced.                       !
+!                                                                      !
+#endif
 !=======================================================================
 !
       implicit none
@@ -209,6 +217,11 @@
           DO i=Imin,Imax
             ic=ic+1
             Awrk(ic)=A(i,j)*Ascl
+#ifdef POSITIVE_ZERO
+            IF (ABS(Awrk(ic)).eq.0.0_r8) THEN
+              Awrk(ic)=0.0_r8                     ! impose positive zero
+            END IF
+#endif
 # ifdef MASKING
             IF ((Amask(i,j).eq.0.0_r8).and.LandFill) THEN
               Awrk(ic)=spval
@@ -275,6 +288,11 @@
           DO i=Imin,Imax
             ic=i+Ioff+jc
             Awrk(ic)=A(i,j)*Ascl
+#ifdef POSITIVE_ZERO
+            IF (ABS(Awrk(ic)).eq.0.0_r8) THEN
+              Awrk(ic)=0.0_r8                     ! impose positive zero
+            END IF
+#endif
             IF (Amask(i,j).eq.0.0_r8) THEN
               Awrk(ic)=spval
             END IF

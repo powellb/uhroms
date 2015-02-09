@@ -1,9 +1,9 @@
 /*
 ** Include file "globaldef.h"
 **
-** svn $Id$
+** svn $Id: globaldefs.h 645 2013-01-22 23:21:54Z arango $
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2011 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -109,57 +109,6 @@
 #endif
 
 /*
-** Set number of ghost-points in the halo region.
-*/
-
-#if defined TS_MPDATA || defined UV_VIS4
-# define GHOST_POINTS 3
-# if defined DISTRIBUTE || defined EW_PERIODIC || defined NS_PERIODIC
-#   define THREE_GHOST
-# endif
-#else
-# define GHOST_POINTS 2
-#endif
-
-/*
-** Define global grid lower and upper bounds in the I- and
-** J-directions. These values are a function of periodicity.
-** They are used in both shared- and distributed-memory
-** configurations.
-*/
-
-#ifdef EW_PERIODIC
-# ifdef NS_PERIODIC
-#  define LOWER_BOUND_I -GHOST_POINTS
-#  define UPPER_BOUND_I Im(ng)+GHOST_POINTS
-#  define LOWER_BOUND_J -GHOST_POINTS
-#  define UPPER_BOUND_J Jm(ng)+GHOST_POINTS
-# else
-#  define LOWER_BOUND_I -GHOST_POINTS
-#  define UPPER_BOUND_I Im(ng)+GHOST_POINTS
-#  define LOWER_BOUND_J 0
-#  define UPPER_BOUND_J Jm(ng)+1
-# endif
-#else
-# ifdef NS_PERIODIC
-#  define LOWER_BOUND_I 0
-#  define UPPER_BOUND_I Im(ng)+1
-#  define LOWER_BOUND_J -GHOST_POINTS
-#  define UPPER_BOUND_J Jm(ng)+GHOST_POINTS
-# else
-#  define LOWER_BOUND_I 0
-#  define UPPER_BOUND_I Im(ng)+1
-#  define LOWER_BOUND_J 0
-#  define UPPER_BOUND_J Jm(ng)+1
-# endif
-#endif
-#define XI_DIM  LOWER_BOUND_I:UPPER_BOUND_I
-#define ETA_DIM LOWER_BOUND_J:UPPER_BOUND_J
-#define GLOBAL_2D_ARRAY XI_DIM,ETA_DIM
-#define PRIVATE_1D_SCRATCH_ARRAY IminS:ImaxS
-#define PRIVATE_2D_SCRATCH_ARRAY IminS:ImaxS,JminS:JmaxS
-
-/*
 ** Set switch for distributed-memory applications to gather and scatter
 ** I/O data in 2D slabs. This is necessary on some platforms to conserve
 ** memory.
@@ -182,48 +131,13 @@
 #endif
 
 /*
-** Set tile variable for distributed- or shared-memory configurations.
+** Set tile range for distributed- or shared-memory configurations.
 */
 
 #ifdef DISTRIBUTE
-# define TILE MyRank
+# define THREAD_RANGE MyRank,MyRank
 #else
-# define TILE tile
-#endif
-
-/*
-** The following definitions contain fortran logical expressions
-** equivalent to the question: ''Am I the thread working on a tile
-** which is adjacent to the WESTERN, EASTERN, SOUTHERN, or NORTHERN
-** edges of the model domain?'' These logical expressions are used to
-** update domain boundaries and corners.
-*/
-
-#define WESTERN_EDGE Istr.eq.1
-#define EASTERN_EDGE Iend.eq.Lm(ng)
-#define SOUTHERN_EDGE Jstr.eq.1
-#define NORTHERN_EDGE Jend.eq.Mm(ng)
-#define SOUTH_WEST_CORNER (Istr.eq.1).and.(Jstr.eq.1)
-#define NORTH_WEST_CORNER (Istr.eq.1).and.(Jend.eq.Mm(ng))
-#define SOUTH_EAST_CORNER (Iend.eq.Lm(ng)).and.(Jstr.eq.1)
-#define NORTH_EAST_CORNER (Iend.eq.Lm(ng)).and.(Jend.eq.Mm(ng))
-
-/*
-** The following definitions are fortran logical expressions use
-** to update global variables while avoiding mutual overlap between
-** threads in shared-memory configurations.
-*/
-
-#ifdef DISTRIBUTE
-# define SOUTH_WEST_TEST .TRUE.
-# define NORTH_WEST_TEST .TRUE.
-# define SOUTH_EAST_TEST .TRUE.
-# define NORTH_EAST_TEST .TRUE.
-#else
-# define SOUTH_WEST_TEST (Istr.eq.1).and.(Jstr.eq.1)
-# define NORTH_WEST_TEST (Istr.eq.1).and.(Jend.eq.Mm(ng))
-# define SOUTH_EAST_TEST (Iend.eq.Lm(ng)).and.(Jstr.eq.1)
-# define NORTH_EAST_TEST (Iend.eq.Lm(ng)).and.(Jend.eq.Mm(ng))
+# define THREAD_RANGE 0,numthreads-1
 #endif
 
 /*
@@ -285,30 +199,34 @@
 ** and adjoint model switches.
 */
 
-#if defined CONVOLUTION         || defined CORRELATION        || \
-    defined FT_EIGENMODES       || defined FORCING_SV         || \
-    defined INNER_PRODUCT       || defined IS4DVAR            || \
-    defined IS4DVAR_SENSITIVITY || defined OPT_PERTURBATION   || \
-    defined OPT_OBSERVATIONS    || defined PICARD_TEST        || \
-    defined R_SYMMETRY          || defined RPM_DRIVER         || \
-    defined SANITY_CHECK        || defined SENSITIVITY_4DVAR  || \
-    defined TLM_CHECK           || defined TLM_DRIVER         || \
-    defined TL_W4DPSAS          || defined TL_W4DVAR          || \
-    defined W4DPSAS             || defined W4DVAR             || \
-    defined ARRAY_MODES         || defined CLIPPING
+#if defined ARRAY_MODES         || defined CLIPPING            || \
+    defined CORRELATION         || defined FT_EIGENMODES       || \
+    defined FORCING_SV          || defined HESSIAN_FSV         || \
+    defined HESSIAN_SO          || defined HESSIAN_SV          || \
+    defined INNER_PRODUCT       || defined IS4DVAR             || \
+    defined IS4DVAR_SENSITIVITY || defined OPT_PERTURBATION    || \
+    defined OPT_OBSERVATIONS    || defined PICARD_TEST         || \
+    defined R_SYMMETRY          || defined RPM_DRIVER          || \
+    defined SANITY_CHECK        || defined SENSITIVITY_4DVAR   || \
+    defined STOCHASTIC_OPT      || defined TLM_CHECK           || \
+    defined TLM_DRIVER          || defined TL_W4DPSAS          || \
+    defined TL_W4DVAR           || defined W4DPSAS             || \
+    defined W4DVAR
 # define TANGENT
 #endif
-#if defined AD_SENSITIVITY      || defined ADM_DRIVER         || \
-    defined AFT_EIGENMODES      || defined CONVOLUTION        || \
-    defined CORRELATION         || defined FORCING_SV         || \
-    defined INNER_PRODUCT       || defined IS4DVAR            || \
-    defined IS4DVAR_SENSITIVITY || defined OPT_PERTURBATION   || \
-    defined OPT_OBSERVATIONS    || defined R_SYMMETRY         || \
-    defined SANITY_CHECK        || defined SENSITIVITY_4DVAR  || \
-    defined SO_SEMI             || defined TLM_CHECK          || \
-    defined TL_W4DPSAS          || defined TL_W4DVAR          || \
-    defined W4DPSAS             || defined W4DVAR             || \
-    defined ARRAY_MODES         || defined CLIPPING
+#if defined AD_SENSITIVITY      || defined ADM_DRIVER          || \
+    defined AFT_EIGENMODES      || defined ARRAY_MODES         || \
+    defined CLIPPING            || defined CORRELATION         || \
+    defined FORCING_SV          || defined HESSIAN_SO          || \
+    defined HESSIAN_FSV         || defined HESSIAN_SV          || \
+    defined INNER_PRODUCT       || defined IS4DVAR             || \
+    defined IS4DVAR_SENSITIVITY || defined OPT_PERTURBATION    || \
+    defined OPT_OBSERVATIONS    || defined R_SYMMETRY          || \
+    defined SANITY_CHECK        || defined SENSITIVITY_4DVAR   || \
+    defined SO_SEMI             || defined STOCHASTIC_OPT      || \
+    defined TLM_CHECK           || defined TL_W4DPSAS          || \
+    defined TL_W4DVAR           || defined W4DPSAS             || \
+    defined W4DVAR
 # define ADJOINT
 #endif
 #if defined PICARD_TEST        || defined RPM_DRIVER         || \
@@ -389,10 +307,12 @@
 #define NONLINEAR
 #if defined AD_SENSITIVITY   || defined ADM_DRIVER       || \
     defined AFT_EIGENMODES   || defined FORCING_SV       || \
-    defined FT_EIGENMODES    || defined INNER_PRODUCT    || \
-    defined OPT_OBSERVATIONS || defined OPT_PERTURBATION || \
-    defined PICARD_TEST      || defined RPM_DRIVER       || \
-    defined SANITY_CHECK     || defined SO_SEMI          || \
+    defined FT_EIGENMODES    || defined HESSIAN_FSV      || \
+    defined HESSIAN_SO       || defined HESSIAN_SV       || \
+    defined INNER_PRODUCT    || defined OPT_OBSERVATIONS || \
+    defined OPT_PERTURBATION || defined PICARD_TEST      || \
+    defined RPM_DRIVER       || defined SANITY_CHECK     || \
+    defined SO_SEMI          || defined STOCHASTIC_OPT   || \
     defined TLM_DRIVER
 # undef NONLINEAR
 #endif
@@ -434,11 +354,12 @@
 ** Set internal switch for the need of a propagator driver.
 */
 
-#if defined AFT_EIGENMODES   || defined ENSEMBLE       || \
-    defined FORCING_SV       || defined FT_EIGENMODES  || \
-    defined OPT_PERTURBATION || defined PSEUDOSPECTRA  || \
-    defined SO_SEMI          || defined SO_TRACE       || \
-    defined STOCHASTIC_OPT
+#if defined AFT_EIGENMODES   || defined ENSEMBLE         || \
+    defined FORCING_SV       || defined FT_EIGENMODES    || \
+    defined HESSIAN_FSV      || defined HESSIAN_SO       || \
+    defined HESSIAN_SV       || defined OPT_PERTURBATION || \
+    defined PSEUDOSPECTRA    || defined SO_SEMI          || \
+    defined SO_TRACE         || defined STOCHASTIC_OPT
 # define PROPAGATOR
 #endif
 
@@ -460,24 +381,22 @@
 */
 
 #if !defined WEAK_CONSTRAINT     && \
-    (defined CONVOLUTION         || defined R_SYMMETRY         || \
-     defined TL_W4DPSAS          || defined TL_W4DVAR          || \
-     defined W4DPSAS             || defined W4DVAR             || \
-     defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY || \
-     defined ARRAY_MODES         || defined CLIPPING )
+    (defined ARRAY_MODES         || defined CLIPPING            || \
+     defined R_SYMMETRY          || defined TL_W4DPSAS          || \
+     defined TL_W4DVAR           || defined W4DPSAS             || \
+     defined W4DVAR              || defined W4DPSAS_SENSITIVITY || \
+     defined W4DVAR_SENSITIVITY)
 # define WEAK_CONSTRAINT
 #endif
 #if !defined WEAK_CONSTRAINT     && defined RPM_RELAXATION
 # undef RPM_RELAXATION
 #endif
-#if defined CONVOLUTION          || defined CORRELATION         || \
+#if defined CORRELATION          || defined HESSIAN_FSV         || \
+    defined HESSIAN_SO           || defined HESSIAN_SV          || \
     defined IS4DVAR              || defined IS4DVAR_SENSITIVITY || \
     defined OPT_OBSERVATIONS     || defined TLM_CHECK           || \
     defined WEAK_CONSTRAINT
 # define FOUR_DVAR
-#endif
-#if !defined WEAK_CONSTRAINT && defined FOUR_DVAR
-# define CONVOLVE
 #endif
 #if defined IS4DVAR
 # define BACKGROUND
@@ -523,19 +442,19 @@
 */
 
 #if !defined FORWARD_READ      && \
-    (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
-     defined SENSITIVITY_4DVAR || defined TL_W4DPSAS          || \
-     defined TL_W4DVAR         || defined W4DPSAS             || \
-     defined W4DVAR            || defined ARRAY_MODES         || \
-     defined CLIPPING)
+    (defined ARRAY_MODES       || defined CLIPPING            || \
+     defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
+     defined PROPAGATOR        || defined SENSITIVITY_4DVAR   || \
+     defined TL_W4DPSAS        || defined TL_W4DVAR           || \
+     defined W4DPSAS           || defined W4DVAR)
 # define FORWARD_READ
 #endif
 #if !defined FORWARD_WRITE     && \
-    (defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
+    (defined ARRAY_MODES       || defined CLIPPING            || \
+     defined IS4DVAR           || defined IS4DVAR_SENSITIVITY || \
      defined SENSITIVITY_4DVAR || defined TL_W4DPSAS          || \
      defined TL_W4DVAR         || defined W4DPSAS             || \
-     defined W4DVAR            || defined ARRAY_MODES         || \
-     defined CLIPPING)
+     defined W4DVAR)
 # define FORWARD_WRITE
 #endif
 
@@ -591,12 +510,13 @@
      (defined TS_DIF2      || defined TS_DIF4))
 # define CLM_FILE
 #endif
-#if defined ZCLIMATOLOGY   || defined M2CLIMATOLOGY || \
-    defined TCLIMATOLOGY   || defined M3CLIMATOLOGY || \
-    defined ZCLM_NUDGING   || defined M2CLM_NUDGING || \
-    defined TCLM_NUDGING   || defined M3CLM_NUDGING || \
-    (defined CLIMA_TS_MIX  && defined SOLVE3D       && \
-     (defined TS_DIF2      || defined TS_DIF4))
+
+#if defined M2CLIMATOLOGY || defined M2CLM_NUDGING || \
+    defined M3CLIMATOLOGY || defined M3CLM_NUDGING || \
+    defined TCLIMATOLOGY  || defined TCLM_NUDGING  || \
+    defined ZCLIMATOLOGY  || \
+    (defined CLIMA_TS_MIX && defined SOLVE3D       && \
+     (defined TS_DIF2     || defined TS_DIF4))
 # define CLIMATOLOGY
 #endif
 
@@ -632,190 +552,6 @@
 #endif
 
 /*
-** Activate internal switch to set-up nudging coefficients.
-*/
-
-#if defined ZCLM_NUDGING    || defined M2CLM_NUDGING   || \
-    defined TCLM_NUDGING    || defined M3CLM_NUDGING   || \
-    defined WEST_FSNUDGING  || defined EAST_FSNUDGING  || \
-    defined SOUTH_FSNUDGING || defined NORTH_FSNUDGING || \
-    defined WEST_M2NUDGING  || defined EAST_M2NUDGING  || \
-    defined SOUTH_M2NUDGING || defined NORTH_M2NUDGING || \
-    defined WEST_TNUDGING   || defined EAST_TNUDGING   || \
-    defined SOUTH_TNUDGING  || defined NORTH_TNUDGING  || \
-    defined WEST_M3NUDGING  || defined EAST_M3NUDGING  || \
-    defined SOUTH_M3NUDGING || defined NORTH_M3NUDGING
-# define NUDGING_COFF
-#endif
-
-/*
-** Internal switches to deactivate calling boundary conditions
-** during initialization of 2D state variables. Basically,
-** we need to apply only non-radiation type boundary conditions.
-*/
-
-#if defined WEST_M2RADIATION   || defined WEST_M2FLATHER  || \
-    defined EAST_M2RADIATION   || defined EAST_M2FLATHER  || \
-    defined SOUTH_M2RADIATION  || defined SOUTH_M2FLATHER || \
-    defined NORTH_M2RADIATION  || defined NORTH_M2FLATHER
-# define OBC_M2RADIATION
-#endif
-
-#if defined WEST_FSRADIATION   || defined WEST_FSCHAPMAN  || \
-    defined EAST_FSRADIATION   || defined EAST_FSCHAPMAN  || \
-    defined SOUTH_FSRADIATION  || defined SOUTH_FSCHAPMAN || \
-    defined NORTH_FSRADIATION  || defined NORTH_FSCHAPMAN
-# define OBC_FSRADIATION
-#endif
-
-/*
-** Activate internal switches requiring open boundary data.
-*/
-
-#if (defined WEST_M2RADIATION  && defined WEST_M2NUDGING)  || \
-     defined WEST_M2FLATHER    || defined WEST_M2CLAMPED
-# define WEST_M2OBC
-#endif
-#if (defined EAST_M2RADIATION  && defined EAST_M2NUDGING)  || \
-     defined EAST_M2FLATHER    || defined EAST_M2CLAMPED
-# define EAST_M2OBC
-#endif
-#if (defined SOUTH_M2RADIATION && defined SOUTH_M2NUDGING) || \
-     defined SOUTH_M2FLATHER   || defined SOUTH_M2CLAMPED
-# define SOUTH_M2OBC
-#endif
-#if (defined NORTH_M2RADIATION && defined NORTH_M2NUDGING) || \
-     defined NORTH_M2FLATHER   || defined NORTH_M2CLAMPED
-# define NORTH_M2OBC
-#endif
-
-#if (defined WEST_FSRADIATION  && defined WEST_FSNUDGING)  || \
-    (defined WEST_M2REDUCED    && defined FSOBC_REDUCED)   || \
-     defined WEST_M2FLATHER    || defined WEST_FSCLAMPED
-# define WEST_FSOBC
-#endif
-#if (defined EAST_FSRADIATION  && defined EAST_FSNUDGING)  || \
-    (defined EAST_M2REDUCED    && defined FSOBC_REDUCED)   || \
-     defined EAST_M2FLATHER    || defined EAST_FSCLAMPED
-# define EAST_FSOBC
-#endif
-#if (defined SOUTH_FSRADIATION && defined SOUTH_FSNUDGING) || \
-    (defined SOUTH_M2REDUCED   && defined FSOBC_REDUCED)   || \
-     defined SOUTH_M2FLATHER   || defined SOUTH_FSCLAMPED
-# define SOUTH_FSOBC
-#endif
-#if (defined NORTH_FSRADIATION && defined NORTH_FSNUDGING) || \
-    (defined NORTH_M2REDUCED   && defined FSOBC_REDUCED)   || \
-     defined NORTH_M2FLATHER   || defined NORTH_FSCLAMPED
-# define NORTH_FSOBC
-#endif
-
-#if defined FSOBC_REDUCED   && \
-  !(defined WEST_M2REDUCED  || defined EAST_M2REDUCED  || \
-    defined NORTH_M2REDUCED || defined SOUTH_M2REDUCED || \
-    defined WEST_M2FLATHER  || defined EAST_M2FLATHER  || \
-    defined NORTH_M2FLATHER || defined SOUTH_M2FLATHER)
-# undef FSOBC_REDUCED
-#endif
-
-#if (defined WEST_M3RADIATION  && defined WEST_M3NUDGING)  || \
-     defined WEST_M3CLAMPED
-# define WEST_M3OBC
-#endif
-#if (defined EAST_M3RADIATION  && defined EAST_M3NUDGING)  || \
-     defined EAST_M3CLAMPED
-# define EAST_M3OBC
-#endif
-#if (defined SOUTH_M3RADIATION && defined SOUTH_M3NUDGING) || \
-     defined SOUTH_M3CLAMPED
-# define SOUTH_M3OBC
-#endif
-#if (defined NORTH_M3RADIATION && defined NORTH_M3NUDGING) || \
-     defined NORTH_M3CLAMPED
-# define NORTH_M3OBC
-#endif
-
-#if (defined WEST_TRADIATION   && defined WEST_TNUDGING)   || \
-     defined WEST_TCLAMPED
-# define WEST_TOBC
-#endif
-#if (defined EAST_TRADIATION   && defined EAST_TNUDGING)   || \
-     defined EAST_TCLAMPED
-# define EAST_TOBC
-#endif
-#if (defined SOUTH_TRADIATION  && defined SOUTH_TNUDGING)  || \
-     defined SOUTH_TCLAMPED
-# define SOUTH_TOBC
-#endif
-#if (defined NORTH_TRADIATION  && defined NORTH_TNUDGING)  || \
-     defined NORTH_TCLAMPED
-# define NORTH_TOBC
-#endif
-
-#ifdef SOLVE3D
-# if defined WEST_FSOBC  || defined EAST_FSOBC  || \
-     defined SOUTH_FSOBC || defined NORTH_FSOBC || \
-     defined WEST_M2OBC  || defined EAST_M2OBC  || \
-     defined SOUTH_M2OBC || defined NORTH_M2OBC || \
-     defined WEST_M3OBC  || defined EAST_M3OBC  || \
-     defined SOUTH_M3OBC || defined NORTH_M3OBC || \
-     defined WEST_TOBC   || defined EAST_TOBC   || \
-     defined SOUTH_TOBC  || defined NORTH_TOBC
-#  define OBC
-# endif
-#else
-# if defined WEST_FSOBC  || defined EAST_FSOBC  || \
-     defined SOUTH_FSOBC || defined NORTH_FSOBC || \
-     defined WEST_M2OBC  || defined EAST_M2OBC  || \
-     defined SOUTH_M2OBC || defined NORTH_M2OBC
-#  define OBC
-# endif
-#endif
-
-/*
-** Define internal flag indicating processing of input boundary
-** NetCDF file.
-*/
-
-#if (!defined ANA_FSOBC   && \
-     (defined WEST_FSOBC  || defined EAST_FSOBC    || \
-      defined SOUTH_FSOBC || defined NORTH_FSOBC)) || \
-    (!defined ANA_M2OBC   && \
-     (defined WEST_M2OBC  || defined EAST_M2OBC    || \
-      defined SOUTH_M2OBC || defined NORTH_M2OBC)) || \
-    (!defined ANA_M3OBC   && \
-     (defined WEST_M3OBC  || defined EAST_M3OBC    || \
-      defined SOUTH_M3OBC || defined NORTH_M3OBC)) || \
-    (!defined ANA_TOBC    && \
-     (defined WEST_TOBC   || defined EAST_TOBC    || \
-      defined SOUTH_TOBC  || defined NORTH_TOBC))
-# define OBC_DATA
-#endif
-
-/*
-** Activate internal switches for volume conservation at open boundary.
-*/
-
-#if defined WEST_VOLCONS  || defined EAST_VOLCONS  || \
-    defined NORTH_VOLCONS || defined SOUTH_VOLCONS
-# define OBC_VOLCONS
-#endif
-
-/*
-** Activate assimilation switches.
-*/
-
-#if defined ASSIMILATION_SSH || defined ASSIMILATION_SST   || \
-    defined ASSIMILATION_T   || defined ASSIMILATION_UVsur || \
-    defined ASSIMILATION_UV
-# define ASSIMILATION
-#endif
-#if defined NUDGING_SST   || defined NUDGING_T   || \
-    defined NUDGING_UVsur || defined NUDGING_UV
-# define NUDGING
-#endif
-
-/*
 ** Activate internal biology option when using any type of biological
 ** module.
 */
@@ -824,6 +560,14 @@
     defined NEMURO      || defined NPZD_FRANKS || \
     defined NPZD_IRON   || defined NPZD_POWELL
 # define BIOLOGY
+#endif
+
+/*
+** Activate internal option for biological float behavior.
+*/
+
+#if defined FLOATS && defined FLOAT_OYSTER
+# define FLOAT_BIOLOGY
 #endif
 
 /*
@@ -847,7 +591,7 @@
 ** Define internal option for radiation stress forcing.
 */
 
-#if defined NEARSHORE_MELLOR05
+#if defined NEARSHORE_MELLOR05 || defined NEARSHORE_MELLOR08
 # define NEARSHORE_MELLOR
 #endif
 #if defined NEARSHORE_MELLOR
@@ -1039,17 +783,6 @@
 #endif
 
 /*
-** Activate switch to modify MAIN3D to recompute depths and
-** thicknesses using the new time filtered free-surface.  This
-** call is moved from STEP2D to facilitate nesting.
-** This strategy needs to be tested in the TLM, RPM, and ADM.
-*/
-
-#if !(defined ADJOINT || defined TANGENT || defined TL_IOMS)
-# define MOVE_SET_DEPTH
-#endif
-
-/*
 ** Check if any analytical expression is defined.
 */
 
@@ -1071,8 +804,8 @@
     defined ANA_TAIR       || defined ANA_TCLIMA     || \
     defined ANA_TOBC       || defined ANA_VMIX       || \
     defined ANA_WINDS      || defined ANA_WWAVE      || \
-    defined DIFF_GRID      || defined NUDGING_COFF   || \
-    defined SPONGE         || defined VISC_GRID
+    defined DIFF_GRID      || defined SPONGE         || \
+    defined VISC_GRID
 # define ANALYTICAL
 #endif
 

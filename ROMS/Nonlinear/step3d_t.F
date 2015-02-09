@@ -2,23 +2,34 @@
       MODULE step3d_t_mod
 #if !defined TS_FIXED && (defined NONLINEAR && defined SOLVE3D)
 !
-!svn $Id$
+!svn $Id: step3d_t.F 645 2013-01-22 23:21:54Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
 !                                                                      !
-!  This routine time-steps tracer equations. Notice that advective     !
-!  and diffusive terms are time-stepped differently.                   !
+!  This routine time-steps tracer equations.  Notice that advective    !
+!  and diffusive terms are time-stepped differently. It applies the    !
+!  corrector time-step for horizontal/vertical advection,  vertical    !
+!  diffusion, nudging if necessary, and lateral boundary conditions.   !
+!                                                                      !
+!  Notice that at input the tracer arrays have:                        !
+!                                                                      !
+!    t(:,:,:,nnew,:)   m Tunits  n+1     horizontal/vertical diffusion !
+!                                        terms plus source/sink terms  !
+!                                        (biology, sediment), if any   !
+!                                                                      !
+!    t(:,:,:,3   ,:)   Tunits    n+1/2   advective terms and vertical  !
+!                                        diffusion predictor step      !
 !                                                                      !
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: step3d_t
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -34,9 +45,6 @@
 # endif
       USE mod_grid
       USE mod_mixing
-# if defined ASSIMILATION || defined NUDGING
-      USE mod_obs
-# endif
       USE mod_ocean
 # ifdef TS_PSOURCE
       USE mod_sources
@@ -97,15 +105,7 @@
      &                    CLIMA(ng) % Tnudgcof,                         &
      &                    CLIMA(ng) % tclm,                             &
 # endif
-# if defined NUDGING_SST || defined NUDGING_T
-     &                    OBS(ng) % EobsT,                              &
-     &                    OBS(ng) % Tobs,                               &
-# endif
      &                    MIXING(ng) % Akt,                             &
-# ifdef TS_MPDATA
-     &                    OCEAN(ng) % u,                                &
-     &                    OCEAN(ng) % v,                                &
-# endif
      &                    OCEAN(ng) % W,                                &
 # if defined FLOATS && defined FLOAT_VWALK
      &                    MIXING(ng) % dAktdz,                          &
@@ -150,13 +150,7 @@
 # if defined TCLM_NUDGING && defined TCLIMATOLOGY
      &                          Tnudgcof, tclm,                         &
 # endif
-# if defined NUDGING_SST || defined NUDGING_T
-     &                          EobsT, Tobs,                            &
-# endif
      &                          Akt,                                    &
-# ifdef TS_MPDATA
-     &                          u, v,                                   &
-# endif
      &                          W,                                      &
 # if defined FLOATS && defined FLOAT_VWALK
      &                          dAktdz,                                 &
@@ -171,9 +165,7 @@
       USE mod_ncparam
       USE mod_scalars
 !
-# if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_3d_mod, ONLY : exchange_r3d_tile
-# endif
 # ifdef DISTRIBUTE
 #  if defined FLOATS && defined FLOAT_VWALK
       USE mp_exchange_mod, ONLY : mp_exchange3d
@@ -231,10 +223,6 @@
       real(r8), intent(in) :: Tnudgcof(LBi:,LBj:,:)
       real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
 #  endif
-#  if defined NUDGING_SST || defined NUDGING_T
-      real(r8), intent(in) :: EobsT(LBi:,LBj:,:,:)
-      real(r8), intent(in) :: Tobs(LBi:,LBj:,:,:)
-#  endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: Huon(LBi:,LBj:,:)
       real(r8), intent(in) :: Hvom(LBi:,LBj:,:)
@@ -243,10 +231,6 @@
       real(r8), intent(in) :: Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT)
 #  else
       real(r8), intent(in) :: Akt(LBi:,LBj:,0:,:)
-#  endif
-#  ifdef TS_MPDATA
-      real(r8), intent(in) :: u(LBi:,LBj:,:,:)
-      real(r8), intent(in) :: v(LBi:,LBj:,:,:)
 #  endif
       real(r8), intent(in) :: W(LBi:,LBj:,0:)
 #  ifdef DIAGNOSTICS_TS
@@ -296,21 +280,13 @@
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
 #  if defined TCLM_NUDGING && defined TCLIMATOLOGY
       real(r8), intent(in) :: Tnudgcof(LBi:UBi,LBj:UBj,NT(ng))
-      real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng))
-#  endif
-#  if defined NUDGING_SST || defined NUDGING_T
-      real(r8), intent(in) :: EobsT(LBi:UBi,LBj:UBj,N(ng),NT(ng))
-      real(r8), intent(in) :: Tobs(LBi:UBi,LBj:UBj,N(ng),NT(ng))
+      real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NTCLM(ng))
 #  endif
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Huon(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Hvom(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT)
-#  ifdef TS_MPDATA
-      real(r8), intent(in) :: u(LBi:UBi,LBj:UBj,N(ng),2)
-      real(r8), intent(in) :: v(LBi:UBi,LBj:UBj,N(ng),2)
-#  endif
       real(r8), intent(in) :: W(LBi:UBi,LBj:UBj,0:N(ng))
 
 #  ifdef DIAGNOSTICS_TS
@@ -326,25 +302,13 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
-      integer :: i, is, itrc, j, k, ltrc
+      integer :: i, ic, is, itrc, j, k, ltrc
 # ifdef DIAGNOSTICS_TS
       integer :: idiag
 # endif
       real(r8), parameter :: eps = 1.0E-16_r8
 
-      real(r8) :: cff, cff1, cff2, cff3, cff4
+      real(r8) :: cff, cff1, cff2, cff3
 
       real(r8), dimension(IminS:ImaxS,0:N(ng)) :: CF
       real(r8), dimension(IminS:ImaxS,0:N(ng)) :: BC
@@ -358,6 +322,10 @@
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: oHz
 # ifdef TS_MPDATA
+#  ifdef DIAGNOSTICS_TS
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,3) :: Dhadv
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng),NT(ng)) :: Dvadv
+#  endif
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng),NT(ng)) :: Ta
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: Ua
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: Va
@@ -373,16 +341,8 @@
 !  Compute inverse thickness.
 !
 # ifdef TS_MPDATA
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,0),MIN(Iend+2,Lm(ng)+1)
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,0),MIN(Jend+2,Mm(ng)+1)
-#  endif
+#  define I_RANGE Istrm2,Iendp2
+#  define J_RANGE Jstrm2,Jendp2
 # else
 #  define I_RANGE Istr,Iend
 #  define J_RANGE Jstr,Jend
@@ -397,31 +357,31 @@
       END DO
 # undef I_RANGE
 # undef J_RANGE
-!
-!  Compute horizontal tracer advection fluxes.
-!
-# if defined TS_MPDATA   && \
-    (defined EW_PERIODIC || defined NS_PERIODIC || defined DISTRIBUTE)
+# ifdef TS_MPDATA
 !
 !  The MPDATA algorithm requires a three-point footprint, so exchange
-!  boundary data on t(:,:,:,3,:) so other processes computed earlier
+!  boundary data on t(:,:,:,nnew,:) so other processes computed earlier
 !  (horizontal diffusion, biology, or sediment) are accounted.
 !
-#  if defined EW_PERIODIC || defined NS_PERIODIC
-      DO itrc=1,NT(ng)
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          t(:,:,:,3,itrc))
-      END DO
-#  endif
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        DO itrc=1,NT(ng)
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            t(:,:,:,nnew,itrc))
+        END DO
+      END IF
+
 #  ifdef DISTRIBUTE
       CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
-     &                    t(:,:,:,3,:))
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
+     &                    t(:,:,:,nnew,:))
 #  endif
 # endif
-
+!
+!  Compute horizontal tracer advection fluxes.
+!
       T_LOOP : DO itrc=1,NT(ng)
         K_LOOP : DO k=1,N(ng)
 
@@ -443,50 +403,27 @@
      &                        t(i,j  ,k,3,itrc))
             END DO
           END DO
+
 # elif defined TS_MPDATA
 !
 !  First-order, upstream differences horizontal advective fluxes.
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+3
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+3,Lm(ng)+1)
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
+          DO j=JstrVm2,Jendp2i
+            DO i=IstrUm2,Iendp3
               cff1=MAX(Huon(i,j,k),0.0_r8)
               cff2=MIN(Huon(i,j,k),0.0_r8)
               FX(i,j)=cff1*t(i-1,j,k,3,itrc)+                           &
      &                cff2*t(i  ,j,k,3,itrc)
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+3
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+3,Mm(ng)+1)
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
+          DO j=JstrVm2,Jendp3
+            DO i=IstrUm2,Iendp2i
               cff1=MAX(Hvom(i,j,k),0.0_r8)
               cff2=MIN(Hvom(i,j,k),0.0_r8)
               FE(i,j)=cff1*t(i,j-1,k,3,itrc)+                           &
      &                cff2*t(i,j  ,k,3,itrc)
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
 
 # else
 !
@@ -498,13 +435,8 @@
 !  Fourth-order, centered differences horizontal advective fluxes.
 #  endif
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-1,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-1,1),MIN(Iend+2,Lm(ng)+1)
-#  endif
           DO j=Jstr,Jend
-            DO i=I_RANGE
+            DO i=Istrm1,Iendp2
               FX(i,j)=t(i  ,j,k,3,itrc)-                                &
      &                t(i-1,j,k,3,itrc)
 #  ifdef MASKING
@@ -512,19 +444,20 @@
 #  endif
             END DO
           END DO
-#  undef I_RANGE
-#  ifndef EW_PERIODIC
-          IF (WESTERN_EDGE) THEN
-            DO j=Jstr,Jend
-              FX(Istr-1,j)=FX(Istr,j)
-            END DO
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.EWperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+                DO j=Jstr,Jend
+                  FX(Istr-1,j)=FX(Istr,j)
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+                DO j=Jstr,Jend
+                  FX(Iend+2,j)=FX(Iend+1,j)
+                END DO
+              END IF
+            END IF
           END IF
-          IF (EASTERN_EDGE) THEN
-            DO j=Jstr,Jend
-              FX(Iend+2,j)=FX(Iend+1,j)
-            END DO
-          END IF
-#  endif
 !
           DO j=Jstr,Jend
             DO i=Istr-1,Iend+1
@@ -563,12 +496,7 @@
             END DO
           END DO
 !
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-1,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-1,1),MIN(Jend+2,Mm(ng)+1)
-#  endif
-          DO j=J_RANGE
+          DO j=Jstrm1,Jendp2
             DO i=Istr,Iend
               FE(i,j)=t(i,j  ,k,3,itrc)-                                &
      &                t(i,j-1,k,3,itrc)
@@ -577,19 +505,20 @@
 #  endif
             END DO
           END DO
-#  undef J_RANGE
-#  ifndef NS_PERIODIC
-          IF (SOUTHERN_EDGE) THEN
-            DO i=Istr,Iend
-              FE(i,Jstr-1)=FE(i,Jstr)
-            END DO
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.NSperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+                DO i=Istr,Iend
+                  FE(i,Jstr-1)=FE(i,Jstr)
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+                DO i=Istr,Iend
+                  FE(i,Jend+2)=FE(i,Jend+1)
+                END DO
+              END IF
+            END IF
           END IF
-          IF (NORTHERN_EDGE) THEN
-            DO i=Istr,Iend
-              FE(i,Jend+2)=FE(i,Jend+1)
-            END DO
-          END IF
-#  endif
 !
           DO j=Jstr-1,Jend+1
             DO i=Istr,Iend
@@ -637,8 +566,8 @@
             j=Jsrc(is)
             IF (INT(Dsrc(is)).eq.0) THEN
 #  ifdef TS_MPDATA
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+              IF (((IstrUm2.le.i).and.(i.le.Iendp3)).and.               &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
 #  else
               IF (((Istr.le.i).and.(i.le.Iend+1)).and.                  &
      &            ((Jstr.le.j).and.(j.le.Jend))) THEN
@@ -659,8 +588,8 @@
               END IF
             ELSE IF (INT(Dsrc(is)).eq.1) THEN
 #  ifdef TS_MPDATA
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp3))) THEN
 #  else
               IF (((Istr.le.i).and.(i.le.Iend)).and.                    &
      &            ((Jstr.le.j).and.(j.le.Jend+1))) THEN
@@ -683,22 +612,21 @@
           END DO
 # endif
 !
-!  Time-step horizontal advection term.
+# ifdef TS_MPDATA
+!  Time-step horizontal advection for intermediate diffusive tracer, Ta.
+!  Advective fluxes have units of Tunits m3/s.  The new tracer has
+!  units of m Tunits.
+# else
+!  Time-step horizontal advection term.  Advective fluxes have units
+!  of Tunits m3/s.  The new tracer has units of m Tunits.
+# endif
 !
 # ifdef TS_MPDATA
-#   ifdef EW_PERIODIC
-#    define I_RANGE Istr-2,Iend+2
-#   else
-#    define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#   endif
-#   ifdef NS_PERIODIC
-#    define J_RANGE Jstr-2,Jend+2
-#   else
-#    define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#   endif
+#  define I_RANGE IstrUm2,Iendp2i
+#  define J_RANGE JstrVm2,Jendp2i
 # else
-#   define I_RANGE Istr,Iend
-#   define J_RANGE Jstr,Jend
+#  define I_RANGE Istr,Iend
+#  define J_RANGE Jstr,Jend
 # endif
           DO j=J_RANGE
             DO i=I_RANGE
@@ -706,22 +634,33 @@
               cff1=cff*(FX(i+1,j)-FX(i,j))
               cff2=cff*(FE(i,j+1)-FE(i,j))
               cff3=cff1+cff2
-#  ifdef TS_MPDATA
-              cff4=Hz(i,j,k)+                                           &
-     &             cff*(Huon(i+1,j,k)-Huon(i,j,k)+                      &
-     &                  Hvom(i,j+1,k)-Hvom(i,j,k)+                      &
-     &                  (W(i,j,k)-W(i,j,k-1)))                 ! Hz_old
-              Ta(i,j,k,itrc)=t(i,j,k,3,itrc)*cff4-cff3
-#  else
+# ifdef TS_MPDATA
+              Ta(i,j,k,itrc)=t(i,j,k,nnew,itrc)-cff3
+# else
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff3
-#  endif
-#  ifdef DIAGNOSTICS_TS
+# endif
+# ifdef DIAGNOSTICS_TS
+#  ifdef TS_MPDATA
+              Dhadv(i,j,iTxadv)=-cff1
+              Dhadv(i,j,iTyadv)=-cff2
+              Dhadv(i,j,iThadv)=-cff3
+#  else
               DiaTwrk(i,j,k,itrc,iTxadv)=-cff1
               DiaTwrk(i,j,k,itrc,iTyadv)=-cff2
               DiaTwrk(i,j,k,itrc,iThadv)=-cff3
 #  endif
+# endif
             END DO
           END DO
+# if defined DIAGNOSTICS_TS && defined TS_MPDATA
+          DO j=Jstr,Jend
+            DO i=Istr,Iend
+              DiaTwrk(i,j,k,itrc,iTxadv)=Dhadv(i,j,iTxadv)
+              DiaTwrk(i,j,k,itrc,iTyadv)=Dhadv(i,j,iTyadv)
+              DiaTwrk(i,j,k,itrc,iThadv)=Dhadv(i,j,iThadv)
+            END DO
+          END DO
+# endif
         END DO K_LOOP
       END DO T_LOOP
 !
@@ -891,7 +830,16 @@
           END DO
 # endif
 !
-!  Time-step vertical advection term.
+# ifdef TS_MPDATA
+!  Time-step vertical advection for intermediate diffusive tracer, Ta
+!  (Tunits).
+# else
+#  ifdef SPLINES
+!  Time-step vertical advection term (Tunits).
+#  else
+!  Time-step vertical advection term (m Tunits).
+#  endif
+# endif
 # ifdef DIAGNOSTICS_TS
 !  Convert units of tracer diagnostic terms to Tunits.
 # endif
@@ -904,15 +852,22 @@
 !  Apply mass point sources - Volume influx.
 !
           DO is=1,Nsrc
-            i=Isrc(is)
-            IF (((IstrR.le.i).and.(i.le.IendR)).and.                    &
-     &          ((JstrR.le.j).and.(j.le.JendR))) THEN
-              IF (j.eq.Jsrc(is)) THEN
-                DO k=1,N(ng)
-                  FC(i,k)=FC(i,k)+0.5_r8*                               &
-     &                    (Qsrc(is,k  )*Tsrc(is,k  ,itrc)+              &
-     &                     Qsrc(is,k+1)*Tsrc(is,k+1,itrc))
-                END DO
+            IF (LtracerSrc(itrc,ng)) THEN
+              i=Isrc(is)
+#  ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
+#  else
+              IF (((IstrR.le.i).and.(i.le.IendR)).and.                  &
+     &            ((JstrR.le.j).and.(j.le.JendR))) THEN
+#  endif
+                IF (j.eq.Jsrc(is)) THEN
+                  DO k=1,N(ng)-1
+                    FC(i,k)=FC(i,k)+0.5_r8*                             &
+     &                      (Qsrc(is,k  )*Tsrc(is,k  ,itrc)+            &
+     &                       Qsrc(is,k+1)*Tsrc(is,k+1,itrc))
+                  END DO
+                END IF
               END IF
             END IF
           END DO
@@ -923,7 +878,7 @@
 # ifdef TS_MPDATA
               Ta(i,j,k,itrc)=(Ta(i,j,k,itrc)-cff1)*oHz(i,j,k)
 #  ifdef DIAGNOSTICS_TS
-              DiaTwrk(i,j,k,itrc,iTvadv)=-cff1
+              Dvadv(i,j,k,itrc)=-cff1
 #  endif
 # else
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff1
@@ -941,6 +896,8 @@
             END DO
           END DO
         END DO
+# undef I_RANGE
+# undef J_RANGE
 # ifdef TS_MPDATA
       END DO
 !
@@ -953,7 +910,6 @@
         CALL mpdata_adiff_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          IminS, ImaxS, JminS, JmaxS,             &
-     &                          nrhs,                                   &
 #  ifdef MASKING
      &                          rmask, umask, vmask,                    &
 #  endif
@@ -966,7 +922,7 @@
      &                          t(:,:,:,3,itrc),                        &
      &                          Ta(:,:,:,itrc),  Ua, Va, Wa)
 !
-!  Compute anti-difussive corrected advection fluxes.
+!  Compute anti-diffusive corrected advection fluxes.
 !
         DO k=1,N(ng)
           DO j=Jstr,Jend
@@ -1009,7 +965,7 @@
           END DO
         END DO
 !
-!  Compute anti-difussive corrected vertical advection flux.
+!  Compute anti-diffusive corrected vertical advection flux.
 !
         DO j=Jstr,Jend
           DO k=1,N(ng)-1
@@ -1038,7 +994,7 @@
               cff1=CF(i,0)*(FC(i,k)-FC(i,k-1))
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff1
 #  ifdef DIAGNOSTICS_TS
-              DiaTwrk(i,j,k,itrc,iTvadv)=DiaTwrk(i,j,k,itrc,iTvadv)-    &
+              DiaTwrk(i,j,k,itrc,iTvadv)=Dvadv(i,j,k,itrc)-             &
      &                                   cff1
               DO idiag=1,NDT
                 DiaTwrk(i,j,k,itrc,idiag)=DiaTwrk(i,j,k,itrc,idiag)*    &
@@ -1199,6 +1155,9 @@
 !  to tracer data and apply Land/Sea mask.
 !-----------------------------------------------------------------------
 !
+# if defined TCLM_NUDGING && defined TCLIMATOLOGY
+      ic=0
+# endif
       DO itrc=1,NT(ng)
 !
 !  Set lateral boundary conditions.
@@ -1213,29 +1172,14 @@
 !
 !  Nudge towards tracer climatology.
 !
-        DO k=1,N(ng)
-          DO j=JstrR,JendR
-            DO i=IstrR,IendR
-              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                    &
-     &                           dt(ng)*Tnudgcof(i,j,itrc)*             &
-     &                           (tclm(i,j,k,itrc)-t(i,j,k,nnew,itrc))
-            END DO
-          END DO
-        END DO
-# endif
-# if defined NUDGING_SST || defined NUDGING_T
-!
-!  Assimilate tracer observations via nudging.
-!
-        IF (update_T(itrc,ng)) THEN
+        IF (LtracerCLM(itrc,ng)) THEN
+          ic=ic+1
           DO k=1,N(ng)
             DO j=JstrR,JendR
               DO i=IstrR,IendR
-                cff=MIN(1.0_r8,MAX(0.0_r8,EobsT(i,j,k,itrc)))
-                cff=dt(ng)*Tnudass(itrc,ng)*(1.0_r8-cff)
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                  &
-     &                             cff*(Tobs(i,j,k,itrc)-               &
-     &                                  t(i,j,k,nnew,itrc))
+     &                             dt(ng)*Tnudgcof(i,j,itrc)*           &
+     &                             (tclm(i,j,k,ic)-t(i,j,k,nnew,itrc))
               END DO
             END DO
           END DO
@@ -1268,14 +1212,14 @@
           END DO
         END DO
 # endif
-# if defined EW_PERIODIC || defined NS_PERIODIC
 !
 !  Apply periodic boundary conditions.
 !
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          t(:,:,:,nnew,itrc))
-# endif
+        IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            t(:,:,:,nnew,itrc))
+        END IF
       END DO
 # ifdef DISTRIBUTE
 !
@@ -1283,7 +1227,8 @@
 !
       CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    t(:,:,:,nnew,:))
 # endif
 # if defined FLOATS && defined FLOAT_VWALK
@@ -1300,21 +1245,24 @@
           END DO
         END DO
       END DO
-#  if defined EW_PERIODIC || defined NS_PERIODIC
 !
 !  Apply periodic boundary conditions.
 !
-      CALL exchange_r3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        dAktdz)
-#  endif
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        CALL exchange_r3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          dAktdz)
+      END IF
+
 #  ifdef DISTRIBUTE
       CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    dAktdz)
 #  endif
 # endif
+
       RETURN
       END SUBROUTINE step3d_t_tile
 #endif

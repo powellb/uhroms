@@ -2,9 +2,9 @@
 #ifdef ADJOINT
       SUBROUTINE ad_initial (ng)
 !
-!svn $Id$
+!svn $Id: ad_initial.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -38,9 +38,7 @@
       USE mod_scalars
       USE mod_stepping
 !
-# ifdef ANALYTICAL
       USE analytical_mod
-# endif
 # ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcasti
 # endif
@@ -80,14 +78,14 @@
       logical :: update = .FALSE.
 
       integer :: LBi, UBi, LBj, UBj
-      integer :: IniRec, Tindex, subs, tile, thread
-
-      integer :: my_numthreads
+      integer :: Fcount, IniRec, Tindex
+      integer :: thread, tile
 !
 !=======================================================================
 !   Initialize model variables.
 !=======================================================================
 !
+!$OMP MASTER
       IF (Master) THEN
 # if defined PERTURBATION
         WRITE (stdout,10) Nrun
@@ -102,6 +100,7 @@
      &                    'initializing adjoint model ...'
  20     FORMAT (/,1x,a,a,/)
       END IF
+!$OMP END MASTER
 !
 !-----------------------------------------------------------------------
 !  Initialize time stepping indices and counters.
@@ -113,8 +112,6 @@
       krhs(ng)=3
       knew(ng)=2
       PREDICTOR_2D_STEP(ng)=.FALSE.
-      synchro_flag(ng)=.TRUE.
-      first_time(ng)=0
 !
       iic(ng)=0
 # ifdef SOLVE3D
@@ -129,13 +126,19 @@
       nfm2(ng)=3
       nfm3(ng)=2
 # endif
-
-      tdays(ng)=dstart+dt(ng)*FLOAT(ntimes(ng)-ntfirst(ng)+1)*sec2day
+!
+!$OMP MASTER
+      synchro_flag(ng)=.TRUE.
+      first_time(ng)=0
+      ad_ubar_xs=0.0_r8
+      tdays(ng)=dstart+dt(ng)*REAL(ntimes(ng)-ntfirst(ng)+1,r8)*sec2day
       time(ng)=tdays(ng)*day2sec
       ntstart(ng)=ntimes(ng)+1
       ntend(ng)=ntfirst(ng)
       ntfirst(ng)=ntend(ng)
       CALL time_string (time(ng), time_code(ng))
+!$OMP END MASTER
+!$OMP BARRIER
 
       IniRec=nrrec(ng)
       Tindex=1
@@ -144,10 +147,6 @@
       UBi=UBOUND(GRID(ng)%h,DIM=1)
       LBj=LBOUND(GRID(ng)%h,DIM=2)
       UBj=UBOUND(GRID(ng)%h,DIM=2)
-!
-! Initialize few parameters.
-!
-      ad_ubar_xs=0.0_r8
 
 # ifdef PROFILE
 !
@@ -155,11 +154,10 @@
 !  Start time wall clocks.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        CALL wclock_on (ng, iADM, 1)
+      DO thread=THREAD_RANGE
+        CALL wclock_on (ng, iADM, 2)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
 
 # if defined FOUR_DVAR            && \
@@ -173,6 +171,7 @@
 !  Set switch to create adjoint NetCDF file or append to an existing
 !  adjoint NetCDF file.
 !
+!$OMP MASTER
       IF (Nrun.eq.ERstr) THEN
         LdefADJ(ng)=.TRUE.
       END IF
@@ -188,11 +187,11 @@
 !  HISNAME NetCDF file.
 !
 #   ifdef TLM_CHECK
-      FWDname(ng)=HISbase(ng)
-      ncFWDid(ng)=-1
+      FWD(ng)%name=TRIM(HIS(ng)%base)//'.nc'
+      FWD(ng)%ncid=-1
 #   else
-      FWDname(ng)=HISname(ng)
-      ncFWDid(ng)=ncHISid(ng)
+      FWD(ng)%name=HIS(ng)%name
+      FWD(ng)%ncid=HIS(ng)%ncid
 #   endif
 #  endif
 #  ifdef ADJUST_BOUNDARY
@@ -215,6 +214,8 @@
       CALL obs_initial (ng, iADM, .TRUE.)
       IF (exit_flag.ne.NoError) RETURN
 #  endif
+!$OMP END MASTER
+!$OMP BARRIER
 # endif
 !
 !=======================================================================
@@ -230,24 +231,23 @@
 !-----------------------------------------------------------------------
 !
 # ifdef ANA_GRID
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_grid (ng, TILE, iADM)
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_grid (ng, tile, iADM)
 #  ifdef MASKING
-            CALL ana_mask (ng, TILE, iADM)
+          CALL ana_mask (ng, tile, iADM)
 #  endif
 #  if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
       defined OPT_OBSERVATIONS || defined SO_SEMI             || \
       defined SENSITIVITY_4DVAR
-            CALL ana_scope (ng, TILE, iADM)
+          CALL ana_scope (ng, tile, iADM)
 #  endif
-          END DO
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # else
+!$OMP MASTER
         CALL get_grid (ng, iADM)
+!$OMP END MASTER
+!$OMP BARRIER
 #  ifdef DISTRIBUTE
         CALL mp_bcasti (ng, iADM, exit_flag)
 #  endif
@@ -260,7 +260,10 @@
 !  Set vertical S-coordinate transformation function.
 !-----------------------------------------------------------------------
 !
+!$OMP MASTER
         CALL set_scoord (ng)
+!$OMP END MASTER
+!$OMP BARRIER
 # endif
 
 # ifdef SOLVE3D
@@ -269,51 +272,40 @@
 !  Set barotropic time-steps average weighting function.
 !-----------------------------------------------------------------------
 !
+!$OMP MASTER
         CALL set_weights (ng)
+!$OMP END MASTER
+!$OMP BARRIER
 # endif
 !
 !-----------------------------------------------------------------------
 !  Compute various metric term combinations.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL metrics (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL metrics (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
-
-# ifdef NUDGING_COFF
+!$OMP BARRIER
 !
 !-----------------------------------------------------------------------
 !  If appropriate, set nudging coefficiests time scales.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_nudgcoef (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_nudgcoef (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
-# endif
+!$OMP BARRIER
+
       END IF
 !
 !-----------------------------------------------------------------------
 !  Initialize horizontal mixing coefficients.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL ini_hmixcoef (ng, TILE, iADM)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL ini_hmixcoef (ng, tile, iADM)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 
 # if defined VISC_GRID || defined DIFF_GRID || defined SPONGE
 !
@@ -323,14 +315,10 @@
 !  areas.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL ana_hmixcoef (ng, TILE, iADM)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL ana_hmixcoef (ng, tile, iADM)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
 !
 !=======================================================================
@@ -345,23 +333,19 @@
 !  Clear all adjoint variables.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL initialize_ocean (ng, TILE, iADM)
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL initialize_ocean (ng, tile, iADM)
 #  if defined SOLVE3D
-          CALL initialize_coupling (ng, TILE, iADM)
-          CALL initialize_mixing (ng, TILE, iADM)
+        CALL initialize_coupling (ng, tile, iADM)
+        CALL initialize_mixing (ng, tile, iADM)
 #  endif
-          CALL initialize_forces (ng, TILE, iADM)
-          CALL initialize_grid (ng, TILE, iADM)
+        CALL initialize_forces (ng, tile, iADM)
+        CALL initialize_grid (ng, tile, iADM)
 #  ifdef ADJUST_BOUNDARY
-          CALL initialize_boundary (ng, TILE, iADM)
+        CALL initialize_boundary (ng, tile, iADM)
 #  endif
-        END DO
       END DO
-!$OMF END PARALLEL DO
+!$OMF BARRIER
 
 # elif defined FOUR_DVAR && !defined IS4DVAR_SENSITIVITY
 !
@@ -371,24 +355,20 @@
 !  (model-observations) misfit terms.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL initialize_ocean (ng, TILE, iNLM)
-          CALL initialize_ocean (ng, TILE, iADM)
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL initialize_ocean (ng, tile, iNLM)
+        CALL initialize_ocean (ng, tile, iADM)
 #  if defined SOLVE3D
-          CALL initialize_coupling (ng, TILE, iADM)
-          CALL initialize_mixing (ng, TILE, iADM)
+        CALL initialize_coupling (ng, tile, iADM)
+        CALL initialize_mixing (ng, tile, iADM)
 #  endif
-          CALL initialize_forces (ng, TILE, iADM)
-          CALL initialize_grid (ng, TILE, iADM)
+        CALL initialize_forces (ng, tile, iADM)
+        CALL initialize_grid (ng, tile, iADM)
 #  ifdef ADJUST_BOUNDARY
-          CALL initialize_boundary (ng, TILE, iADM)
+        CALL initialize_boundary (ng, tile, iADM)
 #  endif
-        END DO
       END DO
-!$OMF END PARALLEL DO
+!$OMF BARRIER
 
 # else
 
@@ -399,14 +379,10 @@
 !  depths with zero free-surface.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL set_depth (ng, TILE)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL set_depth (ng, tile)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 #  endif
 !
 !-----------------------------------------------------------------------
@@ -418,14 +394,10 @@
 !  Analytical initial conditions for momentum and active tracers.
 !
       IF (nrrec(ng).eq.0) THEN
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_initial (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_initial (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
       END IF
 #  endif
 
@@ -434,14 +406,10 @@
 !  Analytical initial conditions for inert passive tracers
 !
       IF (nrrec(ng).eq.0) THEN
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_passive (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_passive (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
       END IF
 #  endif
 
@@ -450,14 +418,10 @@
 !  Analytical initial conditions for biology tracers.
 !
       IF (nrrec(ng).eq.0) THEN
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_biology (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_biology (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
       END IF
 #  endif
 
@@ -466,28 +430,30 @@
 !  Analytical initial conditions for sediment tracers.
 !
       IF (nrrec(ng).eq.0) THEN
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_sediment (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_sediment (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
       END IF
 #  endif
 !
 !  Read in initial conditions for initial or restart NetCDF file.
 !
 #  ifdef INI_FILE
-      CALL get_state (ng, iADM, 1, IADname(ng), IniRec, Tindex)
+!$OMP MASTER
+      CALL get_state (ng, iADM, 1, IAD(ng)%name, IniRec, Tindex)
+!$OMP END MASTER
+!$OMP BARRIER
 #   ifdef DISTRIBUTE
       CALL mp_bcasti (ng, iADM, exit_flag)
 #   endif
       IF (exit_flag.ne.NoError) RETURN
 #  else
       IF (nrrec(ng).ne.0) THEN
-        CALL get_state (ng, iADM, 1, IADname(ng), IniRec, Tindex)
+!$OMP MASTER
+        CALL get_state (ng, iADM, 1, IAD(ng)%name, IniRec, Tindex)
+!$OMP END MASTER
+!$OMP BARRIER
 #   ifdef DISTRIBUTE
         CALL mp_bcasti (ng, iADM, exit_flag)
 #   endif
@@ -503,14 +469,10 @@
 !  Perturb adjoint initial conditions with analitical expressions.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL ana_perturb (ng, TILE, iADM)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL ana_perturb (ng, tile, iADM)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
 
 # ifdef SOLVE3D
@@ -519,27 +481,19 @@
 !!  Compute initial time-evolving depths.
 !!----------------------------------------------------------------------
 !!
-!!$OMP PARALLEL DO PRIVATE(thread,subs) SHARED(ng,numthreads)
-!!    DO thread=0,numthreads-1
-!!      subs=NtileX(ng)*NtileE(ng)/numthreads
-!!      DO tile=subs*thread,subs*(thread+1)-1
-!!        CALL ad_set_depth (ng, TILE)
-!!      END DO
+!!    DO tile=first_tile(ng),last_tile(ng),+1
+!!      CALL ad_set_depth (ng, tile)
 !!    END DO
-!!$OMP END PARALLEL DO
+!!$OMP BARRIER
 !!
 !!----------------------------------------------------------------------
 !!  Compute initial horizontal mass fluxes, Hz*u/n and Hz*v/m.
 !!----------------------------------------------------------------------
 !!
-!!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-!!    DO thread=0,numthreads-1
-!!      subs=NtileX(ng)*NtileE(ng)/numthreads
-!!      DO tile=subs*thread,subs*(thread+1)-1
-!!        CALL ad_set_massflux (ng, TILE)
-!!      END DO
+!!    DO tile=first_tile(ng),last_tile(ng),+1
+!!      CALL ad_set_massflux (ng, tile)
 !!    END DO
-!!$OMP END PARALLEL DO
+!!$OMP BARRIER
 !!
 !!----------------------------------------------------------------------
 !!  Compute initial S-coordinates vertical velocity. Compute initial
@@ -548,16 +502,28 @@
 !!  quatities.
 !!----------------------------------------------------------------------
 !!
-!!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-!!    DO thread=0,numthreads-1
-!!      subs=NtileX(ng)*NtileE(ng)/numthreads
-!!      DO tile=subs*thread,subs*(thread+1)-1
-!!        CALL ad_omega (ng, TILE)
-!!        CALL ad_rho_eos (ng, TILE)
-!!      END DO
+!!    DO tile=first_tile(ng),last_tile(ng),+1
+!!      CALL ad_omega (ng, tile)
+!!      CALL ad_rho_eos (ng, tile)
 !!    END DO
-!!!$OMP END PARALLEL DO
+!!!$OMP BARRIER
 # endif
+
+#if defined ANA_PSOURCE && \
+   (defined UV_PSOURCE  || defined TS_PSOURCE || defined Q_PSOURCE)
+!
+!-----------------------------------------------------------------------
+!  Set point Sources/Sinks position, direction, special flag, and mass
+!  transport nondimensional shape profile with analytcal expressions.
+!  Point sources are at U- and V-points. We need to get their positions
+!  to process internal Land/Sea masking arrays during initialization.
+!-----------------------------------------------------------------------
+!
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL ana_psource (ng, tile, iADM)
+      END DO
+!$OMP BARRIER
+#endif
 !
 !-----------------------------------------------------------------------
 !  Read in initial forcing, climatology and assimilation data from
@@ -565,13 +531,17 @@
 !  the time-interpolation between snapshots.
 !-----------------------------------------------------------------------
 !
+!$OMP MASTER
+      CALL close_inp (ng, iADM)
 # ifdef TIMELESS_DATA
       CALL ad_get_idata (ng)
 # endif
       CALL ad_get_data (ng)
-#  ifdef DISTRIBUTE
+!$OMP END MASTER
+!$OMP BARRIER
+# ifdef DISTRIBUTE
       CALL mp_bcasti (ng, iADM, exit_flag)
-#  endif
+# endif
       IF (exit_flag.ne.NoError) RETURN
 
 # ifdef MASKING
@@ -580,14 +550,10 @@
 !  Set internal I/O mask arrays.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1,+1
-          CALL set_masks (ng, TILE, iADM)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL set_masks (ng, tile, iADM)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
 
 # if defined PROPAGATOR || \
@@ -598,14 +564,10 @@
 !  size of packed state arrays.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1
-          CALL wpoints (ng, TILE, iADM)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL wpoints (ng, tile, iADM)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
 
 # if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
@@ -621,14 +583,10 @@
       IF (LsenPSAS(ng)) THEN
 #  endif
 #  if !defined AD_IMPULSE
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL adsen_initial (ng, TILE)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL adsen_initial (ng, tile)
         END DO
-!$OMF END PARALLEL DO
+!$OMP BARRIER
 #  endif
 #  ifdef SENSITIVITY_4DVAR
       END IF
@@ -642,14 +600,10 @@
 !-----------------------------------------------------------------------
 !
       IF (Nrun.eq.ERstr) THEN
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL ana_drag (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_drag (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
       END IF
 # endif
 !
@@ -659,14 +613,10 @@
 !
       IF (Lstiffness) THEN
         Lstiffness=.FALSE.
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-          DO tile=subs*thread,subs*(thread+1)-1
-            CALL stiffness (ng, TILE, iADM)
-          END DO
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL stiffness (ng, tile, iADM)
         END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
       END IF
 
 # if defined FLOATS_NOT_YET || defined STATIONS
@@ -676,7 +626,10 @@
 !  coordinates.
 !-----------------------------------------------------------------------
 !
+!$OMP MASTER
       CALL grid_coords (ng, iADM)
+!$OMP END MASTER
+!$OMP BARRIER
 # endif
 
 # ifdef WAVES_OCEAN_NOT_YET
@@ -685,15 +638,24 @@
 !  Read in initial forcing from coupled wave model.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread,subs,tile) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        subs=NtileX(ng)*NtileE(ng)/numthreads
-        DO tile=subs*thread,subs*(thread+1)-1,+1
-          CALL waves_coupling (ng, TILE)
-        END DO
+      DO tile=first_tile(ng),last_tile(ng),+1
+        CALL waves_coupling (ng, tile)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
+!
+!-----------------------------------------------------------------------
+!  Initialize time-stepping counter and clock.
+!-----------------------------------------------------------------------
+!
+!  Add one time unit to avoid special case due to initialization
+!  in the main time-stepping routine.
+!
+      iic(ng)=ntstart(ng)+1
+!$OMP MASTER
+      time(ng)=time(ng)+dt(ng)
+!$OMP END MASTER
+!$OMP BARRIER
 
 # ifdef PROFILE
 !
@@ -701,11 +663,10 @@
 !  Turn off initiialization time wall clock.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(thread) SHARED(ng,numthreads)
-      DO thread=0,numthreads-1
-        CALL wclock_off (ng, iADM, 1)
+      DO thread=THREAD_RANGE
+        CALL wclock_off (ng, iADM, 2)
       END DO
-!$OMP END PARALLEL DO
+!$OMP BARRIER
 # endif
       RETURN
       END SUBROUTINE ad_initial

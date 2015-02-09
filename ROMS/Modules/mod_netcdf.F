@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_netcdf
 !
-!svn $Id$
+!svn $Id: mod_netcdf.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -72,8 +72,8 @@
 !
 !  Local dimension parameters.
 !
-      integer, parameter :: Mdims = 50  ! maximun number of dimensions
-      integer, parameter :: Mvars = 700 ! maximun number of variables
+      integer, parameter :: Mdims = 50  ! maximum number of dimensions
+      integer, parameter :: Mvars = 800 ! maximum number of variables
       integer, parameter :: NvarD = 5   ! number of variable dimensions
       integer, parameter :: NvarA = 50  ! number of variable attributes
 !
@@ -130,12 +130,16 @@
       integer, parameter :: NF_TYPE = nf90_real
 #endif
 !
-!  Netcdf file creation mode flag.
+!  Netcdf file basic creation mode flag. Its value is further modified
+!  in "netcdf_create" using the IOR function to include additional
+!  flags, like "nf90_clobber" to overwrite existing file.
 !
 #if defined HDF5
-      integer :: CMODE = nf90_hdf5         ! NetCDF-4/HDF5 format file
+!     integer :: CMODE = nf90_hdf5         ! NetCDF-4/HDF5 format file
+      integer :: CMODE = nf90_netcdf4      ! NetCDF-4/HDF5 format file
 #else
-      integer :: CMODE = nf90_clobber      ! NetCDF classic format file
+      integer :: CMODE = nf90_64bit_offset ! NetCDF 64-bit offset format
+!                                            (large file support)
 #endif
 !
 !  Set NetCDF-4/HDF5 deflate (file compression) parameters.
@@ -1460,7 +1464,7 @@
      &        /,18x,'call from:',2x,a)
   20  FORMAT (/,' NETCDF_INQ_VAR - error while inquiring variable ID:', &
      &        2x,i3,/,18x,'in input file:',2x,a,/,18x,'call from:',2x,a)
-  30  FORMAT (/,' NETCDF_INQ_VAR - too small dimension parameter,',a,   &
+  30  FORMAT (/,' NETCDF_INQ_VAR - too small dimension parameter, ',a,  &
      &        2i5,/,18x,'change file  mod_netcdf.F  and recompile')
   40  FORMAT (/,' NETCDF_INQ_VAR - unable to inquire about contents',   &
      &          ' of input NetCDF file:',2x,a,/,18x,'call from:',2x,a)
@@ -1853,7 +1857,7 @@
       END IF
 #endif
 !
-!  Compute minimum and maximun values of read variable. Notice that
+!  Compute minimum and maximum values of read variable. Notice that
 !  the same read value is assigned since a scalar variable was
 !  processed.
 !
@@ -2066,7 +2070,7 @@
         END DO
       END IF
 !
-!  Compute minimum and maximun values of read variable.
+!  Compute minimum and maximum values of read variable.
 !
       IF (PRESENT(min_val)) THEN
         min_val=MINVAL(A)
@@ -2279,7 +2283,7 @@
         END DO
       END IF
 !
-!  Compute minimum and maximun values of read variable.
+!  Compute minimum and maximum values of read variable.
 !
       IF (PRESENT(min_val)) THEN
         min_val=MINVAL(A)
@@ -2494,7 +2498,7 @@
         END DO
       END IF
 !
-!  Compute minimum and maximun values of read variable.
+!  Compute minimum and maximum values of read variable.
 !
       IF (PRESENT(min_val)) THEN
         min_val=MINVAL(A)
@@ -2713,7 +2717,7 @@
         END DO
       END IF
 !
-!  Compute minimum and maximun values of read variable.
+!  Compute minimum and maximum values of read variable.
 !
       IF (PRESENT(min_val)) THEN
         min_val=MINVAL(A)
@@ -5695,7 +5699,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: status
+      integer :: my_cmode, status
 #if !defined PARALLEL_IO && defined DISTRIBUTE
       integer :: ibuffer(3)
 #endif
@@ -5711,10 +5715,10 @@
 !  is to overwrite an existing file on disk with the same file name.
 !  This is what we usually do anyway.
 !
-!!    status=nf90_create_par(TRIM(ncname), nf90_netcdf4,                &
-!!   &                       OCN_COMM_WORLD, MP_INFO, ncid)
+      my_cmode=IOR(nf90_mpiio, nf90_clobber)
+      my_cmode=IOR(my_cmode, CMODE)
       status=nf90_create(path = TRIM(ncname),                           &
-     &                   cmode = nf90_hdf5,                             &
+     &                   cmode = my_cmode,                              &
      &                   ncid = ncid,                                   &
      &                   comm = OCN_COMM_WORLD,                         &
      &                   info = MP_INFO)
@@ -5724,8 +5728,9 @@
         ioerror=status
       END IF
 #else
+      my_cmode=IOR(nf90_clobber, CMODE)
       IF (OutThread) THEN
-        status=nf90_create(TRIM(ncname), CMODE, ncid)
+        status=nf90_create(TRIM(ncname), my_cmode, ncid)
         IF (status.ne.nf90_noerr) THEN
           WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile)
           exit_flag=3
@@ -5954,70 +5959,6 @@
 
       RETURN
       END SUBROUTINE netcdf_open
-
-      SUBROUTINE netcdf_openid (nfiles, fname, fid, ncname, ncid)
-!
-!=======================================================================
-!                                                                      !
-!  This routine determines association between pathnames and NetCDF    !
-!  file descriptors. It is used to get the  ID  of an opened NetCDF    !
-!  from file name.  This is done to avoid  opening  too  many files    !
-!  simultaneously for the same dataset.                                !
-!                                                                      !
-!  Input:                                                              !
-!                                                                      !
-!    nfiles    Number of input NetCDF files.                           !
-!    fname     NetCDF file name(s).                                    !
-!    fid       NetCDF ID(s) associated with fname.                     !
-!    ncname    NetCDF file name to check in association table.         !
-!    ncid      NetCDF ID to check in association table.                !
-!                                                                      !
-!  Output:                                                             !
-!                                                                      !
-!    fid       If updated, it stores the ID associated with fname.     !
-!    ncid      If updated, indicates that ncname has been opened       !
-!                previously and this is its associated ID.             !
-!                                                                      !
-!=======================================================================
-!
-      implicit none
-!
-!  Imported variable declarations.
-!
-      integer, intent(in) :: nfiles
-
-      character (len=*), intent(in) :: fname(nfiles)
-      character (len=*), intent(in) :: ncname
-
-      integer, intent(inout) :: fid(nfiles)
-      integer, intent(inout) :: ncid
-!
-!  Local variabel declarations.
-!
-      integer :: i
-!
-!-----------------------------------------------------------------------
-!  Determine association between NetCDF file name and ID descriptor.
-!-----------------------------------------------------------------------
-!
-!  NetCDF file ID descriptors are set to closed state (-1) during
-!  initialization.
-!
-      DO i=1,nfiles
-        IF (TRIM(ncname).eq.TRIM(fname(i))) THEN
-!
-!  NCFILE was just opened. Store its associated ID for future reference.
-!
-          IF (ncid.ne.-1) fid(i)=ncid
-!
-!  NCFILE is already open. Get its ID from reference table.
-!
-          IF ((fid(i).ne.-1).and.(ncid.eq.-1)) ncid=fid(i)
-        END IF
-      END DO
-
-      RETURN
-      END SUBROUTINE netcdf_openid
 
       SUBROUTINE netcdf_redef (ng, model, ncname, ncid)
 !

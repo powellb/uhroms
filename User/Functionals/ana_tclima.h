@@ -1,8 +1,8 @@
       SUBROUTINE ana_tclima (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_tclima.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -50,9 +50,7 @@
       USE mod_grid
       USE mod_scalars
 !
-#if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_3d_mod, ONLY : exchange_r3d_tile
-#endif
 #ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange4d
 #endif
@@ -71,18 +69,6 @@
 !
 !  Local variable declarations.
 !
-#ifdef DISTRIBUTE
-# ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-# else
-      logical :: EWperiodic=.FALSE.
-# endif
-# ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-# else
-      logical :: NSperiodic=.FALSE.
-# endif
-#endif
       integer :: i, itrc, j, k
 
 #include "set_bounds.h"
@@ -101,20 +87,24 @@
         END DO
       END DO
 #else
-      ana_tclima.h: No values provided for tclm.
+      ana_tclima.h: no values provided for tclm.
 #endif
+!
+!  Exchange boundary data.
+!
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        DO itrc=1,NAT
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            tclm(:,:,:,itrc))
+        END DO
+      END IF
 
-#if defined EW_PERIODIC || defined NS_PERIODIC
-      DO itrc=1,NAT
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          tclm(:,:,:,itrc))
-      END DO
-#endif
 #ifdef DISTRIBUTE
       CALL mp_exchange4d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NAT,         &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tclm)
 #endif
 

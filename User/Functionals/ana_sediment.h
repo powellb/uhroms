@@ -1,8 +1,8 @@
       SUBROUTINE ana_sediment (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_sediment.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -77,13 +77,6 @@
       USE mod_scalars
       USE mod_sediment
 !
-#if defined EW_PERIODIC || defined NS_PERIODIC
-      USE exchange_3d_mod, ONLY : exchange_r3d_tile
-#endif
-#ifdef DISTRIBUTE
-      USE mp_exchange_mod, ONLY : mp_exchange3d, mp_exchange4d
-#endif
-!
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
@@ -124,19 +117,6 @@
 !
 !  Local variable declarations.
 !
-#ifdef DISTRIBUTE
-# ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-# else
-      logical :: EWperiodic=.FALSE.
-# endif
-# ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-# else
-      logical :: NSperiodic=.FALSE.
-# endif
-#endif
-
       integer :: i, ised, j, k
 
       real(r8) :: cff1, cff2, cff3, cff4
@@ -159,7 +139,7 @@
       END DO
 # else
       ana_sediment.h: no values provided for bottom(:,:,isd50) and
-                                             bottom(:,:,idens).
+                                             bottom(:,:,idens)
 # endif
 
 # if defined MB_BBL || defined SSW_BBL
@@ -184,7 +164,7 @@
 !
 !-----------------------------------------------------------------------
 !  If only Blass bottom boundary layer and not sediment model, set
-!  sediiment settling velocity (m/s).
+!  sediment settling velocity (m/s).
 !-----------------------------------------------------------------------
 !
 #  if defined MY_APPLICATION
@@ -197,7 +177,6 @@
       ana_sediment.h: no values provided for bottom(:,:,iwsed).
 #  endif
 # endif
-
 #endif
 
 #ifdef SEDIMENT
@@ -217,9 +196,9 @@
       END DO
 !
 !-----------------------------------------------------------------------
-!  Initial sediment bed layer properties of
-!  age, thickness, porosity, and initialize sediment bottom
-!  properites of ripple length, ripple height, and default Zob.
+!  Initial sediment bed layer properties of age, thickness, porosity,
+!  and initialize sediment bottom properites of ripple length, ripple
+!  height, and default Zob.
 !-----------------------------------------------------------------------
 !
 # if defined MY_APPLICATION
@@ -233,7 +212,7 @@
              bed(i,j,k,ithck)=???
              bed(i,j,k,iporo)=???
              DO ised=1,NST
-               bed_frac(i,j,k,ised)=1.0_r8/FLOAT(NST)
+               bed_frac(i,j,k,ised)=1.0_r8/REAL(NST,r8)
              END DO
           END DO
 !
@@ -301,5 +280,6 @@
         END DO
       END DO
 #endif
+
       RETURN
       END SUBROUTINE ana_sediment_tile

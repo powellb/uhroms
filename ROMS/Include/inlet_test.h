@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: inlet_test.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -22,21 +22,11 @@
 #undef  UV_COR
 #define TS_MPDATA
 #define DJ_GRADPS
-#define SOUTHERN_WALL
 #define FSOBC_REDUCED
-#define NORTH_FSGRADIENT
-#define NORTH_M2REDUCED
-#define NORTH_M3GRADIENT
-#define WEST_FSGRADIENT
-#define WEST_M2GRADIENT
-#define WEST_M3GRADIENT
-#define EAST_FSGRADIENT
-#define EAST_M2GRADIENT
-#define EAST_M3GRADIENT
 #define SOLVE3D
 #define SPLINES
 #define SWAN_COUPLING
-#define NEARSHORE_MELLOR05
+#define NEARSHORE_MELLOR08
 #define ANA_INITIAL
 #define ANA_SMFLUX
 #define ANA_FSOBC

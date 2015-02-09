@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: shoreface.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -19,7 +19,7 @@
 #define DIAGNOSTICS_TS
 #define AVERAGES
 #define WET_DRY
-#define NEARSHORE_MELLOR05
+#define NEARSHORE_MELLOR08
 #define OUT_DOUBLE
 #define UV_ADV
 #define TS_MPDATA
@@ -27,11 +27,6 @@
 #define SALINITY
 #define SOLVE3D
 #define SPLINES
-#define NS_PERIODIC
-#define EASTERN_WALL
-#define WEST_FSCHAPMAN
-#define WEST_M2FLATHER
-#define WEST_M3GRADIENT
 
 #define MASKING
 #ifdef MASKING

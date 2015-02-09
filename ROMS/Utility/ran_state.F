@@ -1,8 +1,8 @@
         MODULE ran_state
 !
-!svn $Id$
+!svn $Id: ran_state.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -220,9 +220,9 @@
       ELSE IF (PRESENT(put)) THEN
         IF (lenran.eq.0) RETURN
         ranseeds=RESHAPE(put,SHAPE(ranseeds))
-        WHERE (ranseeds(:,1:3).lt.0)                                     &
+        WHERE (ranseeds(:,1:3).lt.0)                                    &
      &    ranseeds(:,1:3)=NOT(ranseeds(:,1:3))
-        WHERE (ranseeds(:,4:5).eq.0)                                     &
+        WHERE (ranseeds(:,4:5).eq.0)                                    &
      &    ranseeds(:,4:5)=1
           iran0=ranseeds(1,1)
           jran0=ranseeds(1,2)

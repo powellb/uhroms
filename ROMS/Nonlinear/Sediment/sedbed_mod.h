@@ -1,14 +1,18 @@
 !
-!svn $Id$
+!svn $Id: sedbed_mod.h 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group        John C. Warner   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group        John C. Warner   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
 !  Sediment Model Kernel Variables:                                    !
 !                                                                      !
-#if defined BEDLOAD && defined AVERAGES
+#if defined BEDLOAD     && \
+    defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
 ! avgbedldu       Time-averaged Bed load u-transport (kg/m/s).         !
 ! avgbedldv       Time-averaged Bed load v-transport (kg/m/s).         !
 #endif
@@ -64,7 +68,11 @@
 !
 !  Nonlinear model state.
 !
-#if defined BEDLOAD && defined AVERAGES
+#if defined BEDLOAD     && \
+    defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
         real(r8), pointer :: avgbedldu(:,:,:)
         real(r8), pointer :: avgbedldv(:,:,:)
 #endif
@@ -166,7 +174,11 @@
 !
 !  Nonlinear model state.
 !
-#if defined BEDLOAD && defined AVERAGES
+#if defined BEDLOAD     && \
+    defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
       IF (ANY(Aout(idUbld(:),ng))) THEN
         allocate ( SEDBED(ng) % avgbedldu(LBi:UBi,LBj:UBj,NST) )
       END IF
@@ -276,22 +288,22 @@
 !  Set array initialization range.
 !
 #ifdef _OPENMP
-      IF (WESTERN_EDGE) THEN
+      IF (DOMAIN(ng)%Western_Edge(tile)) THEN
         Imin=BOUNDS(ng)%LBi(tile)
       ELSE
         Imin=Istr
       END IF
-      IF (EASTERN_EDGE) THEN
+      IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
         Imax=BOUNDS(ng)%UBi(tile)
       ELSE
         Imax=Iend
       END IF
-      IF (SOUTHERN_EDGE) THEN
+      IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
         Jmin=BOUNDS(ng)%LBj(tile)
       ELSE
         Jmin=Jstr
       END IF
-      IF (NORTHERN_EDGE) THEN
+      IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
         Jmax=BOUNDS(ng)%UBj(tile)
       ELSE
         Jmax=Jend
@@ -311,7 +323,11 @@
 !
       IF ((model.eq.0).or.(model.eq.iNLM)) THEN
 
-#if defined BEDLOAD && defined AVERAGES
+#if defined BEDLOAD     && \
+    defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
         IF (ANY(Aout(idUbld(:),ng))) THEN
           DO itrc=1,NST
             DO j=Jmin, Jmax

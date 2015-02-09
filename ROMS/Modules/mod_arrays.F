@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE mod_arrays (allocate_vars)
 !
-!svn $Id$
+!svn $Id: mod_arrays.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -16,12 +16,13 @@
       USE mod_param
       USE mod_parallel
 !
-#ifdef AVERAGES
+#if defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
       USE mod_average, ONLY : allocate_average, initialize_average
 #endif
-#ifdef OBC
       USE mod_boundary, ONLY : allocate_boundary, initialize_boundary
-#endif
 #if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
     defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
     defined SENSITIVITY_4DVAR   || defined SO_SEMI
@@ -61,31 +62,50 @@
 !
 !  Local variable declarations.
 !
-      integer :: ng
+      integer :: ng, thread, tile
       integer :: LBi, UBi, LBj, UBj, LBij, UBij
-      integer :: tile, subs, thread
 
       integer, parameter :: model = 0
+
+#ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on allocation time wall clock.
+!-----------------------------------------------------------------------
+!
+        DO ng=1,Ngrids
+          DO thread=THREAD_RANGE
+            CALL wclock_on (ng, iNLM, 1)
+          END DO
+!$OMP BARRIER
+        END DO
+#endif
 !
 !-----------------------------------------------------------------------
 !  Allocate model structures.
 !-----------------------------------------------------------------------
 !
       IF (allocate_vars) then
+#ifdef DISTRIBUTE
+        tile=MyRank
+#else
         tile=0
+#endif
         DO ng=1,Ngrids
-          LBi=BOUNDS(ng)%LBi(TILE)
-          UBi=BOUNDS(ng)%UBi(TILE)
-          LBj=BOUNDS(ng)%LBj(TILE)
-          UBj=BOUNDS(ng)%UBj(TILE)
+!$OMP MASTER
+          LBi=BOUNDS(ng)%LBi(tile)
+          UBi=BOUNDS(ng)%UBi(tile)
+          LBj=BOUNDS(ng)%LBj(tile)
+          UBj=BOUNDS(ng)%UBj(tile)
           LBij=BOUNDS(ng)%LBij
           UBij=BOUNDS(ng)%UBij
-#ifdef AVERAGES
+#if defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
           CALL allocate_average (ng, LBi, UBi, LBj, UBj)
 #endif
-#ifdef OBC
           CALL allocate_boundary (ng)
-#endif
 #ifdef BBL_MODEL
           CALL allocate_bbl (ng, LBi, UBi, LBj, UBj)
 #endif
@@ -116,59 +136,68 @@
 #if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
           CALL allocate_sources (ng)
 #endif
+!$OMP END MASTER
+!$OMP BARRIER
         END DO
       END IF
 !
 !-----------------------------------------------------------------------
-!  Allocate and intialize variables within structures for each grid.
+!  Intialize variables within structures for each grid.
 !-----------------------------------------------------------------------
 !
-!$OMP PARALLEL DO PRIVATE(ng,thread,subs,tile) SHARED(numthreads)
-      DO thread=0,numthreads-1
-        DO ng=1,Ngrids
-#if defined _OPENMP || defined DISTRIBUTE
-          subs=NtileX(ng)*NtileE(ng)/numthreads
-#else
-          subs=1
-#endif
-          DO tile=subs*thread,subs*(thread+1)-1
-#ifdef AVERAGES
-            CALL initialize_average (ng, TILE)
+      DO ng=1,Ngrids
+        DO tile=first_tile(ng),last_tile(ng),+1
+#if defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
+          CALL initialize_average (ng, tile)
 #endif
 #ifdef BBL_MODEL
-            CALL initialize_bbl (ng, TILE)
+          CALL initialize_bbl (ng, tile)
 #endif
-#ifdef OBC
-            CALL initialize_boundary (ng, TILE, model)
-#endif
+          CALL initialize_boundary (ng, tile, model)
 #if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
     defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
     defined SENSITIVITY_4DVAR   || defined SO_SEMI
-            CALL initialize_clima (ng, TILE)
+          CALL initialize_clima (ng, tile)
 #endif
 #ifdef SOLVE3D
-            CALL initialize_coupling (ng, TILE, model)
+          CALL initialize_coupling (ng, tile, model)
 #endif
 #ifdef DIAGNOSTICS
-            CALL initialize_diags (ng, TILE)
+          CALL initialize_diags (ng, tile)
 #endif
-            CALL initialize_forces (ng, TILE, model)
-            CALL initialize_grid (ng, TILE, model)
-            CALL initialize_mixing (ng, TILE, model)
+          CALL initialize_forces (ng, tile, model)
+          CALL initialize_grid (ng, tile, model)
+          CALL initialize_mixing (ng, tile, model)
 #if defined ASSIMILATION || defined NUDGING
-            CALL initialize_obs (ng, TILE)
+          CALL initialize_obs (ng, tile)
 #endif
-            CALL initialize_ocean (ng, TILE, model)
+          CALL initialize_ocean (ng, tile, model)
 #if defined SEDIMENT || defined BBL_MODEL
-            CALL initialize_sedbed (ng, TILE, model)
+          CALL initialize_sedbed (ng, tile, model)
 #endif
 #if defined SSH_TIDES || defined UV_TIDES
-            CALL initialize_tides (ng, TILE)
+          CALL initialize_tides (ng, tile)
 #endif
-          END DO
         END DO
+!$OMP BARRIER
       END DO
-!$OMP END PARALLEL DO
+
+#ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off allocation time wall clock.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        DO thread=THREAD_RANGE
+          CALL wclock_off (ng, iNLM, 1)
+        END DO
+!$OMP BARRIER
+      END DO
+#endif
 
       RETURN
       END SUBROUTINE mod_arrays

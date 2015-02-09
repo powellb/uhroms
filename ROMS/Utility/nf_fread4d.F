@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE nf_fread4d_mod
 !
-!svn $Id$
+!svn $Id: nf_fread4d.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -667,7 +667,7 @@
       IF (model.eq.iADM) THEN
         Nghost=0
       ELSE
-        Nghost=GHOST_POINTS
+        Nghost=NghostPoints
       END IF
 #  endif
 # endif

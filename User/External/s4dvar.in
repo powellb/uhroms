@@ -1,8 +1,8 @@
 !  4DVar assimilation input parameters.
 !
-!svn $Id$
+!svn $Id: s4dvar.in 645 2013-01-22 23:21:54Z arango $
 !========================================================= Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                                !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
 !    See License_ROMS.txt                                                     !
 !==============================================================================
@@ -46,7 +46,7 @@
 ! empirical T-S relationships in the error covariance balance operator,
 ! [1:Ngrids].
 
-       dTdz_min == 0.001d0                ! minimun dT/dz (Celsius/m)
+       dTdz_min == 0.001d0                ! minimum dT/dz (Celsius/m)
        ml_depth == 100.0d0                ! mixed-layer depth (m; positive)
 
 ! Balance operator level of no motion depth (m) used when computing balanced

@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_grid
 !
-!svn $Id$
+!svn $Id: mod_grid.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -74,7 +74,10 @@
 !  rmask      Mask at RHO-points (0=Land, 1=Sea).                      !
 !  umask      Mask at U-points (0=Land, 1=Sea).                        !
 !  vmask      Mask at V-points (0=Land, 1=Sea).                        !
-# ifdef AVERAGES
+# if defined AVERAGES    || \
+    (defined AD_AVERAGES && defined ADJOINT) || \
+    (defined RP_AVERAGES && defined TL_IOMS) || \
+    (defined TL_AVERAGES && defined TANGENT)
 !
 !  pmask_avg  Time-average FillValue mask at PSI-points (0=dry, 1=wet) !
 !  rmask_avg  Time-average FillValue mask at RHO-points (0=dry, 1=wet) !
@@ -141,10 +144,9 @@
 #endif
 
           real(r8), pointer :: angler(:,:)
-#ifdef CURVGRID
           real(r8), pointer :: CosAngler(:,:)
           real(r8), pointer :: SinAngler(:,:)
-#endif
+
 #if defined CURVGRID && defined UV_ADV
           real(r8), pointer :: dmde(:,:)
           real(r8), pointer :: dndx(:,:)
@@ -220,7 +222,11 @@
           real(r8), pointer :: rmask(:,:)
           real(r8), pointer :: umask(:,:)
           real(r8), pointer :: vmask(:,:)
-# ifdef AVERAGES
+
+# if defined AVERAGES    || \
+    (defined AD_AVERAGES && defined ADJOINT) || \
+    (defined RP_AVERAGES && defined TL_IOMS) || \
+    (defined TL_AVERAGES && defined TANGENT)
           real(r8), pointer :: pmask_avg(:,:)
           real(r8), pointer :: rmask_avg(:,:)
           real(r8), pointer :: umask_avg(:,:)
@@ -322,10 +328,9 @@
 #endif
 
       allocate ( GRID(ng) % angler(LBi:UBi,LBj:UBj) )
-#ifdef CURVGRID
       allocate ( GRID(ng) % CosAngler(LBi:UBi,LBj:UBj) )
       allocate ( GRID(ng) % SinAngler(LBi:UBi,LBj:UBj) )
-#endif
+
 #if defined CURVGRID && defined UV_ADV
       allocate ( GRID(ng) % dmde(LBi:UBi,LBj:UBj) )
       allocate ( GRID(ng) % dndx(LBi:UBi,LBj:UBj) )
@@ -406,7 +411,10 @@
       allocate ( GRID(ng) % rmask(LBi:UBi,LBj:UBj) )
       allocate ( GRID(ng) % umask(LBi:UBi,LBj:UBj) )
       allocate ( GRID(ng) % vmask(LBi:UBi,LBj:UBj) )
-# ifdef AVERAGES
+# if defined AVERAGES    || \
+    (defined AD_AVERAGES && defined ADJOINT) || \
+    (defined RP_AVERAGES && defined TL_IOMS) || \
+    (defined TL_AVERAGES && defined TANGENT)
       allocate ( GRID(ng) % pmask_avg(LBi:UBi,LBj:UBj) )
       allocate ( GRID(ng) % rmask_avg(LBi:UBi,LBj:UBj) )
       allocate ( GRID(ng) % umask_avg(LBi:UBi,LBj:UBj) )
@@ -512,32 +520,32 @@
 !
 !  Set array initialization range.
 !
-#ifdef _OPENMP
-      IF (WESTERN_EDGE) THEN
-        Imin=BOUNDS(ng)%LBi(tile)
-      ELSE
-        Imin=Istr
-      END IF
-      IF (EASTERN_EDGE) THEN
-        Imax=BOUNDS(ng)%UBi(tile)
-      ELSE
-        Imax=Iend
-      END IF
-      IF (SOUTHERN_EDGE) THEN
-        Jmin=BOUNDS(ng)%LBj(tile)
-      ELSE
-        Jmin=Jstr
-      END IF
-      IF (NORTHERN_EDGE) THEN
-        Jmax=BOUNDS(ng)%UBj(tile)
-      ELSE
-        Jmax=Jend
-      END IF
-#else
+#ifdef DISTRIBUTE
       Imin=BOUNDS(ng)%LBi(tile)
       Imax=BOUNDS(ng)%UBi(tile)
       Jmin=BOUNDS(ng)%LBj(tile)
       Jmax=BOUNDS(ng)%UBj(tile)
+#else
+      IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+        Imin=BOUNDS(ng)%LBi(tile)
+      ELSE
+        Imin=Istr
+      END IF
+      IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+        Imax=BOUNDS(ng)%UBi(tile)
+      ELSE
+        Imax=Iend
+      END IF
+      IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+        Jmin=BOUNDS(ng)%LBj(tile)
+      ELSE
+        Jmin=Jstr
+      END IF
+      IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+        Jmax=BOUNDS(ng)%UBj(tile)
+      ELSE
+        Jmax=Jend
+      END IF
 #endif
 !
 !-----------------------------------------------------------------------
@@ -555,10 +563,9 @@
             GRID(ng) % IJwaterV(i,j) = 0
 #endif
             GRID(ng) % angler(i,j) = IniVal
-#ifdef CURVGRID
             GRID(ng) % CosAngler(i,j) = IniVal
             GRID(ng) % SinAngler(i,j) = IniVal
-#endif
+
 #if defined CURVGRID && defined UV_ADV
             GRID(ng) % dmde(i,j) = IniVal
             GRID(ng) % dndx(i,j) = IniVal
@@ -629,7 +636,10 @@
             GRID(ng) % rmask(i,j) = IniVal
             GRID(ng) % umask(i,j) = IniVal
             GRID(ng) % vmask(i,j) = IniVal
-# ifdef AVERAGES
+# if defined AVERAGES    || \
+    (defined AD_AVERAGES && defined ADJOINT) || \
+    (defined RP_AVERAGES && defined TL_IOMS) || \
+    (defined TL_AVERAGES && defined TANGENT)
             GRID(ng) % pmask_avg(i,j) = IniVal
             GRID(ng) % rmask_avg(i,j) = IniVal
             GRID(ng) % umask_avg(i,j) = IniVal

@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: test_head.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -16,7 +16,7 @@
 
 #undef  CURVGRID
 #define WET_DRY
-#define NEARSHORE_MELLOR05
+#define NEARSHORE_MELLOR08
 #define SWAN_COUPLING
 #define MASKING
 #define OUT_DOUBLE
@@ -27,24 +27,12 @@
 #undef  SALINITY
 #define SOLVE3D
 #define SPLINES
-#define NORTHERN_WALL
-#define SOUTHERN_WALL
-#define EAST_M3RADIATION
-#define WEST_M3RADIATION
-#define EAST_TGRADIENT
-#define WEST_TGRADIENT
 
 #define SSH_TIDES
-#define WEST_FSCLAMPED
-#define EAST_FSCLAMPED
-
+#define UV_TIDES
 #define ANA_FSOBC
 #define ANA_M2OBC
-
-#define UV_TIDES
 #define FSOBC_REDUCED
-#define WEST_M2REDUCED
-#define EAST_M2REDUCED
 
 #define UV_LOGDRAG
 #undef  UV_QDRAG

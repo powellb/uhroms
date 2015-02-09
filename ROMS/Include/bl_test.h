@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: bl_test.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -28,15 +28,8 @@
 #define AVERAGES
 #define STATIONS
 #define SOLVE3D
-#define WESTERN_WALL
-#define NS_PERIODIC
+
 #define RADIATION_2D
-#define EAST_FSGRADIENT
-#define EAST_M2RADIATION
-#define EAST_M3RADIATION
-#define EAST_KRADIATION
-#define EAST_TRADIATION
-#define EAST_VOLCONS
 
 #undef  MY25_MIXING
 #ifdef MY25_MIXING

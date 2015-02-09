@@ -2,9 +2,9 @@
       MODULE mod_diags
 #ifdef DIAGNOSTICS
 !
-!svn $Id$
+!svn $Id: mod_diags.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -45,7 +45,7 @@
 
         TYPE T_DIAGS
 
-# ifdef BIO_FENNEL
+# if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
           real(r8), pointer :: DiaBio2d(:,:,:)
           real(r8), pointer :: DiaBio3d(:,:,:,:)
 # endif
@@ -104,9 +104,13 @@
 !
       IF (ng.eq.1 ) allocate ( DIAGS(Ngrids) )
 !
-# ifdef BIO_FENNEL
-      allocate ( DIAGS(ng) % DiaBio2d(LBi:UBi,LBj:UBj,NDbio2d) )
-      allocate ( DIAGS(ng) % DiaBio3d(LBi:UBi,LBj:UBj,N(ng),NDbio3d) )
+# if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+      IF (NDbio2d.gt.0) THEN
+        allocate ( DIAGS(ng) % DiaBio2d(LBi:UBi,LBj:UBj,NDbio2d) )
+      END IF
+      IF (NDbio3d.gt.0) THEN
+        allocate ( DIAGS(ng) % DiaBio3d(LBi:UBi,LBj:UBj,N(ng),NDbio3d) )
+      END IF
 # endif
 
 # ifdef DIAGNOSTICS_TS
@@ -172,32 +176,32 @@
 !
 !  Set array initialization range.
 !
-# ifdef _OPENMP
-      IF (WESTERN_EDGE) THEN
-        Imin=BOUNDS(ng)%LBi(tile)
-      ELSE
-        Imin=Istr
-      END IF
-      IF (EASTERN_EDGE) THEN
-        Imax=BOUNDS(ng)%UBi(tile)
-      ELSE
-        Imax=Iend
-      END IF
-      IF (SOUTHERN_EDGE) THEN
-        Jmin=BOUNDS(ng)%LBj(tile)
-      ELSE
-        Jmin=Jstr
-      END IF
-      IF (NORTHERN_EDGE) THEN
-        Jmax=BOUNDS(ng)%UBj(tile)
-      ELSE
-        Jmax=Jend
-      END IF
-# else
+# ifdef DISTRIBUTE
       Imin=BOUNDS(ng)%LBi(tile)
       Imax=BOUNDS(ng)%UBi(tile)
       Jmin=BOUNDS(ng)%LBj(tile)
       Jmax=BOUNDS(ng)%UBj(tile)
+# else
+      IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+        Imin=BOUNDS(ng)%LBi(tile)
+      ELSE
+        Imin=Istr
+      END IF
+      IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+        Imax=BOUNDS(ng)%UBi(tile)
+      ELSE
+        Imax=Iend
+      END IF
+      IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+        Jmin=BOUNDS(ng)%LBj(tile)
+      ELSE
+        Jmin=Jstr
+      END IF
+      IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+        Jmax=BOUNDS(ng)%UBj(tile)
+      ELSE
+        Jmax=Jend
+      END IF
 # endif
 !
 !-----------------------------------------------------------------------
@@ -205,19 +209,23 @@
 !-----------------------------------------------------------------------
 !
       DO j=Jmin,Jmax
-# ifdef BIO_FENNEL
-        DO idiag=1,NDbio2d
-          DO i=Imin,Imax
-            DIAGS(ng) % DiaBio2d(i,j,idiag) = IniVal
-          END DO
-        END DO
-        DO idiag=1,NDbio3d
-          DO k=1,N(ng)
+# if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+        IF (NDbio2d.gt.0) THEN
+          DO idiag=1,NDbio2d
             DO i=Imin,Imax
-              DIAGS(ng) % DiaBio3d(i,j,k,idiag) = IniVal
+              DIAGS(ng) % DiaBio2d(i,j,idiag) = IniVal
             END DO
           END DO
-        END DO
+        END IF
+        IF (NDbio3d.gt.0) THEN
+          DO idiag=1,NDbio3d
+            DO k=1,N(ng)
+              DO i=Imin,Imax
+                DIAGS(ng) % DiaBio3d(i,j,k,idiag) = IniVal
+              END DO
+            END DO
+          END DO
+        END IF
 # endif
 # ifdef DIAGNOSTICS_TS
         DO idiag=1,NDT

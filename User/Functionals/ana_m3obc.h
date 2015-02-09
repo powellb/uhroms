@@ -1,8 +1,8 @@
       SUBROUTINE ana_m3obc (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_m3obc.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -47,6 +47,7 @@
 !
       USE mod_param
       USE mod_boundary
+      USE mod_ncparam
 !
 !  Imported variable declarations.
 !
@@ -65,8 +66,9 @@
 !-----------------------------------------------------------------------
 !
 #if defined MY_APPLICATION
-# ifdef EAST_M3OBC
-      IF (EASTERN_EDGE) THEN
+      IF (LBC(ieast,isUvel,ng)%acquire.and.                             &
+     &    LBC(ieast,isVvel,ng)%acquire.and.                             &
+     &    DOMAIN(ng)%Eastern_Edge(tile)) THEN
         DO k=1,N(ng)
           DO j=JstrR,JendR
             BOUNDARY(ng)%u_east(j,k)=???
@@ -76,9 +78,10 @@
           END DO
         END DO
       END IF
-# endif
-# ifdef WEST_M3OBC
-      IF (WESTERN_EDGE) THEN
+
+      IF (LBC(iwest,isUvel,ng)%acquire.and.                             &
+     &    LBC(iwest,isVvel,ng)%acquire.and.                             &
+     &    DOMAIN(ng)%Western_Edge(tile)) THEN
         DO k=1,N(ng)
           DO j=JstrR,JendR
             BOUNDARY(ng)%u_west(j,k)=???
@@ -88,9 +91,10 @@
           END DO
         END DO
       END IF
-# endif
-# ifdef SOUTH_M3OBC
-      IF (SOUTHERN_EDGE) THEN
+
+      IF (LBC(isouth,isUvel,ng)%acquire.and.                            &
+     &    LBC(isouth,isVvel,ng)%acquire.and.                            &
+     &    DOMAIN(ng)%Southern_Edge(tile)) THEN
         DO k=1,N(ng)
           DO i=Istr,IendR
             BOUNDARY(ng)%u_south(i,k)=???
@@ -100,9 +104,10 @@
           END DO
         END DO
       END IF
-# endif
-# ifdef NORTH_M3OBC
-      IF (NORTHERN_EDGE) THEN
+
+      IF (LBC(inorth,isUvel,ng)%acquire.and.                            &
+     &    LBC(inorth,isVvel,ng)%acquire.and.                            &
+     &    DOMAIN(ng)%Northern_Edge(tile)) THEN
         DO k=1,N(ng)
           DO i=Istr,IendR
             BOUNDARY(ng)%u_north(i,k)=???
@@ -112,7 +117,6 @@
           END DO
         END DO
       END IF
-# endif
 #else
       ana_m3obc.h: No values provided for BOUNDARY(ng)%u_xxxx and
                                           BOUNDARY(ng)%v_xxxx

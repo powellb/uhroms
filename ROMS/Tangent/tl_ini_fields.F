@@ -2,9 +2,9 @@
       MODULE tl_ini_fields_mod
 #ifdef TANGENT
 !
-!svn $Id$
+!svn $Id: tl_ini_fields.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -17,11 +17,11 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC :: tl_ini_fields
       PUBLIC :: tl_ini_zeta
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -45,7 +45,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 1)
+      CALL wclock_on (ng, iTLM, 2)
 # endif
       CALL tl_ini_fields_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -75,8 +75,9 @@
      &                         OCEAN(ng) % zeta,                        &
      &                         OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 1)
+      CALL wclock_off (ng, iTLM, 2)
 # endif
+
       RETURN
       END SUBROUTINE tl_ini_fields
 !
@@ -103,13 +104,12 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_ncparam
       USE mod_scalars
 !
-# if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_2d_mod
-#  ifdef SOLVE3D
+# ifdef SOLVE3D
       USE exchange_3d_mod
-#  endif
 # endif
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
@@ -122,10 +122,8 @@
       USE tl_u3dbc_mod, ONLY : tl_u3dbc_tile
       USE tl_v3dbc_mod, ONLY : tl_v3dbc_tile
 # endif
-# ifndef OBC_M2RADIATION
       USE tl_u2dbc_mod, ONLY : tl_u2dbc_tile
       USE tl_v2dbc_mod, ONLY : tl_v2dbc_tile
-# endif
 !
 !  Imported variable declarations.
 !
@@ -189,18 +187,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, itrc, j, k
 
       real(r8) :: cff1
@@ -222,9 +208,9 @@
 !  Initialize other time levels for 3D momentum.
 !-----------------------------------------------------------------------
 !
-      DO j=Jstr,Jend
+      DO j=JstrB,JendB
         DO k=1,N(ng)
-          DO i=IstrU,Iend
+          DO i=IstrM,IendB
 !>          cff1=u(i,j,k,nstp)
 !>
             tl_cff1=tl_u(i,j,k,nstp)
@@ -241,9 +227,9 @@
           END DO
         END DO
 !
-        IF (j.ge.JstrV) THEN
+        IF (j.ge.JstrM) THEN
           DO k=1,N(ng)
-            DO i=Istr,Iend
+            DO i=IstrB,IendB
 !>            cff2=v(i,j,k,nstp)
 !>
               tl_cff2=tl_v(i,j,k,nstp)
@@ -309,51 +295,52 @@
      &                    IminS, ImaxS, JminS, JmaxS,                   &
      &                    nstp, nnew,                                   &
      &                    tl_v)
-
-#  if defined EW_PERIODIC || defined NS_PERIODIC
 !
-!>    CALL exchange_u3d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-!>   &                        u(:,:,:,nstp))
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>      CALL exchange_u3d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+!>   &                          u(:,:,:,nstp))
 !>
-      CALL exchange_u3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        tl_u(:,:,:,nstp))
-!>    CALL exchange_v3d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-!>   &                        v(:,:,:,nstp))
+        CALL exchange_u3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          tl_u(:,:,:,nstp))
+!>      CALL exchange_v3d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+!>   &                          v(:,:,:,nstp))
 !>
-      CALL exchange_v3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        tl_v(:,:,:,nstp))
+        CALL exchange_v3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          tl_v(:,:,:,nstp))
 
-!>    CALL exchange_u3d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-!>   &                        u(:,:,:,nnew))
+!>      CALL exchange_u3d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+!>   &                          u(:,:,:,nnew))
 !>
-      CALL exchange_u3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        tl_u(:,:,:,nnew))
-!>    CALL exchange_v3d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-!>   &                        v(:,:,:,nnew))
+        CALL exchange_u3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          tl_u(:,:,:,nnew))
+!>      CALL exchange_v3d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+!>   &                          v(:,:,:,nnew))
 !>
-      CALL exchange_v3d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        tl_v(:,:,:,nnew))
-#  endif
+        CALL exchange_v3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          tl_v(:,:,:,nnew))
+      END IF
 
 #  ifdef DISTRIBUTE
 !
 !>    CALL mp_exchange3d (ng, tile, model, 4,                           &
 !>   &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    u(:,:,:,nstp), v(:,:,:,nstp),                 &
 !>   &                    u(:,:,:,nnew), v(:,:,:,nnew))
 !>
       CALL mp_exchange3d (ng, tile, model, 4,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_u(:,:,:,nstp), tl_v(:,:,:,nstp),           &
      &                    tl_u(:,:,:,nnew), tl_v(:,:,:,nnew))
 #  endif
@@ -369,15 +356,18 @@
 !  Here DC(i,1:N) are the grid cell thicknesses, DC(i,0) is the total
 !  depth of the water column, and CF(i,0) is the vertical integral.
 !
-      DO j=Jstr,Jend
-        DO i=IstrU,Iend
+#  if defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE
+      IF (SOinitial(ng)) THEN
+#  endif
+      DO j=JstrB,JendB
+        DO i=IstrM,IendB
           DC(i,0)=0.0_r8
           tl_DC(i,0)=0.0_r8
           CF(i,0)=0.0_r8
           tl_CF(i,0)=0.0_r8
         END DO
         DO k=1,N(ng)
-          DO i=IstrU,Iend
+          DO i=IstrM,IendB
             DC(i,k)=0.5_r8*(Hz(i,j,k)+Hz(i-1,j,k))
             tl_DC(i,k)=0.5_r8*(tl_Hz(i,j,k)+tl_Hz(i-1,j,k))
             DC(i,0)=DC(i,0)+DC(i,k)
@@ -387,7 +377,7 @@
      &                            DC(i,k)*tl_u(i,j,k,nstp)
           END DO
         END DO
-        DO i=IstrU,Iend
+        DO i=IstrM,IendB
           cff1=1.0_r8/DC(i,0)
           tl_cff1=-cff1*cff1*tl_DC(i,0)
 !>        cff2=CF(i,0)*cff1
@@ -405,15 +395,15 @@
           tl_ubar(i,j,knew)=tl_cff2
         END DO
 !
-        IF (j.ge.JstrV) THEN
-          DO i=Istr,Iend
+        IF (j.ge.JstrM) THEN
+          DO i=IstrB,IendB
             DC(i,0)=0.0_r8
             tl_DC(i,0)=0.0_r8
             CF(i,0)=0.0_r8
             tl_CF(i,0)=0.0_r8
           END DO
           DO k=1,N(ng)
-            DO i=Istr,Iend
+            DO i=IstrB,IendB
               DC(i,k)=0.5_r8*(Hz(i,j,k)+Hz(i,j-1,k))
               tl_DC(i,k)=0.5_r8*(tl_Hz(i,j,k)+tl_Hz(i,j-1,k))
               DC(i,0)=DC(i,0)+DC(i,k)
@@ -423,7 +413,7 @@
      &                              DC(i,k)*tl_v(i,j,k,nstp)
             END DO
           END DO
-          DO i=Istr,Iend
+          DO i=IstrB,IendB
             cff1=1.0_r8/DC(i,0)
             tl_cff1=-cff1*cff1*tl_DC(i,0)
 !>          cff2=CF(i,0)*cff1
@@ -442,108 +432,115 @@
           END DO
         END IF
       END DO
-
-#  ifndef OBC_M2RADIATION
 !
 !  Apply boundary conditions.
 !
-!>    CALL u2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, kstp,                                &
-!>   &                 ubar, vbar, zeta)
+      IF (.not.(ANY(tl_LBC(:,isUbar,ng)%radiation).or.                  &
+     &          ANY(tl_LBC(:,isVbar,ng)%radiation).or.                  &
+     &          ANY(tl_LBC(:,isUbar,ng)%Flather).or.                    &
+     &          ANY(tl_LBC(:,isVbar,ng)%Flather))) THEN
+!>      CALL u2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, kstp,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_u2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, kstp,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
-!>    CALL v2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, kstp,                                &
-!>   &                 ubar, vbar, zeta)
+        CALL tl_u2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, kstp,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
+!>      CALL v2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, kstp,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_v2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, kstp,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
+        CALL tl_v2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, kstp,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
 
-!>    CALL u2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, knew,                                &
-!>   &                 ubar, vbar, zeta)
+!>      CALL u2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, knew,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_u2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, knew,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
-!>    CALL v2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, knew,                                &
-!>   &                 ubar, vbar, zeta)
+        CALL tl_u2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, knew,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
+!>      CALL v2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, knew,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_v2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, knew,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
-#  endif
-
-#  if defined EW_PERIODIC || defined NS_PERIODIC
+        CALL tl_v2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, knew,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
+      END IF
 !
-!>    CALL exchange_u2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        ubar(:,:,kstp))
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>      CALL exchange_u2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          ubar(:,:,kstp))
 !>
-      CALL exchange_u2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_ubar(:,:,kstp))
-!>    CALL exchange_v2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        vbar(:,:,kstp))
+        CALL exchange_u2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_ubar(:,:,kstp))
+!>      CALL exchange_v2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          vbar(:,:,kstp))
 !>
-      CALL exchange_v2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_vbar(:,:,kstp))
+        CALL exchange_v2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_vbar(:,:,kstp))
 
-!>    CALL exchange_u2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        ubar(:,:,knew))
+!>      CALL exchange_u2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          ubar(:,:,knew))
 !>
-      CALL exchange_u2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_ubar(:,:,knew))
-!>    CALL exchange_v2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        vbar(:,:,knew))
+        CALL exchange_u2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_ubar(:,:,knew))
+!>      CALL exchange_v2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          vbar(:,:,knew))
 !>
-      CALL exchange_v2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_vbar(:,:,knew))
-#  endif
+        CALL exchange_v2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_vbar(:,:,knew))
+      END IF
 
 #  ifdef DISTRIBUTE
 !
 !>    CALL mp_exchange2d (ng, tile, model, 4,                           &
 !>   &                    LBi, UBi, LBj, UBj,                           &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    ubar(:,:,kstp), vbar(:,:,kstp),               &
 !>   &                    ubar(:,:,knew), vbar(:,:,knew))
 !>
       CALL mp_exchange2d (ng, tile, model, 4,                           &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_ubar(:,:,kstp), tl_vbar(:,:,kstp),         &
      &                    tl_ubar(:,:,knew), tl_vbar(:,:,knew))
+#  endif
+
+#  if defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE
+      END IF
 #  endif
 
 # else
@@ -552,8 +549,8 @@
 !  Initialize other time levels for 2D momentum.
 !-----------------------------------------------------------------------
 !
-      DO j=Jstr,Jend
-        DO i=IstrU,Iend
+      DO j=JstrB,JendB
+        DO i=IstrM,IendB
 !>        cff1=ubar(i,j,kstp)
 !>
           tl_cff1=tl_ubar(i,j,kstp)
@@ -569,8 +566,8 @@
           tl_ubar(i,j,krhs)=tl_cff1
         END DO
 !
-        IF (j.ge.JstrV) THEN
-          DO i=Istr,Iend
+        IF (j.ge.JstrM) THEN
+          DO i=IstrB,IendB
 !>          cff2=vbar(i,j,kstp)
 !>
             tl_cff2=tl_vbar(i,j,kstp)
@@ -587,106 +584,109 @@
           END DO
         END IF
       END DO
-
-#  ifndef OBC_M2RADIATION
 !
 !  Apply boundary conditions.
 !
-!>    CALL u2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, kstp,                                &
-!>   &                 ubar, vbar, zeta)
+      IF (.not.(ANY(tl_LBC(:,isUbar,ng)%radiation).or.                  &
+     &          ANY(tl_LBC(:,isVbar,ng)%radiation).or.                  &
+     &          ANY(tl_LBC(:,isUbar,ng)%Flather).or.                    &
+     &          ANY(tl_LBC(:,isVbar,ng)%Flather))) THEN
+!>      CALL u2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, kstp,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_u2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, kstp,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
-!>    CALL v2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, kstp,                                &
-!>   &                 ubar, vbar, zeta)
+        CALL tl_u2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, kstp,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
+!>      CALL v2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, kstp,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_v2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, kstp,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
+        CALL tl_v2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, kstp,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
 
-!>    CALL u2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, krhs,                                &
-!>   &                 ubar, vbar, zeta)
+!>      CALL u2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, krhs,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_u2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, krhs,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
-!>    CALL v2dbc_tile (ng, tile,                                        &
-!>   &                 LBi, UBi, LBj, UBj,                              &
-!>   &                 IminS, ImaxS, JminS, JmaxS,                      &
-!>   &                 krhs, kstp, krhs,                                &
-!>   &                 ubar, vbar, zeta)
+        CALL tl_u2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, krhs,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
+!>      CALL v2dbc_tile (ng, tile,                                      &
+!>   &                   LBi, UBi, LBj, UBj,                            &
+!>   &                   IminS, ImaxS, JminS, JmaxS,                    &
+!>   &                   krhs, kstp, krhs,                              &
+!>   &                   ubar, vbar, zeta)
 !>
-      CALL tl_v2dbc_tile (ng, tile,                                     &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    krhs, kstp, krhs,                             &
-     &                    ubar, vbar, zeta,                             &
-     &                    tl_ubar, tl_vbar, tl_zeta)
-#  endif
-
-#  if defined EW_PERIODIC || defined NS_PERIODIC
+        CALL tl_v2dbc_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      IminS, ImaxS, JminS, JmaxS,                 &
+     &                      krhs, kstp, krhs,                           &
+     &                      ubar, vbar, zeta,                           &
+     &                      tl_ubar, tl_vbar, tl_zeta)
+      END IF
 !
-!>    CALL exchange_u2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        ubar(:,:,kstp))
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>      CALL exchange_u2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          ubar(:,:,kstp))
 !>
-      CALL exchange_u2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_ubar(:,:,kstp))
-!>    CALL exchange_v2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        vbar(:,:,kstp))
+        CALL exchange_u2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_ubar(:,:,kstp))
+!>      CALL exchange_v2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          vbar(:,:,kstp))
 !>
-      CALL exchange_v2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_vbar(:,:,kstp))
+        CALL exchange_v2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_vbar(:,:,kstp))
 
-!>    CALL exchange_u2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        ubar(:,:,krhs))
+!>      CALL exchange_u2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          ubar(:,:,krhs))
 !>
-      CALL exchange_u2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_ubar(:,:,krhs))
-!>    CALL exchange_v2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        vbar(:,:,krhs))
+        CALL exchange_u2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_ubar(:,:,krhs))
+!>      CALL exchange_v2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          vbar(:,:,krhs))
 !>
-      CALL exchange_v2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_vbar(:,:,krhs))
-#  endif
+        CALL exchange_v2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_vbar(:,:,krhs))
+      END IF
 
 #  ifdef DISTRIBUTE
 !
 !>    CALL mp_exchange2d (ng, tile, model, 4,                           &
 !>   &                    LBi, UBi, LBj, UBj,                           &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    ubar(:,:,kstp), vbar(:,:,kstp),               &
 !>   &                    ubar(:,:,krhs), vbar(:,:,krhs))
 !>
       CALL mp_exchange2d (ng, tile, model, 4,                           &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_ubar(:,:,kstp), tl_vbar(:,:,kstp),         &
      &                    tl_ubar(:,:,krhs), tl_vbar(:,:,krhs))
 #  endif
@@ -700,8 +700,8 @@
 !
       DO itrc=1,NT(ng)
         DO k=1,N(ng)
-          DO j=Jstr,Jend
-            DO i=Istr,Iend
+          DO j=JstrB,JendB
+            DO i=IstrB,IendB
 !>            cff1=t(i,j,k,nstp,itrc)
 !>
               tl_cff1=tl_t(i,j,k,nstp,itrc)
@@ -741,36 +741,38 @@
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nnew,                                 &
      &                      tl_t)
-
-#  if defined EW_PERIODIC || defined NS_PERIODIC
 !
-!>      CALL exchange_r3d_tile (ng, tile,                               &
-!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-!>   &                          t(:,:,:,nstp,itrc))
+        IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>        CALL exchange_r3d_tile (ng, tile,                             &
+!>   &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+!>   &                            t(:,:,:,nstp,itrc))
 !>
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          tl_t(:,:,:,nstp,itrc))
-!>      CALL exchange_r3d_tile (ng, tile,                               &
-!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-!>   &                          t(:,:,:,nnew,itrc))
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            tl_t(:,:,:,nstp,itrc))
+!>        CALL exchange_r3d_tile (ng, tile,                             &
+!>   &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+!>   &                            t(:,:,:,nnew,itrc))
 !>
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          tl_t(:,:,:,nnew,itrc))
-#  endif
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            tl_t(:,:,:,nnew,itrc))
+        END IF
       END DO
+
 #  ifdef DISTRIBUTE
 !
 !>    CALL mp_exchange4d (ng, tile, model, 2,                           &
 !>   &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    t(:,:,:,nstp,:),                              &
 !>   &                    t(:,:,:,nnew,:))
 !>
       CALL mp_exchange4d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_t(:,:,:,nstp,:),                           &
      &                    tl_t(:,:,:,nnew,:))
 #  endif
@@ -804,7 +806,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 1)
+      CALL wclock_on (ng, iTLM, 2)
 # endif
       CALL tl_ini_zeta_tile (ng, tile, model,                           &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -827,8 +829,9 @@
      &                       OCEAN(ng) % zeta,                          &
      &                       OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 1)
+      CALL wclock_off (ng, iTLM, 2)
 # endif
+
       RETURN
       END SUBROUTINE tl_ini_zeta
 !
@@ -854,20 +857,17 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_ncparam
       USE mod_scalars
 # if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
       USE mod_sediment
 # endif
 !
-# if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_2d_mod, ONLY : exchange_r2d_tile
-# endif
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
 # endif
-# ifndef OBC_FSRADIATION
       USE tl_zetabc_mod, ONLY : tl_zetabc_tile
-# endif
 !
 !  Imported variable declarations.
 !
@@ -916,18 +916,7 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
+      integer :: Imin, Imax, Jmin, Jmax
       integer :: i, j, kbed
 
       real(r8) :: cff1
@@ -939,13 +928,20 @@
 !  Initialize other time levels for free-surface.
 !-----------------------------------------------------------------------
 !
-# ifndef OBC_FSRADIATION
-      DO j=Jstr,Jend
-        DO i=Istr,Iend
-# else
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
-# endif
+      IF (.not.(ANY(tl_LBC(:,isFsur,ng)%radiation).or.                  &
+     &          ANY(tl_LBC(:,isFsur,ng)%Chapman))) THEN
+        Imin=IstrB
+        Imax=IendB
+        Jmin=JstrB
+        Jmax=JendB
+      ELSE
+        Imin=IstrT
+        Imax=IendT
+        Jmin=JstrT
+        Jmax=JendT
+      END IF
+      DO j=Jmin,Jmax
+        DO i=Imin,Imax
 !>        cff1=zeta(i,j,kstp)
 !>
           tl_cff1=tl_zeta(i,j,kstp)
@@ -968,103 +964,106 @@
 # endif
         END DO
       END DO
-
-# ifndef OBC_FSRADIATION
 !
 !  Apply boundary conditions.
 !
-!>    CALL zetabc_tile (ng, tile,                                       &
-!>   &                  LBi, UBi, LBj, UBj,                             &
-!>   &                  IminS, ImaxS, JminS, JmaxS,                     &
-!>   &                  krhs, kstp, kstp,                               &
-!>   &                  zeta)
+      IF (.not.(ANY(tl_LBC(:,isFsur,ng)%radiation).or.                  &
+     &          ANY(tl_LBC(:,isFsur,ng)%Chapman))) THEN
+!>      CALL zetabc_tile (ng, tile,                                     &
+!>   &                    LBi, UBi, LBj, UBj,                           &
+!>   &                    IminS, ImaxS, JminS, JmaxS,                   &
+!>   &                    krhs, kstp, kstp,                             &
+!>   &                    zeta)
 !>
-      CALL tl_zetabc_tile (ng, tile,                                    &
-     &                     LBi, UBi, LBj, UBj,                          &
-     &                     IminS, ImaxS, JminS, JmaxS,                  &
-     &                     krhs, kstp, kstp,                            &
-     &                     zeta,                                        &
-     &                     tl_zeta)
-#  ifdef SOLVE3D
-!>    CALL zetabc_tile (ng, tile,                                       &
-!>   &                  LBi, UBi, LBj, UBj,                             &
-!>   &                  IminS, ImaxS, JminS, JmaxS,                     &
-!>   &                  krhs, kstp, knew,                               &
-!>   &                  zeta)
+        CALL tl_zetabc_tile (ng, tile,                                  &
+     &                       LBi, UBi, LBj, UBj,                        &
+     &                       IminS, ImaxS, JminS, JmaxS,                &
+     &                       krhs, kstp, kstp,                          &
+     &                       zeta,                                      &
+     &                       tl_zeta)
+# ifdef SOLVE3D
+!>      CALL zetabc_tile (ng, tile,                                     &
+!>   &                    LBi, UBi, LBj, UBj,                           &
+!>   &                    IminS, ImaxS, JminS, JmaxS,                   &
+!>   &                    krhs, kstp, knew,                             &
+!>   &                    zeta)
 !>
-      CALL tl_zetabc_tile (ng, tile,                                    &
-     &                     LBi, UBi, LBj, UBj,                          &
-     &                     IminS, ImaxS, JminS, JmaxS,                  &
-     &                     krhs, kstp, knew,                            &
-     &                     zeta,                                        &
-     &                     tl_zeta)
-#  else
-!>    CALL zetabc_tile (ng, tile,                                       &
-!>   &                  LBi, UBi, LBj, UBj,                             &
-!>   &                  IminS, ImaxS, JminS, JmaxS,                     &
-!>   &                  krhs, kstp, krhs,                               &
-!>   &                  zeta)
+        CALL tl_zetabc_tile (ng, tile,                                  &
+     &                       LBi, UBi, LBj, UBj,                        &
+     &                       IminS, ImaxS, JminS, JmaxS,                &
+     &                       krhs, kstp, knew,                          &
+     &                       zeta,                                      &
+     &                       tl_zeta)
+# else
+!>      CALL zetabc_tile (ng, tile,                                     &
+!>   &                    LBi, UBi, LBj, UBj,                           &
+!>   &                    IminS, ImaxS, JminS, JmaxS,                   &
+!>   &                    krhs, kstp, krhs,                             &
+!>   &                    zeta)
 !>
-      CALL tl_zetabc_tile (ng, tile,                                    &
-     &                     LBi, UBi, LBj, UBj,                          &
-     &                     IminS, ImaxS, JminS, JmaxS,                  &
-     &                     krhs, kstp, krhs,                            &
-     &                     zeta,                                        &
-     &                     tl_zeta)
-#  endif
+        CALL tl_zetabc_tile (ng, tile,                                  &
+     &                       LBi, UBi, LBj, UBj,                        &
+     &                       IminS, ImaxS, JminS, JmaxS,                &
+     &                       krhs, kstp, krhs,                          &
+     &                       zeta,                                      &
+     &                       tl_zeta)
 # endif
-
-# if defined EW_PERIODIC || defined NS_PERIODIC
+      END IF
 !
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        zeta(:,:,kstp))
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          zeta(:,:,kstp))
 !>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_zeta(:,:,kstp))
-#  ifdef SOLVE3D
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        zeta(:,:,knew))
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_zeta(:,:,kstp))
+# ifdef SOLVE3D
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          zeta(:,:,knew))
 !>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_zeta(:,:,knew))
-#  else
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        zeta(:,:,krhs))
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_zeta(:,:,knew))
+# else
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          zeta(:,:,krhs))
 !>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_zeta(:,:,krhs))
-#  endif
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_zeta(:,:,krhs))
 # endif
+      END IF
 
 # ifdef DISTRIBUTE
 #  ifdef SOLVE3D
 !>    CALL mp_exchange2d (ng, tile, model, 2,                           &
 !>   &                    LBi, UBi, LBj, UBj,                           &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    zeta(:,:,kstp),                               &
 !>   &                    zeta(:,:,knew))
 !>
       CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_zeta(:,:,kstp),                            &
      &                    tl_zeta(:,:,knew))
 #  else
 !>    CALL mp_exchange2d (ng, tile, model, 2,                           &
 !>   &                    LBi, UBi, LBj, UBj,                           &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    zeta(:,:,kstp),                               &
 !>   &                    zeta(:,:,krhs))
 !>
       CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_zeta(:,:,kstp),                            &
      &                    tl_zeta(:,:,krhs))
 #  endif
@@ -1077,32 +1076,35 @@
 !  free-surface
 !-----------------------------------------------------------------------
 !
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
 !>        Zt_avg1(i,j)=zeta(i,j,kstp)
 !>
           tl_Zt_avg1(i,j)=tl_zeta(i,j,kstp)
         END DO
       END DO
-
-#  if defined EW_PERIODIC || defined NS_PERIODIC
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        Zt_avg1)
+!
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          Zt_avg1)
 !>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_Zt_avg1)
-#  endif
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_Zt_avg1)
+      END IF
+
 #  ifdef DISTRIBUTE
 !>    CALL mp_exchange2d (ng, tile, model, 1,                           &
 !>   &                    LBi, UBi, LBj, UBj,                           &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    Zt_avg1)
 !>
       CALL mp_exchange2d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_Zt_avg1)
 #  endif
 
@@ -1112,8 +1114,8 @@
 !  Compute initial total thickness for all sediment bed layers.
 !-----------------------------------------------------------------------
 !
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
 !>        bed_thick0(i,j)=0.0_r8
 !>
           tl_bed_thick0(i,j)=0.0_r8
@@ -1129,40 +1131,43 @@
           tl_bed_thick(i,j,2)=tl_bed_thick0(i,j)
         END DO
       END DO
+!
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          bed_thick0)
+!>
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_bed_thick0)
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          bed_thick(:,:,1))
+!>
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_bed_thick(:,:,1))
+!>      CALL exchange_r2d_tile (ng, tile,                               &
+!>   &                          LBi, UBi, LBj, UBj,                     &
+!>   &                          bed_thick(:,:,2))
+!>
+        CALL exchange_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          tl_bed_thick(:,:,2))
+      END IF
 
-#   if defined EW_PERIODIC || defined NS_PERIODIC
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        bed_thick0)
-!>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_bed_thick0)
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        bed_thick(:,:,1))
-!>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_bed_thick(:,:,1))
-!>    CALL exchange_r2d_tile (ng, tile,                                 &
-!>   &                        LBi, UBi, LBj, UBj,                       &
-!>   &                        bed_thick(:,:,2))
-!>
-      CALL exchange_r2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        tl_bed_thick(:,:,2))
-#   endif
 #   ifdef DISTRIBUTE
 !>    CALL mp_exchange2d (ng, tile, model, 3,                           &
 !>   &                    LBi, UBi, LBj, UBj, 1, 1,                     &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    bed_thick0,                                   &
 !>   &                    bed_thick(:,:,1), bed_thick(:,:,2))
 !>
       CALL mp_exchange2d (ng, tile, model, 3,                           &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_bed_thick0,                                &
      &                    tl_bed_thick(:,:,1), tl_bed_thick(:,:,2))
 #   endif

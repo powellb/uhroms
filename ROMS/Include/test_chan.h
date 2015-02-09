@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: test_chan.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -29,14 +29,6 @@
 #define ANA_SPFLUX
 #define ANA_BPFLUX
 #define TS_U3HADVECTION
-#define NORTHERN_WALL
-#define SOUTHERN_WALL
-#define EAST_FSCHAPMAN
-#define EAST_M2CLAMPED
-#define EAST_M3GRADIENT
-#define WEST_FSCHAPMAN
-#define WEST_M2FLATHER
-#define WEST_M3GRADIENT
 #define ANA_FSOBC
 #define ANA_M2OBC
 #define SEDIMENT

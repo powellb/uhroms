@@ -1,8 +1,8 @@
       SUBROUTINE bblm (ng,tile)
 !
-!svn $Id$
+!svn $Id: mb_bbl.h 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group          Meinte Blaas   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group          Meinte Blaas   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -202,18 +202,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, ised, j
 
       real(r8), parameter :: K1 = 0.6666666666_r8
@@ -361,7 +349,7 @@
           tau_bf=0.79_r8*(viscosity**(-0.6_r8))*                        &
      &           (((rhoSed-1.0_r8)*g)**0.3_r8)*(d50**0.9_r8)*tau_cb
 !
-!  Set Znot for currents as maximun of user value or grain roughness.
+!  Set Znot for currents as maximum of user value or grain roughness.
 !
            ZnotC=d50/12.0_r8
            Znot=MAX(ZoBot(i,j),ZnotC)
@@ -677,28 +665,34 @@
       CALL bc_r2d_tile (ng, tile,                                       &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  bottom(:,:,izapp))
+
 #ifdef DISTRIBUTE
       CALL mp_exchange2d (ng, tile, iNLM, 4,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    bustr, bvstr, bustrc, bvstrc)
       CALL mp_exchange2d (ng, tile, iNLM, 4,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    bustrw, bvstrw, bustrcwmax, bvstrcwmax)
       CALL mp_exchange2d (ng, tile, iNLM, 4,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    Ubot, Vbot, Ur, Vr)
       CALL mp_exchange2d (ng, tile, iNLM, 3,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    bottom(:,:,ibwav),                            &
      &                    bottom(:,:,irhgt),                            &
      &                    bottom(:,:,irlen))
       CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    bottom(:,:,izdef),                            &
      &                    bottom(:,:,izapp))
 #endif

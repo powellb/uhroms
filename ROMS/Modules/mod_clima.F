@@ -4,9 +4,9 @@
     defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
     defined SENSITIVITY_4DVAR   || defined SO_SEMI
 !
-!svn $Id$
+!svn $Id: mod_clima.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -222,10 +222,13 @@
 
 # ifdef SOLVE3D
 #  ifdef TCLIMATOLOGY
-      allocate ( CLIMA(ng) % tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng)) )
+      IF (NTCLM(ng).gt.0) THEN
+        allocate ( CLIMA(ng) % tclm(LBi:UBi,LBj:UBj,N(ng),NTCLM(ng)) )
 #   ifndef ANA_TCLIMA
-      allocate ( CLIMA(ng) % tclmG(LBi:UBi,LBj:UBj,N(ng),2,NT(ng)) )
+        allocate ( CLIMA(ng) % tclmG(LBi:UBi,LBj:UBj,N(ng),2,          &
+     &                               NTCLM(ng)) )
 #   endif
+      END IF
 #  endif
 
 #  ifdef TCLM_NUDGING
@@ -298,32 +301,32 @@
 !
 !  Set array initialization range.
 !
-# ifdef _OPENMP
-      IF (WESTERN_EDGE) THEN
-        Imin=BOUNDS(ng)%LBi(tile)
-      ELSE
-        Imin=Istr
-      END IF
-      IF (EASTERN_EDGE) THEN
-        Imax=BOUNDS(ng)%UBi(tile)
-      ELSE
-        Imax=Iend
-      END IF
-      IF (SOUTHERN_EDGE) THEN
-        Jmin=BOUNDS(ng)%LBj(tile)
-      ELSE
-        Jmin=Jstr
-      END IF
-      IF (NORTHERN_EDGE) THEN
-        Jmax=BOUNDS(ng)%UBj(tile)
-      ELSE
-        Jmax=Jend
-      END IF
-# else
+# ifdef DISTRIBUTE
       Imin=BOUNDS(ng)%LBi(tile)
       Imax=BOUNDS(ng)%UBi(tile)
       Jmin=BOUNDS(ng)%LBj(tile)
       Jmax=BOUNDS(ng)%UBj(tile)
+# else
+      IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+        Imin=BOUNDS(ng)%LBi(tile)
+      ELSE
+        Imin=Istr
+      END IF
+      IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+        Imax=BOUNDS(ng)%UBi(tile)
+      ELSE
+        Imax=Iend
+      END IF
+      IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+        Jmin=BOUNDS(ng)%LBj(tile)
+      ELSE
+        Jmin=Jstr
+      END IF
+      IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+        Jmax=BOUNDS(ng)%UBj(tile)
+      ELSE
+        Jmax=Jend
+      END IF
 # endif
 !
 !-----------------------------------------------------------------------
@@ -376,6 +379,7 @@
           CLIMA(ng) % vbar_adsG(i,j,2) = IniVal
 # endif
         END DO
+
 # ifdef SOLVE3D
         DO k=1,N(ng)
           DO i=Imin,Imax
@@ -401,31 +405,42 @@
 #  endif
           END DO
         END DO
-        DO itrc=1,NT(ng)
+
+#  ifdef TCLIMATOLOGY
+        DO itrc=1,NTCLM(ng)
           DO k=1,N(ng)
             DO i=Imin,Imax
-#  ifdef TCLIMATOLOGY
               CLIMA(ng) % tclm(i,j,k,itrc) = IniVal
 #   ifndef ANA_TCLIMA
               CLIMA(ng) % tclmG(i,j,k,1,itrc) = IniVal
               CLIMA(ng) % tclmG(i,j,k,2,itrc) = IniVal
 #   endif
+            END DO
+          END DO
+        END DO
 #  endif
+
 #  if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
       defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
       defined SO_SEMI
+        DO itrc=1,NT(ng)
+          DO k=1,N(ng)
+            DO i=Imin,Imax
               CLIMA(ng) % t_ads(i,j,k,itrc) = IniVal
               CLIMA(ng) % t_adsG(i,j,k,1,itrc) = IniVal
               CLIMA(ng) % t_adsG(i,j,k,2,itrc) = IniVal
-#  endif
             END DO
           END DO
+        END DO
+#  endif
+
 #  ifdef TCLM_NUDGING
+        DO itrc=1,NT(ng)
           DO i=Imin,Imax
             CLIMA(ng) % Tnudgcof(i,j,itrc) = IniVal
           END DO
-#  endif
         END DO
+#  endif
 # endif
       END DO
 

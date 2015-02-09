@@ -2,23 +2,35 @@
       MODULE ad_step3d_t_mod
 #if !defined TS_FIXED && (defined ADJOINT && defined SOLVE3D)
 !
-!svn $Id$
+!svn $Id: ad_step3d_t.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
 !  This routine time-steps adjoint tracer equations.  Notice that      !
 !  advective and diffusive terms are time-stepped differently.         !
+!  It applies the corrector time-step for horizontal and vertical      !
+!  advection, vertical diffusion, nudging if necessary, and lateral    !
+!  boundary conditions.                                                !
+!                                                                      !
+!  Notice that at input the tracer arrays have:                        !
+!                                                                      !
+!    t(:,:,:,nnew,:)   m Tunits  n+1     horizontal/vertical diffusion !
+!                                        terms plus source/sink terms  !
+!                                        (biology, sediment), if any   !
+!                                                                      !
+!    t(:,:,:,3   ,:)   Tunits    n+1/2   advective terms and vertical  !
+!                                        diffusion predictor step      !
 !                                                                      !
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: ad_step3d_t
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -29,14 +41,11 @@
 # ifdef CLIMATOLOGY
       USE mod_clima
 # endif
-# ifdef DIAGNOSTICS
+# ifdef DIAGNOSTICS_TS
 !!    USE mod_diags
 # endif
       USE mod_grid
       USE mod_mixing
-# if defined ASSIMILATION || defined NUDGING
-      USE mod_obs
-# endif
       USE mod_ocean
 # ifdef TS_PSOURCE
       USE mod_sources
@@ -75,7 +84,7 @@
      &                       GRID(ng) % umask,                          &
      &                       GRID(ng) % vmask,                          &
 # endif
-# ifdef TS_MPDATA_NOT_YET
+# ifdef TS_MPDATA
 #  ifdef WET_DRY
      &                       GRID(ng) % rmask_wet,                      &
      &                       GRID(ng) % umask_wet,                      &
@@ -101,18 +110,8 @@
      &                       CLIMA(ng) % Tnudgcof,                      &
      &                       CLIMA(ng) % tclm,                          &
 # endif
-# if defined NUDGING_SST || defined NUDGING_T
-!!   &                       OBS(ng) % EobsT,                           &
-!!   &                       OBS(ng) % Tobs,                            &
-# endif
      &                       MIXING(ng) % Akt,                          &
      &                       MIXING(ng) % ad_Akt,                       &
-# ifdef TS_MPDATA_NOT_YET
-     &                       OCEAN(ng) % u,                             &
-     &                       OCEAN(ng) % ad_u,                          &
-     &                       OCEAN(ng) % v,                             &
-     &                       OCEAN(ng) % ad_v,                          &
-# endif
      &                       OCEAN(ng) % W,                             &
      &                       OCEAN(ng) % ad_W,                          &
 # if defined FLOATS_NOT_YET && defined FLOAT_VWALK
@@ -147,7 +146,7 @@
 # ifdef MASKING
      &                             rmask, umask, vmask,                 &
 # endif
-# ifdef TS_MPDATA_NOT_YET
+# ifdef TS_MPDATA
 #  ifdef WET_DRY
      &                             rmask_wet, umask_wet, vmask_wet,     &
 #  endif
@@ -161,14 +160,7 @@
 # if defined TCLM_NUDGING && defined TCLIMATOLOGY
      &                             Tnudgcof, tclm,                      &
 # endif
-# if defined NUDGING_SST || defined NUDGING_T
-!!   &                             EobsT, Tobs,                         &
-# endif
      &                             Akt, ad_Akt,                         &
-# ifdef TS_MPDATA_NOT_YET
-     &                             u, ad_u,                             &
-     &                             v, ad_v,                             &
-# endif
      &                             W, ad_W,                             &
 # if defined FLOATS_NOT_YET && defined FLOAT_VWALK
      &                             dAktdz,                              &
@@ -184,13 +176,14 @@
       USE mod_ncparam
       USE mod_scalars
 !
-# if defined EW_PERIODIC || defined NS_PERIODIC
       USE ad_exchange_3d_mod, ONLY : ad_exchange_r3d_tile
-# endif
 # ifdef DISTRIBUTE
+#  if defined FLOATS_NOT_YET && defined FLOAT_VWALK
+!!    USE mp_exchange_mod, ONLY : mp_exchange3d
+#  endif
       USE mp_exchange_mod, ONLY : ad_mp_exchange4d
 # endif
-# ifdef TS_MPDATA_NOT_YET
+# ifdef TS_MPDATA
 !!    USE ad_mpdata_adiff_mod
 # endif
       USE ad_t3dbc_mod, ONLY : ad_t3dbc_tile
@@ -223,7 +216,7 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 #  endif
-#  ifdef TS_MPDATA_NOT_YET
+#  ifdef TS_MPDATA
 #   ifdef WET_DRY
       real(r8), intent(in) :: rmask_wet(LBi:,LBj:)
       real(r8), intent(in) :: umask_wet(LBi:,LBj:)
@@ -241,10 +234,6 @@
       real(r8), intent(in) :: Tnudgcof(LBi:,LBj:,:)
       real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
 #  endif
-#  if defined NUDGING_SST || defined NUDGING_T
-!!    real(r8), intent(in) :: EobsT(LBi:,LBj:,:,:)
-!!    real(r8), intent(in) :: Tobs(LBi:,LBj:,:,:)
-#  endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: Huon(LBi:,LBj:,:)
       real(r8), intent(in) :: Hvom(LBi:,LBj:,:)
@@ -255,10 +244,6 @@
 #  else
       real(r8), intent(in) :: Akt(LBi:,LBj:,0:,:)
       real(r8), intent(in) :: t(LBi:,LBj:,:,:,:)
-#  endif
-#  ifdef TS_MPDATA_NOT_YET
-      real(r8), intent(in) :: u(LBi:,LBj:,:,:)
-      real(r8), intent(in) :: v(LBi:,LBj:,:,:)
 #  endif
       real(r8), intent(in) :: W(LBi:,LBj:,0:)
 
@@ -273,10 +258,6 @@
       real(r8), intent(inout) :: ad_Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT)
 #  else
       real(r8), intent(inout) :: ad_Akt(LBi:,LBj:,0:,:)
-#  endif
-#  ifdef TS_MPDATA_NOT_YET
-      real(r8), intent(inout) :: ad_u(LBi:,LBj:,:,:)
-      real(r8), intent(inout) :: ad_v(LBi:,LBj:,:,:)
 #  endif
       real(r8), intent(inout) :: ad_W(LBi:,LBj:,0:)
 #  ifdef SUN
@@ -307,7 +288,7 @@
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
 #  endif
-#  ifdef TS_MPDATA_NOT_YET
+#  ifdef TS_MPDATA
 #   ifdef WET_DRY
       real(r8), intent(in) :: rmask_wet(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
@@ -323,11 +304,7 @@
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
 #  if defined TCLM_NUDGING && defined TCLIMATOLOGY
       real(r8), intent(in) :: Tnudgcof(LBi:UBi,LBj:UBj,NT(ng))
-      real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng))
-#  endif
-#  if defined NUDGING_SST || defined NUDGING_T
-!!    real(r8), intent(in) :: EobsT(LBi:UBi,LBj:UBj,N(ng),NT(ng))
-!!    real(r8), intent(in) :: Tobs(LBi:UBi,LBj:UBj,N(ng),NT(ng))
+      real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NTCLM(ng))
 #  endif
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Huon(LBi:UBi,LBj:UBj,N(ng))
@@ -335,10 +312,6 @@
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT)
       real(r8), intent(in) :: t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
-#  ifdef TS_MPDATA_NOT_YET
-      real(r8), intent(in) :: u(LBi:UBi,LBj:UBj,N(ng),2)
-      real(r8), intent(in) :: v(LBi:UBi,LBj:UBj,N(ng),2)
-#  endif
       real(r8), intent(in) :: W(LBi:UBi,LBj:UBj,0:N(ng))
 
 #  ifdef DIAGNOSTICS_TS
@@ -350,10 +323,6 @@
       real(r8), intent(inout) :: ad_Hvom(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(inout) :: ad_z_r(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(inout) :: ad_Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT)
-#  ifdef TS_MPDATA_NOT_YET
-      real(r8), intent(inout) :: ad_u(LBi:UBi,LBj:UBj,N(ng),2)
-      real(r8), intent(inout) :: ad_v(LBi:UBi,LBj:UBj,N(ng),2)
-#  endif
       real(r8), intent(inout) :: ad_W(LBi:UBi,LBj:UBj,0:N(ng))
       real(r8), intent(inout) :: ad_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
 #  if defined FLOATS_NOT_YET && defined FLOAT_VWALK
@@ -363,25 +332,13 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
-      integer :: i, is, itrc, j, k, ltrc
+      integer :: i, ic, is, itrc, j, k, ltrc
       integer :: idiag
 
       real(r8), parameter :: eps = 1.0E-16_r8
 
       real(r8) :: cff, cff1, cff2, cff3
-      real(r8) :: ad_cff, ad_cff1, ad_cff2
+      real(r8) :: ad_cff, ad_cff1, ad_cff2, ad_cff3
       real(r8) :: adfac, adfac1, adfac2
 
       real(r8), dimension(IminS:ImaxS,0:N(ng)) :: CF
@@ -409,15 +366,20 @@
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: oHz
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: ad_oHz
-# ifdef TS_MPDATA_NOT_YET
-      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,                     &
+# ifdef TS_MPDATA
+#  ifdef DIAGNOSTICS_TS
+!!    real(r8), dimension(IminS:ImaxS,JminS:JmaxS,3) :: Dhadv
+!!    real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng),NT(ng)) :: Dvadv
+#  endif
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,                      &
      &                    N(ng),NT(ng)) :: Ta
-      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,                     &
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS,                      &
      &                    N(ng),NT(ng)) :: ad_Ta
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: Ua
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: Va
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,0:N(ng)) :: Wa
+
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: ad_Ua
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: ad_Va
@@ -433,6 +395,7 @@
       ad_cff=0.0_r8
       ad_cff1=0.0_r8
       ad_cff2=0.0_r8
+      ad_cff3=0.0_r8
       DO j=JminS,JmaxS
         DO i=IminS,ImaxS
           ad_FE(i,j)=0.0_r8
@@ -445,7 +408,7 @@
             ad_oHz(i,j,k)=0.0_r8
           END DO
         END DO
-# ifdef TS_MPDATA_NOT_YET
+# ifdef TS_MPDATA
         DO k=1,N(ng)
           DO i=IminS,ImaxS
             ad_Ua(i,j,k)=0.0_r8
@@ -474,6 +437,37 @@
           ad_FC(i,k)=0.0_r8
         END DO
       END DO
+
+# if defined FLOATS_NOT_YET && defined FLOAT_VWALK
+!
+!-----------------------------------------------------------------------
+!  Compute vertical gradient in vertical T-diffusion coefficient for
+!  floats random walk.
+!-----------------------------------------------------------------------
+!
+!  Exchange boundary data.
+!
+#  ifdef DISTRIBUTE
+      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+     &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
+     &                    dAktdz)
+#  endif
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+         CALL exchange_r3d_tile (ng, tile,                              &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           dAktdz)
+      END IF
+!
+      DO j=JstrR,JendR
+        DO i=IstrR,IendR
+          DO k=1,N(ng)
+            dAktdz(i,j,k)=(Akt(i,j,k,1)-Akt(i,j,k-1,1))/Hz(i,j,k)
+          END DO
+        END DO
+      END DO
+# endif
 !
 !-----------------------------------------------------------------------
 !  Apply adjoint lateral boundary conditions and, if appropriate, nudge
@@ -485,29 +479,33 @@
 !
 !>    CALL mp_exchange4d (ng, tile, iTLM, 1,                            &
 !>   &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    tl_t(:,:,:,nnew,:))
 !>
       CALL ad_mp_exchange4d (ng, tile, iADM, 1,                         &
      &                       LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),   &
-     &                       NghostPoints, EWperiodic, NSperiodic,      &
+     &                       NghostPoints,                              &
+     &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_t(:,:,:,nnew,:))
 !
 # endif
+# if defined TCLM_NUDGING && defined TCLIMATOLOGY
+      ic=0
+# endif
       DO itrc=1,NT(ng)
-
-# if defined EW_PERIODIC || defined NS_PERIODIC
 !
 !  Apply adjoint periodic boundary conditions.
 !
-!>      CALL exchange_r3d_tile (ng, tile,                               &
-!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-!>   &                          tl_t(:,:,:,nnew,itrc))
+        IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+!>        CALL exchange_r3d_tile (ng, tile,                             &
+!>   &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+!>   &                            tl_t(:,:,:,nnew,itrc))
 !>
-        CALL ad_exchange_r3d_tile (ng, tile,                            &
-     &                             LBi, UBi, LBj, UBj, 1, N(ng),        &
-     &                             ad_t(:,:,:,nnew,itrc))
-# endif
+          CALL ad_exchange_r3d_tile (ng, tile,                          &
+     &                               LBi, UBi, LBj, UBj, 1, N(ng),      &
+     &                               ad_t(:,:,:,nnew,itrc))
+        END IF
 
 # ifdef DIAGNOSTICS_TS
 !!
@@ -517,9 +515,9 @@
 !!        DO j=JstrR,JendR
 !!          DO i=IstrR,IendR
 !!            DiaTwrk(i,j,k,itrc,iTrate)=t(i,j,k,nnew,itrc)-            &
-!!   &                                   DiaTwrk(i,j,k,itrc,iTrate)
-!!            DiaTwrk(i,j,k,itrc,iTrate)=t(i,j,k,nnew,itrc)-            &
 !!   &                                   t(i,j,k,nstp,itrc)
+!!            DiaTwrk(i,j,k,itrc,iTrate)=t(i,j,k,nnew,itrc)-            &
+!!   &                                   DiaTwrk(i,j,k,itrc,iTrate)
 !!          END DO
 !!        END DO
 !!      END DO
@@ -538,41 +536,26 @@
           END DO
         END DO
 # endif
-# if defined NUDGING_SST || defined NUDGING_T
-!!
-!! Assimilate tracer observations via nudging.
-!!
-!!      IF (update_T(itrc,ng)) THEN
-!!        DO k=1,N(ng)
-!!          DO j=JstrR,JendR
-!!            DO i=IstrR,IendR
-!!              cff=MIN(1.0_r8,MAX(0.0_r8,EobsT(i,j,k,itrc)))
-!!              cff=dt(ng)*Tnudass(itrc,ng)*(1.0_r8-cff)
-!!              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                  &
-!!   &                             cff*(Tobs(i,j,k,itrc)-               &
-!!   &                                  t(i,j,k,nnew,itrc))
-!!            END DO
-!!          END DO
-!!        END DO
-!!      END IF
-# endif
 # if defined TCLM_NUDGING && defined TCLIMATOLOGY
 !
 !  Nudge towards tracer climatology.
 !
-        DO k=1,N(ng)
-          DO j=JstrR,JendR
-            DO i=IstrR,IendR
-!>            tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-              &
-!>   &                              dt(ng)*Tnudgcof(i,j,itrc)*          &
-!>   &                              tl_t(i,j,k,nnew,itrc)
+        IF (LtracerCLM(itrc,ng)) THEN
+          ic=ic+1
+          DO k=1,N(ng)
+            DO j=JstrR,JendR
+              DO i=IstrR,IendR
+!>              tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-            &
+!>   &                                dt(ng)*Tnudgcof(i,j,itrc)*        &
+!>   &                                tl_t(i,j,k,nnew,itrc)
 !>
-              ad_t(i,j,k,nnew,itrc)=ad_t(i,j,k,nnew,itrc)-              &
-     &                              dt(ng)*Tnudgcof(i,j,itrc)*          &
-     &                              ad_t(i,j,k,nnew,itrc)
+                ad_t(i,j,k,nnew,itrc)=ad_t(i,j,k,nnew,itrc)-            &
+     &                                dt(ng)*Tnudgcof(i,j,itrc)*        &
+     &                                ad_t(i,j,k,nnew,itrc)
+              END DO
             END DO
           END DO
-        END DO
+        END IF
 # endif
 !
 !  Set adjoint lateral boundary conditions.
@@ -596,17 +579,9 @@
 !
 !  Compute BASIC STATE inverse thickness.
 !
-# ifdef TS_MPDATA_NOT_YET
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,0),MIN(Iend+2,Lm(ng)+1)
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,0),MIN(Jend+2,Mm(ng)+1)
-#  endif
+# ifdef TS_MPDATA
+#  define I_RANGE Istrm2,Iendp2
+#  define J_RANGE Jstrm2,Jendp2
 # else
 #  define I_RANGE Istr,Iend
 #  define J_RANGE Jstr,Jend
@@ -628,7 +603,7 @@
         DO itrc=1,NT(ng)
           ltrc=MIN(NAT,itrc)
 
-# if defined SPLINES && !defined TS_MPDATA_NOT_YET
+# if defined SPLINES && !defined TS_MPDATA
 !
 !  Use conservative, parabolic spline reconstruction of BASIC STATE
 !  vertical diffusion derivatives.  Solve BASIC STATE tridiagonal
@@ -999,7 +974,8 @@
 # endif
         END DO
       END DO
-# ifdef TS_MPDATA_NOT_YET
+
+# ifdef TS_MPDATA
 !
 !-----------------------------------------------------------------------
 !  Compute adjoint anti-diffusive velocities and correct advected
@@ -1007,25 +983,23 @@
 !  J-loop ended.
 !-----------------------------------------------------------------------
 !
-#  if defined EW_PERIODIC || defined NS_PERIODIC || defined DISTRIBUTE
-
 !  The MPDATA algorithm requires a three-point footprint, so exchange
-!  boundary data on t(:,:,:,3,:) so other processes computed earlier
+!  boundary data on t(:,:,:,nnew,:) so other processes computed earlier
 !  (horizontal diffusion, biology, or sediment) are accounted.
 !
-#   if defined EW_PERIODIC || defined NS_PERIODIC
-      DO itrc=1,NT(ng)
-        CALL exchange_r3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          t(:,:,:,3,itrc))
-      END DO
-#   endif
-#   ifdef DISTRIBUTE
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        DO itrc=1,NT(ng)
+          CALL exchange_r3d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+     &                            t(:,:,:,nnew,itrc))
+        END DO
+      END IF
+#  ifdef DISTRIBUTE
       CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
-     &                    t(:,:,:,3,:))
-#   endif
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
+     &                    t(:,:,:,nnew,:))
 #  endif
 !
 !  Compute BASIC STATE private tracer diffusion and anti-diffusive
@@ -1034,49 +1008,24 @@
 !  NOTE: the BASIC STATE retrived is already in Tunits so it is not
 !        necessary to divide by Hz.
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+3
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+3,Lm(ng)+1)
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
-
       DO itrc=1,NT(ng)
         DO k=1,N(ng)
-          DO j=J_RANGE
-             DO i=I_RANGE
+          DO j=JstrVm2,Jendp2i
+            DO i=IstrUm2,Iendp3
               cff1=MAX(Huon(i,j,k),0.0_r8)
               cff2=MIN(Huon(i,j,k),0.0_r8)
               FX(i,j)=cff1*t(i-1,j,k,3,itrc)+                           &
      &                cff2*t(i  ,j,k,3,itrc)
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+3
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+3,Mm(ng)+1)
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
+          DO j=JstrVm2,Jendp3
+            DO i=IstrUm2,Iendp2i
               cff1=MAX(Hvom(i,j,k),0.0_r8)
               cff2=MIN(Hvom(i,j,k),0.0_r8)
               FE(i,j)=cff1*t(i,j-1,k,3,itrc)+                           &
      &                cff2*t(i,j  ,k,3,itrc)
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
 #  ifdef TS_PSOURCE
 !
 !  Apply tracers point sources to the BASIC STATE horizontal advection
@@ -1086,9 +1035,9 @@
             i=Isrc(is)
             j=Jsrc(is)
             IF (INT(Dsrc(is)).eq.0) THEN
-#   ifdef TS_MPDATA_NOT_YET
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+#   ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp3)).and.               &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
 #   else
               IF (((Istr.le.i).and.(i.le.Iend+1)).and.                  &
      &            ((Jstr.le.j).and.(j.le.Jend))) THEN
@@ -1108,9 +1057,9 @@
                 END IF
               END IF
             ELSE IF (INT(Dsrc(is)).eq.1) THEN
-#   ifdef TS_MPDATA_NOT_YET
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+#   ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp3))) THEN
 #   else
               IF (((Istr.le.i).and.(i.le.Iend)).and.                    &
      &            ((Jstr.le.j).and.(j.le.Jend+1))) THEN
@@ -1134,28 +1083,14 @@
           END DO
 #  endif
 !
-!  Time-step BASIC STATE horizontal advection term (Tunits).
+!  Time-step BASIC STATE horizontal advection term (m Tunits).
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
-              cff=dt(ng)*pm(i,j)*pn(i,j)*oHz(i,j,k)
+          DO j=JstrVm2,Jendp2i
+            DO i=IstrUm2,Iendp2i
+              cff=dt(ng)*pm(i,j)*pn(i,j)
               cff1=cff*(FX(i+1,j)-FX(i,j)+                              &
      &                  FE(i,j+1)-FE(i,j))
-              cff2=Hz(i,j,k)+                                           &
-     &             cff*(Huon(i+1,j,k)-Huon(i,j,k)+                      &
-     &                  Hvom(i,j+1,k)-Hvom(i,j,k)+                      &
-     &                  (W(i,j,k)-W(i,j,k-1)))                 ! Hz_old
-              Ta(i,j,k,itrc)=t(i,j,k,3,itrc)*cff2-cff1
+              Ta(i,j,k,itrc)=t(i,j,k,nnew,itrc)-cff1
             END DO
           END DO
         END DO
@@ -1164,9 +1099,9 @@
 !  First_order, upstream differences vertical BASIC STATE advective
 !  flux.
 !
-      DO j=J_RANGE
+      DO j=JstrVm2,Jendp2i
         DO itrc=1,NT(ng)
-          DO i=I_RANGE
+          DO i=IstrUm2,Iendp2i
             DO k=1,N(ng)-1
               cff1=MAX(W(i,j,k),0.0_r8)
               cff2=MIN(W(i,j,k),0.0_r8)
@@ -1181,31 +1116,39 @@
             FC(i,N(ng))=0.0_r8
           END DO
 !
-!  Time-step BASIC STATE vertical advection term.
+!  Time-step BASIC STATE vertical advection term (Tunits).
 !
-          DO i=I_RANGE
+          DO i=IstrUm2,Iendp2i
             CF(i,0)=dt(ng)*pm(i,j)*pn(i,j)
           END DO
+
 #  ifdef Q_PSOURCE
 !
 !  Apply mass point sources - Volume influx.
 !
+#   ifdef TS_MPDATA
+          IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.                  &
+     &        ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
+#   else
           IF (((IstrR.le.i).and.(i.le.IendR)).and.                      &
-     &        ((JstrR.le.j).and.(j.le.JendR))) THEN
+     &          ((JstrR.le.j).and.(j.le.JendR))) THEN
+#   endif
             IF (j.eq.Jsrc(is)) THEN
               DO k=1,N(ng)-1
                 DO is=1,Nsrc
-                  i=Isrc(is)
-                  FC(i,k)=FC(i,k)+0.5_r8*                               &
-     &                    (Qsrc(is,k  )*Tsrc(is,k  ,itrc)+              &
-     &                     Qsrc(is,k+1)*Tsrc(is,k+1,itrc))
+                  IF (LtracerSrc(itrc,ng)) THEN
+                    i=Isrc(is)
+                    FC(i,k)=FC(i,k)+0.5_r8*                             &
+     &                      (Qsrc(is,k  )*Tsrc(is,k  ,itrc)+            &
+     &                       Qsrc(is,k+1)*Tsrc(is,k+1,itrc))
+                  END IF
                 END DO
               END DO
             END IF
           END IF
 #  endif
           DO k=1,N(ng)
-            DO i=I_RANGE
+            DO i=IstrUm2,Iendp2i
               cff1=CF(i,0)*(FC(i,k)-FC(i,k-1))*oHz(i,j,k)
               Ta(i,j,k,itrc)=Ta(i,j,k,itrc)-cff1
             END DO
@@ -1222,7 +1165,6 @@
         CALL mpdata_adiff_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          IminS, ImaxS, JminS, JmaxS,             &
-     &                          nrhs,                                   &
 #  ifdef MASKING
      &                          rmask, umask, vmask,                    &
 #  endif
@@ -1285,19 +1227,11 @@
           DO k=1,N(ng)
             DO i=Istr,Iend
 #  ifdef DIAGNOSTICS_TS
-!!            DiaTwrk(i,j,k,itrc,iTrate)=DiaTwrk(i,j,k,itrc,iTrate)*    &
-!!   &                                   oHz(i,j,k)
-!!            DiaTwrk(i,j,k,itrc,iTvdif)=DiaTwrk(i,j,k,itrc,iTvdif)*    &
-!!   &                                   oHz(i,j,k)
-#   if defined TS_DIF2 || defined TS_DIF4
-!!            DiaTwrk(i,j,k,itrc,iThdif)=DiaTwrk(i,j,k,itrc,iThdif)*    &
-!!   &                                   oHz(i,j,k)
-#   endif
-!!            DiaTwrk(i,j,k,itrc,iTvadv)=DiaTwrk(i,j,k,itrc,iTvadv)*    &
-!!   &                                   oHz(i,j,k)
-!!            DiaTwrk(i,j,k,itrc,iThadv)=DiaTwrk(i,j,k,itrc,iThadv)*    &
-!!   &                                   oHz(i,j,k)
-!!            DiaTwrk(i,j,k,itrc,iTvadv)=DiaTwrk(i,j,k,itrc,iTvadv)-    &
+!!            DO idiag=1,NDT
+!!              DiaTwrk(i,j,k,itrc,idiag)=DiaTwrk(i,j,k,itrc,idiag)*    &
+!!   &                                    oHz(i,j,k)
+!!            END DO
+!!            DiaTwrk(i,j,k,itrc,iTvadv)=Dvadv(i,j,k,itrc)-             &
 !!   &                                   cff1
 #  endif
 !>            tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff1
@@ -1353,26 +1287,38 @@
         DO k=1,N(ng)
           DO j=Jstr,Jend
             DO i=Istr,Iend
+              cff=dt(ng)*pm(i,j)*pn(i,j)
 #  ifdef DIAGNOSTICS_TS
 !!            DiaTwrk(i,j,k,itrc,iThadv)=DiaTwrk(i,j,k,itrc,iThadv)-    &
+!!   &                                   cff3
+!!            DiaTwrk(i,j,k,itrc,iTyadv)=DiaTwrk(i,j,k,itrc,iTyadv)-    &
+!!   &                                   cff2
+!!            DiaTwrk(i,j,k,itrc,iTxadv)=DiaTwrk(i,j,k,itrc,iTxadv)-    &
 !!   &                                   cff1
 #  endif
 !>            tl_t(i,j,k,nnew,itrc)=tl_Ta(i,j,k,itrc)*Hz(i,j,k)+        &
-!>   &                              Ta(i,j,k,itrc)*tl_Hz(i,j,k)-tl_cff1
+!>   &                              Ta(i,j,k,itrc)*tl_Hz(i,j,k)-tl_cff3
 !>
               ad_Ta(i,j,k,itrc)=ad_Ta(i,j,k,itrc)+                      &
      &                          Hz(i,j,k)*ad_t(i,j,k,nnew,itrc)
               ad_Hz(i,j,k)=ad_Hz(i,j,k)+                                &
      &                     Ta(i,j,k,itrc)*ad_t(i,j,k,nnew,itrc)
-              ad_cff1=ad_cff1-ad_t(i,j,k,nnew,itrc)
+              ad_cff3=ad_cff3-ad_t(i,j,k,nnew,itrc)
               ad_t(i,j,k,nnew,itrc)=0.0_r8
-!>            tl_cff1=dt(ng)*pm(i,j)*pn(i,j)*                           &
-!>   &                (tl_FX(i+1,j)-tl_FX(i,j)+                         &
-!>   &                 tl_FE(i,j+1)-tl_FE(i,j))
+!>            tl_cff3=tl_cff1+tl_cff2
 !>
-              adfac=dt(ng)*pm(i,j)*pn(i,j)*ad_cff1
+              ad_cff1=ad_cff1+ad_cff3
+              ad_cff2=ad_cff2+ad_cff3
+              ad_cff3=0.0_r8
+!>            tl_cff2=cff*(tl_FE(i,j+1)-tl_FE(i,j))
+!>
+              adfac=cff*ad_cff2
               ad_FE(i,j  )=ad_FE(i,j  )-adfac
               ad_FE(i,j+1)=ad_FE(i,j+1)+adfac
+              ad_cff2=0.0_r8
+!>            tl_cff1=cff*(tl_FX(i+1,j)-tl_FX(i,j))
+!>
+              adfac=cff*ad_cff1
               ad_FX(i,j  )=ad_FX(i,j  )-adfac
               ad_FX(i+1,j)=ad_FX(i+1,j)+adfac
               ad_cff1=0.0_r8
@@ -1459,7 +1405,6 @@
 !>      CALL tl_mpdata_adiff_tile (ng, tile,                            &
 !>   &                             LBi, UBi, LBj, UBj,                  &
 !>   &                             IminS, ImaxS, JminS, JmaxS,          &
-!>   &                             nrhs,                                &
 #  ifdef MASKING
 !>   &                             rmask, umask, vmask,                 &
 #  endif
@@ -1481,7 +1426,6 @@
         CALL ad_mpdata_adiff_tile (ng, tile,                            &
      &                             LBi, UBi, LBj, UBj,                  &
      &                             IminS, ImaxS, JminS, JmaxS,          &
-     &                             nrhs,                                &
 #  ifdef MASKING
      &                             rmask, umask, vmask,                 &
 #  endif
@@ -1500,62 +1444,38 @@
      &                             Va, ad_Va,                           &
      &                             Wa, ad_Wa)
       END DO
-# endif /* TS_MPDATA_NOT_YET */
+# endif /* TS_MPDATA */
 !
 !-----------------------------------------------------------------------
 !  Time-step adjoint vertical advection term.
 !-----------------------------------------------------------------------
-!
-# ifdef TS_MPDATA_NOT_YET
+
+# ifdef TS_MPDATA
 !
 !  Compute BASIC STATE Ta due to horizontal advection only.
 !
 !  NOTE: the BASIC STATE retrived is already in Tunits so it is not
 !        necessary to divide by Hz.
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+3
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+3,Lm(ng)+1)
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
-
       DO itrc=1,NT(ng)
         DO k=1,N(ng)
-          DO j=J_RANGE
-             DO i=I_RANGE
+          DO j=JstrVm2,Jendp2i
+            DO i=IstrUm2,Iendp3
               cff1=MAX(Huon(i,j,k),0.0_r8)
               cff2=MIN(Huon(i,j,k),0.0_r8)
               FX(i,j)=cff1*t(i-1,j,k,3,itrc)+                           &
      &                cff2*t(i  ,j,k,3,itrc)
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+3
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+3,Mm(ng)+1)
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
+          DO j=JstrVm2,Jendp3
+            DO i=IstrUm2,Iendp2i
               cff1=MAX(Hvom(i,j,k),0.0_r8)
               cff2=MIN(Hvom(i,j,k),0.0_r8)
               FE(i,j)=cff1*t(i,j-1,k,3,itrc)+                           &
      &                cff2*t(i,j  ,k,3,itrc)
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
+
 #  if defined TS_PSOURCE && !defined Q_PSOURCE
 !
 !  Apply tracers point sources to the BASIC STATE horizontal advection
@@ -1565,9 +1485,9 @@
             i=Isrc(is)
             j=Jsrc(is)
             IF (INT(Dsrc(is)).eq.0) THEN
-#   ifdef TS_MPDATA_NOT_YET
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+#   ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp3)).and.               &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
 #   else
               IF (((Istr.le.i).and.(i.le.Iend+1)).and.                  &
      &            ((Jstr.le.j).and.(j.le.Jend))) THEN
@@ -1587,9 +1507,9 @@
                 END IF
               END IF
             ELSE IF (INT(Dsrc(is)).eq.1) THEN
-#   ifdef TS_MPDATA_NOT_YET
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+#   ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp3))) THEN
 #   else
               IF (((Istr.le.i).and.(i.le.Iend)).and.                    &
      &            ((Jstr.le.j).and.(j.le.Jend+1))) THEN
@@ -1615,53 +1535,28 @@
 !
 !  Time-step BASIC STATE horizontal advection term (Tunits).
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
+          DO j=JstrVm2,Jendp2i
+            DO i=IstrUm2,Iendp2i
               cff=dt(ng)*pm(i,j)*pn(i,j)*oHz(i,j,k)
               cff1=cff*(FX(i+1,j)-FX(i,j)+                              &
      &                  FE(i,j+1)-FE(i,j))
-              cff2=Hz(i,j,k)+                                           &
-     &             cff*(Huon(i+1,j,k)-Huon(i,j,k)+                      &
-     &                  Hvom(i,j+1,k)-Hvom(i,j,k)+                      &
-     &                  (W(i,j,k)-W(i,j,k-1)))                 ! Hz_old
-              Ta(i,j,k,itrc)=t(i,j,k,3,itrc)*cff2-cff1
+              Ta(i,j,k,itrc)=t(i,j,k,nnew,itrc)-cff1
             END DO
           END DO
         END DO
       END DO
-#  undef I_RANGE
-#  undef J_RANGE
 # endif
 !
 !  Time-step adjoint vertical advection term. Compute first BASIC
 !  STATE vertical advection flux, FC.
 !
-# ifdef TS_MPDATA_NOT_YET
-#   ifdef EW_PERIODIC
-#    define I_RANGE Istr-2,Iend+2
-#   else
-#    define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#   endif
-#   ifdef NS_PERIODIC
-#    define J_RANGE Jstr-2,Jend+2
-#   else
-#    define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#   endif
+# ifdef TS_MPDATA
+#  define I_RANGE IstrUm2,Iendp2i
+#  define J_RANGE JstrVm2,Jendp2i
 # else
-#   define I_RANGE Istr,Iend
-#   define J_RANGE Jstr,Jend
+#  define I_RANGE Istr,Iend
+#  define J_RANGE Jstr,Jend
 # endif
-
       DO j=J_RANGE
         DO itrc=1,NT(ng)
 
@@ -1709,6 +1604,7 @@
             FC(i,N(ng))=0.0_r8
             FC(i,0)=0.0_r8
           END DO
+
 # elif defined TS_A4VADVECTION_TL
 !
 !  Fourth-order, BASIC STATE Akima vertical advective flux.
@@ -1750,6 +1646,7 @@
 #  endif
             FC(i,N(ng))=0.0_r8
           END DO
+
 # elif defined TS_C2VADVECTION_TL
 !
 !  Second-order, BASIC STATE central differences vertical advective
@@ -1770,7 +1667,8 @@
 #  endif
             FC(i,N(ng))=0.0_r8
           END DO
-# elif defined TS_MPDATA_NOT_YET
+
+# elif defined TS_MPDATA
 !
 !  First_order, BASIC STATE upstream differences vertical advective
 !  flux.
@@ -1789,6 +1687,7 @@
 #  endif
             FC(i,N(ng))=0.0_r8
           END DO
+
 # else
 !!
 !!  Fourth-order, BASIC STATE central differences vertical advective
@@ -1838,9 +1737,9 @@
           DO k=1,N(ng)
             DO i=I_RANGE
 !!            cff1=CF(i,0)*(FC(i,k)-FC(i,k-1))    ! not needed HGA
-# ifdef TS_MPDATA_NOT_YET
+# ifdef TS_MPDATA
 #  ifdef DIAGNOSTICS_TS
-!!            DiaTwrk(i,j,k,itrc,iTvadv)=-cff1
+!!            Dvadv(i,j,k,itrc)=-cff1
 #  endif
 !>            tl_Ta(i,j,k,itrc)=(tl_Ta(i,j,k,itrc)-tl_cff1)*            &
 !>   &                          oHz(i,j,k)+                             &
@@ -1854,18 +1753,10 @@
               ad_cff1=ad_cff1-adfac
 # else
 #  ifdef DIAGNOSTICS_TS
-!!            DiaTwrk(i,j,k,itrc,iTrate)=DiaTwrk(i,j,k,itrc,iTrate)*    &
-!!   &                                   oHz(i,j,k)
-!!            DiaTwrk(i,j,k,itrc,iTvdif)=DiaTwrk(i,j,k,itrc,iTvdif)*    &
-!!   &                                   oHz(i,j,k)
-#   if defined TS_DIF2 || defined TS_DIF4
-!!            DiaTwrk(i,j,k,itrc,iThdif)=DiaTwrk(i,j,k,itrc,iThdif)*    &
-!!   &                                   oHz(i,j,k)
-#   endif
-!!            DiaTwrk(i,j,k,itrc,iTvadv)=DiaTwrk(i,j,k,itrc,iTvadv)*    &
-!!   &                                   oHz(i,j,k)
-!!            DiaTwrk(i,j,k,itrc,iThadv)=DiaTwrk(i,j,k,itrc,iThadv)*    &
-!!   &                                   oHz(i,j,k)
+!!            DO idiag=1,NDT
+!!              DiaTwrk(i,j,k,itrc,idiag)=DiaTwrk(i,j,k,itrc,idiag)*    &
+!!   &                                    oHz(i,j,k)
+!!            END DO
 !!            DiaTwrk(i,j,k,itrc,iTvadv)=-cff1
 #  endif
 #  ifdef SPLINES
@@ -1891,19 +1782,27 @@
               ad_cff1=0.0_r8
             END DO
           END DO
+
 # ifdef Q_PSOURCE
 !
 !  Apply mass point sources - Volume influx.
 !
           DO is=1,Nsrc
-            i=Isrc(is)
-            IF (((IstrR.le.i).and.(i.le.IendR)).and.                    &
-     &          ((JstrR.le.j).and.(j.le.JendR))) THEN
-              IF (j.eq.Jsrc(is)) THEN
-                DO k=1,N(ng)
-!>                tl_FC(i,k)=tl_FC(i,k)+0.0_r8
+            IF (LtracerSrc(itrc,ng)) THEN
+              i=Isrc(is)
+#  ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
+#  else
+              IF (((IstrR.le.i).and.(i.le.IendR)).and.                  &
+     &            ((JstrR.le.j).and.(j.le.JendR))) THEN
+#  endif
+                IF (j.eq.Jsrc(is)) THEN
+                  DO k=1,N(ng)-1
+!>                  tl_FC(i,k)=tl_FC(i,k)+0.0_r8
 !>
-                END DO
+                  END DO
+                END IF
               END IF
             END IF
           END DO
@@ -2160,6 +2059,7 @@
               ad_FC(i,k)=0.0_r8
             END DO
           END DO
+
 # elif defined TS_C2VADVECTION_TL
 !
 !  Second-order, central differences adjoint vertical advective flux.
@@ -2202,7 +2102,8 @@
               ad_FC(i,k)=0.0_r8
             END DO
           END DO
-# elif defined TS_MPDATA_NOT_YET
+
+# elif defined TS_MPDATA
 !
 !  First_order, upstream differences vertical advective flux.
 !
@@ -2350,6 +2251,8 @@
 # endif
         END DO
       END DO
+# undef I_RANGE
+# undef J_RANGE
 !
 !-----------------------------------------------------------------------
 !  Time-step adjoint horizontal advection term.
@@ -2360,67 +2263,63 @@
 !
 !  Time-step adjoint horizontal advection term.
 !
-# ifdef TS_MPDATA_NOT_YET
-#   ifdef EW_PERIODIC
-#    define I_RANGE Istr-2,Iend+2
-#   else
-#    define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#   endif
-#   ifdef NS_PERIODIC
-#    define J_RANGE Jstr-2,Jend+2
-#   else
-#    define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#   endif
+# ifdef TS_MPDATA
+#  define I_RANGE IstrUm2,Iendp2i
+#  define J_RANGE JstrVm2,Jendp2i
 # else
-#   define I_RANGE Istr,Iend
-#   define J_RANGE Jstr,Jend
+#  define I_RANGE Istr,Iend
+#  define J_RANGE Jstr,Jend
 # endif
 
+# if defined DIAGNOSTICS_TS && defined TS_MPDATA
+!!        DO j=Jstr,Jend
+!!          DO i=Istr,Iend
+!!            DiaTwrk(i,j,k,itrc,iThadv)=Dhadv(i,j,iThadv)
+!!            DiaTwrk(i,j,k,itrc,iTyadv)=Dhadv(i,j,iTyadv)
+!!            DiaTwrk(i,j,k,itrc,iTxadv)=Dhadv(i,j,iTxadv)
+!!          END DO
+!!        END DO
+# endif
           DO j=J_RANGE
             DO i=I_RANGE
               cff=dt(ng)*pm(i,j)*pn(i,j)
-#  ifdef TS_MPDATA_NOT_YET
-              cff2=Hz(i,j,k)+                                           &
-     &             cff*(Huon(i+1,j,k)-Huon(i,j,k)+                      &
-     &                  Hvom(i,j+1,k)-Hvom(i,j,k)+                      &
-     &                  (W(i,j,k)-W(i,j,k-1)))                 ! Hz_old
-!>            tl_Ta(i,j,k,itrc)=tl_t(i,j,k,3,itrc)*cff2+                &
-!>   &                          t(i,j,k,3,itrc)*tl_cff2-tl_cff1
+# ifdef DIAGNOSTICS_TS
+#  ifdef TS_MPDATA
+!!            Dhadv(i,j,iThadv)=-cff3
+!!            Dhadv(i,j,iTyadv)=-cff2
+!!            Dhadv(i,j,iTxadv)=-cff1
+#  else
+!!            DiaTwrk(i,j,k,itrc,iThadv)=-cff3
+!!            DiaTwrk(i,j,k,itrc,iTyadv)=-cff2
+!!            DiaTwrk(i,j,k,itrc,iTxadv)=-cff1
+#  endif
+# endif
+# ifdef TS_MPDATA
+!>            tl_Ta(i,j,k,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff3
 !>
-
-              ad_t(i,j,k,3,itrc)=ad_t(i,j,k,3,itrc)+                    &
-     &                           cff2*ad_Ta(i,j,k,itrc)
-              ad_cff2=ad_cff2+t(i,j,k,3,itrc)*ad_Ta(i,j,k,itrc)
-              ad_cff1=ad_cff1-ad_Ta(i,j,k,itrc)
+              ad_cff3=ad_cff3-ad_Ta(i,j,k,itrc)
+              ad_t(i,j,k,nnew,itrc)=ad_t(i,j,k,nnew,itrc)+              &
+     &                              ad_Ta(i,j,k,itrc)
               ad_Ta(i,j,k,itrc)=0.0_r8
-!>            tl_cff2=tl_Hz(i,j,k)+                                     &
-!>   &                cff*(tl_Huon(i+1,j,k)-tl_Huon(i,j,k)+             &
-!>   &                     tl_Hvom(i,j+1,k)-tl_Hvom(i,j,k)+             &
-!>   &                     (tl_W(i,j,k)-tl_W(i,j,k-1)))
+# else
+!>            tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff3
+!>
+              ad_cff3=ad_cff3-ad_t(i,j,k,nnew,itrc)
+# endif
+!>            tl_cff3=tl_cff1+tl_cff2
+!>
+              ad_cff1=ad_cff1+ad_cff3
+              ad_cff2=ad_cff2+ad_cff3
+              ad_cff3=0.0_r8
+!>            tl_cff2=cff*(tl_FE(i,j+1)-tl_FE(i,j))
 !>
               adfac=cff*ad_cff2
-              ad_Hz(i,j,k)=ad_Hz(i,j,k)+ad_cff2
-              ad_Huon(i  ,j,k)=ad_Huon(i  ,j,k)-adfac
-              ad_Huon(i+1,j,k)=ad_Huon(i+1,j,k)+adfac
-              ad_Hvom(i,j  ,k)=ad_Hvom(i,j  ,k)-adfac
-              ad_Hvom(i,j+1,k)=ad_Hvom(i,j+1,k)+adfac
-              ad_W(i,j,k-1)=ad_W(i,j,k-1)-adfac
-              ad_W(i,j,k  )=ad_W(i,j,k  )+adfac
-              ad_cff2=0.0_r8
-#  else
-#   ifdef DIAGNOSTICS_TS
-!!            DiaTwrk(i,j,k,itrc,iThadv)=-cff1
-#   endif
-!>            tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff1
-!>
-              ad_cff1=ad_cff1-ad_t(i,j,k,nnew,itrc)
-#  endif
-!>            tl_cff1=cff*(tl_FX(i+1,j)-tl_FX(i,j)+                      &
-!>   &                     tl_FE(i,j+1)-tl_FE(i,j))
-!>
-              adfac=cff*ad_cff1
               ad_FE(i,j  )=ad_FE(i,j  )-adfac
               ad_FE(i,j+1)=ad_FE(i,j+1)+adfac
+              ad_cff2=0.0_r8
+!>            tl_cff1=cff*(tl_FX(i+1,j)-tl_FX(i,j))
+!>
+              adfac=cff*ad_cff1
               ad_FX(i  ,j)=ad_FX(i  ,j)-adfac
               ad_FX(i+1,j)=ad_FX(i+1,j)+adfac
               ad_cff1=0.0_r8
@@ -2438,9 +2337,9 @@
             i=Isrc(is)
             j=Jsrc(is)
             IF (INT(Dsrc(is)).eq.0) THEN
-#  ifdef TS_MPDATA_NOT_YET
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+#  ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp3)).and.               &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
 #  else
               IF (((Istr.le.i).and.(i.le.Iend+1)).and.                  &
      &            ((Jstr.le.j).and.(j.le.Jend))) THEN
@@ -2478,9 +2377,9 @@
                 END IF
               END IF
             ELSE IF (INT(Dsrc(is)).eq.1) THEN
-#  ifdef TS_MPDATA_NOT_YET
-              IF (((Istr-2.le.i).and.(i.le.Iend+2)).and.                &
-     &            ((Jstr-2.le.j).and.(j.le.Jend+2))) THEN
+#  ifdef TS_MPDATA
+              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
+     &            ((JstrVm2.le.j).and.(j.le.Jendp3))) THEN
 #  else
               IF (((Istr.le.i).and.(i.le.Iend)).and.                    &
      &            ((Jstr.le.j).and.(j.le.Jend+1))) THEN
@@ -2561,23 +2460,14 @@
               ad_FX(i,j)=0.0_r8
             END DO
           END DO
-# elif defined TS_MPDATA_NOT_YET
+
+# elif defined TS_MPDATA
 !
 !  First-order, upstream differences adjoint horizontal advective
 !  fluxes.
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+3
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+3,Mm(ng)+1)
-#  endif
-          DO j=J_RANGE
-            DO i=I_RANGE
+          DO j=JstrVm2,Jendp3
+            DO i=IstrUm2,Iendp2i
               cff1=MAX(Hvom(i,j,k),0.0_r8)
               cff2=MIN(Hvom(i,j,k),0.0_r8)
 !>            tl_FE(i,j)=tl_cff1*t(i,j-1,k,3,itrc)+                     &
@@ -2604,20 +2494,8 @@
               ad_cff1=0.0_r8
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-2,Iend+3
-#  else
-#   define I_RANGE MAX(Istr-2,1),MIN(Iend+3,Lm(ng)+1)
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-2,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-2,1),MIN(Jend+2,Mm(ng))
-#  endif
-          DO j=J_RANGE
-             DO i=I_RANGE
+          DO j=JstrVm2,Jendp2i
+            DO i=IstrUm2,Iendp3
               cff1=MAX(Huon(i,j,k),0.0_r8)
               cff2=MIN(Huon(i,j,k),0.0_r8)
 !>            tl_FX(i,j)=tl_cff1*t(i-1,j,k,3,itrc)+                     &
@@ -2644,8 +2522,6 @@
               ad_cff1=0.0_r8
             END DO
           END DO
-#  undef I_RANGE
-#  undef J_RANGE
 # else
 !
 #  if defined TS_U3HADVECTION_TL
@@ -2657,12 +2533,7 @@
 #  endif
 !  Compute BASIC STATE "curv" and "grad" scratch arrays.
 !
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-1,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-1,1),MIN(Jend+2,Mm(ng)+1)
-#  endif
-          DO j=J_RANGE
+          DO j=Jstrm1,Jendp2
             DO i=Istr,Iend
               FE(i,j)=t(i,j  ,k,3,itrc)-                                &
      &                t(i,j-1,k,3,itrc)
@@ -2671,18 +2542,20 @@
 #  endif
             END DO
           END DO
-#  ifndef NS_PERIODIC
-          IF (SOUTHERN_EDGE) THEN
-            DO i=Istr,Iend
-              FE(i,Jstr-1)=FE(i,Jstr)
-            END DO
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.NSperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+                DO i=Istr,Iend
+                  FE(i,Jstr-1)=FE(i,Jstr)
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+                DO i=Istr,Iend
+                  FE(i,Jend+2)=FE(i,Jend+1)
+                END DO
+              END IF
+            END IF
           END IF
-          IF (NORTHERN_EDGE) THEN
-            DO i=Istr,Iend
-              FE(i,Jend+2)=FE(i,Jend+1)
-            END DO
-          END IF
-#  endif
 !
           DO j=Jstr-1,Jend+1
             DO i=Istr,Iend
@@ -2815,26 +2688,28 @@
 #  endif
             END DO
           END DO
-#  ifndef NS_PERIODIC
-          IF (NORTHERN_EDGE) THEN
-            DO i=Istr,Iend
-!>            tl_FE(i,Jend+2)=tl_FE(i,Jend+1)
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.NSperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+                DO i=Istr,Iend
+!>                tl_FE(i,Jend+2)=tl_FE(i,Jend+1)
 !>
-              ad_FE(i,Jend+1)=ad_FE(i,Jend+1)+ad_FE(i,Jend+2)
-              ad_FE(i,Jend+2)=0.0_r8
-            END DO
-          END IF
-          IF (SOUTHERN_EDGE) THEN
-            DO i=Istr,Iend
-!>            tl_FE(i,Jstr-1)=tl_FE(i,Jstr)
+                  ad_FE(i,Jend+1)=ad_FE(i,Jend+1)+ad_FE(i,Jend+2)
+                  ad_FE(i,Jend+2)=0.0_r8
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+                DO i=Istr,Iend
+!>                tl_FE(i,Jstr-1)=tl_FE(i,Jstr)
 !>
-              ad_FE(i,Jstr)=ad_FE(i,Jstr)+ad_FE(i,Jstr-1)
-              ad_FE(i,Jstr-1)=0.0_r8
-            END DO
+                  ad_FE(i,Jstr)=ad_FE(i,Jstr)+ad_FE(i,Jstr-1)
+                  ad_FE(i,Jstr-1)=0.0_r8
+                END DO
+              END IF
+            END IF
           END IF
-#  endif
 !
-          DO j=J_RANGE
+          DO j=Jstrm1,Jendp2
             DO i=Istr,Iend
 #  ifdef MASKING
 !>            tl_FE(i,j)=tl_FE(i,j)*vmask(i,j)
@@ -2849,15 +2724,9 @@
               ad_FE(i,j)=0.0_r8
             END DO
           END DO
-#  undef J_RANGE
 !
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-1,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-1,1),MIN(Iend+2,Lm(ng)+1)
-#  endif
           DO j=Jstr,Jend
-            DO i=I_RANGE
+            DO i=Istrm1,Iendp2
               FX(i,j)=t(i  ,j,k,3,itrc)-                                &
      &                t(i-1,j,k,3,itrc)
 #  ifdef MASKING
@@ -2865,18 +2734,20 @@
 #  endif
             END DO
           END DO
-#  ifndef EW_PERIODIC
-          IF (WESTERN_EDGE) THEN
-            DO j=Jstr,Jend
-              FX(Istr-1,j)=FX(Istr,j)
-            END DO
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.EWperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+                DO j=Jstr,Jend
+                  FX(Istr-1,j)=FX(Istr,j)
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+                DO j=Jstr,Jend
+                  FX(Iend+2,j)=FX(Iend+1,j)
+                END DO
+              END IF
+            END IF
           END IF
-          IF (EASTERN_EDGE) THEN
-            DO j=Jstr,Jend
-              FX(Iend+2,j)=FX(Iend+1,j)
-            END DO
-          END IF
-#  endif
 !
           DO j=Jstr,Jend
             DO i=Istr-1,Iend+1
@@ -3009,27 +2880,29 @@
               ad_cff=0.0_r8
             END DO
           END DO
-#  ifndef EW_PERIODIC
-          IF (EASTERN_EDGE) THEN
-            DO j=Jstr,Jend
-!>            tl_FX(Iend+2,j)=tl_FX(Iend+1,j)
+          IF (.not.ComposedGrid(ng)) THEN
+            IF (.not.EWperiodic(ng)) THEN
+              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+                DO j=Jstr,Jend
+!>                tl_FX(Iend+2,j)=tl_FX(Iend+1,j)
 !>
-              ad_FX(Iend+1,j)=ad_FX(Iend+1,j)+ad_FX(Iend+2,j)
-              ad_FX(Iend+2,j)=0.0_r8
-            END DO
-          END IF
-          IF (WESTERN_EDGE) THEN
-            DO j=Jstr,Jend
-!>            tl_FX(Istr-1,j)=tl_FX(Istr,j)
+                  ad_FX(Iend+1,j)=ad_FX(Iend+1,j)+ad_FX(Iend+2,j)
+                  ad_FX(Iend+2,j)=0.0_r8
+                END DO
+              END IF
+              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+                DO j=Jstr,Jend
+!>                tl_FX(Istr-1,j)=tl_FX(Istr,j)
 !>
-              ad_FX(Istr,j)=ad_FX(Istr,j)+ad_FX(Istr-1,j)
-              ad_FX(Istr-1,j)=0.0_r8
-            END DO
+                  ad_FX(Istr,j)=ad_FX(Istr,j)+ad_FX(Istr-1,j)
+                  ad_FX(Istr-1,j)=0.0_r8
+                END DO
+              END IF
+            END IF
           END IF
-#  endif
 !
           DO j=Jstr,Jend
-            DO i=I_RANGE
+            DO i=Istrm1,Iendp2
 #  ifdef MASKING
 !>            tl_FX(i,j)=tl_FX(i,j)*umask(i,j)
 !>
@@ -3043,55 +2916,47 @@
               ad_FX(i,j)=0.0_r8
             END DO
           END DO
-#  undef I_RANGE
 # endif
         END DO K_LOOP
       END DO T_LOOP
 
-# if defined TS_MPDATA_NOT_YET && \
-    (defined EW_PERIODIC || defined NS_PERIODIC || defined DISTRIBUTE)
+# ifdef TS_MPDATA
 !
 !  The MPDATA algorithm requires a three-point footprint, so exchange
-!  boundary data on t(:,:,:,3,:) so other processes computed earlier
+!  boundary data on t(:,:,:,nnew,:) so other processes computed earlier
 !  (horizontal diffusion, biology, or sediment) are accounted.
 !
 #  ifdef DISTRIBUTE
 !>    CALL mp_exchange4d (ng, tile, iNLM, 1,                            &
 !>   &                    LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),      &
-!>   &                    NghostPoints, EWperiodic, NSperiodic,         &
-!>   &                    tl_t(:,:,:,3,:))
+!>   &                    NghostPoints,                                 &
+!>   &                    EWperiodic(ng), NSperiodic(ng),               &
+!>   &                    tl_t(:,:,:,nnew,:))
 !>
-      CALL ad_mp_exchange4d (ng, tile, iNLM, 1,                         &
+      CALL ad_mp_exchange4d (ng, tile, iADM, 1,                         &
      &                       LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),   &
-     &                       NghostPoints, EWperiodic, NSperiodic,      &
-     &                       ad_t(:,:,:,3,:))
+     &                       NghostPoints,                              &
+     &                       EWperiodic(ng), NSperiodic(ng),            &
+     &                       ad_t(:,:,:,nnew,:))
 #  endif
-#  if defined EW_PERIODIC || defined NS_PERIODIC
-      DO itrc=1,NT(ng)
-!>      CALL exchange_r3d_tile (ng, tile,                               &
-!>   &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-!>   &                          tl_t(:,:,:,3,itrc))
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        DO itrc=1,NT(ng)
+!>        CALL exchange_r3d_tile (ng, tile,                             &
+!>   &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
+!>   &                            tl_t(:,:,:,nnew,itrc))
 !>
-        CALL ad_exchange_r3d_tile (ng, tile,                            &
-     &                             LBi, UBi, LBj, UBj, 1, N(ng),        &
-     &                             ad_t(:,:,:,3,itrc))
-      END DO
-#  endif
+          CALL ad_exchange_r3d_tile (ng, tile,                          &
+     &                               LBi, UBi, LBj, UBj, 1, N(ng),      &
+     &                               ad_t(:,:,:,nnew,itrc))
+        END DO
+      END IF
 # endif
 !
 !  Compute adjoint inverse thickness.
 !
-# ifdef TS_MPDATA_NOT_YET
-#  ifdef EW_PERIODIC
-#   define I_RANGE Istr-3,Iend+2
-#  else
-#   define I_RANGE MAX(Istr-3,1),MIN(Iend+2,Lm(ng))
-#  endif
-#  ifdef NS_PERIODIC
-#   define J_RANGE Jstr-3,Jend+2
-#  else
-#   define J_RANGE MAX(Jstr-3,1),MIN(Jend+2,Mm(ng))
-#  endif
+# ifdef TS_MPDATA
+#  define I_RANGE Istrm2,Iendp2
+#  define J_RANGE Jstrm2,Jendp2
 # else
 #  define I_RANGE Istr,Iend
 #  define J_RANGE Jstr,Jend

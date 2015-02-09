@@ -2,9 +2,9 @@
 #ifdef FLOATS
       SUBROUTINE def_floats (ng, ldef)
 !
-!svn $Id$
+!svn $Id: def_floats.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -68,7 +68,7 @@
 !-----------------------------------------------------------------------
 !
       IF (exit_flag.ne.NoError) RETURN
-      ncname=FLTname(ng)
+      ncname=FLT(ng)%name
 !
       IF (Master) THEN
         IF (ldef) THEN
@@ -83,7 +83,7 @@
 !=======================================================================
 !
       DEFINE : IF (ldef) THEN
-        CALL netcdf_create (ng, iNLM, TRIM(ncname), ncFLTid(ng))
+        CALL netcdf_create (ng, iNLM, TRIM(ncname), FLT(ng)%ncid)
         IF (exit_flag.ne.NoError) THEN
           IF (Master) WRITE (stdout,30) TRIM(ncname)
           RETURN
@@ -96,62 +96,62 @@
         DimIDs=0
 !
 # ifdef SOLVE3D
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 's_rho',          &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 's_rho',         &
      &                 N(ng), DimIDs( 9))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 's_w',            &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 's_w',           &
      &                 N(ng)+1, DimIDs(10))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'tracer',         &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'tracer',        &
      &                 NT(ng), DimIDs(11))
         IF (exit_flag.ne.NoError) RETURN
 
 #  ifdef SEDIMENT
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'NST',            &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'NST',           &
      &                 NST, DimIDs(32))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'Nbed',           &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'Nbed',          &
      &                 Nbed, DimIDs(16))
         IF (exit_flag.ne.NoError) RETURN
 #  endif
 
 #  ifdef ECOSIM
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'Nphy',           &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'Nphy',          &
      &                 Nphy, DimIDs(25))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'Nbac',           &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'Nbac',          &
      &                 Nbac, DimIDs(26))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'Ndom',           &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'Ndom',          &
      &                 Ndom, DimIDs(27))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'Nfec',           &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'Nfec',          &
      &                 Nfec, DimIDs(28))
         IF (exit_flag.ne.NoError) RETURN
 #  endif
 # endif
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'drifter' ,       &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'drifter' ,      &
      &                 Nfloats(ng), DimIDs(15))
         IF (exit_flag.ne.NoError) RETURN
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'boundary',       &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'boundary',      &
      &                 4, DimIDs(14))
         IF (exit_flag.ne.NoError) RETURN
 
 # ifdef FOUR_DVAR
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname, 'Nstate',         &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname, 'Nstate',        &
      &                 NstateVar(ng), DimIDs(29))
         IF (exit_flag.ne.NoError) RETURN
 # endif
 
-        status=def_dim(ng, iNLM, ncFLTid(ng), ncname,                   &
+        status=def_dim(ng, iNLM, FLT(ng)%ncid, ncname,                  &
      &                 TRIM(ADJUSTL(Vname(5,idtime))),                  &
      &                 nf90_unlimited, DimIDs(12))
         IF (exit_flag.ne.NoError) RETURN
@@ -166,7 +166,7 @@
 !
 !  Initialize unlimited time record dimension.
 !
-        tFLTindx(ng)=0
+        FLT(ng)%Rindex=0
 !
 !  Initialize local information variable arrays.
 !
@@ -183,7 +183,7 @@
 !  Define time-recordless information variables.
 !-----------------------------------------------------------------------
 !
-        CALL def_info (ng, iNLM, ncFLTid(ng), ncname, DimIDs)
+        CALL def_info (ng, iNLM, FLT(ng)%ncid, ncname, DimIDs)
         IF (exit_flag.ne.NoError) RETURN
 !
 !-----------------------------------------------------------------------
@@ -208,7 +208,7 @@
           Vinfo( 4)='gregorian'
         END IF
         Vinfo(14)=Vname(4,idtime)
-        status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idtime,ng),        &
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idtime),     &
      &                 NF_TYPE, 1, (/recdim/), Aval, Vinfo, ncname,     &
      &                 SetParAccess = .FALSE.)
         IF (exit_flag.ne.NoError) RETURN
@@ -227,7 +227,7 @@
         Vinfo(24)='_FillValue'
         Aval(6)=spval
 # endif
-        status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idXgrd,ng),        &
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idXgrd),     &
      &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
 !
@@ -245,7 +245,7 @@
         Vinfo(24)='_FillValue'
         Aval(6)=spval
 # endif
-        status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idYgrd,ng),        &
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idYgrd),     &
      &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
 
@@ -265,7 +265,7 @@
         Vinfo(24)='_FillValue'
         Aval(6)=spval
 #  endif
-        status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idZgrd,ng),        &
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idZgrd),     &
      &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
 # endif
@@ -286,7 +286,7 @@
 # endif
           Aval(2)=-180.0_r8
           Aval(3)=180.0_r8
-          status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idglon,ng),      &
+          status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idglon),   &
      &                   NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
           IF (exit_flag.ne.NoError) RETURN
 
@@ -303,7 +303,7 @@
 # endif
           Aval(2)=-90.0_r8
           Aval(3)=90.0_r8
-          status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idglat,ng),      &
+          status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idglat),   &
      &                   NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
           IF (exit_flag.ne.NoError) RETURN
        ELSE
@@ -316,7 +316,7 @@
           Vinfo(24)='_FillValue'
           Aval(6)=spval
 # endif
-          status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idglon,ng),      &
+          status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idglon),   &
      &                   NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
           IF (exit_flag.ne.NoError) RETURN
 
@@ -329,7 +329,7 @@
           Vinfo(24)='_FillValue'
           Aval(6)=spval
 # endif
-          status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idglat,ng),      &
+          status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idglat),   &
      &                   NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
           IF (exit_flag.ne.NoError) RETURN
         END IF
@@ -347,7 +347,7 @@
         Vinfo(24)='_FillValue'
         Aval(6)=spval
 #  endif
-        status=def_var(ng, iNLM, ncFLTid(ng), fltVid(iddpth,ng),        &
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(iddpth),     &
      &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
 !
@@ -362,7 +362,7 @@
         Vinfo(24)='_FillValue'
         Aval(6)=spval
 #  endif
-        status=def_var(ng, iNLM, ncFLTid(ng), fltVid(idDano,ng),        &
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idDano),     &
      &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
 !
@@ -385,28 +385,91 @@
             END IF
           END DO
 #  endif
-          status=def_var(ng, iNLM, ncFLTid(ng), fltTid(itrc,ng),        &
+          status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Tid(itrc),     &
      &                   NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
           IF (exit_flag.ne.NoError) RETURN
         END DO
 # endif
+
+# ifdef FLOAT_OYSTER
+!
+!  Define biological float swimming time.
+!
+        Vinfo( 1)='swim_time'
+        Vinfo( 2)='biological float swimming time'
+        Vinfo( 3)='s'
+        Vinfo(14)='swim_time, scalar, series'
+        Vinfo(16)=Vname(1,idtime)
+#  ifndef NO_4BYTE_REALS
+        Vinfo(24)='_FillValue'
+        Aval(6)=spval
+#  endif
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idswim),     &
+     &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Define biological float vertical velocity.
+!
+        Vinfo( 1)='w_bio'
+        Vinfo( 2)='biological float vertical velocity'
+        Vinfo( 3)='m/s'
+        Vinfo(14)='w_bio, scalar, series'
+        Vinfo(16)=Vname(1,idtime)
+#  ifndef NO_4BYTE_REALS
+        Vinfo(24)='_FillValue'
+        Aval(6)=spval
+#  endif
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idwbio),     &
+     &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Define biological float size (length).
+!
+        Vinfo( 1)='bio_size'
+        Vinfo( 2)='biological float size'
+        Vinfo( 3)='um'
+        Vinfo(14)='bio_size, scalar, series'
+        Vinfo(16)=Vname(1,idtime)
+#  ifndef NO_4BYTE_REALS
+        Vinfo(24)='_FillValue'
+        Aval(6)=spval
+#  endif
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idsize),     &
+     &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Define biological float sinking velocity.
+!
+        Vinfo( 1)='bio_sink'
+        Vinfo( 2)='biological float sinking velocity'
+        Vinfo( 3)='m/s'
+        Vinfo(14)='bio_sink, scalar, series'
+        Vinfo(16)=Vname(1,idtime)
+#  ifndef NO_4BYTE_REALS
+        Vinfo(24)='_FillValue'
+        Aval(6)=spval
+#  endif
+        status=def_var(ng, iNLM, FLT(ng)%ncid, FLT(ng)%Vid(idwsin),    &
+     &                 NF_FOUT, 2, fgrd, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+# endif
 !
 !  Initialize unlimited time record dimension.
 !
-        tFLTindx(ng)=0
+        FLT(ng)%Rindex=0
 !
 !-----------------------------------------------------------------------
 !  Leave definition mode.
 !-----------------------------------------------------------------------
 !
-        CALL netcdf_enddef (ng, iNLM, ncname, ncFLTid(ng))
+        CALL netcdf_enddef (ng, iNLM, ncname, FLT(ng)%ncid)
         IF (exit_flag.ne.NoError) RETURN
 !
 !-----------------------------------------------------------------------
 !  Write out time-recordless, information variables.
 !-----------------------------------------------------------------------
 !
-        CALL wrt_info (ng, iNLM, ncFLTid(ng), ncname)
+        CALL wrt_info (ng, iNLM, FLT(ng)%ncid, ncname)
         IF (exit_flag.ne.NoError) RETURN
       END IF DEFINE
 !
@@ -416,7 +479,7 @@
 !=======================================================================
 !
       QUERY : IF (.not.ldef) THEN
-        ncname=FLTname(ng)
+        ncname=FLT(ng)%name
 !
 !  Inquire about the dimensions and check for consistency.
 !
@@ -439,7 +502,7 @@
 !
 !  Open floats file for read/write.
 !
-        CALL netcdf_open (ng, iNLM, ncname, 1, ncFLTid(ng))
+        CALL netcdf_open (ng, iNLM, ncname, 1, FLT(ng)%ncid)
         IF (exit_flag.ne.NoError) THEN
           WRITE (stdout,50) TRIM(ncname)
           RETURN
@@ -457,44 +520,58 @@
         DO i=1,n_var
           IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idtime))) THEN
             got_var(idtime)=.TRUE.
-            fltVid(idtime,ng)=var_id(i)
+            FLT(ng)%Vid(idtime)=var_id(i)
           ELSE IF (TRIM(var_name(i)).eq.'Xgrid') THEN
             got_var(idXgrd)=.TRUE.
-            fltVid(idXgrd,ng)=var_id(i)
+            FLT(ng)%Vid(idXgrd)=var_id(i)
           ELSE IF (TRIM(var_name(i)).eq.'Ygrid') THEN
             got_var(idYgrd)=.TRUE.
-            fltVid(idYgrd,ng)=var_id(i)
+            FLT(ng)%Vid(idYgrd)=var_id(i)
 # ifdef SOLVE3D
           ELSE IF (TRIM(var_name(i)).eq.'Zgrid') THEN
             got_var(idZgrd)=.TRUE.
-            fltVid(idZgrd,ng)=var_id(i)
+            FLT(ng)%Vid(idZgrd)=var_id(i)
 # endif
           ELSE IF (spherical.and.TRIM(var_name(i)).eq.'lon') THEN
             got_var(idglon)=.TRUE.
-            fltVid(idglon,ng)=var_id(i)
+            FLT(ng)%Vid(idglon)=var_id(i)
           ELSE IF (spherical.and.TRIM(var_name(i)).eq.'lat') THEN
             got_var(idglat)=.TRUE.
-            fltVid(idglat,ng)=var_id(i)
+            FLT(ng)%Vid(idglat)=var_id(i)
           ELSE IF (.not.spherical.and.TRIM(var_name(i)).eq.'x') THEN
             got_var(idglon)=.TRUE.
-            fltVid(idglon,ng)=var_id(i)
+            FLT(ng)%Vid(idglon)=var_id(i)
           ELSE IF (.not.spherical.and.TRIM(var_name(i)).eq.'y') THEN
             got_var(idglat)=.TRUE.
-            fltVid(idglat,ng)=var_id(i)
+            FLT(ng)%Vid(idglat)=var_id(i)
 # ifdef SOLVE3D
           ELSE IF (TRIM(var_name(i)).eq.'depth') THEN
             got_var(iddpth)=.TRUE.
-            fltVid(iddpth,ng)=var_id(i)
+            FLT(ng)%Vid(iddpth)=var_id(i)
           ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idDano))) THEN
             got_var(idDano)=.TRUE.
-            fltVid(idDano,ng)=var_id(i)
+            FLT(ng)%Vid(idDano)=var_id(i)
+# endif
+# ifdef FLOAT_OYSTER
+          ELSE IF (TRIM(var_name(i)).eq.'swim_time') THEN
+            got_var(idswim)=.TRUE.
+            FLT(ng)%Vid(idswim)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.'w_bio') THEN
+            got_var(idwbio)=.TRUE.
+            FLT(ng)%Vid(idwbio)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.'bio_size') THEN
+            got_var(idsize)=.TRUE.
+            FLT(ng)%Vid(idsize)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.'bio_sink') THEN
+            got_var(idwsin)=.TRUE.
+            FLT(ng)%Vid(idwsin)=var_id(i)
 # endif
           END IF
 # ifdef SOLVE3D
           DO itrc=1,NT(ng)
             IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idTvar(itrc)))) THEN
               got_var(idTvar(itrc))=.TRUE.
-              fltTid(itrc,ng)=var_id(i)
+              FLT(ng)%Tid(itrc)=var_id(i)
             END IF
           END DO
 # endif
@@ -556,6 +633,28 @@
           RETURN
         END IF
 # endif
+# ifdef FLOAT_OYSTER
+        IF (.not.got_var(idswim)) THEN
+          IF (Master) WRITE (stdout,60) 'swim_time', TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+        IF (.not.got_var(idwbio)) THEN
+          IF (Master) WRITE (stdout,60) 'w_bio', TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+        IF (.not.got_var(idsize)) THEN
+          IF (Master) WRITE (stdout,60) 'bio_size', TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+        IF (.not.got_var(idwsin)) THEN
+          IF (Master) WRITE (stdout,60) 'bio_sink', TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+# endif
 # ifdef SOLVE3D
         DO itrc=1,NT(ng)
           IF (.not.got_var(idTvar(itrc))) THEN
@@ -574,50 +673,49 @@
 !  Set-up floats time record.
 !
         IF (frrec(ng).lt.0) THEN
-          tFLTindx(ng)=rec_size
+          FLT(ng)%Rindex=rec_size
         ELSE
-         tFLTindx(ng)=ABS(frrec(ng))
+          FLT(ng)%Rindex=ABS(frrec(ng))
         END IF
-        NrecFLT=tFLTindx(ng)
 !
 !  Read in floats nondimentional horizontal positions.
 !
         CALL netcdf_get_fvar (ng, iNLM, ncname, 'Xgrid',                &
      &                        Tinp,                                     &
-     &                        ncid = ncFLTid(ng),                       &
-     &                        start = (/1,tFLTindx(ng)/),               &
+     &                        ncid = FLT(ng)%ncid,                      &
+     &                        start = (/1,FLT(ng)%Rindex/),             &
      &                        total = (/Nfloats(ng),1/))
         IF (exit_flag.ne.NoError) RETURN
 
         DO l=1,Nfloats(ng)
           IF ((Tinp(l).gt.REAL(Lm(ng)+1,r8)-0.5_r8).or.                 &
      &        (Tinp(l).lt.0.5_r8)) THEN
-            FLT(ng)%bounded(l)=.FALSE.
+            DRIFTER(ng)%bounded(l)=.FALSE.
           ELSE
-            FLT(ng)%bounded(l)=.TRUE.
+            DRIFTER(ng)%bounded(l)=.TRUE.
             DO i=0,NFT
-              FLT(ng)%track(ixgrd,i,l)=Tinp(l)
-              FLT(ng)%track(ixrhs,i,l)=0.0_r8
+              DRIFTER(ng)%track(ixgrd,i,l)=Tinp(l)
+              DRIFTER(ng)%track(ixrhs,i,l)=0.0_r8
             END DO
           END IF
         END DO
 !
         CALL netcdf_get_fvar (ng, iNLM, ncname, 'Ygrid',                &
      &                        Tinp,                                     &
-     &                        ncid = ncFLTid(ng),                       &
-     &                        start = (/1,tFLTindx(ng)/),               &
+     &                        ncid = FLT(ng)%ncid,                      &
+     &                        start = (/1,FLT(ng)%Rindex/),             &
      &                        total = (/Nfloats(ng),1/))
         IF (exit_flag.ne.NoError) RETURN
 
         DO l=1,Nfloats(ng)
           IF ((Tinp(l).gt.REAL(Mm(ng)+1,r8)-0.5_r8).or.                 &
      &        (Tinp(l).lt.0.5_r8)) THEN
-            FLT(ng)%bounded(l)=.FALSE.
+            DRIFTER(ng)%bounded(l)=.FALSE.
           ELSE
-            FLT(ng)%bounded(l)=.TRUE.
+            DRIFTER(ng)%bounded(l)=.TRUE.
             DO i=0,NFT
-              FLT(ng)%track(iygrd,i,l)=Tinp(l)
-              FLT(ng)%track(iyrhs,i,l)=0.0_r8
+              DRIFTER(ng)%track(iygrd,i,l)=Tinp(l)
+              DRIFTER(ng)%track(iyrhs,i,l)=0.0_r8
             END DO
           END IF
         END DO
@@ -626,20 +724,20 @@
 !
         CALL netcdf_get_fvar (ng, iNLM, ncname, 'Zgrid',                &
      &                        Tinp,                                     &
-     &                        ncid = ncFLTid(ng),                       &
-     &                        start = (/1,tFLTindx(ng)/),               &
+     &                        ncid = FLT(ng)%ncid,                      &
+     &                        start = (/1,FLT(ng)%Rindex/),             &
      &                        total = (/Nfloats(ng),1/))
         IF (exit_flag.ne.NoError) RETURN
 
         DO l=1,Nfloats(ng)
           IF ((Tinp(l).gt.REAL(N(ng),r8)).or.                           &
      &        (Tinp(l).lt.0.0_r8)) THEN
-            FLT(ng)%bounded(l)=.FALSE.
+            DRIFTER(ng)%bounded(l)=.FALSE.
           ELSE
-            FLT(ng)%bounded(l)=.TRUE.
+            DRIFTER(ng)%bounded(l)=.TRUE.
             DO i=0,NFT
-              FLT(ng)%track(izgrd,i,l)=Tinp(l)
-              FLT(ng)%track(izrhs,i,l)=0.0_r8
+              DRIFTER(ng)%track(izgrd,i,l)=Tinp(l)
+              DRIFTER(ng)%track(izrhs,i,l)=0.0_r8
             END DO
           END IF
         END DO

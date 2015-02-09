@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: lake_signell.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -24,10 +24,6 @@
 #define MASKING
 #define AVERAGES
 #define FLOATS
-#define NORTHERN_WALL
-#define SOUTHERN_WALL
-#define EASTERN_WALL
-#define WESTERN_WALL
 
 /* define only one of the four following */
 

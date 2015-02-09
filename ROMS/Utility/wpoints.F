@@ -1,9 +1,9 @@
 #include "cppdefs.h"
 #ifdef FULL_GRID
-# define IR_RANGE IstrR,IendR
-# define IU_RANGE Istr,IendR
-# define JR_RANGE JstrR,JendR
-# define JV_RANGE Jstr,JendR
+# define IR_RANGE IstrT,IendT
+# define IU_RANGE IstrP,IendT
+# define JR_RANGE JstrT,JendT
+# define JV_RANGE JstrP,JendT
 #else
 # define IR_RANGE Istr,Iend
 # define IU_RANGE IstrU,Iend
@@ -16,9 +16,9 @@
 #if defined PROPAGATOR || \
    (defined MASKING && (defined READ_WATER || defined WRITE_WATER))
 !
-!svn $Id$
+!svn $Id: wpoints.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -143,6 +143,7 @@
 # ifdef PROPAGATOR
       integer :: Imin, Imax, Jmin, Jmax
 # endif
+      integer :: Uoff, Voff
       integer :: NSUB, Npts, i, ic, ij, j
 # ifdef DISTRIBUTE
 #  ifdef PROPAGATOR
@@ -187,13 +188,13 @@
 !  Determine boundary points for IO purposes.  The assigment
 !  below is done to account for periodicity.
 !
-      IF (WESTERN_EDGE) THEN
+      IF (DOMAIN(ng)%Western_Edge(tile)) THEN
         DO j=Jstr,Jend
           IF (rmask_io(Istr-1,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
           IF (vmask_io(Istr-1,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END IF
-      IF (EASTERN_EDGE) THEN
+      IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
         DO j=Jstr,Jend
           IF (pmask_io(Iend+1,j).gt.0.0_r8) my_Nxyp=my_Nxyp+1
           IF (rmask_io(Iend+1,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
@@ -201,13 +202,13 @@
           IF (vmask_io(Iend+1,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END IF
-      IF (SOUTHERN_EDGE) THEN
+      IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
         DO i=Istr,Iend
           IF (rmask_io(i,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
           IF (umask_io(i,Jstr-1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
         END DO
       END IF
-      IF (NORTHERN_EDGE) THEN
+      IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
         DO i=Istr,Iend
           IF (pmask_io(i,Jend+1).gt.0.0_r8) my_Nxyp=my_Nxyp+1
           IF (rmask_io(i,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
@@ -215,18 +216,18 @@
           IF (vmask_io(i,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END IF
-      IF ((SOUTHERN_EDGE).and.(WESTERN_EDGE)) THEN
+      IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
         IF (rmask_io(Istr-1,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
       END IF
-      IF ((SOUTHERN_EDGE).and.(EASTERN_EDGE)) THEN
+      IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
         IF (rmask_io(Iend+1,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
         IF (umask_io(Iend+1,Jstr-1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
       END IF
-      IF ((NORTHERN_EDGE).and.(WESTERN_EDGE)) THEN
+      IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
         IF (rmask_io(Istr-1,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
         IF (vmask_io(Istr-1,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
       END IF
-      IF ((NORTHERN_EDGE).and.(EASTERN_EDGE)) THEN
+      IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
         IF (pmask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyp=my_Nxyp+1
         IF (rmask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
         IF (umask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
@@ -278,12 +279,16 @@
 !
 !  Determine global number of points (parallel reduction).
 !
-      IF (SOUTH_WEST_CORNER.and.                                        &
-     &    NORTH_EAST_CORNER) THEN
+# ifdef DISTRIBUTE
+      NSUB=1                             ! distributed-memory
+# else
+      IF (DOMAIN(ng)%SouthWest_Corner(tile).and.                        &
+     &    DOMAIN(ng)%NorthEast_Corner(tile)) THEN
         NSUB=1                           ! non-tiled application
       ELSE
         NSUB=NtileX(ng)*NtileE(ng)       ! tiled application
       END IF
+# endif
 !$OMP CRITICAL (MAX_WATER)
       IF (block_count.eq.0) THEN
 # if defined MASKING && (defined READ_WATER || defined WRITE_WATER)
@@ -355,7 +360,8 @@
 !-----------------------------------------------------------------------
 !  Determine size of state vector.
 !-----------------------------------------------------------------------
-#  if defined FORCING_SV || defined SO_SEMI
+#  if defined FORCING_SV || \
+      defined SO_SEMI    || defined STOCHASTIC_OPT
 !
 !  The state vector may contain free-surface, momentum, tracers,
 !  surface momentum stresses, amd surface tracer fluxes.
@@ -420,7 +426,7 @@
 !
 !  Deternine state vector starting and ending blocking indices.
 !
-      Nstate(ng)=(Mstate(ng)+numnodes-1)/numnodes
+      Nstate(ng)=(Mstate(ng)+numthreads-1)/numthreads
       block_size=Nstate(ng)
       IF (Master) THEN
         WRITE (stdout,10) ng, Mstate(ng), Nstate(ng)
@@ -428,7 +434,7 @@
      &          i2.2,', Mstate = ', i10,/,38x,                          &
      &          'NODE partition, Nstate = ', i10,/,/,                   &
      &          9x,'Node',7x,'Nstr',7x,'Nend',7x,'Size',/)
-        DO ic=0,numnodes-1
+        DO ic=0,numthreads-1
            i=1+ic*block_size
            j=MIN(Mstate(ng),i+block_size-1)
            WRITE (stdout,20) ic, i, j, j-i+1
@@ -437,9 +443,8 @@
         WRITE (stdout,'(/)')
       END IF
       Nstr(ng)=1+MyRank*block_size
-!!    Nend(ng)=MIN(Mstate(ng),Nstr(ng)+block_size-1)
       Nend(ng)=Nstr(ng)+block_size-1
-      Mstate(ng)=Nstate(ng)*numnodes
+      Mstate(ng)=Nstate(ng)*numthreads
 #  else
       Nstr(ng)=1
       Nend(ng)=Mstate(ng)
@@ -458,6 +463,24 @@
 !-----------------------------------------------------------------------
 !  If distributed-memory, set process water indices arrays.
 !-----------------------------------------------------------------------
+!
+!  Set offsets for U- and V-variables due to periodic boundary
+!  conditions. Recall that in East-West periodic boundary conditions
+!  IstrU=1. Otherwise, IstrU=2. Similarly, in North-South periodic
+!  applications IstrV=1 or else IstrV=2.
+!
+      IF (EWperiodic(ng)) THEN
+        Uoff=0
+      ELSE
+        Uoff=1
+      END IF
+!
+      IF (NSperiodic(ng)) THEN
+        Voff=0
+      ELSE
+        Voff=1
+      END IF
+
 #  ifdef DISTRIBUTE
 !
 !  Gather masking at RHO-points from all nodes.
@@ -606,7 +629,7 @@
       Jmin=0
       Jmax=Mm(ng)+1
 #   else
-      Imin=2
+      Imin=1+Uoff
       Imax=Lm(ng)
       Jmin=1
       Jmax=Mm(ng)
@@ -689,7 +712,7 @@
 #   else
       Imin=1
       Imax=Lm(ng)
-      Jmin=2
+      Jmin=1+Voff
       Jmax=Mm(ng)
 #   endif
       DO j=1,Mm(ng)+1

@@ -1,8 +1,8 @@
       PROGRAM ocean
 !
-!svn $Id$
+!svn $Id: ocean.h 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -64,9 +64,6 @@
 
       integer :: ng, MyError
 
-      integer, dimension(Ngrids) :: Tstr
-      integer, dimension(Ngrids) :: Tend
-
 #ifdef DISTRIBUTE
 # ifdef MPI
 !
@@ -96,7 +93,7 @@
 !
 !-----------------------------------------------------------------------
 !  Initialize ocean internal and external parameters and state
-!  variables.
+!  variables for all nested grids, if applicable.
 !-----------------------------------------------------------------------
 !
       IF (exit_flag.eq.NoError) THEN
@@ -105,15 +102,16 @@
       END IF
 !
 !-----------------------------------------------------------------------
-!  Time-step ocean model.
+!  Time-step ocean model over all nested grids, if applicable, by the
+!  specified time interval in seconds.
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
-        Tstr(ng)=ntstart(ng)
-        Tend(ng)=ntend(ng)+1
-      END DO
       IF (exit_flag.eq.NoError) THEN
-        CALL ROMS_run (Tstr, Tend)
+        run_time=0.0_r8
+        DO ng=1,Ngrids
+          run_time=MAX(run_time, dt(ng)*ntimes(ng))
+        END DO
+        CALL ROMS_run (run_time)
       END IF
 !
 !-----------------------------------------------------------------------

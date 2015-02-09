@@ -1,12 +1,12 @@
 /*
-** svn $Id$
+** svn $Id: nj_bight.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
 **
-** Options for 4DVar Data Assimilation Toy.
+** Options for New York/New Jersey Bight.
 **
 ** Application flag:   NJ_BIGHT
 ** Input script:       ocean_nj_bight.in
@@ -38,18 +38,7 @@
 #define STATIONS
 #undef  FLOATS
 
-#undef  ASSIMILATION_UVsur
-#undef  ASSIMILATION_T
-#undef  NUDGING_T
-#undef  NUDGING_UVsur
-
-#define WESTERN_WALL
-#define NORTHERN_WALL
 #define RADIATION_2D
-#define EAST_M3RADIATION
-#define EAST_TRADIATION
-#define SOUTH_M3RADIATION
-#define SOUTH_TRADIATION
 
 #define GLS_MIXING
 #undef  MY25_MIXING
@@ -94,28 +83,11 @@
 #define SSH_TIDES
 #ifdef SSH_TIDES
 # define ANA_FSOBC
-# define EAST_FSCHAPMAN
-# define SOUTH_FSCHAPMAN
-#else
-# define EAST_FSGRADIENT
-# define SOUTH_M2RADIATION
 #endif
 
 #define UV_TIDES
 #ifdef UV_TIDES
 # define ANA_M2OBC
-# define EAST_M2FLATHER
-# define SOUTH_M2FLATHER
-#else
-# define EAST_M2RADIATION
-# define SOUTH_FSGRADIENT
-#endif
-#if defined SSH_TIDES || defined UV_TIDES
-# undef  EAST_VOLCONS
-# undef  SOUTH_VOLCONS
-#else
-# define EAST_VOLCONS
-# define SOUTH_VOLCONS
 #endif
 
 #undef  BIO_FENNEL

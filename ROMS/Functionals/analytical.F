@@ -1,10 +1,9 @@
 #include "cppdefs.h"
       MODULE analytical_mod
-#ifdef ANALYTICAL
 !
-!svn $Id$
+!svn $Id: analytical.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -78,9 +77,10 @@
 !=======================================================================
 !
       implicit none
-
+!
       CONTAINS
-
+!
+#ifdef ANALYTICAL
 # if defined ANA_BIOLOGY && defined BIOLOGY
 #  include <ana_biology.h>
 # endif
@@ -143,10 +143,6 @@
 
 # if defined ANA_GRID && defined MASKING
 #  include <ana_mask.h>
-# endif
-
-# if defined NUDGING_COFF
-#  include <ana_nudgcoef.h>
 # endif
 
 # if defined ANA_PAIR && (defined BULK_FLUXES || defined ECOSIM || \
@@ -240,7 +236,8 @@
 # if defined ANA_WWAVE
 #  include <ana_wwave.h>
 # endif
-
 #endif
+
+#include <ana_nudgcoef.h>
 
       END MODULE analytical_mod

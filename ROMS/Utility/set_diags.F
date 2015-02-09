@@ -2,9 +2,9 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE set_diags (ng, tile)
 !
-!svn $Id$
+!svn $Id: set_diags.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -69,12 +69,11 @@
       USE bc_3d_mod
 # endif
 # ifdef WET_DRY
-#  if defined EW_PERIODIC || defined NS_PERIODIC
       USE exchange_2d_mod
-#  endif
 # endif
 # ifdef DISTRIBUTE
-#  ifdef WET_DRY
+#  if defined WET_DRY         || \
+     (defined DIAGNOSTICS_BIO && defined BIO_FENNEL)
       USE mp_exchange_mod, ONLY : mp_exchange2d
 #  endif
       USE mp_exchange_mod, ONLY : mp_exchange3d
@@ -94,18 +93,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: i, it, j, k
       integer :: idiag
 
@@ -133,6 +120,7 @@
 !
       IF (((iic(ng).gt.ntsDIA(ng)).and.                                 &
      &     (MOD(iic(ng)-1,nDIA(ng)).eq.1)).or.                          &
+     &    ((iic(ng).ge.ntsDIA(ng)).and.(nDIA(ng).eq.1)).or.             &
      &    ((nrrec(ng).gt.0).and.(iic(ng).eq.ntstart(ng)))) THEN
 
 #  ifdef WET_DRY
@@ -358,11 +346,16 @@
 !  Convert accumulated sums into time-averages, if appropriate
 !-----------------------------------------------------------------------
 !
-      IF ((iic(ng).gt.ntsDIA(ng)).and.                                  &
-     &    (MOD(iic(ng)-1,nDIA(ng)).eq.0).and.                           &
-     &    ((iic(ng).ne.ntstart(ng)).or.(nrrec(ng).eq.0))) THEN
-        IF (SOUTH_WEST_TEST) THEN
-          DIAtime(ng)=DIAtime(ng)+REAL(nDIA(ng),r8)*dt(ng)
+      IF (((iic(ng).gt.ntsDIA(ng)).and.                                 &
+     &     (MOD(iic(ng)-1,nDIA(ng)).eq.0).and.                          &
+     &     ((iic(ng).ne.ntstart(ng)).or.(nrrec(ng).eq.0))).or.          &
+     &    ((iic(ng).ge.ntsDIA(ng)).and.(nDIA(ng).eq.1))) THEN
+        IF (DOMAIN(ng)%SouthWest_Test(tile)) THEN
+          IF (nDIA(ng).eq.1) THEN
+            DIAtime(ng)=time(ng)
+          ELSE
+            DIAtime(ng)=DIAtime(ng)+REAL(nDIA(ng),r8)*dt(ng)
+          END IF
         END IF
 !
 !  Set time-averaged factors for each C-grid variable type. Notice that
@@ -419,26 +412,29 @@
             GRID(ng)%vmask_dia(i,j)=MIN(1.0_r8, GRID(ng)%vmask_dia(i,j))
           END DO
         END DO
-
-#  if defined EW_PERIODIC || defined NS_PERIODIC
-        CALL exchange_p2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          GRID(ng)%pmask_dia)
-        CALL exchange_r2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          GRID(ng)%rmask_dia)
-        CALL exchange_u2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          GRID(ng)%umask_dia)
-        CALL exchange_v2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          GRID(ng)%vmask_dia)
-#  endif
+!
+!  Exchange boundary data.
+!
+        IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+          CALL exchange_p2d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            GRID(ng)%pmask_dia)
+          CALL exchange_r2d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            GRID(ng)%rmask_dia)
+          CALL exchange_u2d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            GRID(ng)%umask_dia)
+          CALL exchange_v2d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            GRID(ng)%vmask_dia)
+        END IF
 
 #  ifdef DISTRIBUTE
         CALL mp_exchange2d (ng, tile, iNLM, 4,                          &
      &                      LBi, UBi, LBj, UBj,                         &
-     &                      NghostPoints, EWperiodic, NSperiodic,       &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
      &                      GRID(ng)%pmask_dia,                         &
      &                      GRID(ng)%rmask_dia,                         &
      &                      GRID(ng)%umask_dia,                         &
@@ -519,7 +515,8 @@
 #  endif
 # endif
 
-# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
+# if defined DIAGNOSTICS_TS  || defined DIAGNOSTICS_UV || \
+    (defined DIAGNOSTICS_BIO && defined BIO_FENNEL)
 !
 !-----------------------------------------------------------------------
 !  Apply periodic or gradient boundary conditions for output purposes.
@@ -538,7 +535,8 @@
 #   ifdef DISTRIBUTE
           CALL mp_exchange4d (ng, tile, iNLM, 1,                        &
      &                        LBi, UBi, LBj, UBj, 1, N(ng), 1, NT(ng),  &
-     &                        NghostPoints, EWperiodic, NSperiodic,     &
+     &                        NghostPoints,                             &
+     &                        EWperiodic(ng), NSperiodic(ng),           &
      &                        DIAGS(ng)%DiaTrc(:,:,:,:,idiag))
 #   endif
         END DO
@@ -558,7 +556,8 @@
 #   ifdef DISTRIBUTE
         CALL mp_exchange3d (ng, tile, iNLM, 2,                          &
      &                      LBi, UBi, LBj, UBj, 1, NDM2d,               &
-     &                      NghostPoints, EWperiodic, NSperiodic,       &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
      &                      DIAGS(ng)%DiaU2d,                           &
      &                      DIAGS(ng)%DiaV2d)
 #   endif
@@ -577,10 +576,43 @@
 #    ifdef DISTRIBUTE
         CALL mp_exchange4d (ng, tile, iNLM, 2,                          &
      &                      LBi, UBi, LBj, UBj, 1, N(ng), 1, NDM3d,     &
-     &                      NghostPoints, EWperiodic, NSperiodic,       &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
      &                      DIAGS(ng)%DiaU3d,                           &
      &                      DIAGS(ng)%DiaV3d)
 #    endif
+#   endif
+#  endif
+#  if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+!
+!  Biological terms 2D diagnostics.
+!
+        DO idiag=1,NDbio2d
+          CALL bc_r2d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      DIAGS(ng)%DiaBio2d(:,:,idiag))
+        END DO
+#   ifdef DISTRIBUTE
+        CALL mp_exchange3d (ng, tile, iNLM, 1,                          &
+     &                      LBi, UBi, LBj, UBj, 1, NDbio2d,             &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
+     &                      DIAGS(ng)%DiaBio2d)
+#   endif
+!
+!  Biological terms 3D diagnostics.
+!
+        DO idiag=1,NDbio3d
+          CALL bc_r3d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj, 1, N(ng),               &
+     &                      DIAGS(ng)%DiaBio3d(:,:,:,idiag))
+        END DO
+#   ifdef DISTRIBUTE
+        CALL mp_exchange4d (ng, tile, iNLM, 1,                          &
+     &                      LBi, UBi, LBj, UBj, 1, N(ng), 1, NDbio3d,   &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
+     &                      DIAGS(ng)%DiaBio3d)
 #   endif
 #  endif
 # endif

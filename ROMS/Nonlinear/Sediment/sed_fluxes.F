@@ -4,9 +4,9 @@
 
 #if defined NONLINEAR && defined SEDIMENT && defined SUSPLOAD
 !
-!svn $Id$
+!svn $Id: sed_fluxes.F 645 2013-01-22 23:21:54Z arango $
 !==================================================== John C. Warner ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -177,18 +177,6 @@
 !
 !  Local variable declarations.
 !
-# ifdef DISTRIBUTE
-#  ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-#  else
-      logical :: EWperiodic=.FALSE.
-#  endif
-#  ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-#  else
-      logical :: NSperiodic=.FALSE.
-#  endif
-# endif
       integer :: Ksed, i, indx, ised, j, k, ks
       integer :: bnew
 
@@ -222,18 +210,8 @@
         END DO
       END DO
 #  else
-#   ifdef EW_PERIODIC
-#    define I_RANGE Istr-1,Iend+1
-#   else
-#    define I_RANGE MAX(Istr-1,1),MIN(Iend+1,Lm(ng))
-#   endif
-#   ifdef NS_PERIODIC
-#    define J_RANGE Jstr-1,Jend+1
-#   else
-#    define J_RANGE MAX(Jstr-1,1),MIN(Jend+1,Mm(ng))
-#   endif
-      DO i=I_RANGE
-        DO j=J_RANGE
+      DO j=Jstrm1,Jendp1
+        DO i=Istrm1,Iendp1
           tau_w(i,j)=0.5_r8*SQRT((bustr(i,j)+bustr(i+1,j))*             &
      &                           (bustr(i,j)+bustr(i+1,j))+             &
      &                           (bvstr(i,j)+bvstr(i,j+1))*             &
@@ -243,8 +221,6 @@
 #   endif
         END DO
       END DO
-#   undef I_RANGE
-#   undef J_RANGE
 #  endif
 # endif
 !
@@ -298,10 +274,6 @@
 !  for erosive flux.
 !
             t(i,j,1,nnew,indx)=t(i,j,1,nnew,indx)+ero_flux(i,j,ised)
-# ifdef TS_MPDATA
-            t(i,j,1,3,indx)=t(i,j,1,3,indx)+                            &
-     &                      ero_flux(i,j,ised)*Hz_inv(i,1)
-# endif
           END DO
         END DO SED_LOOP
       END DO J_LOOP

@@ -1,13 +1,13 @@
       MODULE ocean_control_mod
 !
-!svn $Id$
+!svn $Id: nl_ocean.h 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  ROMS/TOMS Nonlinear model:                                          !
+!  ROMS/TOMS Nonlinear Model Driver:                                   !
 !                                                                      !
 !  This driver executes ROMS/TOMS standard nonlinear model.  It        !
 !  controls the initialization, time-stepping, and finalization        !
@@ -28,7 +28,7 @@
 
       CONTAINS
 
-      SUBROUTINE ROMS_initialize (first, MyCOMM)
+      SUBROUTINE ROMS_initialize (first, mpiCOMM)
 !
 !=======================================================================
 !                                                                      !
@@ -44,19 +44,21 @@
 #endif
       USE mod_iounits
       USE mod_scalars
+#ifdef MCT_LIB
 !
-#ifdef AIR_OCEAN
+# ifdef AIR_OCEAN
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
-#endif
-#ifdef WAVES_OCEAN
+# endif
+# ifdef WAVES_OCEAN
       USE ocean_coupler_mod, ONLY : initialize_ocn2wav_coupling
+# endif
 #endif
 !
 !  Imported variable declarations.
 !
       logical, intent(inout) :: first
 
-      integer, intent(in), optional :: MyCOMM
+      integer, intent(in), optional :: mpiCOMM
 !
 !  Local variable declarations.
 !
@@ -65,7 +67,10 @@
 #ifdef DISTRIBUTE
       integer :: MyError, MySize
 #endif
-      integer :: ng, thread
+      integer :: chunk_size, ng, thread
+#ifdef _OPENMP
+      integer :: my_threadnum
+#endif
 
 #ifdef DISTRIBUTE
 !
@@ -73,8 +78,8 @@
 !  Set distribute-memory (MPI) world communictor.
 !-----------------------------------------------------------------------
 !
-      IF (PRESENT(MyCOMM)) THEN
-        OCN_COMM_WORLD=MyCOMM
+      IF (PRESENT(mpiCOMM)) THEN
+        OCN_COMM_WORLD=mpiCOMM
       ELSE
         OCN_COMM_WORLD=MPI_COMM_WORLD
       END IF
@@ -92,46 +97,60 @@
       IF (first) THEN
         first=.FALSE.
 !
-!  Initialize parallel parameters.
+!  Initialize parallel control switches. These scalars switches are
+!  independent from standard input parameters.
 !
         CALL initialize_parallel
 !
-!  Initialize wall clocks.
-!
-        IF (Master) THEN
-          WRITE (stdout,10)
-        END IF
-        DO ng=1,Ngrids
-!$OMP PARALLEL DO PRIVATE(thread) SHARED(ng,numthreads)
-          DO thread=0,numthreads-1
-            CALL wclock_on (ng, iNLM, 0)
-          END DO
-!$OMP END PARALLEL DO
-        END DO
-!
-!  Read in model tunable parameters from standard input. Initialize
-!  "mod_param", "mod_ncparam" and "mod_scalar" modules.
+!  Read in model tunable parameters from standard input. Allocate and
+!  initialize variables in several modules after the number of nested
+!  grids and dimension parameters are known.
 !
         CALL inp_par (iNLM)
         IF (exit_flag.ne.NoError) RETURN
 !
-!  Allocate and initialize modules variables.
+!  Set domain decomposition tile partition range.  This range is
+!  computed only once since the "first_tile" and "last_tile" values
+!  are private for each parallel thread/node.
 !
-        CALL mod_arrays (allocate_vars)
-
-#if defined MCT_LIB && (defined AIR_OCEAN || defined WAVES_OCEAN)
+!$OMP PARALLEL
+#if defined _OPENMP
+      MyThread=my_threadnum()
+#elif defined DISTRIBUTE
+      MyThread=MyRank
+#else
+      MyThread=0
+#endif
+      DO ng=1,Ngrids
+        chunk_size=(NtileX(ng)*NtileE(ng)+numthreads-1)/numthreads
+        first_tile(ng)=MyThread*chunk_size
+        last_tile (ng)=first_tile(ng)+chunk_size-1
+      END DO
+!$OMP END PARALLEL
 !
-!  Initialize coupling streams between model(s).
+!  Initialize internal wall clocks. Notice that the timings does not
+!  includes processing standard input because several parameters are
+!  needed to allocate clock variables.
+!
+        IF (Master) THEN
+          WRITE (stdout,10)
+ 10       FORMAT (/,' Process Information:',/)
+        END IF
 !
         DO ng=1,Ngrids
-# ifdef AIR_OCEAN
-          CALL initialize_ocn2atm_coupling (ng, MyRank)
-# endif
-# ifdef WAVES_OCEAN
-          CALL initialize_ocn2wav_coupling (ng, MyRank)
-# endif
+!$OMP PARALLEL
+          DO thread=THREAD_RANGE
+            CALL wclock_on (ng, iNLM, 0)
+          END DO
+!$OMP END PARALLEL
         END DO
-#endif
+!
+!  Allocate and initialize all model state arrays.
+!
+!$OMP PARALLEL
+        CALL mod_arrays (allocate_vars)
+!$OMP END PARALLEL
+
 #ifdef VERIFICATION
 !
 !  Allocate and initialize observation arrays.
@@ -139,13 +158,32 @@
         CALL initialize_fourdvar
 #endif
       END IF
+
+#if defined MCT_LIB && (defined AIR_OCEAN || defined WAVES_OCEAN)
 !
 !-----------------------------------------------------------------------
-!  Initialize model state variables for all nested/composed grids.
+!  Initialize coupling streams between model(s).
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
+# ifdef AIR_OCEAN
+        CALL initialize_ocn2atm_coupling (ng, MyRank)
+# endif
+# ifdef WAVES_OCEAN
+        CALL initialize_ocn2wav_coupling (ng, MyRank)
+# endif
+      END DO
+#endif
+!
+!-----------------------------------------------------------------------
+!  Initialize nonlinear model state variables over all nested grids,
+!  if applicable.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+!$OMP PARALLEL
         CALL initial (ng)
+!$OMP END PARALLEL
         IF (exit_flag.ne.NoError) RETURN
       END DO
 !
@@ -167,30 +205,16 @@
         END DO
       END IF
 #endif
-!
-!  Substract a time-step to model time after initialization because the
-!  main time-stepping driver always add a single time-step.
-!
-      DO ng=1,Ngrids
-        IF (Master) THEN
-          WRITE (stdout,20) ng, ntstart(ng), ntend(ng)
-        END IF
-        time(ng)=time(ng)-dt(ng)
-      END DO
-
- 10   FORMAT (' Process Information:',/)
- 20   FORMAT ('NL ROMS/TOMS: started time-stepping:',                   &
-     &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')')
 
       RETURN
       END SUBROUTINE ROMS_initialize
 
-      SUBROUTINE ROMS_run (Tstr, Tend)
+      SUBROUTINE ROMS_run (RunInterval)
 !
 !=======================================================================
 !                                                                      !
-!  This routine runs ROMS/TOMS nonlinear model from specified starting !
-!  (Tstr) to ending (Tend) time-steps.                                 !
+!  This routine runs ROMS/TOMS nonlinear model for the specified time  !
+!  interval (seconds), RunInterval.                                    !
 !                                                                      !
 !=======================================================================
 !
@@ -204,32 +228,34 @@
 !
 !  Imported variable declarations.
 !
-      integer, dimension(Ngrids) :: Tstr   ! starting time-step
-      integer, dimension(Ngrids) :: Tend   ! ending   time-step
+      real(r8), intent(in) :: RunInterval            ! seconds
 !
 !  Local variable declarations.
 !
-      integer :: ng, my_iic
+      integer :: ng
 !
 !-----------------------------------------------------------------------
-!  Run model for all nested grids, if any.
+!  Time-step nonlinear model over all nested grids, if applicable.
 !-----------------------------------------------------------------------
 !
-      NEST_LOOP : DO ng=1,Ngrids
+      DO ng=1,Ngrids
+        IF (Master) THEN
+          WRITE (stdout,10) 'NL', ng, ntstart(ng), ntend(ng)
+        END IF
+      END DO
 
-        NL_LOOP : DO my_iic=Tstr(ng),Tend(ng)
-
-          iic(ng)=my_iic
+!$OMP PARALLEL
 #ifdef SOLVE3D
-          CALL main3d (ng)
+      CALL main3d (RunInterval)
 #else
-          CALL main2d (ng)
+      CALL main2d (RunInterval)
 #endif
-          IF (exit_flag.ne.NoError) RETURN
+!$OMP END PARALLEL
 
-        END DO NL_LOOP
-
-      END DO NEST_LOOP
+      IF (exit_flag.ne.NoError) RETURN
+!
+ 10   FORMAT (/,1x,a,1x,'ROMS/TOMS: started time-stepping:',            &
+     &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')',/)
 
       RETURN
       END SUBROUTINE ROMS_run
@@ -250,7 +276,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: ng, thread
+      integer :: Fcount, ng, thread
 
 #ifdef VERIFICATION
 !
@@ -258,9 +284,11 @@
 !  Compute and report model-observation comparison statistics.
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
-        CALL stats_modobs (ng)
-      END DO
+      IF (exit_flag.eq.NoError) THEN
+        DO ng=1,Ngrids
+          CALL stats_modobs (ng)
+        END DO
+      END IF
 #endif
 !
 !-----------------------------------------------------------------------
@@ -269,20 +297,23 @@
 !
 !  If cycling restart records, write solution into the next record.
 !
-      DO ng=1,Ngrids
-        IF (LwrtRST(ng).and.(exit_flag.eq.1)) THEN
-          IF (Master) WRITE (stdout,10)
- 10       FORMAT (/,' Blowing-up: Saving latest model state into ',     &
-     &              ' RESTART file',/)
-          IF (LcycleRST(ng).and.(NrecRST(ng).ge.2)) THEN
-            tRSTindx(ng)=2
-            LcycleRST(ng)=.FALSE.
+      IF (exit_flag.eq.1) THEN
+        DO ng=1,Ngrids
+          IF (LwrtRST(ng)) THEN
+            IF (Master) WRITE (stdout,10)
+ 10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
+     &                ' RESTART file',/)
+            Fcount=RST(ng)%Fcount
+            IF (LcycleRST(ng).and.(RST(ng)%Nrec(Fcount).ge.2)) THEN
+              RST(ng)%Rindex=2
+              LcycleRST(ng)=.FALSE.
+            END IF
+            blowup=exit_flag
+            exit_flag=NoError
+            CALL wrt_rst (ng)
           END IF
-          blowup=exit_flag
-          exit_flag=NoError
-          CALL wrt_rst (ng)
-        END IF
-      END DO
+        END DO
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Stop model and time profiling clocks.  Close output NetCDF files.
@@ -294,18 +325,18 @@
         WRITE (stdout,20)
  20     FORMAT (/,' Elapsed CPU time (seconds):',/)
       END IF
-
+!
       DO ng=1,Ngrids
-!$OMP PARALLEL DO PRIVATE(thread) SHARED(ng,numthreads)
-        DO thread=0,numthreads-1
+!$OMP PARALLEL
+        DO thread=THREAD_RANGE
           CALL wclock_off (ng, iNLM, 0)
         END DO
-!$OMP END PARALLEL DO
+!$OMP END PARALLEL
       END DO
 !
 !  Close IO files.
 !
-      CALL close_io
+      CALL close_out
 
       RETURN
       END SUBROUTINE ROMS_finalize

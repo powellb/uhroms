@@ -1,6 +1,6 @@
-# $Id$
+# svn $Id: makefile 645 2013-01-22 23:21:54Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
-# Copyright (c) 2002-2011 The ROMS/TOMS Group             Kate Hedstrom :::
+# Copyright (c) 2002-2013 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -37,7 +37,6 @@ $(if $(filter $(MAKE_VERSION),$(NEED_VERSION)),,        \
 #--------------------------------------------------------------------------
 
   sources    :=
-  libraries  :=
 
 #==========================================================================
 #  Start of user-defined options. In some macro definitions below: "on" or
@@ -86,12 +85,6 @@ MY_ANALYTICAL_DIR ?=
 #
 
 MY_CPP_FLAGS ?=
-
-#  Set number of ROMS nested and/or composed grid.  Currently, only
-#  one grid is supported.  This option will be available in the near
-#  future.
-
- NestedGrids ?= 1
 
 #  Activate debugging compiler options:
 
@@ -173,6 +166,16 @@ ifeq "$(strip $(SCRATCH_DIR))" "./"
   clean_list := core *.o *.oo *.ipo *.mod *.f90 lib*.a *.bak
   clean_list += $(CURDIR)/*.ipo
 endif
+
+#--------------------------------------------------------------------------
+#  Notice that the token "libraries" is initialize with the ROMS/Utility
+#  library to account for calls to objects in other ROMS libraries or
+#  cycling dependencies. These type of dependencies are problematic in
+#  some compilers during linking. This library appears twice at linking
+#  step (beggining and almost the end of ROMS library list).
+#--------------------------------------------------------------------------
+
+  libraries  := $(SCRATCH_DIR)/libUTIL.a
 
 #--------------------------------------------------------------------------
 #  Set Pattern rules.

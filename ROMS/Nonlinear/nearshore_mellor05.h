@@ -1,9 +1,9 @@
 #undef GEO_ROTATION
       SUBROUTINE radiation_stress (ng, tile)
 !
-!svn $Id$
+!svn $Id: nearshore_mellor05.h 645 2013-01-22 23:21:54Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !**************************************************   John C. Warner ***
@@ -155,11 +155,9 @@
 !
       USE mod_param
       USE mod_scalars
-
-#if defined EW_PERIODIC || defined NS_PERIODIC
+!
       USE exchange_2d_mod
       USE exchange_3d_mod
-#endif
 #ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d, mp_exchange3d
 #endif
@@ -303,19 +301,6 @@
 !
 !  Local variable declarations.
 !
-#ifdef DISTRIBUTE
-# ifdef EW_PERIODIC
-      logical :: EWperiodic=.TRUE.
-# else
-      logical :: EWperiodic=.FALSE.
-# endif
-# ifdef NS_PERIODIC
-      logical :: NSperiodic=.TRUE.
-# else
-      logical :: NSperiodic=.FALSE.
-# endif
-#endif
-
       integer :: i, j, k
 
       real(r8) :: cff, cff1, cff2, cff3, cff4, cff5, cff6
@@ -716,7 +701,7 @@
             waveEr(i,j)=cff1*FCSr*FCCr
 #  ifdef SVENDSEN_ROLLER
             cff3=SCALARS(ng)%Cs_w(k)
-            waveEr(i,j)=waveEr(i,j)+1.25_r8*(rollA(i,j)+rollA(i-1,j))* &
+            waveEr(i,j)=waveEr(i,j)+1.25_r8*(rollA(i,j)+rollA(i-1,j))*  &
      &                  (1.0_r8-cff3**4)/(Dstp(i,j)+Dstp(i-1,j))
 #  endif
 !
@@ -754,7 +739,7 @@
           END DO
           DO i=Istr,Iend
             DO k=0,N(ng)
-              cff1=0.5_r8*(waven(i,j  )*waveE(i,j  )+                     &
+              cff1=0.5_r8*(waven(i,j  )*waveE(i,j  )+                   &
      &                     waven(i,j-1)*waveE(i,j-1))
               cff2=1.0_r8+SCALARS(ng)%Cs_w(k)
               FCCr=COSH(UFe(i,j)*cff2)*ocosh(i,j)
@@ -763,29 +748,31 @@
               waveEr(i,j)=cff1*FCSr*FCCr
 #  ifdef SVENDSEN_ROLLER
               cff3=SCALARS(ng)%Cs_w(k)
-              waveEr(i,j)=waveEr(i,j)+1.25_r8*(rollA(i,j)+rollA(i,j-1))* &
+              waveEr(i,j)=waveEr(i,j)+
+     &                    1.25_r8*(rollA(i,j)+rollA(i,j-1))*            &
      &                    (1.0_r8-cff3**4)/(Dstp(i,j)+Dstp(i,j-1))
 #  endif
 !
 !  Compute radiation stresses at V-points.
 !
-              cff4=0.25_r8*FCSr*(FCCr-FSSr)*                              &
-     &             (waveE(i,j)+waveE(i,j-1))*                             &
+              cff4=0.25_r8*FCSr*(FCCr-FSSr)*                            &
+     &             (waveE(i,j)+waveE(i,j-1))*                           &
      &             (waven(i,j)+waven(i,j-1))
-              cff5=0.5_r8*(owaven(i,j  )*owaven(i,j  )+                   &
+              cff5=0.5_r8*(owaven(i,j  )*owaven(i,j  )+                 &
      &                     owaven(i,j-1)*owaven(i,j-1))
-              FCC(i,k)=cff4+0.5_r8*                                       &
-     &                 waveEr(i,j)*(waveny(i,j)*waveny(i,j)+              &
+              FCC(i,k)=cff4+0.5_r8*                                     &
+     &                 waveEr(i,j)*(waveny(i,j  )*waveny(i,j  )+        &
      &                              waveny(i,j-1)*waveny(i,j-1))*cff5
-              FCS(i,k)=waveEr(i,j)*cff5*0.5_r8*(wavenx(i,j)*waveny(i,j)+  &
-     &                                      wavenx(i-1,j)*waveny(i-1,j))
+              FCS(i,k)=waveEr(i,j)*cff5*                                &
+     &                 0.5_r8*(wavenx(i  ,j)*waveny(i  ,j)+             &
+     &                         wavenx(i-1,j)*waveny(i-1,j))
             END DO
           END DO
           DO i=Istr,Iend
             DO k=1,N(ng)
-              cff5=(z_r(i,j,k)-z_r(i-1,j,k))*                             &
-     &             on_u(i,j)*(FCS(i,k)-FCS(i,k-1))+                       &
-     &             (z_psi(i,j+1)-z_psi(i,j))*                             &
+              cff5=(z_r(i,j,k)-z_r(i-1,j,k))*                           &
+     &             on_u(i,j)*(FCS(i,k)-FCS(i,k-1))+                     &
+     &             (z_psi(i,j+1)-z_psi(i,j))*                           &
      &             om_u(i,j)*(FCC(i,k)-FCC(i,k-1))
               rvstr3d(i,j,k)=rvstr3d(i,j,k)-cff5
 #  ifdef DIAGNOSTICS_UV
@@ -1192,31 +1179,38 @@
 #ifdef DISTRIBUTE
       CALL mp_exchange2d (ng, tile, iNLM, 4,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    rustr2d, rvstr2d, rulag2d, rvlag2d)
       CALL mp_exchange2d (ng, tile, iNLM, 3,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    Sxx_bar, Sxy_bar, Syy_bar)
       CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
      &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    ubar_stokes, vbar_stokes)
 # ifdef SOLVE3D
       CALL mp_exchange3d (ng, tile, iNLM, 4,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    rustr3d,  rvstr3d, rulag3d,  rvlag3d)
       CALL mp_exchange3d (ng, tile, iNLM, 3,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    Sxx,  Sxy, Syy)
       CALL mp_exchange3d (ng, tile, iNLM, 4,                            &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints, EWperiodic, NSperiodic,         &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    Szx, Szy,                                     &
      &                    u_stokes, v_stokes)
 # endif
 #endif
+
       RETURN
       END SUBROUTINE radiation_stress_tile

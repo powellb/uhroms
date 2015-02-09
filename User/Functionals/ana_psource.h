@@ -1,8 +1,8 @@
       SUBROUTINE ana_psource (ng, tile, model)
 !
-!! svn $Id$
+!! svn $Id: ana_psource.h 645 2013-01-22 23:21:54Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -200,7 +200,7 @@
 !  should range from 1 =< Isrc =< L  and  1 =< Jsrc =< M.
 !
 #if defined MY_APPLICATION
-        IF (Master.and.SOUTH_WEST_TEST) THEN
+        IF (Master.and.DOMAIN(ng)%SouthWest_Test(tile)) THEN
           Nsrc=???
           Dsrc(:)=???
           Isrc(:)=???
@@ -242,7 +242,7 @@
 !!  "ROMS/Functionals/ana_psource.h" for examples that has parallel
 !!  tile dependency.
 !!
-      IF (NORTH_EAST_TEST) THEN
+      IF (DOMAIN(ng)%NorthEast_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc
             Qshape(is,k)=1.0_r8/REAL(N(ng),r8)
@@ -273,7 +273,7 @@
 !!  "ROMS/Functional/ana_psource.h" for examples that has parallel
 !!  tile dependency.
 !!
-      IF (SOUTH_WEST_TEST) THEN
+      IF (DOMAIN(ng)%SouthWest_Test(tile)) THEN
         DO is=1,Nsrc
           Qbar(is)=???
         END DO
@@ -288,7 +288,7 @@
 !
 !$OMP BARRIER
 
-      IF (NORTH_EAST_TEST) THEN
+      IF (DOMAIN(ng)%NorthEast_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc
             Qsrc(is,k)=Qbar(is)*Qshape(is,k)
@@ -303,7 +303,7 @@
 !  Set-up tracer (tracer units) point Sources/Sinks.
 !
 # if defined MY_APPLICATION
-      IF (NORTH_WEST_TEST) THEN
+      IF (DOMAIN(ng)%NorthWest_Test(tile)) THEN
         DO k=1,N(ng)
           DO is=1,Nsrc
             Tsrc(is,k,itemp)=???

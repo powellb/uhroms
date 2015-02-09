@@ -1,7 +1,7 @@
 /*
-** svn $Id$
+** svn $Id: upwelling.h 645 2013-01-22 23:21:54Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -33,7 +33,6 @@
 #define AVERAGES
 #define DIAGNOSTICS_TS
 #define DIAGNOSTICS_UV
-#define EW_PERIODIC
 
 #define ANA_GRID
 #define ANA_INITIAL

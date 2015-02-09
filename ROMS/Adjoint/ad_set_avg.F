@@ -1,10 +1,10 @@
 #include "cppdefs.h"
       MODULE ad_set_avg_mod
-#if defined AVERAGES && defined ADJOINT
+#if defined AD_AVERAGES && defined ADJOINT
 !
-!svn $Id$
+!svn $Id: ad_set_avg.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -115,6 +115,7 @@
 !
       IF (((iic(ng).lt.ntsAVG(ng)).and.                                 &
      &     (MOD(iic(ng),nAVG(ng)).eq.0)).or.                            &
+     &    ((iic(ng).le.ntsAVG(ng)).and.(nAVG(ng).eq.1)).or.             &
      &    ((nrrec(ng).gt.0).and.(iic(ng).eq.ntstart(ng)))) THEN
 
 # ifdef WET_DRY
@@ -525,7 +526,7 @@
           END DO
         END IF
 
-        DO it=1,NAT
+        DO it=1,NT(ng)
           IF (Aout(idTTav(it),ng)) THEN
             DO k=1,N(ng)
               DO j=JstrR,JendR
@@ -1004,7 +1005,7 @@
           END DO
         END IF
 
-        DO it=1,NAT
+        DO it=1,NT(ng)
           IF (Aout(idTTav(it),ng)) THEN
             DO k=1,N(ng)
               DO j=JstrR,JendR
@@ -1070,11 +1071,16 @@
 !  Convert accumulated sums into time-averages, if appropriate.
 !-----------------------------------------------------------------------
 !
-      IF ((iic(ng).lt.ntsAVG(ng)).and.                                  &
-     &    (MOD(iic(ng)-1,nAVG(ng)).eq.0).and.                           &
-     &    ((iic(ng).ne.ntstart(ng)).or.(nrrec(ng).eq.0))) THEN
-        IF (SOUTH_WEST_TEST) THEN
-          AVGtime(ng)=AVGtime(ng)-REAL(nAVG(ng),r8)*dt(ng)
+      IF (((iic(ng).lt.ntsAVG(ng)).and.                                 &
+     &     (MOD(iic(ng)-1,nAVG(ng)).eq.0).and.                          &
+     &     ((iic(ng).ne.ntstart(ng)).or.(nrrec(ng).eq.0))).or.          &
+     &    ((iic(ng).le.ntsAVG(ng)).and.(nAVG(ng).eq.1))) THEN
+        IF (DOMAIN(ng)%SouthWest_Test(tile)) THEN
+          IF (nAVG(ng).eq.1) THEN
+            AVGtime(ng)=time(ng)
+          ELSE
+            AVGtime(ng)=AVGtime(ng)-REAL(nAVG(ng),r8)*dt(ng)
+          END IF
         END IF
 !
 !  Set time-averaged factors for each C-grid variable type. Notice that
@@ -1242,7 +1248,7 @@
           DO j=Jstr,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avgsvs(i,j)=vfac(i,j)*                        &
-    &                                 AVERAGE(ng)%avgsvs(i,j)
+     &                                AVERAGE(ng)%avgsvs(i,j)
             END DO
           END DO
         END IF
@@ -1251,7 +1257,7 @@
           DO j=JstrR,JendR
             DO i=Istr,IendR
               AVERAGE(ng)%avgbus(i,j)=ufac(i,j)*                        &
-    &                                 AVERAGE(ng)%avgbus(i,j)
+     &                                AVERAGE(ng)%avgbus(i,j)
             END DO
           END DO
         END IF
@@ -1259,7 +1265,7 @@
           DO j=Jstr,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avgbvs(i,j)=vfac(i,j)*                        &
-    &                                 AVERAGE(ng)%avgbvs(i,j)
+     &                                AVERAGE(ng)%avgbvs(i,j)
             END DO
           END DO
         END IF
@@ -1277,7 +1283,7 @@
           DO j=JstrR,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avgswf(i,j)=rfac(i,j)*                        &
-    &                                 AVERAGE(ng)%avgswf(i,j)
+     &                                AVERAGE(ng)%avgswf(i,j)
             END DO
           END DO
         END IF
@@ -1296,7 +1302,7 @@
           DO j=JstrR,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avglhf(i,j)=rfac(i,j)*                        &
-    &                                 AVERAGE(ng)%avglhf(i,j)
+     &                                AVERAGE(ng)%avglhf(i,j)
             END DO
           END DO
         END IF
@@ -1304,7 +1310,7 @@
           DO j=JstrR,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avgshf(i,j)=rfac(i,j)*                        &
-    &                                 AVERAGE(ng)%avgshf(i,j)
+     &                                AVERAGE(ng)%avgshf(i,j)
             END DO
           END DO
         END IF
@@ -1312,7 +1318,7 @@
           DO j=JstrR,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avglrf(i,j)=rfac(i,j)*                        &
-    &                                 AVERAGE(ng)%avglrf(i,j)
+     &                                AVERAGE(ng)%avglrf(i,j)
             END DO
           END DO
         END IF
@@ -1321,7 +1327,7 @@
           DO j=JstrR,JendR
             DO i=IstrR,IendR
               AVERAGE(ng)%avgevap(i,j)=rfac(i,j)*                       &
-    &                                  AVERAGE(ng)%avgevap(i,j)
+     &                                 AVERAGE(ng)%avgevap(i,j)
             END DO
           END DO
         END IF
@@ -1388,7 +1394,7 @@
           END DO
         END IF
 
-        DO it=1,NAT
+        DO it=1,NT(ng)
           IF (Aout(idTTav(it),ng)) THEN
             DO k=1,N(ng)
               DO j=JstrR,JendR

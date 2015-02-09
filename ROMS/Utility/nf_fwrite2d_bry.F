@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE nf_fwrite2d_bry_mod
 !
-!svn $Id$
+!svn $Id: nf_fwrite2d_bry.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -31,6 +31,14 @@
 !                                                                      !
 !     status       Error flag (integer).                               !
 !                                                                      !
+#ifdef POSITIVE_ZERO
+!  Starting F95 zero values can be signed (-0 or +0) following the     !
+!  IEEE 754 floating point standard.  This may produce different       !
+!  output data in serial and parallel applications. Since comparing    !
+!  serial and parallel output is essential for tracking parallel       !
+!  partition  bugs, "positive zero" is enforced.                       !
+!                                                                      !
+#endif
 !=======================================================================
 !
       implicit none
@@ -141,10 +149,10 @@
 !
 !  Set switch to process boundary data by their associated tiles.
 !
-      bounded(iwest )=WESTERN_EDGE
-      bounded(ieast )=EASTERN_EDGE
-      bounded(isouth)=SOUTHERN_EDGE
-      bounded(inorth)=NORTHERN_EDGE
+      bounded(iwest )=DOMAIN(ng)%Western_Edge(tile)
+      bounded(ieast )=DOMAIN(ng)%Eastern_Edge(tile)
+      bounded(isouth)=DOMAIN(ng)%Southern_Edge(tile)
+      bounded(inorth)=DOMAIN(ng)%Northern_Edge(tile)
 !
 !  Set NetCDF dimension counters for processing requested field.
 !
@@ -172,11 +180,21 @@
               DO j=Jmin,Jmax
                 ic=1+(j-LBij)+bc
                 Awrk(ic)=A(j,ib,ir)*Ascl
+#ifdef POSITIVE_ZERO
+                IF (ABS(Awrk(ic)).eq.0.0_r8) THEN
+                  Awrk(ic)=0.0_r8                 ! impose positive zero
+                END IF
+#endif
               END DO
             ELSE IF ((ib.eq.isouth).or.(ib.eq.inorth)) THEN
               DO i=Imin,Imax
                 ic=1+(i-LBij)+bc
                 Awrk(ic)=A(i,ib,ir)*Ascl
+#ifdef POSITIVE_ZERO
+                IF (ABS(Awrk(ic)).eq.0.0_r8) THEN
+                  Awrk(ic)=0.0_r8                 ! impose positive zero
+                END IF
+#endif
               END DO
             END IF
           END IF

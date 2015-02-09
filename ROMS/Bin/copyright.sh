@@ -1,8 +1,8 @@
 #!/bin/csh -f
 #
-# svn $Id$
+# svn $Id: copyright.sh 648 2013-01-25 20:44:45Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2011 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2013 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #:::::::::::::::::::::::::::::::::::::::::::::::::::::: David Robertson :::
@@ -27,8 +27,8 @@
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-set search = "2002-2010 The ROMS/TOMS"
-set replace = "2002-2011 The ROMS/TOMS"
+set search = "2002-2012 The ROMS/TOMS"
+set replace = "2002-2013 The ROMS/TOMS"
 
 # Directories to search for replacements.
 
@@ -89,9 +89,9 @@ foreach FILE ( `find ${c_dirs} ! -path '*/.svn/*' ! -name 'copyright.*' -type f 
 
   if ( `echo $FILE | grep -vc '.svn/'` ) then
     if ( $verb == 1 ) then
-      grep -l "${search}" $FILE && sed -i "s|${search}|${replace}|g" $FILE
+      grep -l "${search}" $FILE && sed -i -e "s|${search}|${replace}|g" $FILE
     else
-      grep -l "${search}" $FILE > /dev/null && sed -i "s|${search}|${replace}|g" $FILE
+      grep -l "${search}" $FILE > /dev/null && sed -i -e "s|${search}|${replace}|g" $FILE
     endif
   else
     echo "There is a .svn in the path: $FILE skipped"
@@ -103,9 +103,9 @@ end
 
 foreach FILE ( $special_files )
   if ( $verb == 1 ) then
-    grep -l "${search}" $FILE && sed -i "s|${search}|${replace}|g" $FILE
+    grep -l "${search}" $FILE && sed -i -e "s|${search}|${replace}|g" $FILE
   else
-    grep -l "${search}" $FILE > /dev/null && sed -i "s|${search}|${replace}|g" $FILE
+    grep -l "${search}" $FILE > /dev/null && sed -i -e "s|${search}|${replace}|g" $FILE
   endif
 end
 
@@ -114,14 +114,14 @@ echo "Done."
 echo ""
 
 if ( $setsvn == 1 ) then
-  svn propset -R copyright '(c) 2002-2011 The ROMS/TOMS Group' Compilers
-  svn propset -R copyright '(c) 2002-2011 The ROMS/TOMS Group' Data
-  svn propset -R copyright '(c) 2002-2011 The ROMS/TOMS Group' Master
-  svn propset -R copyright '(c) 2002-2011 The ROMS/TOMS Group' ROMS
-  svn propset -R copyright '(c) 2002-2011 The ROMS/TOMS Group' User
-  svn propset copyright '(c) 2002-2011 The ROMS/TOMS Group' . makefile
-  svn propset copyright '(c) 2002-2011 The ROMS/TOMS Group' Waves/SWAN/Src/Module.mk
-  svn propset copyright '(c) 2002-2011 The ROMS/TOMS Group' Waves/SWAN/Src/waves_coupler.F
+  svn propset -R copyright '(c) 2002-2013 The ROMS/TOMS Group' Compilers
+  svn propset -R copyright '(c) 2002-2013 The ROMS/TOMS Group' Data
+  svn propset -R copyright '(c) 2002-2013 The ROMS/TOMS Group' Master
+  svn propset -R copyright '(c) 2002-2013 The ROMS/TOMS Group' ROMS
+  svn propset -R copyright '(c) 2002-2013 The ROMS/TOMS Group' User
+  svn propset copyright '(c) 2002-2013 The ROMS/TOMS Group' . makefile
+  svn propset copyright '(c) 2002-2013 The ROMS/TOMS Group' Waves/SWAN/Src/Module.mk
+  svn propset copyright '(c) 2002-2013 The ROMS/TOMS Group' Waves/SWAN/Src/waves_coupler.F
 else
   echo ""
   echo "Not updating svn properties."

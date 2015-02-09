@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE shapiro_mod
 !
-!svn $Id$
+!svn $Id: shapiro.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group         Kate Hedstrom   !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group         Kate Hedstrom   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -81,8 +81,8 @@
      &                2.0_r8*A(i,j)*Amask(i,j))*                        &
      &               Amask(i,j-1)*Amask(i,j+1)*Amask(i,j)
 #else
-          Awrk1(i,j)=0.25_r8*                                            &
-     &             (A(i,j-1)+A(i,j+1)-2.0_r8*A(i,j))
+          Awrk1(i,j)=0.25_r8*                                           &
+     &               (A(i,j-1)+A(i,j+1)-2.0_r8*A(i,j))
 #endif
         END DO
       END DO
@@ -106,7 +106,7 @@
      &                2.0_r8*Awrk2(i,j)*Amask(i,j))*                    &
      &               Amask(i-1,j)*Amask(i+1,j)*Amask(i,j)
 #else
-          Awrk1(i,j)=0.25_r8*                                            &
+          Awrk1(i,j)=0.25_r8*                                           &
      &               (Awrk2(i-1,j)+Awrk2(i+1,j)-2.0_r8*Awrk2(i,j))
 #endif
         END DO

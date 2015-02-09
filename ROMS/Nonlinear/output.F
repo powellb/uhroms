@@ -2,9 +2,9 @@
 #ifdef NONLINEAR
       SUBROUTINE output (ng)
 !
-!svn $Id$
+!svn $Id: output.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -44,7 +44,7 @@
 !
       logical :: Ldefine, NewFile
 
-      integer :: ifile, lstr, status, tile
+      integer :: Fcount, ifile, status, tile
 !
       SourceFile='output.F'
 
@@ -98,18 +98,18 @@
             Ldefine=.FALSE.
           END IF
           IF (Ldefine) THEN                     ! create new file or
-            NrecHIS(ng)=0                       ! inquire existing file
+            Fcount=HIS(ng)%Fcount               ! inquire existing file
+            HIS(ng)%Nrec(Fcount)=0
             ifile=(iic(ng)-1)/ndefHIS(ng)+1
             IF (Master) THEN
-              lstr=LEN_TRIM(HISbase(ng))
-              WRITE (HISname(ng),10) HISbase(ng)(1:lstr-3),ifile
+              WRITE (HIS(ng)%name,10) TRIM(HIS(ng)%base), ifile
   10          FORMAT (a,'_',i4.4,'.nc')
             END IF
 # ifdef DISTRIBUTE
-            CALL mp_bcasts (ng, iNLM, HISname(ng))
+            CALL mp_bcasts (ng, iNLM, HIS(ng)%name)
 # endif
-            IF (ncHISid(ng).ne.-1) THEN
-              CALL netcdf_close (ng, iNLM, ncHISid(ng))
+            IF (HIS(ng)%ncid.ne.-1) THEN
+              CALL netcdf_close (ng, iNLM, HIS(ng)%ncid)
             END IF
             CALL def_his (ng, NewFile)
             IF (exit_flag.ne.NoError) RETURN
@@ -149,7 +149,7 @@
         END IF
       END IF
 
-# if defined AVERAGES && !defined ADJOINT
+# ifdef AVERAGES
 !
 !-----------------------------------------------------------------------
 !  If appropriate, process time-averaged NetCDF file.
@@ -188,22 +188,22 @@
             Ldefine=.FALSE.
           END IF
           IF (Ldefine) THEN
-            NrecAVG(ng)=0
+            Fcount=AVG(ng)%Fcount
+            AVG(ng)%Nrec(Fcount)=0
             IF (ndefAVG(ng).eq.nAVG(ng)) THEN
               ifile=(iic(ng)-1)/ndefAVG(ng)
             ELSE
               ifile=(iic(ng)-1)/ndefAVG(ng)+1
             END IF
             IF (Master) THEN
-              lstr=LEN_TRIM(AVGbase(ng))
-              WRITE (AVGname(ng),20) AVGbase(ng)(1:lstr-3),ifile
+              WRITE (AVG(ng)%name,20) TRIM(AVG(ng)%base), ifile
   20          FORMAT (a,'_',i4.4,'.nc')
             END IF
-# ifdef DISTRIBUTE
-            CALL mp_bcasts (ng, iNLM, AVGname(ng))
-# endif
-            IF (ncAVGid(ng).ne.-1) THEN
-              CALL netcdf_close (ng, iNLM, ncAVGid(ng))
+#  ifdef DISTRIBUTE
+            CALL mp_bcasts (ng, iNLM, AVG(ng)%name)
+#  endif
+            IF (AVG(ng)%ncid.ne.-1) THEN
+              CALL netcdf_close (ng, iNLM, AVG(ng)%ncid)
             END IF
             CALL def_avg (ng, Newfile)
             IF (exit_flag.ne.NoError) RETURN
@@ -222,17 +222,19 @@
 !  Write out data into time-averaged NetCDF file.
 !
       IF (LwrtAVG(ng)) THEN
-        IF ((iic(ng).gt.ntstart(ng)).and.                               &
-     &      (MOD(iic(ng)-1,nAVG(ng)).eq.0)) THEN
+        IF (((iic(ng).gt.ntstart(ng)).and.                              &
+     &       (MOD(iic(ng)-1,nAVG(ng)).eq.0)).or.                        &
+     &      ((iic(ng).ge.ntsAVG(ng)).and.(nAVG(ng).eq.1))) THEN
           CALL wrt_avg (ng)
           IF (exit_flag.ne.NoError) RETURN
-# if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
+#  if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
           CALL wrt_tides (ng)
           IF (exit_flag.ne.NoError) RETURN
-# endif
+#  endif
         END IF
       END IF
 # endif
+
 # ifdef DIAGNOSTICS
 !
 !-----------------------------------------------------------------------
@@ -272,22 +274,22 @@
             Ldefine=.FALSE.
           END IF
           IF (Ldefine) THEN
-            NrecDIA(ng)=0
+            Fcount=DIA(ng)%Fcount
+            DIA(ng)%Nrec(Fcount)=0
             IF (ndefDIA(ng).eq.nDIA(ng)) THEN
               ifile=(iic(ng)-1)/ndefDIA(ng)
             ELSE
               ifile=(iic(ng)-1)/ndefDIA(ng)+1
             END IF
             IF (Master) THEN
-              lstr=LEN_TRIM(DIAbase(ng))
-              WRITE (DIAname(ng),30) DIAbase(ng)(1:lstr-3),ifile
+              WRITE (DIA(ng)%name,30) TRIM(DIA(ng)%base), ifile
   30          FORMAT (a,'_',i4.4,'.nc')
             END IF
-# ifdef DISTRIBUTE
-            CALL mp_bcasts (ng, iNLM, DIAname(ng))
-# endif
-            IF (ncDIAid(ng).ne.-1) THEN
-              CALL netcdf_close (ng, iNLM, ncDIAid(ng))
+#  ifdef DISTRIBUTE
+            CALL mp_bcasts (ng, iNLM, DIA(ng)%name)
+#  endif
+            IF (DIA(ng)%ncid.ne.-1) THEN
+              CALL netcdf_close (ng, iNLM, DIA(ng)%ncid)
             END IF
             CALL def_diags (ng, Newfile)
             IF (exit_flag.ne.NoError) RETURN
@@ -306,13 +308,15 @@
 !  Write out data into time-averaged diagnostics NetCDF file.
 !
       IF (LwrtDIA(ng)) THEN
-        IF ((iic(ng).gt.ntstart(ng)).and.                               &
-     &      (MOD(iic(ng)-1,nDIA(ng)).eq.0)) THEN
+        IF (((iic(ng).gt.ntstart(ng)).and.                              &
+     &       (MOD(iic(ng)-1,nDIA(ng)).eq.0)).or.                        &
+     &      ((iic(ng).ge.ntsDIA(ng)).and.(nDIA(ng).eq.1))) THEN
           CALL wrt_diags (ng)
           IF (exit_flag.ne.NoError) RETURN
         END IF
       END IF
 # endif
+
 # ifdef STATIONS
 !
 !-----------------------------------------------------------------------
@@ -339,6 +343,7 @@
         END IF
       END IF
 # endif
+
 # ifdef FLOATS
 !
 !-----------------------------------------------------------------------
@@ -395,6 +400,7 @@
           IF (exit_flag.ne.NoError) RETURN
         END IF
       END IF
+
 # if (defined FOUR_DVAR || defined VERIFICATION) && \
      !defined IS4DVAR_SENSITIVITY
 #  ifdef OBSERVATIONS
