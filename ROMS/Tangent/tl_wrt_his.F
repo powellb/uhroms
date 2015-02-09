@@ -2,9 +2,9 @@
 #if defined TANGENT || defined TL_IOMS
       SUBROUTINE tl_wrt_his (ng)
 !
-!svn $Id: tl_wrt_his.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tl_wrt_his.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -288,7 +288,11 @@
      &                     OCEAN(ng) % tl_zeta(:,:,KOUT),               &
      &                     SetFillVal = .FALSE.)
 # else
+#  ifdef FORCING_SV
+     &                     OCEAN(ng) % f_zeta(:,:))
+#  else
      &                     OCEAN(ng) % tl_zeta(:,:,KOUT))
+#  endif
 # endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
@@ -353,7 +357,11 @@
 # ifdef MASKING
      &                     GRID(ng) % umask_io,                         &
 # endif
+# ifdef FORCING_SV
+     &                     OCEAN(ng) % f_ubar(:,:))
+# else
      &                     OCEAN(ng) % tl_ubar(:,:,KOUT))
+# endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idUbar)), TLM(ng)%Rindex
@@ -468,7 +476,11 @@
 # ifdef MASKING
      &                     GRID(ng) % vmask_io,                         &
 # endif
+# ifdef FORCING_SV
+     &                     OCEAN(ng) % f_vbar(:,:))
+# else
      &                     OCEAN(ng) % tl_vbar(:,:,KOUT))
+# endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idVbar)), TLM(ng)%Rindex
@@ -584,7 +596,11 @@
 #  ifdef MASKING
      &                     GRID(ng) % umask_io,                         &
 #  endif
+#  ifdef FORCING_SV
+     &                     OCEAN(ng) % f_u(:,:,:))
+#  else
      &                     OCEAN(ng) % tl_u(:,:,:,NOUT))
+#  endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idUvel)), TLM(ng)%Rindex
@@ -648,7 +664,11 @@
 #  ifdef MASKING
      &                     GRID(ng) % vmask_io,                         &
 #  endif
+#  ifdef FORCING_SV
+     &                     OCEAN(ng) % f_v(:,:,:))
+#  else
      &                     OCEAN(ng) % tl_v(:,:,:,NOUT))
+#  endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idVvel)), TLM(ng)%Rindex
@@ -713,7 +733,11 @@
 #  ifdef MASKING
      &                       GRID(ng) % rmask_io,                       &
 #  endif
+#  ifdef FORCING_SV
+     &                       OCEAN(ng) % f_t(:,:,:,itrc))
+#  else
      &                       OCEAN(ng) % tl_t(:,:,:,NOUT,itrc))
+#  endif
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,idTvar(itrc))),            &

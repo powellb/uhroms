@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: hessian_op_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id$
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -78,6 +78,9 @@
 
 #ifdef DISTRIBUTE
       integer :: MyError, MySize
+#endif
+#ifdef BNORM
+      integer :: STDrec, Tindex
 #endif
       integer :: chunk_size, ng, thread
 #ifdef _OPENMP
@@ -184,6 +187,22 @@
 # endif
       END DO
 #endif
+#ifdef BNORM
+!
+!-----------------------------------------------------------------------
+!  Read in standard deviation factors for error covariance.
+!-----------------------------------------------------------------------
+!
+!  Initial conditions standard deviation. They are loaded in Tindex=1
+!  of the e_var(...,Tindex) state variables.
+!
+      STDrec=1
+      Tindex=1
+      DO ng=1,Ngrids
+        CALL get_state (ng, 6, 6, STD(1,ng)%name, STDrec, Tindex)
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
+#endif
 !
 !-----------------------------------------------------------------------
 !  Initialize tangent linear for all grids first in order to compute
@@ -241,6 +260,7 @@
         nADJ(ng)=ntimes(ng)
         nTLM(ng)=ntimes(ng)
       END DO
+#ifndef MATRIX
 !
 !  Initialize ARPACK parameters.
 !
@@ -277,7 +297,7 @@
         Nsize(ng)=Ninner
       END DO
 
-#ifdef CHECKPOINTING
+# ifdef CHECKPOINTING
 !
 !  If restart, read in checkpointing data GST restart NetCDF file.
 !  Otherwise, create checkpointing restart NetCDF file.
@@ -296,6 +316,7 @@
         END IF
         IF (exit_flag.ne.NoError) RETURN
       END DO
+# endif
 #endif
 
       RETURN
@@ -331,6 +352,9 @@
       USE mod_scalars
       USE mod_stepping
       USE mod_storage
+#ifdef MATRIX
+      USE mod_fourdvar
+#endif
 !
       USE propagator_mod
 #ifdef DISTRIBUTE
@@ -350,16 +374,73 @@
 #endif
 
       integer :: Fcount, Is, Ie, i, iter, ng
-      integer :: NconvRitz(Ngrids)
 
       real(r8) :: Enorm
 
       real(r8), dimension(2) :: my_norm, my_value
 
+#ifdef MATRIX
+      integer :: j
+      real(r8), dimension(Ninner,Ninner) :: SVDmat
+#else
+      integer :: NconvRitz(Ngrids)
       TYPE (T_GST), allocatable :: ad_state(:)
       TYPE (T_GST), allocatable :: state(:)
+#endif
 
       character (len=55) :: string
+#ifdef MATRIX
+!
+# ifdef LCZ_FINAL
+      DO ng=1,Ngrids
+        LdefHSS(ng)=.TRUE.
+        CALL def_hessian (ng)
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
+# endif
+
+!
+!-----------------------------------------------------------------------
+!  Explicitly compute the NinnerXNinner matrix and use LAPACK to
+!  compute the eigenvectors
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        DO iter=1,Ninner
+          IF (Master) THEN
+             DO i=1,Ninner
+              state(i)=0.0_r8
+              ad_state(i)=0.0_r8
+             END DO
+             state(iter)=1.0_r8
+          END IF
+#ifdef DISTRIBUTE
+          CALL mp_bcastf (ng, iTLM, state)
+          CALL mp_bcastf (ng, iTLM, ad_state)
+#endif
+          CALL propagator (RunInterval, state, ad_state)
+!
+!  Copy ad_state into the appropriate column of the matrix.
+!
+          IF (Master) THEN
+            DO i=1,Ninner
+              SVDmat(i,iter)=ad_state(i)
+            END DO
+          END IF
+        END DO
+!
+      END DO
+!
+! Now write the matrix.
+!
+      IF (Master) THEN
+       DO j=1,Ninner
+        DO i=1,Ninner
+          write(50,*)SVDmat(i,j)
+        END DO
+       END DO
+      END IF
+#else
 !
 !-----------------------------------------------------------------------
 !  Implicit Restarted Arnoldi Method (IRAM) for the computation of
@@ -383,6 +464,13 @@
 #ifdef CHECKPOINTING
       LwrtGST=.TRUE.
 #endif
+#ifdef LCZ_FINAL
+      DO ng=1,Ngrids
+        LdefHSS(ng)=.TRUE.
+        CALL def_hessian (ng)
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
+#endif
 !
       ITER_LOOP : DO WHILE (ITERATE)
         iter=iter+1
@@ -390,9 +478,6 @@
 !  Reverse communication interface.
 !
         DO ng=1,Ngrids
-#ifdef PROFILE
-          CALL wclock_on (ng, iTLM, 38)
-#endif
           IF (Master) THEN
             CALL dsaupd (ido(ng), bmat, Nsize(ng), which, NEV,          &
      &                   Ritz_tol,                                      &
@@ -404,7 +489,7 @@
             Nconv(ng)=iaup2(4)
           END IF
 #ifdef PROFILE
-          CALL wclock_off (ng, iTLM, 38)
+          CALL wclock_on (ng, iTLM, 38)
 #endif
 #ifdef DISTRIBUTE
 !
@@ -419,6 +504,9 @@
           CALL mp_bcasti (ng, iTLM, iparam(:,ng))
           CALL mp_bcasti (ng, iTLM, ipntr(:,ng))
           CALL mp_bcastf (ng, iTLM, STORAGE(ng)%SworkD)
+#endif
+#ifdef PROFILE
+          CALL wclock_off (ng, iTLM, 38)
 #endif
 #ifdef CHECKPOINTING
 !
@@ -670,6 +758,7 @@
         END IF
 
       END DO ITER_LOOP
+#endif
 !
  10   FORMAT (/,1x,'Error in ',a,1x,a,a,1x,i5,/)
  20   FORMAT (/,a,1x,i2,/)

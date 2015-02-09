@@ -121,6 +121,7 @@
      &                      MIXING(ng) % alpha,                         &
      &                      MIXING(ng) % beta,                          &
      &                      OCEAN(ng) % t,                              &
+     &                      OCEAN(ng) % rho,                            &
 # endif
 # ifdef ZETA_ELLIPTIC
      &                      FOURDVAR(ng) % ad_zeta_ref,                 &
@@ -163,7 +164,7 @@
      &                            rmask, umask, vmask,                  &
 # endif
 # ifdef SOLVE3D
-     &                            alpha, beta, t,                       &
+     &                            alpha, beta, t, rho,                  &
 # endif
 # ifdef ZETA_ELLIPTIC
      &                            ad_zeta_ref, ad_rhs_r2d,              &
@@ -222,6 +223,7 @@
       real(r8), intent(in) :: alpha(LBi:,LBj:)
       real(r8), intent(in) :: beta(LBi:,LBj:)
       real(r8), intent(in) :: t(LBi:,LBj:,:,:,:)
+      real(r8), intent(in) :: rho(LBi:,LBj:,:)
       real(r8), intent(inout) :: ad_t(LBi:,LBj:,:,:,:)
       real(r8), intent(inout) :: ad_u(LBi:,LBj:,:,:)
       real(r8), intent(inout) :: ad_v(LBi:,LBj:,:,:)
@@ -269,6 +271,7 @@
       real(r8), intent(in) :: alpha(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: beta(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
+      real(r8), intent(in) :: rho(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(inout) :: ad_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(inout) :: ad_u(LBi:UBi,LBj:UBj,2,N(ng))
       real(r8), intent(inout) :: ad_v(LBi:UBi,LBj:UBj,2,N(ng))
@@ -296,14 +299,27 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, j, k, order
+      integer :: i, j, k, order, Nfilt
 
       integer :: Norder = 2                 ! Shapiro filter order
+      integer :: Nshap = 2                 ! Number of times Shapiro filter 
+# ifdef SALINITY
+      logical :: ml_reached=.FALSE.
+      logical :: base_reached=.FALSE.
+      logical :: balance_off=.FALSE.
+      integer :: kref, khref
+# endif
 
       real(r8) :: fac, fac1, fac2, fac3, gamma
       real(r8) :: cff, cff1, cff2, cff3, cff4
       real(r8) :: ad_cff, ad_cff1, ad_cff2, adfac, adfac1, adfac2
       real(r8) :: dzdT, zphi, zphi1, zwbot, zwtop
+# ifdef SALINITY
+      real(r8) :: Temp_ref, T_high, T_low, T_thvalue
+      real(r8) :: href, z_high, z_low
+      real(r8) :: T_dep
+      real(r8) :: dSdT_max, cff_fac
+# endif
 
       real(r8), dimension(20) ::  filter_coef =                         &
      &   (/ 2.500000E-1_r8,    6.250000E-2_r8,     1.562500E-2_r8,      &
@@ -324,6 +340,8 @@
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,0:N(ng)) :: dTdz
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,0:N(ng)) :: dSdz
+      real(r8), dimension(N(ng)) :: dTdz_filter, dSdz_filter
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: mld
 # endif
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: ad_gradP
 
@@ -1101,36 +1119,174 @@
               dSdz(i,j,k)=dSdz(i,j,k)-FC(i,k)*dSdz(i,j,k+1)
             END DO
           END DO
+       !! Shapiro filter of the vertical derivatives
+          DO i=IstrR,IendR
+             DO order=1,Norder/2
+              IF (order.ne.Norder/2) THEN
+                dSdz_filter(1)=2.0_r8*(dSdz(i,j,1)-dSdz(i,j,2))
+                dSdz_filter(N(ng))=2.0_r8*(dSdz(i,j,N(ng))               &
+     &                                    -dSdz(i,j,N(ng)-1))
+                dTdz_filter(1)=2.0_r8*(dTdz(i,j,1)-dTdz(i,j,2))
+                dTdz_filter(N(ng))=2.0_r8*(dTdz(i,j,N(ng))               &
+     &                                  -dTdz(i,j,N(ng)-1))
+              ELSE
+                dSdz_filter(1)=0.0_r8
+                dSdz_filter(N(ng))=0.0_r8
+                dTdz_filter(1)=0.0_r8
+                dTdz_filter(N(ng))=0.0_r8
+              END IF
+              DO k=2,N(ng)-1
+                dSdz_filter(k)=2.0_r8*dSdz(i,j,k)-dSdz(i,j,k-1)          &
+     &                               -dSdz(i,j,k+1)
+                dTdz_filter(k)=2.0_r8*dTdz(i,j,k)-dTdz(i,j,k-1)          &
+     &                               -dTdz(i,j,k+1)
+              END DO
+              DO k=1,N(ng)
+                dSdz(i,j,k)=dSdz(i,j,k)-filter_coef(Norder/2)*dSdz_filter(k)
+                dTdz(i,j,k)=dTdz(i,j,k)-filter_coef(Norder/2)*dTdz_filter(k)
+              END DO
+            END DO
+          END DO  !! END shapiro filter
+	 END DO
+
+!  
+!  Compute mixed layer depth (mld) according to criterion
+!  on temperature
+!  from the work of Kara, Rochford, Hulburt: 
+!  Kara A., Rochford P. and Hulburt E., 2000:
+!   An optimal definition for ocean mixed layer depth
+!   J. Geophys. Res. vol 105, NoC7, pp 16,803-16,821
+!
+
+!  Criteria on temperature : 0.8
+!  starts to search for the mixed layer depth at 10m
+
+        T_thvalue=0.8_r8
+        href=-10_r8
+
+        DO j=JstrR,JendR
+          DO i=IstrR,IendR
+
+          ! Computation of the temperature of reference at depth -10m
+          DO k=N(ng)-1,1,-1
+           IF ((z_r(i,j,k+1).gt.href).and.(z_r(i,j,k).le.href)) THEN
+            khref = k
+!MGJ        Temp_ref = t(i,j,khref,Lbck,itemp)
+            END IF
+           END DO
+         base_reached =.FALSE.
+         kref= khref
+
+         ! Search for an uniform temperature region
+          DO k=khref-1,1,-1
+!AMM         T_dep = ABS(t(i,j,k+1,Lbck,itemp)- t(i,j,k,Lbck,itemp))
+             T_dep = ABS(t(i,j,k+1,Lbck,itemp)- t(i,j,k,Lbck,itemp))/   &
+     &               ABS(z_r(i,j,k+1)-z_r(i,j,k))
+!MGJ         IF (.not.base_reached.and.T_dep.le.0.1_r8*T_thvalue) THEN
+             IF (.not.base_reached.and.T_dep.lt.0.01_r8*T_thvalue) THEN
+              kref = k
+             ELSE
+              base_reached = .TRUE.
+             END IF
+           END DO
+
+           IF (.not.base_reached) THEN
+             kref = khref
+           END IF
+
+!MGJ           Temp_ref = t(i,j,kref,Lbck,itemp)
+!MGJ           mld(i,j)= z_r(i,j,kref)
+!MGJ
+
+           IF (kref.eq.khref) THEN
+!
+!   Linearly interpolate temp to href.
+!
+             DO k=1,N-1
+               IF (href.ge.zr(i,j,k).and.href.lt.zr(i,j,k+1)) THEN
+                 fac4=(href-zr(i,j,k))/(zr(i,j,k+1)-zr(i,j,k))
+                 Temp_ref=fac4*t(i,j,k+1,Lbck,itemp)+                   &
+     &                            (1.0_r8-fac4)*t(i,j,k,Lbck,itemp)
+                 mld(i,j)=href
+               END IF
+             END DO
+           ELSE
+             Temp_ref = t(i,j,kref,Lbck,itemp)
+             mld(i,j)= z_r(i,j,kref)
+           END IF
+!MGJ
+
+           ml_reached = .FALSE.
+
+            DO k=kref-1,1,-1
+               IF (.not.ml_reached.and.                                 &
+     &          (ABS(t(i,j,k,Lbck,itemp)-Temp_ref).gt.T_thvalue)) THEN
+                  T_high = ABS(t(i,j,k+1,Lbck,itemp)-Temp_ref)
+                  T_low  = ABS(t(i,j,k,Lbck,itemp)-Temp_ref)
+                  mld(i,j)=( (T_thvalue-T_high)*z_r(i,j,k) +            &
+     &                            (T_low- T_thvalue)*z_r(i,j,k+1))      &
+     &                                 /(T_low-T_high)
+                  ml_reached =.TRUE.
+                END IF
+            END DO
+
+            IF (.not.ml_reached) THEN
+               mld(i,j)=z_r(i,j,1)
+            END IF
+          END DO
         END DO
+
+
 !
 !  Add balanced salinity (deltaS_b) contribution to unbalanced salinity
-!  increment. The unbalanced salinity increment is related related to
+!  increment. The unbalanced salinity increment is related to
 !  temperature increment:
 !
 !       deltaS_b = cff * dS/dz * dz/dT * deltaT
+!  dSdT computed from the work of Mogensen, Balsameda, Weaver
+!  Mogensen, K.; Balmaseda, M. A. and Weaver, A
+!   The NEMOVAR ocean data assimilation system as implemented 
+!   in the ECMWF ocean analysis for System 4
+!   CERFACS, Toulouse, Tech. Memorandum No. 668, Febr 2012
 !
 !  Here, cff is a coefficient that depends on the mixed layer depth:
 !
-!       cff = 1.0 - EXP (z_r / ml_depth)
+!        cff=(1.0_r8-EXP((z_r(i,j,k)-mld(i,j))/cff_fac))*dSdT(k)
 !
-!  the coefficient is smoothly reduced to zero at the surface and below
-!  the mixed layer.
+!  the coefficient smoothly increases from 0 at the mixed layer depth
+!  to dSdT below it , cff_fac fixes the speed of the increase.  
 !
+        cff_fac = 20.0_r8
+
+        dSdT_max = 1.0_r8
+
         DO j=JstrR,JendR
           DO i=IstrR,IendR
             DO k=1,N(ng)
               cff=0.5_r8*(dTdz(i,j,k-1)+dTdz(i,j,k))
-              IF (ABS(cff).lt.dTdz_min(ng)) THEN
+             cff2=0.5_r8*(dSdz(i,j,k-1)+dSdz(i,j,k))
+              IF (k.eq.N(ng)) THEN
+               balance_off = (ABS(cff).lt.dTdz_min(ng)).or.             &
+     &           (z_r(i,j,k).gt.mld(i,j)).or.                           &
+     &             (ABS(cff2).gt.(ABS(cff)*dSdT_max))
+              ELSE
+               balance_off = (ABS(cff).lt.dTdz_min(ng)).or.             &
+     &           (z_r(i,j,k+1).gt.mld(i,j)).or.                         &
+     &             (ABS(cff2).gt.(ABS(cff)*dSdT_max))
+              END IF
+              IF (balance_off) THEN
                 dzdT=0.0_r8
               ELSE
                 dzdT=1.0_r8/cff
               END IF
-              dSdT(k)=(0.5_r8*(dSdz(i,j,k-1)+                           &
+	      dSdT(k)=(0.5_r8*(dSdz(i,j,k-1)+                           &
      &                         dSdz(i,j,k  )))*dzdT
             END DO
+
 !
 !  Shapiro filter.
 !
+           DO Nfilt=1,Nshap
             DO order=1,Norder/2
               IF (order.ne.Norder/2) THEN
                 dSdT_filter(1)=2.0_r8*(dSdT(1)-dSdT(2))
@@ -1146,9 +1302,29 @@
                 dSdT(k)=dSdT(k)-filter_coef(Norder/2)*dSdT_filter(k)
               END DO
             END DO
+           END DO
+            ! if balance_off, dSdT =0
+            DO k=1,N(ng)
+              cff=0.5_r8*(dTdz(i,j,k-1)+dTdz(i,j,k))
+              cff2=0.5_r8*(dSdz(i,j,k-1)+dSdz(i,j,k))
+              IF (k.eq.N(ng)) THEN
+               balance_off = (ABS(cff).lt.dTdz_min(ng)).or.             &
+     &           (z_r(i,j,k).gt.mld(i,j)).or.                           &
+     &             (ABS(cff2).gt.(ABS(cff)*dSdT_max))
+              ELSE
+               balance_off = (ABS(cff).lt.dTdz_min(ng)).or.             &
+     &           (z_r(i,j,k+1).gt.mld(i,j)).or.                         &
+     &             (ABS(cff2).gt.(ABS(cff)*dSdT_max))
+              END IF
+              IF (balance_off) THEN
+                dSdT(k)=0.0_r8
+              END IF
+            END DO
 
             DO k=1,N(ng)
-              cff=(1.0_r8-EXP(z_r(i,j,k)/ml_depth(ng)))*dSdT(k)
+             ! coefficient smoothly increases from 0 at the mld to dSdT below it
+              cff=(1.0_r8-EXP((z_r(i,j,k)-mld(i,j))/cff_fac))*dSdT(k)
+
 #  ifdef MASKING
 !>            tl_t(i,j,k,Linp,isalt)=tl_t(i,j,k,Linp,isalt)*rmask(i,j)
 !>

@@ -2,9 +2,9 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_read (ng, model, backward)
 !
-!svn $Id: obs_read.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: obs_read.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -97,6 +97,15 @@
 !
         CALL netcdf_get_ivar (ng, model, OBS(ng)%name, Vname(1,idOtyp), &
      &                        ObsType(Mstr:),                           &
+     &                        ncid = OBS(ng)%ncid,                      &
+     &                        start = (/NstrObs(ng)/),                  &
+     &                        total = (/Nobs(ng)/))
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in observation provenance identifier.
+!
+        CALL netcdf_get_ivar (ng, model, OBS(ng)%name, Vname(1,idOpro), &
+     &                        ObsProv(Mstr:),                           &
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
@@ -211,6 +220,22 @@
      &                          start = (/NstrObs(ng)/),                &
      &                          total = (/Nobs(ng)/))
           IF (exit_flag.ne.NoError) RETURN
+# ifdef BGQC
+          CALL netcdf_get_fvar (ng, model, DAV(ng)%name,                &
+     &                          Vname(1,idBgEr),                        &
+     &                          BgErr(Mstr:),                           &
+     &                          ncid = DAV(ng)%ncid,                    &
+     &                          start = (/NstrObs(ng)/),                &
+     &                          total = (/Nobs(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+          CALL netcdf_get_fvar (ng, model, DAV(ng)%name,                &
+     &                          Vname(1,idObsS),                        &
+     &                          ObsScale(Mstr:),                        &
+     &                          ncid = DAV(ng)%ncid,                    &
+     &                          start = (/NstrObs(ng)/),                &
+     &                          total = (/Nobs(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+# endif
         END IF
 
 # if defined TLM_OBS && !defined WEAK_CONSTRAINT

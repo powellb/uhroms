@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 654 2013-03-12 17:11:03Z arango $
+!svn $Id: mod_ncparam.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -169,6 +169,8 @@
 !
         integer  :: idAice        ! fraction of cell covered by ice
         integer  :: idbath        ! bathymetry
+        integer  :: idBgEr        ! Background error at observation locations
+        integer  :: idBgTh        ! Threshold for background quality control check
         integer  :: idCfra        ! cloud fraction
         integer  :: idCosW        ! COS(omega(k)*t)
         integer  :: idCos2        ! COS(omega(k)*t)*COS(omega(l)*t)
@@ -206,6 +208,7 @@
         integer  :: idObsZ        ! observations Z-grid location
         integer  :: idOday        ! observations survey time
         integer  :: idOerr        ! observations error
+        integer  :: idOpro        ! observations provenance
         integer  :: idOtyp        ! observations type
         integer  :: idOval        ! observations value
         integer  :: idOvar        ! observations global variance
@@ -1202,6 +1205,10 @@
               idSSSc=varid
             CASE ('idSSTc')
               idSSTc=varid
+            CASE ('idTclm(itemp)')
+              idTclm(itemp)=varid
+            CASE ('idTclm(isalt)')
+              idTclm(isalt)=varid
 #if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
     defined SO_SEMI
@@ -1531,6 +1538,10 @@
               idVfx2=varid
 #endif
 #if defined FOUR_DVAR || defined VERIFICATION
+            CASE ('idBgEr')
+              idBgEr=varid
+            CASE ('idBgTh')
+              idBgTh=varid
             CASE ('idNLmi')
               idNLmi=varid
             CASE ('idNLmo')
@@ -1553,6 +1564,8 @@
               idOday=varid
             CASE ('idOerr')
               idOerr=varid
+            CASE ('idOpro')
+              idOpro=varid
             CASE ('idOtyp')
               idOtyp=varid
             CASE ('idOval')
@@ -2155,40 +2168,6 @@
   40  CLOSE (inp)
 
 #ifdef SOLVE3D
-# ifdef TCLIMATOLOGY
-!
-!-----------------------------------------------------------------------
-!  Set climatology tracers (active and passive) metadata. The variable
-!  name and units are the same as the basic tracers. The default
-!  time-variable name is the same as the variable name but with the
-!  _time suffix.  Recall that other time-variables names are allowed
-!  provided that the input NetCDF variable has the "time" attribute
-!  with the appropriate value.
-!-----------------------------------------------------------------------
-!
-      DO i=1,MT
-        varid=varid+1
-        IF (varid.gt.MV) THEN
-          WRITE (stdout,60) MV, varid
-          STOP
-        END IF
-        idTclm(i)=varid
-        DO ng=1,Ngrids
-          Fscale(varid,ng)=1.0_r8
-          Iinfo(1,varid,ng)=r3dvar
-        END DO
-        WRITE (Vname(1,varid),'(a)')                                    &
-     &        TRIM(ADJUSTL(Vname(1,idTvar(i))))
-        WRITE (Vname(2,varid),'(a,a)')                                  &
-     &        TRIM(ADJUSTL(Vname(2,idTvar(i)))), ' climatology'
-        WRITE (Vname(3,varid),'(a)')                                    &
-     &        TRIM(ADJUSTL(Vname(3,idTvar(i))))
-        WRITE (Vname(4,varid),'(a,a)')                                  &
-     &        TRIM(Vname(1,varid)), ', scalar, series'
-        WRITE (Vname(5,varid),'(a,a)')                                  &
-     &        TRIM(ADJUSTL(Vname(1,idTvar(i)))), '_time'
-      END DO
-# endif
 !
 !-----------------------------------------------------------------------
 !  Set passive tracers surface flux metadata. The variable name is the

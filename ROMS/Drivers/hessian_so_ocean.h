@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: hessian_so_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: so_ocean.h 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -375,6 +375,13 @@
 #ifdef CHECKPOINTING
       LwrtGST=.TRUE.
 #endif
+#ifdef LCZ_FINAL
+      DO ng=1,Ngrids
+        LdefHSS(ng)=.TRUE.
+        CALL def_hessian (ng)
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
+#endif
 !
       ITER_LOOP : DO WHILE (ITERATE)
         iter=iter+1
@@ -699,7 +706,7 @@
           CALL wclock_off (ng, iTLM, 0)
         END DO
 !$OMP END PARALLEL
-
+      
       END DO
 !
 !  Close IO files.

@@ -60,15 +60,21 @@
 #elif defined FT_EIGENMODES
 # include "fte_ocean.h"
 #elif defined FORCING_SV
-# include "fsv_ocean.h"
+# ifdef HESSIAN_FSV
+#  include "hessian_fsv_ocean.h"
+# else
+#  include "fsv_ocean.h"
+# endif
 #elif defined IS4DVAR_SENSITIVITY
 # include "obs_sen_is4dvar.h"
 #elif defined OPT_PERTURBATION
 # include "op_ocean.h"
 #elif defined HESSIAN_SV
-# include "hessian_op_ocean.h"
-#elif defined HESSIAN_FSV
-# include "hessian_fsv_ocean.h"
+# ifdef HESSIAN_TRACE
+#   include "hessian_op_ocean_trace.h"
+# else
+#   include "hessian_op_ocean.h"
+# endif
 #elif defined OPT_OBSERVATIONS
 # include "optobs_ocean.h"
 #elif defined STOCHASTIC_OPT

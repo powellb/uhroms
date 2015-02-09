@@ -1,7 +1,7 @@
 !
 !  ROMS/TOMS IO NetCDF variables.
 !
-!svn $Id: varinfo.dat 654 2013-03-12 17:11:03Z arango $
+!svn $Id: varinfo.dat 645 2013-01-22 23:21:54Z arango $
 !========================================================= Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
@@ -62,7 +62,7 @@
 !------------------------------------------------------------------------------
 !
 
-'$URL: https://www.myroms.org/svn/src/tags/roms-3.6/ROMS/External/varinfo.dat $'
+'$URL: https://www.myroms.org/svn/src/trunk/ROMS/External/varinfo.dat $'
 
 !
 !------------------------------------------------------------------------------
@@ -1892,8 +1892,7 @@
 
 !
 !------------------------------------------------------------------------------
-!  Climatotogy variables.  Active and passive climatology tracers variable
-!  metadata is set internally in "mod_ncparam".
+!  Climatotogy variables.
 !------------------------------------------------------------------------------
 !
 
@@ -1958,6 +1957,24 @@
   'sst_time'
   'idSSTc'
   'r2dvar'
+  1.0d0
+
+'temp'                                             ! Input
+  'potential temperature climatology'
+  'Celsius'                                        ! [Celsius]
+  'temp, scalar, series'
+  'temp_time'
+  'idTclm(itemp)'
+  'r3dvar'
+  1.0d0
+
+'salt'                                             ! Input
+  'salinity climatology'
+  'nondimensional'                                 ! [PSU]
+  'salt, scalar, series'
+  'salt_time'
+  'idTclm(isalt)'
+  'r3dvar'
   1.0d0
 
 !
@@ -5358,5 +5375,32 @@
   'nulvar'
   'datum'
   'idMOMf'
+  'nulvar'
+  1.0d0
+
+'BgError_value'                                    ! Output
+  'Background error at observation locations'
+  'nulvar'
+  'nulvar'
+  'datum'
+  'idBgEr'
+  'nulvar'
+  1.0d0
+
+'BgThresh_value'                                    ! Output
+  'Threshold for background quality control check of obs'
+  'nulvar'
+  'nulvar'
+  'datum'
+  'idBgTh'
+  'nulvar'
+  1.0d0
+
+'obs_provenance'                                   ! Input
+  'associated observation flag type'
+  'nondimensional'                                 ! [nondimensional]
+  'nulvar'
+  'datum'
+  'idOpro'
   'nulvar'
   1.0d0

@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: w4dvar_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: w4dvar_ocean.h 615 2012-05-12 22:37:59Z arango $
 !=================================================== Andrew M. Moore ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -715,6 +715,17 @@
 !
         INNER_LOOP : DO my_inner=0,Ninner
           inner=my_inner
+# ifdef RPCG
+          IF (inner.ne.Ninner) THEN
+            Linner=.TRUE.
+          ELSE
+            Linner=.FALSE.
+          END IF
+          IF (inner.eq.0) Lcgini=.TRUE.
+          DO ng=1,Ngrids
+            CALL rpcg_lanczos (ng, iRPM, outer, inner, Ninner, Lcgini)
+          END DO
+# else
 !
 ! Initialize conjugate gradient algorithm depending on hot start or
 ! outer loop index.
@@ -734,6 +745,7 @@
               Linner=.TRUE.
             END IF
           END IF
+# endif
 !
 !  Start inner loop computations.
 !
@@ -948,11 +960,15 @@
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
             Nrun=Nrun+1
+# ifndef RPCG
             DO ng=1,Ngrids
               Lcgini=.FALSE.
               CALL congrad (ng, iRPM, outer, inner, Ninner, Lcgini)
               IF (exit_flag.ne.NoError) RETURN
             END DO
+# else
+            Lcgini=.FALSE.
+# endif
 
           END IF INNER_COMPUTE
 

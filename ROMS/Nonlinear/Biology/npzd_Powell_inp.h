@@ -1,6 +1,6 @@
       SUBROUTINE read_BioPar (model, inp, out, Lwrite)
 !
-!svn $Id: npzd_Powell_inp.h 654 2013-03-12 17:11:03Z arango $
+!svn $Id: npzd_Powell_inp.h 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -180,7 +180,7 @@
               END IF
               ifield=isTvar(idbio(itracer))
               Npts=load_lbc(Nval, Cval, line, nline, ifield, igrid,     &
-     &                      iTrcStr, iTrcEnd, LBC)
+     &                        iTrcStr, iTrcEnd, LBC)
 #if defined ADJOINT || defined TANGENT || defined TL_IOMS
             CASE ('ad_LBC(isTvar)')
               IF (itracer.lt.NBT) THEN
@@ -473,7 +473,7 @@
 #ifdef TCLIMATOLOGY
             DO itrc=1,NBT
               i=idbio(itrc)
-              WRITE (out,100) LtracerCLM(i,ng), 'LtracerCLM',           &
+              WRITE (out,110) LtracerCLM(i,ng), 'LtracerCLM',           &
      &              i, 'Processing climatology on tracer ', i,          &
      &              TRIM(Vname(1,idTvar(i)))
             END DO

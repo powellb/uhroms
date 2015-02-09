@@ -8,7 +8,7 @@
 # endif
      &                       Fout)
 !
-!svn $Id: get_3dfldr.F 652 2013-02-12 19:00:36Z arango $
+!svn $Id: get_3dfldr.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -279,11 +279,11 @@
      &        /,15x,'in input NetCDF file: ',a)
   30  FORMAT (/,' GET_3DFLDR  - unable to open input NetCDF file: ',a)
   40  FORMAT (/,' GET_3DFLDR  - error while reading variable: ',a,2x,   &
-     &       ' at TIME index = ',i7)
+     &       ' at TIME index = ',i4)
   50  FORMAT (3x,' GET_3DFLDR  - ',a,/,19x,'(Min = ',1p,e15.8,0p,       &
      &        ' Max = ',1p,e15.8,0p,')')
   60  FORMAT (3x,' GET_3DFLDR  - ',a,',',t62,'t = ',a,/,19x,            &
-     &        '(Rec=',i7.7,', Index=',i1,', File: ',a,')',/,19x,        &
+     &        '(Rec=',i4.4,', Index=',i1,', File: ',a,')',/,19x,        &
      &        '(Tmin= ', f15.4, ' Tmax= ', f15.4,')',/, 19x,            &
      &        '(Min = ', 1p,e15.8,0p,' Max = ',1p,e15.8,0p,')')
 

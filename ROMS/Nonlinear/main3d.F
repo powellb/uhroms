@@ -2,9 +2,9 @@
 #if defined NONLINEAR && defined SOLVE3D
       SUBROUTINE main3d (RunInterval)
 !
-!svn $Id: main3d.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: main3d.F 615 2012-05-12 22:37:59Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -190,6 +190,7 @@
           IF (FrequentImpulse(ng)) THEN
             DO tile=first_tile(ng),last_tile(ng),+1
               CALL forcing (ng, tile, kstp(ng), nstp(ng))
+              CALL set_depth (ng, tile)
             END DO
 !$OMP BARRIER
           END IF

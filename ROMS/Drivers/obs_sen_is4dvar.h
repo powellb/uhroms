@@ -392,8 +392,8 @@
 #endif
 #if defined OBS_IMPACT && defined OBS_IMPACT_SPLIT
       USE mod_forces, ONLY : initialize_forces
-      USE mod_ocean, ONLY : initialize_ocean
 #endif
+      USE mod_ocean, ONLY : initialize_ocean
 #ifdef BALANCE_OPERATOR
       USE tl_balance_mod, ONLY: tl_balance
 #endif
@@ -568,7 +568,25 @@
 #endif
 !$OMP END PARALLEL
         IF (exit_flag.ne.NoError) RETURN
+#ifdef AD_IMPULSE
+        DO ng=1,Ngrids
+          ADM(ng)%Rindex=ADM(ng)%Rindex-1
+          CALL ad_wrt_his (ng)
+          IF (exit_flag.ne.NoError) RETURN
+        END DO
+#endif
       END IF
+!
+!  Clear adjoint state arrays.
+!
+      DO ng=1,Ngrids
+!$OMP PARALLEL
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL initialize_ocean (ng, MyRank, iADM)
+        END DO
+!$OMP END PARALLEL
+      END DO
+
 !
 !  Load full adjoint sensitivity vector, x(0), for t=t0 into adjoint
 !  state arrays at index Lnew.

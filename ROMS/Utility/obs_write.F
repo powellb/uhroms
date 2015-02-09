@@ -2,9 +2,9 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_write (ng, tile, model)
 !
-!svn $Id: obs_write.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: obs_write.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -55,6 +55,9 @@
 # endif
       real(r8), parameter :: IniVal = 0.0_r8
 
+# ifdef BGQC
+      real(r8) :: df1, df2, Thresh
+# endif
       real(r8) :: misfit(Mobs)
 
       character (len=50) :: string
@@ -99,7 +102,27 @@
         IF (wrtNLmod(ng)) THEN
           DO iobs=Mstr,Mend
             NLmodVal(iobs)=IniVal
+#  ifdef BGQC
+            BgErr(iobs)=IniVal
+#  endif
           END DO
+#  ifdef BGQC
+!
+!  Set BgThresh for the background quality control check based on
+!  the obs_provenance. For now we will not reject any satellite obs, so
+!  we set BgThresh for these data types to be large.
+!
+          DO iobs=Mstr,Mend
+            IF (ObsProv(iobs).le.5) THEN
+               BgThresh(iobs)=100000.0_r8
+            ELSE
+!AMM              IF (ObsType(iobs).eq.6) BgThresh(iobs)=16.0_r8
+!AMM              IF (ObsType(iobs).eq.7) BgThresh(iobs)=16.0_r8
+              IF (ObsType(iobs).eq.6) BgThresh(iobs)=user(1)**2
+              IF (ObsType(iobs).eq.7) BgThresh(iobs)=user(1)**2
+            ENDIF
+          END DO
+#  endif
         END IF
 #  ifdef TLM_OBS
         IF (wrtTLmod(ng).or.wrtRPmod(ng)) THEN
@@ -115,9 +138,20 @@
 !  for screenning of the observations. This scale is one for good
 !  observations and zero for bad observations.
 !
+#  ifdef BGQC
+#   ifdef IS4DVAR
+        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
+#   else
+        IF (inner.eq.0.and.outer.eq.0) THEN
+#   endif
         DO iobs=Mstr,Mend
           ObsScale(iobs)=IniVal
         END DO
+#  else 
+        DO iobs=Mstr,Mend
+          ObsScale(iobs)=IniVal
+        END DO
+#  endif
 # endif
 !
 !  Free-surface observations.
@@ -139,6 +173,22 @@
      &                        GRID(ng)%rmask,                           &
 #  endif
      &                        NLmodVal)
+#  ifdef BGQC
+          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        isFsur,                                   &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsScale,                        &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        OCEAN(ng)%e_zeta(:,:,1),                  &
+#   ifdef MASKING
+     &                        GRID(ng)%rmask,                           &
+#   endif
+     &                        BgErr)
+#  endif
         END IF
 # endif
 # ifdef TLM_OBS
@@ -180,6 +230,22 @@
      &                        GRID(ng)%umask,                           &
 #  endif
      &                        NLmodVal)
+#  ifdef BGQC
+          CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        isUbar,                                   &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        uXmin(ng), uXmax(ng),                     &
+     &                        uYmin(ng), uYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsScale,                        &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        OCEAN(ng)%e_ubar(:,:,1),                  &
+#   ifdef MASKING
+     &                        GRID(ng)%umask,                           &
+#   endif
+     &                        BgErr)
+#  endif
         END IF
 # endif
 # ifdef TLM_OBS
@@ -221,6 +287,22 @@
      &                        GRID(ng)%vmask,                           &
 #  endif
      &                        NLmodVal)
+#  ifdef BGQC
+          CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        isVbar,                                   &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        vXmin(ng), vXmax(ng),                     &
+     &                        vYmin(ng), vYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsScale,                        &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        OCEAN(ng)%e_vbar(:,:,1),                  &
+#   ifdef MASKING
+     &                        GRID(ng)%vmask,                           &
+#   endif
+     &                        BgErr)
+#  endif
         END IF
 # endif
 # ifdef TLM_OBS
@@ -273,6 +355,23 @@
      &                        GRID(ng)%umask,                           &
 #   endif
      &                        NLmodVal)
+#   ifdef BGQC
+          CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        isUvel,                                   &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        uXmin(ng), uXmax(ng),                     &
+     &                        uYmin(ng), uYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType,  ObsScale,                       &
+     &                        Tobs, Xobs, Yobs, Zobs,                   &
+     &                        OCEAN(ng)%e_u(:,:,:,1),                   &
+     &                        GRID(ng)%z_v,                             &
+#    ifdef MASKING
+     &                        GRID(ng)%umask,                           &
+#    endif
+     &                        BgErr)
+#   endif
         END IF
 #  endif
 #  ifdef TLM_OBS
@@ -332,6 +431,23 @@
      &                        GRID(ng)%vmask,                           &
 #   endif
      &                        NLmodVal)
+#   ifdef BGQC
+          CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        isVvel,                                   &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        vXmin(ng), vXmax(ng),                     &
+     &                        vYmin(ng), vYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsScale,                        &
+     &                        Tobs, Xobs, Yobs, Zobs,                   &
+     &                        OCEAN(ng)%e_v(:,:,:,1),                   &
+     &                        GRID(ng)%z_v,                             &
+#    ifdef MASKING
+     &                        GRID(ng)%vmask,                           &
+#    endif
+     &                        BgErr)
+#   endif
         END IF
 #  endif
 #  ifdef TLM_OBS
@@ -384,6 +500,23 @@
      &                          GRID(ng)%rmask,                         &
 #   endif
      &                          NLmodVal)
+#   ifdef BGQC
+            CALL extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,           &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          isTvar(itrc),                           &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          ObsType, ObsScale,                      &
+     &                          Tobs, Xobs, Yobs, Zobs,                 &
+     &                          OCEAN(ng)%e_t(:,:,:,1,itrc),            &
+     &                          GRID(ng)%z_r,                           &
+#    ifdef MASKING
+     &                          GRID(ng)%rmask,                         &
+#    endif
+     &                          BgErr)
+#   endif
           END IF
 #  endif
 #  ifdef TLM_OBS
@@ -406,6 +539,42 @@
      &                          TLmodVal)
           END IF
 #  endif
+        END DO
+# endif
+
+# ifdef BGQC
+!
+!-----------------------------------------------------------------------
+!  Perform the background quality control check and reject obs
+!  that fail.
+!-----------------------------------------------------------------------
+!
+#  ifdef IS4DVAR
+        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
+#  else
+        IF (inner.eq.0.and.outer.eq.0) THEN
+#  endif
+          DO iobs=Mstr,Mend
+#  if defined IS4DVAR
+            df1=(ObsVal(iobs)-NLmodVal(iobs))/BgErr(iobs)
+            df2=(1.0_r8/ObsErr(iobs))/(BgErr(iobs)*BgErr(iobs))
+#  elif defined WEAK_CONSTRAINT
+#    ifdef W4DVAR
+            df1=(ObsVal(iobs)-TLmodVal(iobs))/BgErr(iobs)
+            df2=ObsErr(iobs)/(BgErr(iobs)*BgErr(iobs))
+#    else
+            df1=(ObsVal(iobs)-NLmodVal(iobs))/BgErr(iobs)
+            df2=ObsErr(iobs)/(BgErr(iobs)*BgErr(iobs))
+#    endif
+#  endif
+            thresh=BgThresh(iobs)*(1.0_r8+df2)
+            IF (df1*df1.gt.thresh) THEN
+              ObsScale(iobs)=0.0_r8
+            END IF
+          END DO
+        END IF
+        DO iobs=Mstr,Mend
+          TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)
         END DO
 # endif
 
@@ -441,6 +610,20 @@
 #   else
      &                     NLmodVal)
 #   endif
+#   ifdef BGQC
+          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
+#    if defined WEAK_CONSTRAINT
+     &                     BgErr(Mstr:))
+#    else
+     &                     BgErr)
+#    endif
+!AMM          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
+#    if defined WEAK_CONSTRAINT
+!AMM     &                     BgThresh(Mstr:))
+#    else
+!AMM     &                     BgThresh)
+#    endif
+#   endif
         END IF
 #  endif
 #  ifdef TLM_OBS
@@ -463,11 +646,26 @@
 #   endif
         END IF
 #  endif
-        CALL mp_collect (ng, model, Ncollect, IniVal,                   &
-#  ifdef WEAK_CONSTRAINT
-     &                   ObsScale(Mstr:))
+#  ifdef BGQC
+#   ifdef IS4DVAR
+        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
+#   else
+        IF (inner.eq.0.and.outer.eq.0) THEN
+#   endif
+          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
+#   ifdef WEAK_CONSTRAINT
+     &                     ObsScale(Mstr:))
+#     else
+     &                     ObsScale)
+#   endif
+        END IF
 #  else
+        CALL mp_collect (ng, model, Ncollect, IniVal,                   &
+#   ifdef WEAK_CONSTRAINT
+     &                   ObsScale(Mstr:))
+#   else
      &                   ObsScale)
+#   endif
 #  endif
 # endif
 # if defined FOUR_DVAR && !defined IS4DVAR_SENSITIVITY
@@ -484,8 +682,13 @@
             misfit(iobs)=ObsScale(iobs)*SQRT(ObsErr(iobs))*             &
      &                   (NLmodVal(iobs)-ObsVal(iobs))
 #  elif defined WEAK_CONSTRAINT
+#    ifdef W4DVAR
             misfit(iobs)=ObsScale(iobs)/SQRT(ObsErr(iobs))*             &
      &                   (TLmodVal(iobs)-ObsVal(iobs))
+#    else
+            misfit(iobs)=ObsScale(iobs)/SQRT(ObsErr(iobs))*             &
+     &                   (NLmodVal(iobs)-ObsVal(iobs))
+#    endif
 #  endif
           END DO
           IF (Nrun.eq.1) THEN
@@ -511,6 +714,26 @@
             IF (exit_flag.ne.NoError) RETURN
           END IF
         END IF
+#  ifdef BGQC
+#   ifdef IS4DVAR
+        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
+#   else
+        IF (inner.eq.0.and.outer.eq.0) THEN
+#   endif
+            CALL netcdf_put_fvar (ng, model, DAV(ng)%name,              &
+     &                            Vname(1,idBgEr), BgErr(Mstr:),        &
+     &                            (/NstrObs(ng)/), (/Nobs(ng)/),        &
+     &                            ncid = DAV(ng)%ncid,                  &
+     &                            varid = DAV(ng)%Vid(idBgEr))
+            IF (exit_flag.ne.NoError) RETURN
+            CALL netcdf_put_fvar (ng, model, DAV(ng)%name,              &
+     &                            Vname(1,idBgTh), BgThresh(Mstr:),     &
+     &                            (/NstrObs(ng)/), (/Nobs(ng)/),        &
+     &                            ncid = DAV(ng)%ncid,                  &
+     &                            varid = DAV(ng)%Vid(idBgTh))
+            IF (exit_flag.ne.NoError) RETURN
+        END IF
+#  endif
 # endif
 !
 !-----------------------------------------------------------------------

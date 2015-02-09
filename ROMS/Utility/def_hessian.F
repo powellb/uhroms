@@ -2,12 +2,12 @@
 #if defined IS4DVAR              || \
     (defined WEAK_CONSTRAINT     && \
      (defined POSTERIOR_EOFS     || defined POSTERIOR_ERROR_I || \
-      defined POSTERIOR_ERROR_F))
+      defined POSTERIOR_ERROR_F || defined EVOLVED_LCZ)) ||  defined LCZ_FINAL
       SUBROUTINE def_hessian (ng)
 !
-!svn $Id: def_hessian.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_hessian.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -66,6 +66,11 @@
       integer :: Vsize(4)
 
       integer :: def_dim
+
+# ifdef EVOLVED_LCZ
+      integer :: MinnerDim, NinnerDim, NouterDim
+      integer :: vardim(2)
+# endif
 
 # ifdef SOLVE3D
       integer :: t3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
@@ -169,6 +174,22 @@
         status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'xy_v',          &
      &                 IOBOUNDS(ng)%xy_v, DimIDs(19))
         IF (exit_flag.ne.NoError) RETURN
+# endif
+
+# ifdef EVOLVED_LCZ
+
+        status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'Ninner',        &
+     &                 Ninner, NinnerDim)
+        IF (exit_flag.ne.NoError) RETURN
+
+        status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'Minner',        &
+     &                 Ninner+1, MinnerDim)
+        IF (exit_flag.ne.NoError) RETURN
+
+        status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'Nouter',        &
+     &                 Nouter, NouterDim)
+        IF (exit_flag.ne.NoError) RETURN
+
 # endif
 
 # ifdef SOLVE3D
@@ -425,6 +446,36 @@
 !-----------------------------------------------------------------------
 !  Define time-varying variables.
 !-----------------------------------------------------------------------
+# ifdef EVOLVED_LCZ
+!
+!  Define Lanczos algorithm coefficients which can be used for
+!  preconditioning or to compute the sensitivity of the observations
+!  to the 4DVAR data assimilation system.
+!
+        Vinfo( 1)='cg_beta'
+        Vinfo( 2)='conjugate gradient beta coefficient'
+        vardim(1)=MinnerDim
+        vardim(2)=NouterDim
+        status=def_var(ng, iADM, HSS(ng)%ncid, varid, NF_FRST,          &
+     &                 2, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+
+        Vinfo( 1)='cg_delta'
+        Vinfo( 2)='Lanczos algorithm delta coefficient'
+        vardim(1)=NinnerDim
+        vardim(2)=NouterDim
+        status=def_var(ng, iADM, HSS(ng)%ncid, varid, NF_FRST,          &
+     &                 2, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+
+        Vinfo( 1)='cg_zv'
+        Vinfo( 2)='Lanczos recurrence eigenvectors'
+        vardim(1)=NinnerDim
+        vardim(2)=NinnerDim
+        status=def_var(ng, iADM, HSS(ng)%ncid, varid, NF_FRST,          &
+     &                 2, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+# endif
 !
 !  Define number of converged Ritz eigenvalues.
 !

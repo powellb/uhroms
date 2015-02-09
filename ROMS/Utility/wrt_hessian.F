@@ -2,12 +2,13 @@
 #if defined IS4DVAR              || \
     (defined WEAK_CONSTRAINT     && \
      (defined POSTERIOR_EOFS     || defined POSTERIOR_ERROR_I ||\
-      defined POSTERIOR_ERROR_F))
+      defined POSTERIOR_ERROR_F || defined EVOLVED_LCZ)) ||\
+      defined LCZ_FINAL
       SUBROUTINE wrt_hessian (ng, kout, nout)
 !
-!svn $Id: wrt_hessian.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wrt_hessian.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

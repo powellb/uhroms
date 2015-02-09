@@ -1226,7 +1226,7 @@
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
 
-#  ifndef SOLVE3D
+!AMM#  ifndef SOLVE3D
 !
 !  Set 2D momentum forcing.
 !
@@ -1243,7 +1243,7 @@
      &                       OCEAN(ng)%f_vbar,                          &
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
-#  endif
+!AMM#  endif
 
 #  ifdef SOLVE3D
 !

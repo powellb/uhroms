@@ -38,6 +38,16 @@
       USE ini_adjust_mod, ONLY : ad_ini_perturb
       USE inner2state_mod, ONLY : ad_inner2state, tl_inner2state
       USE inner2state_mod, ONLY : ini_C_norm
+#ifdef EA_NORM
+      USE inner2state_mod, ONLY : ini_EA_norm
+#endif
+#ifdef BINVNORM
+      USE binv_norm_mod, ONLY: binv_norm
+#endif
+#ifdef FILTER_HSV
+      USE sfilter_mod, ONLY: sfilter
+      USE sfilter_mod, ONLY: ad_sfilter
+#endif
 #ifdef SOLVE3D
       USE set_depth_mod, ONLY: set_depth
 #endif
@@ -46,13 +56,21 @@
 !
       real(r8), intent(in) :: RunInterval
 
+#if defined HESSIAN_TRACE || defined MATRIX
+      real(r8), intent(in) :: state(Ninner)
+      real(r8), intent(inout) :: ad_state(Ninner)
+#else
       TYPE (T_GST), intent(in) :: state(Ngrids)
       TYPE (T_GST), intent(inout) :: ad_state(Ngrids)
+#endif
 !
 !  Local variable declarations.
 !
       integer :: ng, tile
       integer :: ktmp, ntmp, Lini
+#ifdef FILTER_HSV
+      integer :: Napp=4
+#endif
 
       real(r8) :: StateNorm(Ngrids)
 !
@@ -135,7 +153,11 @@
 !
       DO ng=1,Ngrids
         DO tile=first_tile(ng),last_tile(ng),+1
+#if defined HESSIAN_TRACE || defined MATRIX
+          CALL tl_inner2state (ng, tile, Lini, state)
+#else
           CALL tl_inner2state (ng, tile, Lini, state(ng)%vector)
+#endif
         END DO
 !$OMP BARRIER
       END DO
@@ -232,11 +254,41 @@
 !$OMP BARRIER
       END DO
 #endif
+#ifdef FILTER_HSV
+!
+!-----------------------------------------------------------------------
+!  Apply a 2nd order shapiro filter to final time fields
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        DO tile=last_tile(ng),first_tile(ng),-1
+          CALL sfilter (ng, tile, iTLM, knew(ng), nstp(ng), Napp)
+        END DO
+!$OMP BARRIER
+      END DO
+#endif
 !
 !-----------------------------------------------------------------------
 !  Compute final tangent linear energy norm.
 !-----------------------------------------------------------------------
 !
+#ifdef EA_NORM
+      DO ng=1,Ngrids
+        DO tile=last_tile(ng),first_tile(ng),-1
+          CALL ini_C_norm (ng, tile, knew(ng), nstp(ng),                &
+     &                     StateNorm(ng))
+        END DO
+!$OMP BARRIER
+
+!$OMP MASTER
+        IF (Master) THEN
+          WRITE (stdout,20) ' PROPAGATOR - Grid: ', ng,                 &
+     &                      ',  Tangent Final Norm: ', StateNorm(ng)
+        END IF
+!$OMP END MASTER
+      END DO
+#endif
+#ifndef BINVNORM
       DO ng=1,Ngrids
         DO tile=first_tile(ng),last_tile(ng),+1
           CALL tl_statenorm (ng, tile, knew(ng), nstp(ng),              &
@@ -251,6 +303,7 @@
         END IF
 !$OMP END MASTER
       END DO
+#endif
 !
 !=======================================================================
 !  Backward integration with the adjoint model.
@@ -291,11 +344,38 @@
 !
       DO ng=1,Ngrids
         DO tile=last_tile(ng),first_tile(ng),-1
+# ifdef EA_NORM
+          CALL ini_EA_norm (ng, tile, ktmp, knew(ng), ntmp, nstp(ng))
+# endif
+# ifdef BINVNORM
+          CALL binv_norm (ng, tile,                                     &
+     &               ktmp, knew(ng), ntmp, nstp(ng), StateNorm(ng))
+!$OMP MASTER
+          IF (Master) THEN
+            WRITE (stdout,20) ' PROPAGATOR - Grid: ', ng,               &
+       &                      ',  Tangent   Final Norm: ', StateNorm(ng)
+        END IF
+!$OMP END MASTER
+# else
           CALL ad_ini_perturb (ng, tile,                                &
      &                         ktmp, knew(ng), ntmp, nstp(ng))
+# endif
         END DO
 !$OMP BARRIER
       END DO
+#ifdef FILTER_HSV
+!
+!-----------------------------------------------------------------------
+!  Apply a 2nd order adjoint shapiro filter to final time fields
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        DO tile=last_tile(ng),first_tile(ng),-1
+          CALL ad_sfilter (ng, tile, iTLM, knew(ng), nstp(ng), Napp)
+        END DO
+!$OMP BARRIER
+      END DO
+#endif
 !
 !-----------------------------------------------------------------------
 !  Read in initial forcing, climatology and assimilation data from
@@ -378,7 +458,11 @@
 !
       DO ng=1,Ngrids
         DO tile=first_tile(ng),last_tile(ng),+1
+#if defined HESSIAN_TRACE || defined MATRIX
+          CALL ad_inner2state (ng, tile, Lini, ad_state)
+#else
           CALL ad_inner2state (ng, tile, Lini, ad_state(ng)%vector)
+#endif
         END DO
 !$OMP BARRIER
       END DO

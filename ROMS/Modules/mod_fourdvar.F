@@ -15,6 +15,10 @@
 !  ADmodVal     Adjoint model values at observation locations.         !
 !  BackCost     Current background cost function misfit (mean squared  !
 !                 difference) between model and background state, Jb.  !
+#ifdef BGQC
+!  BgErr        Background error std values at observation locations.  !
+!  BgThresh     Threshhold for innovations for quality control.        !
+#endif
 !  CostFun      Current iteration total cost function (background      !
 !                 plus observations), J.                               !
 !  CostFunOld   Previous iteration total cost function (background     !
@@ -42,6 +46,10 @@
 !                 outer loops in the weak-constraint algorithms.       !
 !  Lprecond     Logical switch for conjugate gradient preconditioning. !
 !  Lritz        Logical switch for Ritz limited-memory preconditioning.!
+#ifdef RPCG
+!  LaugWeak     Logical switch for computing augmented model error     !
+!               terms in the routine erro_covariance.                  !
+#endif
 !  nConvRitz    Number of converged Ritz eigenvalues.                  !
 !  NLmodVal     Nonlinear model values at observation locations.       !
 !  NHsteps      Full number of horizontal diffusion steps for spatial  !
@@ -57,6 +65,7 @@
 !                 difference) between model and observations, Jo.      !
 !  ObsCount     Current observation counts per state variable.         !
 !  ObsErr       Observation error.                                     !
+!  ObsProv      Observation provenance flags.                          !
 !  ObsReject    Current rejected observation counts per state variable.!
 !  ObsScale     Observation scale used during screenning and/or        !
 !                 normalization of the observations.                   !
@@ -154,6 +163,12 @@
           real(r8), pointer :: ObsVar(:)
           real(r8), pointer :: SurveyTime(:)
 
+#  ifdef RPCG
+          real(r8), pointer :: cg_pxsave(:)
+          real(r8), pointer :: cg_pxsum(:)
+          real(r8), pointer :: cg_Dpxsum(:)
+#  endif
+
         END TYPE T_FOURDVAR
 
         TYPE (T_FOURDVAR), allocatable :: FOURDVAR(:)
@@ -161,6 +176,7 @@
 !  Define other module arrays.
 !
         integer,  allocatable :: ObsType(:)
+        integer,  allocatable :: ObsProv(:)
 
         real(r8), allocatable :: ObsErr(:)
         real(r8), allocatable :: ObsScale(:)
@@ -173,6 +189,11 @@
 #  endif
         real(r8), allocatable :: ADmodVal(:)
         real(r8), allocatable :: NLmodVal(:)
+#  ifdef BGQC
+        real(r8), allocatable :: BgErr(:)
+        real(r8), allocatable :: BgThresh(:)
+        real(r8), allocatable :: Jact_S(:)
+#  endif
 #  ifdef TLM_OBS
         real(r8), allocatable :: TLmodVal(:)
 #   if defined SENSITIVITY_4DVAR    || defined TL_W4DPSAS  || \
@@ -180,15 +201,34 @@
        defined W4DVAR               || defined ARRAY_MODES || \
        defined CLIPPING
         real(r8), allocatable :: TLmodVal_S(:,:,:)
+#     ifdef RPCG
+        real(r8), allocatable :: tl_TLmodVal_S(:,:,:)
+        real(r8), allocatable :: ad_TLmodVal_S(:,:,:)
+#     endif
 #   endif
-#   if defined TL_W4DPSAS           || defined W4DPSAS    || \
+#   if defined TL_W4DPSAS          || defined W4DPSAS    || \
        defined W4DPSAS_SENSITIVITY
 
         real(r8), allocatable :: BCKmodVal(:)
+#    ifdef RPCG
+        real(r8), allocatable :: Hbk(:,:)
+#     if defined SENSITIVITY_4DVAR || defined TL_W4DPSAS  || \
+         defined TL_W4DVAR || defined W4DPSAS_SENSITIVITY
+        real(r8), allocatable :: tl_BCKmodVal(:)
+        real(r8), allocatable :: tl_Hbk(:)
+        real(r8), allocatable :: ad_BCKmodVal(:)
+        real(r8), allocatable :: ad_Hbk(:)
+#     endif
+#    endif
 #   endif
 #  endif
 #  ifdef WEAK_CONSTRAINT
         real(r8), allocatable :: zcglwk(:,:,:)
+#   ifdef RPCG
+        real(r8), allocatable :: vcglwk(:,:,:)
+        real(r8), allocatable :: Jb0(:)
+        real(r8), allocatable :: Hdx(:)
+#   endif
         real(r8), allocatable :: vcglev(:,:,:)
         real(r8), allocatable :: zgrad0(:,:)
         real(r8), allocatable :: vgrad0(:)
@@ -196,18 +236,36 @@
         real(r8), allocatable :: gdgw(:)
         real(r8), allocatable :: vgnorm(:)
         real(r8), allocatable :: cg_innov(:)
-        real(r8), allocatable :: cg_pxsave(:)
         real(r8), allocatable :: cg_dla(:,:)
+#     ifndef RPCG
+        real(r8), allocatable :: cg_pxsave(:)
+#     endif
 #   if defined TL_W4DPSAS          || defined TL_W4DVAR          || \
        defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY
         real(r8), allocatable :: ad_zcglwk(:,:)
         real(r8), allocatable :: ad_zgrad0(:)
+#     ifdef RPCG
+        real(r8), allocatable :: ad_vcglwk(:,:)
+        real(r8), allocatable :: ad_vgrad0(:)
+        real(r8), allocatable :: ad_vgrad0s(:)
+        real(r8), allocatable :: ad_Jb0(:)
+        real(r8), allocatable :: ad_ObsErr(:)
+        real(r8), allocatable :: ad_ObsScale(:)
+#     endif
         real(r8), allocatable :: ad_cg_innov(:)
         real(r8), allocatable :: ad_cg_pxsave(:)
         real(r8), allocatable :: ad_ObsVal(:)
 
         real(r8), allocatable :: tl_zcglwk(:,:)
         real(r8), allocatable :: tl_zgrad0(:)
+#     ifdef RPCG
+        real(r8), allocatable :: tl_vcglwk(:,:)
+        real(r8), allocatable :: tl_vgrad0(:)
+        real(r8), allocatable :: tl_vgrad0s(:)
+        real(r8), allocatable :: tl_Jb0(:)
+        real(r8), allocatable :: tl_ObsErr(:)
+        real(r8), allocatable :: tl_ObsScale(:)
+#     endif
         real(r8), allocatable :: tl_cg_innov(:)
         real(r8), allocatable :: tl_cg_pxsave(:)
         real(r8), allocatable :: tl_ObsVal(:)
@@ -466,7 +524,12 @@
 
         real(r8), allocatable :: tl_cg_delta(:)
         real(r8), allocatable :: tl_cg_QG(:)
+#    ifdef RPCG
+        real(r8), allocatable :: tl_cg_Gnorm_v(:)
+        real(r8), allocatable :: ad_cg_Gnorm_v(:)
+#    else
         real(r8), allocatable :: tl_cg_Gnorm(:)
+#    endif
 #  endif
         real(r8), allocatable :: cg_delta(:,:)
         real(r8), allocatable :: cg_gamma(:,:)
@@ -545,31 +608,46 @@
         real(r8), allocatable :: zLanczos_err(:,:)     ! error, identity
 #  endif
 # endif
-# if defined HESSIAN_FSV || defined HESSIAN_SO          || \
-     defined HESSIAN_SV  || defined IS4DVAR_SENSITIVITY
+# if defined HESSIAN_SV || defined HESSIAN_SO || defined HESSIAN_FSV
+        real(r8), allocatable :: zLanczos_diag(:)    ! diagonal coefs
+        real(r8), allocatable :: zLanczos_offdiag(:) ! off-diagonal coefs
+#  ifdef LCZ_FINAL
+        real(r8), allocatable :: GSmatrix(:,:) ! Gramm-Schmidt matrix
+        real(r8), allocatable :: GSmatinv(:,:) ! Inverse Gramm-Schmidt matrix
+#  endif
+#  ifdef MATRIX
+        real(r8), allocatable :: state(:) 
+        real(r8), allocatable :: ad_state(:) 
+#  endif
+# endif
+# if defined IS4DVAR_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  Lanczos algorithm coefficients.
 !-----------------------------------------------------------------------
 !
-!  These coefficients are computed in the 4DVAR Lanczos data
+!  These coefficients are computed in the IS4DVAR Lanczos data
 !  assimilation algorithm and are used here to tangent linear
 !  model initial conditions as weighted sum of the Lanczos
 !  vectors.
 !
         real(r8), allocatable :: cg_beta(:,:)
         real(r8), allocatable :: cg_delta(:,:)
-#  if defined IS4DVAR_SENSITIVITY
         real(r8), allocatable :: cg_zu(:,:)
-#  endif
 # endif
-# if defined HESSIAN_FSV || defined HESSIAN_SO || defined HESSIAN_SV
+# if defined HESSIAN_SV || defined HESSIAN_SO || defined HESSIAN_FSV
 !
-!  Lanczos diagonal and off-diagonal coefficients for the Hessian
-!  propagator.
+!-----------------------------------------------------------------------
+!  Lanczos algorithm coefficients.
+!-----------------------------------------------------------------------
 !
-        real(r8), allocatable :: zLanczos_diag(:)
-        real(r8), allocatable :: zLanczos_offdiag(:)
+!  These coefficients are computed in the IS4DVAR Lanczos data
+!  assimilation algorithm and are used here to tangent linear
+!  model initial conditions as weighted sum of the Lanczos
+!  vectors.
+!
+        real(r8), allocatable :: cg_beta(:,:)
+        real(r8), allocatable :: cg_delta(:,:)
 # endif
 !
 !-----------------------------------------------------------------------
@@ -594,6 +672,14 @@
 !  2008).
 !
         logical :: Lritz
+#ifdef RPCG
+!
+!  Switch that controls computation of the augumented contributions
+!  to the model error forcing terms in error_covariance.
+!
+        logical :: LaugWeak=.FALSE.
+!
+# endif
 !
 !  Number of converged Ritz eigenvalues. If input parameter NritzEV > 0,
 !  then nConvRitz=NritzEV.  Therefore, only nConvRitz eigenpairs will
@@ -954,6 +1040,17 @@
         allocate ( FOURDVAR(ng) % ObsReject(0:NstateVar(ng)) )
         FOURDVAR(ng) % ObsReject = 0
 
+#  ifdef RPCG
+        allocate ( FOURDVAR(ng) % cg_pxsave(Ndatum(ng)+1) )
+        FOURDVAR(ng) % cg_pxsave = 0
+
+        allocate ( FOURDVAR(ng) % cg_pxsum(Ndatum(ng)+1) )
+        FOURDVAR(ng) % cg_pxsum = 0
+
+        allocate ( FOURDVAR(ng) % cg_Dpxsum(Ndatum(ng)+1) )
+        FOURDVAR(ng) % cg_Dpxsum = 0
+#  endif
+
       END DO
 !
 !-----------------------------------------------------------------------
@@ -999,6 +1096,9 @@
       allocate ( ObsType(Mobs) )
       ObsType = 0
 
+      allocate ( ObsProv(Mobs) )
+      ObsProv = 0
+
       allocate ( ObsErr(Mobs) )
       ObsErr = IniVal
 
@@ -1028,6 +1128,15 @@
       allocate ( NLmodVal(Mobs) )
       NLmodVal = IniVal
 
+#  ifdef BGQC
+      allocate ( BgErr(Mobs) )
+      BgErr = IniVal
+      allocate ( BgThresh(Mobs) )
+      BgThresh = IniVal
+      allocate ( Jact_S(0:Ninner) )
+      Jact_S = IniVal
+#  endif
+
 #  ifdef TLM_OBS
       allocate ( TLmodVal(Mobs) )
       TLmodVal = IniVal
@@ -1037,11 +1146,32 @@
        defined CLIPPING
       allocate ( TLmodVal_S(Mobs,Ninner,Nouter) )
       TLmodVal_S = IniVal
+#     ifdef RPCG
+      allocate ( tl_TLmodVal_S(Mobs,Ninner,Nouter) )
+      tl_TLmodVal_S = IniVal
+      allocate ( ad_TLmodVal_S(Mobs,Ninner,Nouter) )
+      ad_TLmodVal_S = IniVal
+#     endif
 #   endif
-#   if defined TL_W4DPSAS           || defined W4DPSAS    || \
+#   if defined TL_W4DPSAS          || defined W4DPSAS    || \
        defined W4DPSAS_SENSITIVITY
       allocate ( BCKmodVal(Mobs) )
       BCKmodVal = IniVal
+#    ifdef RPCG
+      allocate ( Hbk(Mobs,Nouter) )
+      Hbk = IniVal
+#     if defined SENSITIVITY_4DVAR || defined TL_W4DPSAS  || \
+         defined TL_W4DVAR
+      allocate ( tl_BCKmodVal(Mobs) )
+      tl_BCKmodVal = IniVal
+      allocate ( tl_Hbk(Mobs) )
+      tl_Hbk = IniVal
+      allocate ( ad_BCKmodVal(Mobs) )
+      tl_BCKmodVal = IniVal
+      allocate ( ad_Hbk(Mobs) )
+      ad_Hbk = IniVal
+#     endif
+#    endif
 #   endif
 #  endif
 
@@ -1051,6 +1181,65 @@
 !
 #   if defined TL_W4DPSAS          || defined TL_W4DVAR          || \
        defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY
+#     ifdef RPCG
+      allocate ( ad_zcglwk(Mobs+1,Ninner+1) )
+      ad_zcglwk = IniVal
+
+      allocate ( ad_zgrad0(Mobs+1) )
+      ad_zgrad0 = IniVal
+
+      allocate ( ad_vcglwk(Mobs+1,Ninner+1) )
+      ad_vcglwk = IniVal
+
+      allocate ( ad_vgrad0(Mobs+1) )
+      ad_vgrad0 = IniVal
+
+      allocate ( ad_vgrad0s(Mobs+1) )
+      ad_vgrad0s = IniVal
+
+      allocate ( ad_cg_pxsave(Mobs+1) )
+      ad_cg_pxsave = IniVal
+
+      allocate ( tl_zcglwk(Mobs+1,Ninner+1) )
+      tl_zcglwk = IniVal
+
+      allocate ( tl_zgrad0(Mobs+1) )
+      tl_zgrad0 = IniVal
+
+      allocate ( tl_vcglwk(Mobs+1,Ninner+1) )
+      tl_zcglwk = IniVal
+
+      allocate ( tl_vgrad0(Mobs+1) )
+      tl_vgrad0 = IniVal
+
+      allocate ( tl_vgrad0s(Mobs+1) )
+      tl_vgrad0s = IniVal
+
+      allocate ( tl_cg_innov(Mobs+1) )
+      tl_cg_innov = IniVal
+
+      allocate ( tl_cg_pxsave(Mobs+1) )
+      tl_cg_pxsave = IniVal
+
+      allocate ( tl_ObsErr(Mobs) )
+      tl_ObsErr = IniVal
+
+      allocate ( tl_ObsScale(Mobs) )
+      tl_ObsScale = IniVal
+
+      allocate ( ad_ObsErr(Mobs) )
+      ad_ObsErr = IniVal
+
+      allocate ( ad_ObsScale(Mobs) )
+      ad_ObsScale = IniVal
+
+      allocate ( tl_ObsVal(Mobs) )
+      tl_ObsVal = IniVal
+
+      allocate ( ad_ObsVal(Mobs) )
+      ad_ObsVal = IniVal
+
+#     else
       allocate ( ad_zcglwk(Mobs,Ninner+1) )
       ad_zcglwk = IniVal
 
@@ -1080,9 +1269,57 @@
 
       allocate ( ad_ObsVal(Mobs) )
       ad_ObsVal = IniVal
+#     endif
 #   endif
       allocate ( cg_dla(Ninner,Nouter) )
       cg_dla = IniVal
+
+#   ifdef RPCG
+      allocate ( Jb0(0:Nouter) )
+      Jb0 = IniVal
+
+#     if defined TL_W4DPSAS  || defined TL_W4DVAR       || \
+       defined W4DPSAS_SENSITIVITY || \
+        defined W4DVAR_SENSITIVITY
+
+      allocate ( tl_Jb0(0:Nouter) )
+      tl_Jb0 = IniVal
+
+      allocate ( ad_Jb0(0:Nouter) )
+      ad_Jb0 = IniVal
+
+#     endif
+
+      allocate ( Hdx(Mobs) )
+      Hdx = IniVal
+
+      allocate ( zcglwk(Mobs+1,Ninner+1,Nouter) )
+      zcglwk = IniVal
+
+      allocate ( vcglwk(Mobs+1,Ninner+1,Nouter) )
+      vcglwk = IniVal
+
+      allocate ( vcglev(Mobs+1,Ninner,Nouter) )
+      vcglev = IniVal
+
+      allocate ( zgrad0(Mobs+1,Nouter) )
+      zgrad0 = IniVal
+
+      allocate ( vgrad0(Mobs+1) )
+      vgrad0 = IniVal
+
+      allocate ( vgrad0s(Mobs+1) )
+      vgrad0s = IniVal
+
+      allocate ( cg_innov(Mobs+1) )
+      cg_innov = IniVal
+
+#     ifndef RPCG
+      allocate ( cg_pxsave(Mobs) )
+      cg_pxsave = IniVal
+#     endif
+
+#    else
 
       allocate ( zcglwk(Mobs,Ninner+1,Nouter) )
       zcglwk = IniVal
@@ -1110,6 +1347,7 @@
 
       allocate ( cg_pxsave(Mobs) )
       cg_pxsave = IniVal
+#    endif
 #  endif
 
 # else
@@ -1189,8 +1427,15 @@
       allocate ( tl_cg_QG(Ninner+1) )
       tl_cg_QG = IniVal
 
+#    ifdef RPCG
+      allocate ( tl_cg_Gnorm_v(Nouter) )
+      tl_cg_Gnorm_v = IniVal
+      allocate ( ad_cg_Gnorm_v(Nouter) )
+      ad_cg_Gnorm_v = IniVal
+#    else
       allocate ( tl_cg_Gnorm(Nouter) )
       tl_cg_Gnorm = IniVal
+#    endif
 #  endif
 
       allocate ( cg_alpha(0:Ninner,Nouter) )
@@ -1285,8 +1530,7 @@
       cg_zu = IniVal
 
 # endif
-# if defined HESSIAN_FSV || defined HESSIAN_SO          || \
-     defined HESSIAN_SV  || defined IS4DVAR_SENSITIVITY
+# if defined IS4DVAR_SENSITIVITY
 !
 !  Allocate Lanczos algorithm coefficients.
 !
@@ -1296,17 +1540,40 @@
       allocate ( cg_delta(Ninner,Nouter) )
       cg_delta = IniVal
 
-#  if defined IS4DVAR_SENSITIVITY
       allocate ( cg_zu(Ninner,Nouter) )
       cg_zu = IniVal
-#  endif
 # endif
-# if defined HESSIAN_FSV || defined HESSIAN_SO || defined HESSIAN_SV
+# if defined HESSIAN_SV || defined HESSIAN_SO || defined HESSIAN_FSV
+!
+!  Allocate Lanczos algorithm coefficients.
+!
+      allocate ( cg_beta(Ninner+1,Nouter) )
+      cg_beta = IniVal
+
+      allocate ( cg_delta(Ninner,Nouter) )
+      cg_delta = IniVal
+
       allocate ( zLanczos_diag(Ninner) )
       zLanczos_diag = IniVal
 
       allocate ( zLanczos_offdiag(Ninner) )
       zLanczos_offdiag = IniVal
+#  ifdef LCZ_FINAL
+
+      allocate ( GSmatrix(Ninner,Ninner) )
+      GSmatrix = IniVal
+
+      allocate ( GSmatinv(Ninner,Ninner) )
+      GSmatinv = IniVal
+#  endif
+#  ifdef MATRIX
+
+      allocate ( state(Ninner) )
+      state = IniVal
+
+      allocate ( ad_state(Ninner) )
+      ad_state = IniVal
+#  endif
 # endif
 !
 !-----------------------------------------------------------------------

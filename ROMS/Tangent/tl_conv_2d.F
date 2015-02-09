@@ -72,7 +72,7 @@
       USE mod_param
       USE mod_scalars
 !
-      USE bc_2d_mod, ONLY: bc_r2d_tile
+      USE bc_2d_mod, ONLY: dabc_r2d_tile
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
 # endif
@@ -145,7 +145,7 @@
 !>   &                  LBi, UBi, LBj, UBj,                             &
 !>   &                  A)
 !>
-      CALL bc_r2d_tile (ng, tile,                                       &
+      CALL dabc_r2d_tile (ng, tile,                                     &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  tl_A)
 # ifdef DISTRIBUTE
@@ -182,12 +182,16 @@
 !>          FX(i,j)=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*             &
 !>   &              (Awrk(i,j,Nold)-Awrk(i-1,j,Nold))
 !>
-            tl_FX(i,j)=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*          &
-     &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i-1,j,Nold))
 # ifdef MASKING
+            tl_FX(i,j)=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*          &
+     &                 (tl_Awrk(i,j,Nold)*rmask(i,j)-                   &
+     &                  tl_Awrk(i-1,j,Nold)*rmask(i-1,j))
 !>          FX(i,j)=FX(i,j)*umask(i,j)
 !>
             tl_FX(i,j)=tl_FX(i,j)*umask(i,j)
+# else
+            tl_FX(i,j)=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*          &
+     &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i-1,j,Nold))
 # endif
           END DO
         END DO
@@ -196,12 +200,16 @@
 !>          FE(i,j)=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*             &
 !>   &              (Awrk(i,j,Nold)-Awrk(i,j-1,Nold))
 !>
-            tl_FE(i,j)=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*          &
-     &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i,j-1,Nold))
 # ifdef MASKING
+            tl_FE(i,j)=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*          &
+     &                 (tl_Awrk(i,j,Nold)*rmask(i,j)-                   &
+     &                  tl_Awrk(i,j-1,Nold)*rmask(i,j-1))
 !>          FE(i,j)=FE(i,j)*vmask(i,j)
 !>
             tl_FE(i,j)=tl_FE(i,j)*vmask(i,j)
+# else
+            tl_FE(i,j)=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*          &
+     &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i,j-1,Nold))
 # endif
           END DO
         END DO
@@ -228,7 +236,7 @@
 !>   &                    LBi, UBi, LBj, UBj,                           &
 !>   &                    Awrk(:,:,Nnew))
 !>
-        CALL bc_r2d_tile (ng, tile,                                     &
+        CALL dabc_r2d_tile (ng, tile,                                   &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    tl_Awrk(:,:,Nnew))
 # ifdef DISTRIBUTE
@@ -267,7 +275,7 @@
 !>   &                  LBi, UBi, LBj, UBj,                             &
 !>   &                  A)
 !>
-      CALL bc_r2d_tile (ng, tile,                                       &
+      CALL dabc_r2d_tile (ng, tile,                                     &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  tl_A)
 # ifdef DISTRIBUTE
@@ -303,7 +311,7 @@
       USE mod_param
       USE mod_scalars
 !
-      USE bc_2d_mod, ONLY: bc_u2d_tile
+      USE bc_2d_mod, ONLY: dabc_u2d_tile
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
 # endif
@@ -377,7 +385,7 @@
 !>   &                  LBi, UBi, LBj, UBj,                             &
 !>   &                  A)
 !>
-      CALL bc_u2d_tile (ng, tile,                                       &
+      CALL dabc_u2d_tile (ng, tile,                                     &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  tl_A)
 # ifdef DISTRIBUTE
@@ -414,8 +422,14 @@
 !>          FX(i,j)=pmon_r(i,j)*Kh(i,j)*                                &
 !>   &              (Awrk(i+1,j,Nold)-Awrk(i,j,Nold))
 !>
+# ifdef MASKING
+            tl_FX(i,j)=pmon_r(i,j)*Kh(i,j)*                             &
+     &                 (tl_Awrk(i+1,j,Nold)*umask(i+1,j)-               &
+     &                  tl_Awrk(i,j,Nold)*umask(i,j))
+# else
             tl_FX(i,j)=pmon_r(i,j)*Kh(i,j)*                             &
      &                 (tl_Awrk(i+1,j,Nold)-tl_Awrk(i,j,Nold))
+# endif
           END DO
         END DO
         DO j=Jstr,Jend+1
@@ -424,13 +438,18 @@
 !>   &                                   Kh(i-1,j-1)+Kh(i,j-1))*        &
 !>   &              (Awrk(i,j,Nold)-Awrk(i,j-1,Nold))
 !>
+# ifdef MASKING
             tl_FE(i,j)=pnom_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+      &
      &                                      Kh(i-1,j-1)+Kh(i,j-1))*     &
-     &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i,j-1,Nold))
-# ifdef MASKING
+     &                 (tl_Awrk(i,j,Nold)*umask(i,j)-                   &
+     &                  tl_Awrk(i,j-1,Nold)*umask(i,j-1))
 !>          FE(i,j)=FE(i,j)*pmask(i,j)
 !>
             tl_FE(i,j)=tl_FE(i,j)*pmask(i,j)
+# else
+            tl_FE(i,j)=pnom_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+      &
+     &                                      Kh(i-1,j-1)+Kh(i,j-1))*     &
+     &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i,j-1,Nold))
 # endif
           END DO
         END DO
@@ -457,7 +476,7 @@
 !>   &                    LBi, UBi, LBj, UBj,                           &
 !>   &                    Awrk(:,:,Nnew))
 !>
-        CALL bc_u2d_tile (ng, tile,                                     &
+        CALL dabc_u2d_tile (ng, tile,                                   &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    tl_Awrk(:,:,Nnew))
 # ifdef DISTRIBUTE
@@ -496,7 +515,7 @@
 !>   &                  LBi, UBi, LBj, UBj,                             &
 !>   &                  A)
 !>
-      CALL bc_u2d_tile (ng, tile,                                       &
+      CALL dabc_u2d_tile (ng, tile,                                     &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  tl_A)
 # ifdef DISTRIBUTE
@@ -532,7 +551,7 @@
       USE mod_param
       USE mod_scalars
 !
-      USE bc_2d_mod, ONLY: bc_v2d_tile
+      USE bc_2d_mod, ONLY: dabc_v2d_tile
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
 # endif
@@ -606,7 +625,7 @@
 !>   &                  LBi, UBi, LBj, UBj,                             &
 !>   &                  A)
 !>
-      CALL bc_v2d_tile (ng, tile,                                       &
+      CALL dabc_v2d_tile (ng, tile,                                     &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  tl_A)
 # ifdef DISTRIBUTE
@@ -644,14 +663,19 @@
 !>   &                                   Kh(i-1,j-1)+Kh(i,j-1))*        &
 !>   &              (Awrk(i,j,Nold)-Awrk(i-1,j,Nold))
 !>
+# ifdef MASKING
+            tl_FX(i,j)=pmon_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+      &
+     &                                      Kh(i-1,j-1)+Kh(i,j-1))*     &
+     &                 (tl_Awrk(i,j,Nold)*vmask(i,j)-                   &
+     &                  tl_Awrk(i-1,j,Nold)*vmask(i-1,j))
+!>          FX(i,j)=FX(i,j)*pmask(i,j)
+!>
+            tl_FX(i,j)=tl_FX(i,j)*pmask(i,j)
+# else
             tl_FX(i,j)=pmon_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+      &
      &                                      Kh(i-1,j-1)+Kh(i,j-1))*     &
      &                 (tl_Awrk(i,j,Nold)-tl_Awrk(i-1,j,Nold))
 
-# ifdef MASKING
-!>          FX(i,j)=FX(i,j)*pmask(i,j)
-!>
-            tl_FX(i,j)=tl_FX(i,j)*pmask(i,j)
 # endif
           END DO
         END DO
@@ -660,8 +684,14 @@
 !>          FE(i,j)=pnom_r(i,j)*Kh(i,j)*                                &
 !>   &              (Awrk(i,j+1,Nold)-Awrk(i,j,Nold))
 !>
+# ifdef MASKING
+            tl_FE(i,j)=pnom_r(i,j)*Kh(i,j)*                             &
+     &                 (tl_Awrk(i,j+1,Nold)*vmask(i,j+1)-               &
+     &                  tl_Awrk(i,j,Nold)*vmask(i,j))
+# else
             tl_FE(i,j)=pnom_r(i,j)*Kh(i,j)*                             &
      &                 (tl_Awrk(i,j+1,Nold)-tl_Awrk(i,j,Nold))
+# endif
           END DO
         END DO
 !
@@ -687,7 +717,7 @@
 !>   &                    LBi, UBi, LBj, UBj,                           &
 !>   &                    Awrk(:,:,Nnew))
 !>
-        CALL bc_v2d_tile (ng, tile,                                     &
+        CALL dabc_v2d_tile (ng, tile,                                   &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    tl_Awrk(:,:,Nnew))
 # ifdef DISTRIBUTE
@@ -726,7 +756,7 @@
 !>   &                  LBi, UBi, LBj, UBj,                             &
 !>   &                  A)
 !>
-      CALL bc_v2d_tile (ng, tile,                                       &
+      CALL dabc_v2d_tile (ng, tile,                                     &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  tl_A)
 # ifdef DISTRIBUTE

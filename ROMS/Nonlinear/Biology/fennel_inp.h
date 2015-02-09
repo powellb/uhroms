@@ -1,6 +1,6 @@
       SUBROUTINE read_BioPar (model, inp, out, Lwrite)
 !
-!svn $Id: fennel_inp.h 653 2013-02-14 22:12:17Z arango $
+!svn $Id: fennel_inp.h 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -200,7 +200,7 @@
               END IF
               ifield=isTvar(idbio(itracer))
               Npts=load_lbc(Nval, Cval, line, nline, ifield, igrid,     &
-     &                      iTrcStr, iTrcEnd, LBC)
+     &                        iTrcStr, iTrcEnd, LBC)
 #if defined ADJOINT || defined TANGENT || defined TL_IOMS
             CASE ('ad_LBC(isTvar)')
               IF (itracer.lt.NBT) THEN

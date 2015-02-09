@@ -253,6 +253,7 @@
       USE mod_netcdf
       USE mod_scalars
       USE mod_stepping
+      USE mod_mixing
 !
 #ifdef BALANCE_OPERATOR
       USE ad_balance_mod, ONLY: ad_balance
@@ -266,6 +267,9 @@
       USE ini_fields_mod, ONLY : ini_fields
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
       USE mod_forces, ONLY : initialize_forces
+#endif
+#ifdef ADJUST_BOUNDARY
+      USE mod_boundary, ONLY : initialize_boundary
 #endif
       USE mod_ocean, ONLY : initialize_ocean
       USE normalization_mod, ONLY : normalization
@@ -359,6 +363,18 @@
           END DO
         END IF
 #endif
+!
+!-----------------------------------------------------------------------
+!  Clear NL mixing arrays.
+!-----------------------------------------------------------------------
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL initialize_mixing (ng, tile, iNLM)
+            END DO
+!$OMP END PARALLEL
+          END DO
 !
 !  Initialize nonlinear model. If outer=1, the model is initialized
 !  with the background or reference state. Otherwise, the model is
@@ -650,6 +666,22 @@
 #endif
 !$OMP END PARALLEL
           IF (exit_flag.ne.NoError) RETURN
+#ifdef EVOLVED_LCZ
+!
+!  Write evolved tangent Lanczos vector into hessian netcdf file for use
+!  later.
+!  NOTE: When using this option, it is important to set LhessianEV and
+!  Lprecond to FALSE in s4dvar.in, otherwise the evolved Lanczos vectors
+!  with be overwritten by the Hessian eigenvectors. The fix to this is to
+!  define a new netcdf file that contains the evolved Lanczos vectors.
+!
+          IF (inner.ne.0) THEN
+            DO ng=1,Ngrids
+              CALL wrt_evolved (ng, kstp(ng), nrhs(ng))
+              IF (exit_flag.ne.NoERRor) RETURN
+            END DO
+          END IF
+#endif
 
 #ifdef MULTIPLE_TLM
 !
@@ -704,6 +736,9 @@
               CALL initialize_ocean (ng, tile, iADM)
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
               CALL initialize_forces (ng, tile, iADM)
+#endif
+#ifdef ADJUST_BOUNDARY
+              CALL initialize_boundary (ng, tile, iADM)
 #endif
             END DO
 !$OMP END PARALLEL
@@ -1172,6 +1207,18 @@
         HIS(ng)%Nrec(Fcount)=0
         WRITE (HIS(ng)%name,10) TRIM(FWD(ng)%base), Nouter
       END DO
+!
+!-----------------------------------------------------------------------
+!  Clear NL mixing arrays.
+!-----------------------------------------------------------------------
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL initialize_mixing (ng, tile, iNLM)
+            END DO
+!$OMP END PARALLEL
+          END DO
 !
 !  Initialize nonlinear model with estimated initial conditions.
 !

@@ -228,4 +228,276 @@
       RETURN
       END SUBROUTINE shapiro3d_tile
 #endif
+!
+!***********************************************************************
+      SUBROUTINE ad_shapiro2d_tile (ng, tile, model,                    &
+     &                           LBi, UBi, LBj, UBj,                    &
+     &                           IminS, ImaxS, JminS, JmaxS,            &
+#ifdef MASKING
+     &                           Amask,                                 &
+#endif
+     &                           ad_A)
+!***********************************************************************
+!
+      USE mod_param
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, tile, model
+      integer, intent(in) :: LBi, UBi, LBj, UBj
+      integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
+
+#ifdef ASSUMED_SHAPE
+# ifdef MASKING
+      real(r8), intent(in) :: Amask(LBi:,LBj:)
+# endif
+      real(r8), intent(inout) :: ad_A(LBi:,LBj:)
+#else
+# ifdef MASKING
+      real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
+# endif
+      real(r8), intent(inout) :: ad_A(LBi:UBi,LBj:UBj)
+#endif
+!
+!  Local variable declarations.
+!
+      integer :: i, j
+
+      real(r8) :: adfac
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Awrk1
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Awrk2
+
+#include "set_bounds.h"
+!
+!-----------------------------------------------------------------------
+!  Adjoint Shapiro filter requested 2D field.
+!-----------------------------------------------------------------------
+!
+!  Clear arrays.
+!
+      DO j=JminS,JmaxS
+        DO i=IminS,ImaxS
+          Awrk1(i,j)=0.0_r8
+          Awrk2(i,j)=0.0_r8
+        END DO
+      END DO
+!
+!  Add changes to field.
+!
+      DO j=Jstr,Jend
+        DO i=Istr,Iend
+!         A(i,j)=Awrk2(i,j)+Awrk1(i,j)
+          Awrk1(i,j)=ad_A(i,j)
+          Awrk2(i,j)=ad_A(i,j)
+          ad_A(i,j)=0.0_r8
+        END DO
+      END DO
+!
+!  Adjoint of initialize filter in the X-direction.
+!
+      DO j=Jstr,Jend
+        DO i=Istr,Iend
+#ifdef MASKING
+!         Awrk1(i,j)=0.25_r8*                                           &
+!    &               (Awrk2(i-1,j)*Amask(i-1,j)+                        &
+!    &                Awrk2(i+1,j)*Amask(i+1,j)-                        &
+!    &                2.0_r8*Awrk2(i,j)*Amask(i,j))*                    &
+!    &               Amask(i-1,j)*Amask(i+1,j)*Amask(i,j)
+          adfac=0.25_r8*Amask(i-1,j)*Amask(i+1,j)*Amask(i,j)*Awrk1(i,j)
+          Awrk2(i-1,j)=Awrk2(i-1,j)+adfac*Amask(i-1,j)
+          Awrk2(i+1,j)=Awrk2(i+1,j)+adfac*Amask(i+1,j)
+          Awrk2(i,j)=Awrk2(i,j)-adfac*2.0_r8*Amask(i,j)
+          Awrk1(i,j)=0.0_r8
+#else
+!         Awrk1(i,j)=0.25_r8*                                           &
+!    &               (Awrk2(i-1,j)+Awrk2(i+1,j)-2.0_r8*Awrk2(i,j))
+          adfac=0.25_r8*Awrk1(i,j)
+          Awrk2(i-1,j)=Awrk2(i-1,j)+adfac
+          Awrk2(i+1,j)=Awrk2(i+1,j)+adfac
+          Awrk2(i,j)=Awrk2(i,j)-2.0_r8*adfac
+          Awrk1(i,j)=0.0_r8
+#endif
+        END DO
+      END DO
+!
+!  Add the changes to the field.
+!
+        DO j=Jstr,Jend
+          DO i=Istr-1,Iend+1
+!           Awrk2(i,j)=A(i,j)+Awrk1(i,j)
+            Awrk1(i,j)=Awrk1(i,j)+Awrk2(i,j)
+            ad_A(i,j)=ad_A(i,j)+Awrk2(i,j)
+            Awrk2(i,j)=0.0_r8
+          END DO
+        END DO
+!
+!  Adjoint of initialize filter in the Y-direction.
+!
+      DO j=Jstr,Jend
+        DO i=Istr-1,Iend+1
+#ifdef MASKING
+!         Awrk1(i,j)=0.25_r8*                                           &
+!    &               (A(i,j-1)*Amask(i,j-1)+                            &
+!    &                A(i,j+1)*Amask(i,j+1)-                            &
+!    &                2.0_r8*A(i,j)*Amask(i,j))*                        &
+!    &               Amask(i,j-1)*Amask(i,j+1)*Amask(i,j)
+          adfac=0.25_r8*Amask(i,j-1)*Amask(i,j+1)*Amask(i,j)*Awrk1(i,j)
+          ad_A(i,j-1)=ad_A(i,j-1)+adfac*Amask(i,j-1)
+          ad_A(i,j+1)=ad_A(i,j+1)+adfac*Amask(i,j+1)
+          ad_A(i,j)=ad_A(i,j)-2.0_r8*adfac*Amask(i,j)
+          Awrk1(i,j)=0.0_r8
+#else
+!         Awrk1(i,j)=0.25_r8*                                           &
+!    &               (A(i,j-1)+A(i,j+1)-2.0_r8*A(i,j))
+          adfac=0.25_r8*Awrk1(i,j)
+          ad_A(i,j-1)=ad_A(i,j-1)+adfac
+          ad_A(i,j+1)=ad_A(i,j+1)+adfac
+          ad_A(i,j)=ad_A(i,j)-2.0_r8*adfac
+          Awrk1(i,j)=0.0_r8
+#endif
+        END DO
+      END DO
+
+      RETURN
+      END SUBROUTINE ad_shapiro2d_tile
+
+#ifdef SOLVE3D
+!
+!***********************************************************************
+      SUBROUTINE ad_shapiro3d_tile (ng, tile, model,                       &
+     &                           LBi, UBi, LBj, UBj, LBk, UBk,          &
+     &                           IminS, ImaxS, JminS, JmaxS,            &
+# ifdef MASKING
+     &                           Amask,                                 &
+# endif
+     &                           ad_A)
+!***********************************************************************
+!
+      USE mod_param
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, tile, model
+      integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
+      integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
+!
+# ifdef ASSUMED_SHAPE
+#  ifdef MASKING
+      real(r8), intent(in) :: Amask(LBi:,LBj:)
+#  endif
+      real(r8), intent(inout) :: ad_A(LBi:,LBj:,LBk:)
+# else
+#  ifdef MASKING
+      real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
+#  endif
+      real(r8), intent(inout) :: ad_A(LBi:UBi,LBj:UBj,LBk:UBk)
+# endif
+!
+!  Local variable declarations.
+!
+      integer :: i, j, k
+
+      real(r8) :: adfac
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Awrk1
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Awrk2
+
+# include "set_bounds.h"
+!
+!-----------------------------------------------------------------------
+!  Adjoint Shapiro filter requested 3D field.
+!-----------------------------------------------------------------------
+!
+      DO k=LBk,UBk
+!
+!  Clear arrays.
+!
+        DO j=JminS,JmaxS
+          DO i=IminS,ImaxS
+            Awrk1(i,j)=0.0_r8
+            Awrk2(i,j)=0.0_r8
+          END DO
+        END DO
+!
+!  Add changes to field.
+!
+        DO j=Jstr,Jend
+          DO i=Istr,Iend
+!           A(i,j,k)=Awrk2(i,j)+Awrk1(i,j)
+            Awrk1(i,j)=ad_A(i,j,k)
+            Awrk2(i,j)=ad_A(i,j,k)
+            ad_A(i,j,k)=0.0_r8
+          END DO
+        END DO
+!
+!  Adjoint initialize filter in the X-direction.
+!
+        DO j=Jstr,Jend
+          DO i=Istr,Iend
+# ifdef MASKING
+!           Awrk1(i,j)=0.25_r8*                                         &
+!    &                 (Awrk2(i-1,j)*Amask(i-1,j)+                      &
+!    &                  Awrk2(i+1,j)*Amask(i+1,j)-                      &
+!    &                  2.0_r8*Awrk2(i,j)*Amask(i,j))*                  &
+!    &                 Amask(i-1,j)*Amask(i+1,j)*Amask(i,j)
+            adfac=0.25_r8*Amask(i-1,j)*Amask(i+1,j)*Amask(i,j)*         &
+     &                    Awrk1(i,j)
+            Awrk2(i-1,j)=Awrk2(i-1,j)+adfac*Amask(i-1,j)
+            Awrk2(i+1,j)=Awrk2(i+1,j)+adfac*Amask(i+1,j)
+            Awrk2(i,j)=Awrk2(i,j)-2.0_r8*adfac*Amask(i,j)
+            Awrk1(i,j)=0.0_r8
+# else
+!           Awrk1(i,j)=0.25_r8*                                         &
+!    &                 (Awrk2(i-1,j)+Awrk2(i+1,j)-2.0_r8*Awrk2(i,j))
+            adfac=0.25_r8*Awrk1(i,j)
+            Awrk2(i-1,j)=Awrk2(i-1,j)+adfac
+            Awrk2(i+1,j)=Awrk2(i+1,j)+adfac
+            Awrk2(i,j)=Awrk2(i,j)-2.0_r8*adfac
+            Awrk1(i,j)=0.0_r8
+# endif
+          END DO
+        END DO
+!
+!  Add the changes to the field.
+!
+        DO j=Jstr,Jend
+          DO i=Istr-1,Iend+1
+!           Awrk2(i,j)=A(i,j,k)+Awrk1(i,j)
+            Awrk1(i,j)=Awrk1(i,j)+Awrk2(i,j)
+            ad_A(i,j,k)=ad_A(i,j,k)+Awrk2(i,j)
+            Awrk2(i,j)=0.0_r8
+          END DO
+        END DO
+!
+!  Initialize filter in the Y-direction.
+!
+        DO j=Jstr,Jend
+          DO i=Istr-1,Iend+1
+# ifdef MASKING
+!           Awrk1(i,j)=0.25_r8*                                         &
+!    &                 (A(i,j-1,k)*Amask(i,j-1)+                        &
+!    &                  A(i,j+1,k)*Amask(i,j+1)-                        &
+!    &                  2.0_r8*A(i,j,k)*Amask(i,j))*                    &
+!    &                 Amask(i,j-1)*Amask(i,j+1)*Amask(i,j)
+            adfac=0.25_r8*Amask(i,j-1)*Amask(i,j+1)*Amask(i,j)*         &
+     &                    Awrk1(i,j)
+            ad_A(i,j-1,k)=ad_A(i,j-1,k)+adfac*Amask(i,j-1)
+            ad_A(i,j+1,k)=ad_A(i,j+1,k)+adfac*Amask(i,j+1)
+            ad_A(i,j,k)=ad_A(i,j,k)-2.0_r8*adfac*Amask(i,j)
+            Awrk1(i,j)=0.0_r8
+# else
+!           Awrk1(i,j)=0.25_r8*                                         &
+!    &                 (A(i,j-1,k)+A(i,j+1,k)-2.0_r8*A(i,j,k))
+            adfac=0.25_r8*Awrk1(i,j)
+            ad_A(i,j-1,k)=ad_A(i,j-1,k)+adfac
+            ad_A(i,j+1,k)=ad_A(i,j+1,k)+adfac
+            ad_A(i,j,k)=ad_A(i,j,k)-2.0_r8*adfac
+            Awrk1(i,j)=0.0_r8
+# endif
+          END DO
+        END DO
+      END DO
+
+      RETURN
+      END SUBROUTINE ad_shapiro3d_tile
+#endif
       END MODULE shapiro_mod

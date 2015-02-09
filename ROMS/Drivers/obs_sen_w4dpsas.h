@@ -248,6 +248,25 @@
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'TLmodVal_S',     &
      &                        TLmodVal_S)
         IF (exit_flag.ne. NoError) RETURN
+
+# ifdef RPCG
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'vgrad0',         &
+     &                        vgrad0)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Hbk',            &
+     &                        Hbk)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Jb0',            &
+     &                        Jb0)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'vcglwk',         &
+     &                        vcglwk)
+        IF (exit_flag.ne. NoError) RETURN
+# endif
+
       END DO
 #endif
 !
@@ -332,6 +351,12 @@
 #if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE zeta_balance_mod, ONLY: balance_ref, biconj
 #endif
+#ifdef RPCG
+      USE ini_adjust_mod, ONLY : ini_adjust
+      USE sum_grad_mod, ONLY : sum_grad
+      USE sum_imp_mod, ONLY : sum_imp
+      USE comp_Jb0_mod, ONLY : comp_Jb0, aug_oper
+#endif
 !
 !  Imported variable declarations
 !
@@ -345,6 +370,10 @@
       integer :: Lbck, Lini, Rec1, Rec2, indxSave
       integer :: i, ng, status, tile
       integer :: Fcount, NRMrec
+#ifdef RPCG
+      integer :: ADrec, nADrec, nLAST, irec, jrec, jrec1, jrec2
+      integer :: Rec3, Rec4, Rec5,  LTLM1, LTLM2, LiNL
+#endif
 
       integer, dimension(Ngrids) :: Nrec
 
@@ -697,6 +726,32 @@
 !
         INNER_LOOP : DO my_inner=0,Ninner
           inner=my_inner
+# ifdef RPCG
+          IF (inner.ne.Ninner) THEN
+            Linner=.TRUE.
+          ELSE
+            Linner=.FALSE.
+          END IF
+!
+!  Retrieve TLmodVal and NLmodVal when inner=0 and outer>1 for use as Hbk
+!  and BCKmodVal respectively.
+!
+          IF (inner.eq.0.and.outer.gt.1) THEN
+            DO ng=1,Ngrids
+              CALL netcdf_get_fvar (ng, iTLM, DAV(ng)%name,             &
+     &                               'TLmodel_value', TLmodVal)
+              IF (exit_flag.ne. NoError) RETURN
+              CALL netcdf_get_fvar (ng, iTLM, DAV(ng)%name,             &
+     &                               'NLmodel_value', NLmodVal)
+              IF (exit_flag.ne. NoError) RETURN
+            END DO
+          END IF
+!
+          IF (inner.eq.0) Lcgini=.TRUE.
+          DO ng=1,Ngrids
+            CALL rpcg_lanczos (ng, iRPM, outer, inner, Ninner, Lcgini)
+          END DO
+# else
 !
 !  Initialize conjugate gradient algorithm depending on hot start or
 !  outer loop index.
@@ -716,6 +771,7 @@
               Linner=.TRUE.
             END IF
           END IF
+# endif
 !
 !  Start inner loop computations.
 !
@@ -883,11 +939,15 @@
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
             Nrun=Nrun+1
+# ifndef RPCG
             DO ng=1,Ngrids
               Lcgini=.FALSE.
               CALL congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
               IF (exit_flag.ne.NoError) RETURN
             END DO
+# else
+            Lcgini=.FALSE.
+# endif
 
           END IF INNER_COMPUTE
 
@@ -1341,7 +1401,11 @@
 !  Compute observation impact to the data assimilation system.
 !
         DO ng=1,Ngrids
+# ifdef RPCG
+          CALL rep_matrix (ng, iTLM, outer, Ninner-1)
+# else
           CALL rep_matrix (ng, iTLM, outer, Ninner)
+# endif
         END DO
 #else
 !
@@ -1364,13 +1428,28 @@
 !$OMP END PARALLEL
         END DO
 !
+# ifdef RPCG
+        AD_INNER_LOOP : DO my_inner=Ninner,0,-1
+# else
         AD_INNER_LOOP : DO my_inner=Ninner,1,-1
+# endif
           inner=my_inner
-
+# ifdef RPCG
+          IF (inner.ne.Ninner) THEN
+            Linner=.TRUE.
+          ELSE
+            Linner=.FALSE.
+          END IF
+# endif
           IF (Master) THEN
             WRITE (stdout,60) 'Adjoint of', uppercase('w4dpsas'),       &
      &                        outer, inner
           END IF
+# ifdef RPCG
+!
+          INNER_COMPUTE : IF (Linner) THEN
+!
+# else
 !
 !  Call adjoint conjugate gradient algorithm.
 !
@@ -1379,6 +1458,7 @@
             CALL ad_congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
             IF (exit_flag.ne.NoError) RETURN
           END DO
+# endif
 !
 !  Initialize the adjoint model from rest.
 !
@@ -1532,7 +1612,17 @@
             wrtTLmod(ng)=.FALSE.
           END DO
 
+# ifdef RPCG
+          END IF INNER_COMPUTE
+!
+          DO ng=1,Ngrids
+            CALL ad_rpcg_lanczos (ng, iRPM, outer, inner, Ninner,       &
+     &                            Lcgini)
+          END DO
+# endif
+
         END DO AD_INNER_LOOP
+# ifndef RPCG
 !
 !  Call adjoint conjugate gradient algorithm.
 !
@@ -1541,6 +1631,7 @@
         DO ng=1,Ngrids
           CALL ad_congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
         END DO
+# endif
 
 #endif /* !OBS_IMPACT */
 
@@ -1684,7 +1775,11 @@
 !  Compute observation impact to the data assimilation system.
 !
         DO ng=1,Ngrids
+# ifdef RPCG
+          CALL rep_matrix (ng, iTLM, outer, Ninner-1)
+# else
           CALL rep_matrix (ng, iTLM, outer, Ninner)
+# endif
         END DO
 !
 !  Write out observation sentivity.
@@ -1799,7 +1894,11 @@
 !  Compute observation impact to the data assimilation system.
 !
         DO ng=1,Ngrids
+# ifdef RPCG
+          CALL rep_matrix (ng, iTLM, outer, Ninner-1)
+# else
           CALL rep_matrix (ng, iTLM, outer, Ninner)
+# endif
         END DO
 !
 !  Write out observation sentivity.
@@ -1913,7 +2012,11 @@
 !  Compute observation impact to the data assimilation system.
 !
         DO ng=1,Ngrids
+# ifdef RPCG
+          CALL rep_matrix (ng, iTLM, outer, Ninner-1)
+# else
           CALL rep_matrix (ng, iTLM, outer, Ninner)
+# endif
         END DO
 !
 !  Write out observation sentivity.

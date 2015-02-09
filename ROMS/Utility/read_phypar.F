@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_phypar.F 653 2013-02-14 22:12:17Z arango $
+!svn $Id: read_phypar.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -2667,6 +2667,27 @@
         IF (Hout(idFsur,ng).or.Hout(idUbar,ng).or.Hout(idVbar,ng)) THEN
           LdefHIS(ng)=.TRUE.
         END IF
+#endif
+#if defined TANGENT || defined TL_IOMS
+!
+!  Set lateral boundary condition switches for the tangent linear
+!  models (TLM and RPM) to the same values as the adjoint model.
+!
+        DO ivar=1,nLBCvar
+          DO i=1,4
+            tl_LBC(i,ivar,ng)%acquire  =ad_LBC(i,ivar,ng)%acquire
+            tl_LBC(i,ivar,ng)%Chapman  =ad_LBC(i,ivar,ng)%Chapman
+            tl_LBC(i,ivar,ng)%clamped  =ad_LBC(i,ivar,ng)%clamped
+            tl_LBC(i,ivar,ng)%closed   =ad_LBC(i,ivar,ng)%closed
+            tl_LBC(i,ivar,ng)%Flather  =ad_LBC(i,ivar,ng)%Flather
+            tl_LBC(i,ivar,ng)%gradient =ad_LBC(i,ivar,ng)%gradient
+            tl_LBC(i,ivar,ng)%nested   =ad_LBC(i,ivar,ng)%nested
+            tl_LBC(i,ivar,ng)%nudging  =ad_LBC(i,ivar,ng)%nudging
+            tl_LBC(i,ivar,ng)%periodic =ad_LBC(i,ivar,ng)%periodic
+            tl_LBC(i,ivar,ng)%radiation=ad_LBC(i,ivar,ng)%radiation
+            tl_LBC(i,ivar,ng)%reduced  =ad_LBC(i,ivar,ng)%reduced
+          END DO
+        END DO
 #endif
 #if defined IS4DVAR || defined WEAK_CONSTRAINT
 !

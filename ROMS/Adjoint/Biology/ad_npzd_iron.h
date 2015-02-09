@@ -1,6 +1,6 @@
       SUBROUTINE ad_biology (ng,tile)
 !
-!svn $Id: ad_npzd_iron.h 655 2013-03-14 21:33:50Z arango $
+!svn $Id: ad_npzd_iron.h 645 2013-01-22 23:21:54Z arango $
 !************************************************** Hernan G. Arango ***
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -897,7 +897,7 @@
 !>   &                              tl_cff*Hz(i,j,k)+cff*tl_Hz(i,j,k)
 !>
               ad_Hz(i,j,k)=ad_Hz(i,j,k)+cff*ad_t(i,j,k,nnew,ibio)
-              ad_cff=ad_cff+Hz(i,j,k)*ad_t(i,j,k,nnew,ibio)
+              ad_cff=add_cff+Hz(i,j,k)*ad_t(i,j,k,nnew,ibio)
 !>            tl_cff=tl_Bio(i,k,ibio)-tl_Bio_old(i,k,ibio)
 !>
               ad_Bio_old(i,k,ibio)=ad_Bio_old(i,k,ibio)-ad_cff

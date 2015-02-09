@@ -79,7 +79,7 @@
       USE mod_param
       USE mod_scalars
 !
-      USE ad_bc_3d_mod, ONLY: ad_bc_r3d_tile
+      USE ad_bc_3d_mod, ONLY: ad_dabc_r3d_tile
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : ad_mp_exchange3d
 # endif
@@ -227,11 +227,11 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_A)
 # endif
-!>    CALL bc_r3d_tile (ng, tile,                                       &
+!>    CALL dabc_r3d_tile (ng, tile,                                     &
 !>   &                  LBi, UBi, LBj, UBj, LBk, UBk,                   &
 !>   &                  tl_A)
 !>
-      CALL ad_bc_r3d_tile (ng, tile,                                    &
+      CALL ad_dabc_r3d_tile (ng, tile,                                  &
      &                     LBi, UBi, LBj, UBj, LBk, UBk,                &
      &                     ad_A)
       DO k=1,N(ng)
@@ -553,11 +553,11 @@
      &                         EWperiodic(ng), NSperiodic(ng),          &
      &                         ad_Awrk(:,:,:,Nnew))
 # endif
-!>      CALL bc_r3d_tile (ng, tile,                                     &
+!>      CALL dabc_r3d_tile (ng, tile,                                   &
 !>   &                    LBi, UBi, LBj, UBj, LBk, UBk,                 &
 !>   &                    tl_Awrk(:,:,:,Nnew))
 !>
-        CALL ad_bc_r3d_tile (ng, tile,                                  &
+        CALL ad_dabc_r3d_tile (ng, tile,                                &
      &                       LBi, UBi, LBj, UBj, LBk, UBk,              &
      &                       ad_Awrk(:,:,:,Nnew))
 !
@@ -590,13 +590,23 @@
 !>            tl_FE(i,j)=tl_FE(i,j)*vmask(i,j)
 !>
               ad_FE(i,j)=ad_FE(i,j)*vmask(i,j)
-# endif
+!>            tl_FE(i,j)=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*        &
+!>   &                   (tl_Awrk(i,j,k,Nold)*rmask(i,j)-               &
+!>   &                    tl_Awrk(i,j-1,k,Nold)*rmask(i,j-1))
+!>
+              adfac=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*ad_FE(i,j)
+              ad_Awrk(i,j-1,k,Nold)=ad_Awrk(i,j-1,k,Nold)-              &
+     &                              adfac*rmask(i,j-1)
+              ad_Awrk(i,j  ,k,Nold)=ad_Awrk(i,j  ,k,Nold)+              &
+     &                              adfac*rmask(i,j)
+# else
 !>            tl_FE(i,j)=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*        &
 !>   &                   (tl_Awrk(i,j,k,Nold)-tl_Awrk(i,j-1,k,Nold))
 !>
               adfac=pnom_v(i,j)*0.5_r8*(Kh(i,j-1)+Kh(i,j))*ad_FE(i,j)
               ad_Awrk(i,j-1,k,Nold)=ad_Awrk(i,j-1,k,Nold)-adfac
               ad_Awrk(i,j  ,k,Nold)=ad_Awrk(i,j  ,k,Nold)+adfac
+# endif
               ad_FE(i,j)=0.0_r8
             END DO
           END DO
@@ -606,13 +616,23 @@
 !>            tl_FX(i,j)=tl_FX(i,j)*umask(i,j)
 !>
               ad_FX(i,j)=ad_FX(i,j)*umask(i,j)
-# endif
+!>            tl_FX(i,j)=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*        &
+!>   &                   (tl_Awrk(i,j,k,Nold)*rmask(i,j)-               &
+!>   &                    tl_Awrk(i-1,j,k,Nold)*rmask(i-1,j))
+!>
+              adfac=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*ad_FX(i,j)
+              ad_Awrk(i-1,j,k,Nold)=ad_Awrk(i-1,j,k,Nold)-              &
+     &                              adfac*rmask(i-1,j)
+              ad_Awrk(i  ,j,k,Nold)=ad_Awrk(i  ,j,k,Nold)+              &
+     &                              adfac*rmask(i,j)
+# else
 !>            tl_FX(i,j)=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*        &
 !>   &                   (tl_Awrk(i,j,k,Nold)-tl_Awrk(i-1,j,k,Nold))
 !>
               adfac=pmon_u(i,j)*0.5_r8*(Kh(i-1,j)+Kh(i,j))*ad_FX(i,j)
               ad_Awrk(i-1,j,k,Nold)=ad_Awrk(i-1,j,k,Nold)-adfac
               ad_Awrk(i  ,j,k,Nold)=ad_Awrk(i  ,j,k,Nold)+adfac
+# endif
               ad_FX(i,j)=0.0_r8
             END DO
           END DO
@@ -646,11 +666,11 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_A)
 # endif
-!>    CALL bc_r3d_tile (ng, tile,                                       &
+!>    CALL dabc_r3d_tile (ng, tile,                                     &
 !>   &                  LBi, UBi, LBj, UBj, LBk, UBk,                   &
 !>   &                  tl_A)
 !>
-      CALL ad_bc_r3d_tile (ng, tile,                                    &
+      CALL ad_dabc_r3d_tile (ng, tile,                                  &
      &                     LBi, UBi, LBj, UBj, LBk, UBk,                &
      &                     ad_A)
 
@@ -675,7 +695,7 @@
       USE mod_param
       USE mod_scalars
 !
-      USE ad_bc_3d_mod, ONLY: ad_bc_u3d_tile
+      USE ad_bc_3d_mod, ONLY: ad_dabc_u3d_tile
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : ad_mp_exchange3d
 # endif
@@ -827,11 +847,11 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_A)
 # endif
-!>    CALL bc_u3d_tile (ng, tile,                                       &
+!>    CALL dabc_u3d_tile (ng, tile,                                     &
 !>   &                  LBi, UBi, LBj, UBj, LBk, UBk,                   &
 !>   &                  tl_A)
 !>
-      CALL ad_bc_u3d_tile (ng, tile,                                    &
+      CALL ad_dabc_u3d_tile (ng, tile,                                  &
      &                     LBi, UBi, LBj, UBj, LBk, UBk,                &
      &                     ad_A)
       DO k=1,N(ng)
@@ -1154,11 +1174,11 @@
      &                         EWperiodic(ng), NSperiodic(ng),          &
      &                         ad_Awrk(:,:,:,Nnew))
 # endif
-!>      CALL bc_u3d_tile (ng, tile,                                     &
+!>      CALL dabc_u3d_tile (ng, tile,                                   &
 !>   &                    LBi, UBi, LBj, UBj, LBk, UBk,                 &
 !>   &                    tl_Awrk(:,:,:,Nnew))
 !>
-        CALL ad_bc_u3d_tile (ng, tile,                                  &
+        CALL ad_dabc_u3d_tile (ng, tile,                                &
      &                       LBi, UBi, LBj, UBj, LBk, UBk,              &
      &                       ad_Awrk(:,:,:,Nnew))
 !
@@ -1191,7 +1211,19 @@
 !>            tl_FE(i,j)=tl_FE(i,j)*pmask(i,j)
 !>
               ad_FE(i,j)=ad_FE(i,j)*pmask(i,j)
-# endif
+!>            tl_FE(i,j)=pnom_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+    &
+!>   &                                        Kh(i-1,j-1)+Kh(i,j-1))*   &
+!>   &                   (tl_Awrk(i,j,k,Nold)*umask(i,j)-               &
+!>   &                    tl_Awrk(i,j-1,k,Nold)*umask(i,j-1))
+!>
+              adfac=pnom_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+         &
+     &                                   Kh(i-1,j-1)+Kh(i,j-1))*        &
+     &              ad_FE(i,j)
+              ad_Awrk(i,j-1,k,Nold)=ad_Awrk(i,j-1,k,Nold)-              &
+     &                              adfac*umask(i,j-1)
+              ad_Awrk(i,j  ,k,Nold)=ad_Awrk(i,j  ,k,Nold)+              &
+     &                              adfac*umask(i,j)
+# else
 !>            tl_FE(i,j)=pnom_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+    &
 !>   &                                        Kh(i-1,j-1)+Kh(i,j-1))*   &
 !>   &                   (tl_Awrk(i,j,k,Nold)-tl_Awrk(i,j-1,k,Nold))
@@ -1201,17 +1233,29 @@
      &              ad_FE(i,j)
               ad_Awrk(i,j-1,k,Nold)=ad_Awrk(i,j-1,k,Nold)-adfac
               ad_Awrk(i,j  ,k,Nold)=ad_Awrk(i,j  ,k,Nold)+adfac
+# endif
               ad_FE(i,j)=0.0_r8
             END DO
           END DO
           DO j=Jstr,Jend
             DO i=IstrU-1,Iend
+# ifdef MASKING
+!>            tl_FX(i,j)=pmon_r(i,j)*Kh(i,j)*                           &
+!>   &                   (tl_Awrk(i+1,j,k,Nold)*umask(i+1,j)-           &
+!>   &                    tl_Awrk(i,j,k,Nold)*umask(i,j))
+              adfac=pmon_r(i,j)*Kh(i,j)*ad_FX(i,j)
+              ad_Awrk(i  ,j,k,Nold)=ad_Awrk(i  ,j,k,Nold)-              &
+     &                              adfac*umask(i,j)
+              ad_Awrk(i+1,j,k,Nold)=ad_Awrk(i+1,j,k,Nold)+              &
+     &                              adfac*umask(i+1,j)
+# else
 !>            tl_FX(i,j)=pmon_r(i,j)*Kh(i,j)*                           &
 !>   &                   (tl_Awrk(i+1,j,k,Nold)-tl_Awrk(i,j,k,Nold))
 !>
               adfac=pmon_r(i,j)*Kh(i,j)*ad_FX(i,j)
               ad_Awrk(i  ,j,k,Nold)=ad_Awrk(i  ,j,k,Nold)-adfac
               ad_Awrk(i+1,j,k,Nold)=ad_Awrk(i+1,j,k,Nold)+adfac
+# endif
               ad_FX(i,j)=0.0_r8
             END DO
           END DO
@@ -1245,11 +1289,11 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_A)
 # endif
-!>    CALL bc_u3d_tile (ng, tile,                                       &
+!>    CALL dabc_u3d_tile (ng, tile,                                     &
 !>   &                  LBi, UBi, LBj, UBj, LBk, UBk,                   &
 !>   &                  tl_A)
 !>
-      CALL ad_bc_u3d_tile (ng, tile,                                    &
+      CALL ad_dabc_u3d_tile (ng, tile,                                  &
      &                     LBi, UBi, LBj, UBj, LBk, UBk,                &
      &                     ad_A)
 
@@ -1274,7 +1318,7 @@
       USE mod_param
       USE mod_scalars
 !
-      USE ad_bc_3d_mod, ONLY: ad_bc_v3d_tile
+      USE ad_bc_3d_mod, ONLY: ad_dabc_v3d_tile
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : ad_mp_exchange3d
 # endif
@@ -1427,11 +1471,11 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_A)
 # endif
-!>    CALL bc_v3d_tile (ng, tile,                                       &
+!>    CALL dabc_v3d_tile (ng, tile,                                     &
 !>   &                  LBi, UBi, LBj, UBj, LBk, UBk,                   &
 !>   &                  tl_A)
 !>
-      CALL ad_bc_v3d_tile (ng, tile,                                    &
+      CALL ad_dabc_v3d_tile (ng, tile,                                  &
      &                     LBi, UBi, LBj, UBj, LBk, UBk,                &
      &                     ad_A)
       DO k=1,N(ng)
@@ -1753,11 +1797,11 @@
      &                         EWperiodic(ng), NSperiodic(ng),          &
      &                         ad_Awrk(:,:,:,Nnew))
 # endif
-!>      CALL bc_v3d_tile (ng, tile,                                     &
+!>      CALL dabc_v3d_tile (ng, tile,                                   &
 !>   &                    LBi, UBi, LBj, UBj, LBk, UBk,                 &
 !>   &                    tl_Awrk(:,:,:,Nnew))
 !>
-        CALL ad_bc_v3d_tile (ng, tile,                                  &
+        CALL ad_dabc_v3d_tile (ng, tile,                                &
      &                       LBi, UBi, LBj, UBj, LBk, UBk,              &
      &                       ad_Awrk(:,:,:,Nnew))
 !
@@ -1786,12 +1830,24 @@
 !
           DO j=JstrV-1,Jend
             DO i=Istr,Iend
+# ifdef MASKING
+!>            tl_FE(i,j)=pnom_r(i,j)*Kh(i,j)*                           &
+!>   &                   (tl_Awrk(i,j+1,k,Nold)*vmask(i,j+1)-           &
+!>   &                    tl_Awrk(i,j,k,Nold)*vmask(i,j))
+!>
+              adfac=pnom_r(i,j)*Kh(i,j)*ad_FE(i,j)
+              ad_Awrk(i,j  ,k,Nold)=ad_Awrk(i,j  ,k,Nold)-              &
+     &                              adfac*vmask(i,j)
+              ad_Awrk(i,j+1,k,Nold)=ad_Awrk(i,j+1,k,Nold)+              &
+     &                              adfac*vmask(i,j+1)
+# else
 !>            tl_FE(i,j)=pnom_r(i,j)*Kh(i,j)*                           &
 !>   &                   (tl_Awrk(i,j+1,k,Nold)-tl_Awrk(i,j,k,Nold))
 !>
               adfac=pnom_r(i,j)*Kh(i,j)*ad_FE(i,j)
               ad_Awrk(i,j  ,k,Nold)=ad_Awrk(i,j  ,k,Nold)-adfac
               ad_Awrk(i,j+1,k,Nold)=ad_Awrk(i,j+1,k,Nold)+adfac
+# endif
               ad_FE(i,j)=0.0_r8
             END DO
           END DO
@@ -1801,7 +1857,19 @@
 !>            tl_FX(i,j)=tl_FX(i,j)*pmask(i,j)
 !>
               ad_FX(i,j)=ad_FX(i,j)*pmask(i,j)
-# endif
+!>            tl_FX(i,j)=pmon_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+    &
+!>   &                                        Kh(i-1,j-1)+Kh(i,j-1))*   &
+!>   &                   (tl_Awrk(i,j,k,Nold)*vmask(i,j)-               &
+!>   &                    tl_Awrk(i-1,j,k,Nold)*vmask(i-1,j))
+!>
+              adfac=pmon_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+         &
+     &                                   Kh(i-1,j-1)+Kh(i,j-1))*        &
+     &              ad_FX(i,j)
+              ad_Awrk(i-1,j,k,Nold)=ad_Awrk(i-1,j,k,Nold)-              &
+     &                              adfac*vmask(i-1,j)
+              ad_Awrk(i  ,j,k,Nold)=ad_Awrk(i  ,j,k,Nold)+              &
+     &                              adfac*vmask(i,j)
+# else
 !>            tl_FX(i,j)=pmon_p(i,j)*0.25_r8*(Kh(i-1,j  )+Kh(i,j  )+    &
 !>   &                                        Kh(i-1,j-1)+Kh(i,j-1))*   &
 !>   &                   (tl_Awrk(i,j,k,Nold)-tl_Awrk(i-1,j,k,Nold))
@@ -1811,6 +1879,7 @@
      &              ad_FX(i,j)
               ad_Awrk(i-1,j,k,Nold)=ad_Awrk(i-1,j,k,Nold)-adfac
               ad_Awrk(i  ,j,k,Nold)=ad_Awrk(i  ,j,k,Nold)+adfac
+# endif
               ad_FX(i,j)=0.0_r8
             END DO
           END DO
@@ -1844,11 +1913,11 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_A)
 # endif
-!>    CALL bc_v3d_tile (ng, tile,                                       &
+!>    CALL dabc_v3d_tile (ng, tile,                                     &
 !>   &                  LBi, UBi, LBj, UBj, LBk, UBk,                   &
 !>   &                  tl_A)
 !>
-      CALL ad_bc_v3d_tile (ng, tile,                                    &
+      CALL ad_dabc_v3d_tile (ng, tile,                                  &
      &                     LBi, UBi, LBj, UBj, LBk, UBk,                &
      &                     ad_A)
 

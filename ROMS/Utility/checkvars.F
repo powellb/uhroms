@@ -101,7 +101,7 @@
 !  Higher values are used to process only boundary condition or
 !  surface forcing in the variational data assimilation algorithms.
 !
-      IF (model.lt.8) THEN
+      IF (model.lt.8.or.model.eq.14) THEN
 #ifdef ANA_INITIAL
         IF (nrrec(ng).ne.0) THEN
           get_var(idFsur)=.TRUE.
@@ -270,6 +270,20 @@
 # ifdef ADJUST_WSTRESS
         get_var(idUsms)=.TRUE.
         get_var(idVsms)=.TRUE.
+# endif
+      END IF
+#endif
+#ifdef BNORM
+      IF (model.eq.6) THEN
+        get_var(idFsur)=.TRUE.
+        get_var(idUbar)=.TRUE.
+        get_var(idVbar)=.TRUE.
+# ifdef SOLVE3D
+        get_var(idUvel)=.TRUE.
+        get_var(idVvel)=.TRUE.
+        DO itrc=1,NAT
+          get_var(idTvar(itrc))=.TRUE.
+        END DO
 # endif
       END IF
 #endif

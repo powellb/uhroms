@@ -1,5 +1,6 @@
 #include "cppdefs.h"
-#if defined FOUR_DVAR || defined VERIFICATION
+#if defined FOUR_DVAR || defined VERIFICATION || \ 
+    (defined HESSIAN_SV && defined BNORM)
       SUBROUTINE read_AssPar (model, inp, out, Lwrite)
 !
 !svn $Id: read_asspar.F 645 2013-01-22 23:21:54Z arango $
@@ -15,7 +16,8 @@
 !
       USE mod_param
       USE mod_parallel
-# if defined FOUR_DVAR || defined VERIFICATION
+# if defined FOUR_DVAR || defined VERIFICATION || \ 
+     (defined HESSIAN_SV && defined BNORM)
       USE mod_fourdvar
 # endif
       USE mod_iounits
@@ -41,7 +43,8 @@
       integer :: decode_line, load_i, load_l, load_r, load_s1d
 
       integer :: Nfiles(Ngrids)
-# if defined FOUR_DVAR || defined VERIFICATION
+# if defined FOUR_DVAR || defined VERIFICATION || \ 
+     (defined HESSIAN_SV && defined BNORM)
       logical, dimension(MT) :: Ltracer
 #  if defined ADJUST_STFLUX && defined SOLVE3D
       logical, dimension(MT,Ngrids) :: Ltsur
@@ -78,7 +81,8 @@
         label(i:i)=blank
       END DO
 
-# if defined FOUR_DVAR || defined VERIFICATION
+# if defined FOUR_DVAR || defined VERIFICATION || \ 
+     (defined HESSIAN_SV && defined BNORM)
 !
 !-----------------------------------------------------------------------
 !  Read in 4DVAR assimilation parameters. Then, load input data into
@@ -996,7 +1000,7 @@
           WRITE (out,160) ' Assimilation Parameters File:  ',           &
      &                    TRIM(aparnam)
 #  endif
-#  ifdef FOUR_DVAR
+#  if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
 #   if defined IS4DVAR          || defined OBS_SENSITIBITY || \
        defined OPT_OBSERVATIONS || defined WEAK_CONSTRAINT
 #    if defined SENSITIVITY_4DVAR || \

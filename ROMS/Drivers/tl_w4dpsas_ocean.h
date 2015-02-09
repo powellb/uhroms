@@ -1,16 +1,15 @@
       MODULE ocean_control_mod
 !
-!svn $Id: tl_w4dpsas_ocean.h 645 2013-01-22 23:21:54Z arango $
-!=================================================== Andrew M. Moore ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
+!svn $Id: w4dpsas_ocean.h 615 2012-05-12 22:37:59Z arango $
+!================================================== Hernan G. Arango ===
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  ROMS/TOMS Strong/Weak Constraint 4-Dimensional Variational Data     !
-!        Assimilation and its Tangent Linear Driver: Physical-space    !
-!        Statistical Analysis System (4D-PSAS).                        !
-!        Dual formulation in observarion space.                        !
+!  ROMS/TOMS Weak Constraint 4-Dimensional Variational Data            !
+!          Assimilation Driver: Physical-space Statistical Analysis    !
+!          System (4D-PSAS). Dual formulation in observarion space.    !
 !                                                                      !
 !  This driver is used for strong/weak constraint 4D-Var where errors  !
 !  may be considered in both model and observations.                   !
@@ -38,14 +37,6 @@
 !    and application to the California Current System, Prog.           !
 !    Oceanogr., 91, 50-73, doi:10.1016/j.pocean.2011.05.003.           !
 !                                                                      !
-!  Moore, A.M., H.G. Arango, G. Broquet, C. Edward, M. Veneziani,      !
-!    B. Powell, D. Foley, J.D. Doyle, D. Costa, and P. Robinson,       !
-!    2011: The Regional Ocean Modeling System (ROMS) 4-dimensional     !
-!    variational data assimilations systems, Part III - Observation    !
-!    impact and observation sensitivity in the California Current      !
-!    System, Prog. Oceanogr., 91, 74-94,                               !
-!    doi:10.1016/j.pocean.2011.05.005.                                 !
-!                                                                      !
 !=======================================================================
 !
       implicit none
@@ -70,6 +61,7 @@
       USE mod_parallel
       USE mod_fourdvar
       USE mod_iounits
+      USE mod_netcdf
       USE mod_scalars
 
 #ifdef MCT_LIB
@@ -203,6 +195,62 @@
 #endif
 !
 !-----------------------------------------------------------------------
+!  If the required vectors and arrays from rpcg_lanczos from a previous
+!  run of the assimilation cycle are available, read them here from
+!  LCZ(ng)%name NetCDF file.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_beta',        &
+     &                        cg_beta)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_delta',       &
+     &                        cg_delta)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_Gnorm_v',     &
+     &                        cg_Gnorm_v)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_dla',         &
+     &                        cg_dla)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_QG',          &
+     &                        cg_QG)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'zgrad0',         &
+     &                        zgrad0)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'vgrad0',         &
+     &                        vgrad0)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Hbk',            &
+     &                        Hbk)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Jb0',            &
+     &                        Jb0)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'zcglwk',         &
+     &                        zcglwk)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'vcglwk',         &
+     &                        vcglwk)
+        IF (exit_flag.ne. NoError) RETURN
+
+        CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'TLmodVal_S',     &
+     &                        TLmodVal_S)
+        IF (exit_flag.ne. NoError) RETURN
+      END DO
+!
+!-----------------------------------------------------------------------
 !  Read in standard deviation factors for error covariance.
 !-----------------------------------------------------------------------
 !
@@ -271,17 +319,33 @@
       USE mod_netcdf
       USE mod_scalars
       USE mod_stepping
+      USE mod_mixing
 !
+      USE convolve_mod, ONLY : convolve
       USE convolve_mod, ONLY : error_covariance
+      USE ini_adjust_mod, ONLY : load_TLtoAD
 #ifdef ADJUST_BOUNDARY
       USE mod_boundary, ONLY : initialize_boundary
 #endif
       USE mod_forces, ONLY : initialize_forces
       USE mod_ocean, ONLY : initialize_ocean
       USE normalization_mod, ONLY : normalization
-      USE strings_mod, ONLY : uppercase
+#if defined POSTERIOR_EOFS    || defined POSTERIOR_ERROR_I || \
+    defined POSTERIOR_ERROR_F
+      USE posterior_mod, ONLY : posterior
+      USE random_ic_mod, ONLY : random_ic
+#endif
+#if defined POSTERIOR_ERROR_I || defined POSTERIOR_ERROR_F
+      USE posterior_var_mod, ONLY : posterior_var
+#endif
 #if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE zeta_balance_mod, ONLY: balance_ref, biconj
+#endif
+#ifdef RPCG
+      USE ini_adjust_mod, ONLY : ini_adjust
+      USE sum_grad_mod, ONLY : sum_grad
+      USE sum_imp_mod, ONLY : sum_imp
+      USE comp_Jb0_mod, ONLY : comp_Jb0, aug_oper
 #endif
 !
 !  Imported variable declarations
@@ -290,16 +354,22 @@
 !
 !  Local variable declarations.
 !
-      logical :: Lcgini, Linner, Lposterior
-
+      logical :: Lcgini, Linner, Lposterior, add
+#ifdef POSTERIOR_EOFS
+      logical :: Ltrace
+#endif
       integer :: my_inner, my_outer
-      integer :: Lbck, Lini, Rec1, Rec2, indxSave
+      integer :: Lbck, Lini, Rec, Rec1, Rec2, indxSave
       integer :: i, ng, status, tile
-      integer :: Fcount, Mstr, NRMrec
+      integer :: Fcount, NRMrec, Mstr
+#ifdef RPCG
+      integer :: ADrec, nADrec, nLAST, irec, jrec, jrec1, jrec2
+      integer :: Rec3, Rec4, Rec5,  LTLM1, LTLM2, LiNL
+#endif
 
       integer, dimension(Ngrids) :: Nrec
 
-      character (len=10) :: driver
+      character (len=7 ) :: driver
       character (len=20) :: string
 !
 !=======================================================================
@@ -324,6 +394,13 @@
       Lbck=2                ! background record in INI
       Rec1=1
       Rec2=2
+# ifdef RPCG
+        Rec3=3
+        Rec4=4
+        Rec5=5
+        LTLM1=1
+        LTLM2=2
+# endif
       Nrun=1
       outer=0
       inner=0
@@ -339,6 +416,18 @@
 !
       DO ng=1,Ngrids
         WRTforce(ng)=.FALSE.
+      END DO
+!
+!-----------------------------------------------------------------------
+!  Clear NL mixing arrays.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+!$OMP PARALLEL
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL initialize_mixing (ng, tile, iTLM)
+        END DO
+!$OMP END PARALLEL
       END DO
 !
 !  Initialize and set nonlinear model initial conditions.
@@ -451,6 +540,32 @@
         LdefITL(ng)=.FALSE.
         IF (exit_flag.ne.NoError) RETURN
       END DO
+#ifdef RPCG
+!
+!  Initialize all records of the ITL file to zero.
+!
+        DO ng=1,Ngrids
+          CALL tl_wrt_ini (ng, Rec1, Rec1)
+          IF (exit_flag.ne.NoError) RETURN
+          CALL tl_wrt_ini (ng, Rec1, Rec2)
+          IF (exit_flag.ne.NoError) RETURN
+          CALL tl_wrt_ini (ng, Rec1, Rec3)
+          IF (exit_flag.ne.NoError) RETURN
+          CALL tl_wrt_ini (ng, Rec1, Rec4)
+          IF (exit_flag.ne.NoError) RETURN
+          CALL tl_wrt_ini (ng, Rec1, Rec5)
+          IF (exit_flag.ne.NoError) RETURN
+          nADrec=0
+          IF (nADJ(ng).lt.ntimes(ng)) THEN
+            nLAST=Rec5
+            nADrec=2*(1+ntimes(ng)/nADJ(ng))
+            DO irec=1,nADrec
+              CALL tl_wrt_ini (ng, Rec1, nLAST+irec)
+              IF (exit_flag.ne.NoError) RETURN
+            END DO
+          END IF
+        END DO
+#endif
 !
 !  Define impulse forcing NetCDF file.
 !
@@ -468,6 +583,8 @@
         CALL def_mod (ng)
         IF (exit_flag.ne.NoError) RETURN
       END DO
+
+#ifdef RECOMPUTE_NL
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !  Run nonlinear model and compute background state trajectory, X_n-1(t)
@@ -475,6 +592,17 @@
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
       DO ng=1,Ngrids
+#ifdef AVERAGES
+        LdefAVG(ng)=.TRUE.
+        LwrtAVG(ng)=.TRUE.
+        WRITE (AVG(ng)%name,10) TRIM(AVG(ng)%base), outer
+#endif
+#ifdef DIAGNOSTICS
+        LdefDIA(ng)=.TRUE.
+        LwrtDIA(ng)=.TRUE.
+        WRITE (DIA(ng)%name,10) TRIM(DIA(ng)%base), outer
+#endif
+        wrtMisfit(ng)=.TRUE.
         SporadicImpulse(ng)=.FALSE.
         FrequentImpulse(ng)=.FALSE.
         IF (Master) THEN
@@ -492,6 +620,14 @@
       IF (exit_flag.ne.NoError) RETURN
 
       DO ng=1,Ngrids
+#ifdef AVERAGES
+        LdefAVG(ng)=.FALSE.
+        LwrtAVG(ng)=.FALSE.
+#endif
+#ifdef DIAGNOSTICS
+        LdefDIA(ng)=.FALSE.
+        LwrtDIA(ng)=.FALSE.
+#endif
         wrtNLmod(ng)=.FALSE.
       END DO
 !
@@ -515,7 +651,7 @@
 !
 !  Write out initial data penalty function to NetCDF file.
 !
-        SourceFile='w4dpsas_ocean.h, ROMS_run'
+        SourceFile='tl_w4dpsas_ocean.h, ROMS_run'
 
         CALL netcdf_put_fvar (ng, iNLM, DAV(ng)%name,                   &
      &                        'NL_iDataPenalty',                        &
@@ -535,6 +671,7 @@
       DO ng=1,Ngrids
         FWD(ng)%ncid=HIS(ng)%ncid
       END DO
+#endif
 !
 !-----------------------------------------------------------------------
 !  Solve the system (following Courtier, 1997):
@@ -570,7 +707,24 @@
 !
 !-----------------------------------------------------------------------
 !
-      OUTER_LOOP1 : DO my_outer=1,Nouter
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!  Tangent linear of 4D-PSAS
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!
+!  Read the observations perturbations.
+!
+!AMM      DO ng=1,Ngrids
+!AMM        Mstr=NstrObs(ng)
+!AMM        CALL netcdf_get_fvar (ng, iTLM, OBS(ng)%name,                   &
+!AMM     &                        'obs_value',                              &
+!AMM     &                        tl_ObsVal(Mstr:),                         &
+!AMM     &                        start = (/NstrObs(ng)/),                  &
+!AMM     &                        total = (/Nobs(ng)/))
+!AMM      END DO
+!
+      OUTER_LOOP : DO my_outer=1,Nouter
         outer=my_outer
         inner=0
 !
@@ -617,8 +771,31 @@
         END IF
 #endif
 !
-        INNER_LOOP1 : DO my_inner=0,Ninner
+        INNER_LOOP : DO my_inner=0,Ninner
           inner=my_inner
+# ifdef RPCG
+          IF (inner.ne.Ninner) THEN
+            Linner=.TRUE.
+          ELSE
+            Linner=.FALSE.
+          END IF
+!
+!  Retrieve NLmodVal when inner=0 and outer>1 for use as BCKmodVal.
+!
+          IF (inner.eq.0.and.outer.gt.1) THEN
+            DO ng=1,Ngrids
+              CALL netcdf_get_fvar (ng, iTLM, DAV(ng)%name,             &
+     &                               'NLmodel_value', NLmodVal)
+              IF (exit_flag.ne. NoError) RETURN
+            END DO
+          END IF
+!
+          IF (inner.eq.0) Lcgini=.TRUE.
+          DO ng=1,Ngrids
+            CALL tl_rpcg_lanczos (ng, iRPM, outer, inner, Ninner,       &
+     &                            Lcgini)
+          END DO
+# else
 !
 !  Initialize conjugate gradient algorithm depending on hot start or
 !  outer loop index.
@@ -626,7 +803,7 @@
           IF (inner.eq.0) THEN
             Lcgini=.TRUE.
             DO ng=1,Ngrids
-              CALL congrad (ng, iRPM, outer, inner, Ninner, Lcgini)
+              CALL tl_congrad (ng, iRPM, outer, inner, Ninner, Lcgini)
             END DO
           END IF
 !
@@ -638,10 +815,11 @@
               Linner=.TRUE.
             END IF
           END IF
+# endif
 !
 !  Start inner loop computations.
 !
-          INNER_COMPUTE1 : IF (Linner) THEN
+          INNER_COMPUTE : IF (Linner) THEN
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !  Integrate adjoint model forced with any vector PSI at the observation
@@ -707,6 +885,14 @@
 !  Convolve adjoint trajectory with error covariances.
 !
             Lposterior=.FALSE.
+# ifdef RPCG
+!
+!  Set the flag that controls the augmentation of the model error
+!  forcing terms. This is ONLY done in the outer-loop so 
+!  LaugWeak=.FALSE. here.
+!
+            LaugWeak=.FALSE.
+# endif
             CALL error_covariance (iTLM, driver, outer, inner,          &
      &                             Lbck, Lini, Lold, Lnew,              &
      &                             Rec1, Rec2, Lposterior)
@@ -778,10 +964,12 @@
 !  history file at the beggining of each inner loop  to avoid opening
 !  too many NetCDF files.
 !
+            DO ng=1,Ngrids
               IF (inner.gt.1) LdefTLM(ng)=.FALSE.
               Fcount=TLM(ng)%Fcount
               TLM(ng)%Nrec(Fcount)=0
               TLM(ng)%Rindex=0
+            END DO
 !
 !  Run tangent linear model forward and force with convolved adjoint
 !  trajectory impulses. Compute (H M B M' H')_n * PSI at observation
@@ -806,6 +994,7 @@
               wrtNLmod(ng)=.FALSE.
               wrtTLmod(ng)=.FALSE.
             END DO
+
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !  Use conjugate gradient algorithm to find a better approximation
@@ -813,22 +1002,19 @@
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
             Nrun=Nrun+1
+# ifndef RPCG
             DO ng=1,Ngrids
               Lcgini=.FALSE.
-              CALL congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
+              CALL tl_congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
               IF (exit_flag.ne.NoError) RETURN
             END DO
+# else
+            Lcgini=.FALSE.
+# endif
 
-          END IF INNER_COMPUTE1
+          END IF INNER_COMPUTE
 
-        END DO INNER_LOOP1
-!
-!  Close tangent linear NetCDF file.
-!
-        DO ng=1,Ngrids
-          status=nf90_close(TLM(ng)%ncid)
-          TLM(ng)%ncid=-1
-        END DO
+        END DO INNER_LOOP
 !
 !-----------------------------------------------------------------------
 !  Once the w_n, have been approximated with sufficient accuracy,
@@ -892,14 +1078,197 @@
           CALL ad_wrt_his (ng)
           IF (exit_flag.ne.NoError) RETURN
         END DO
+# ifdef RPCG
+!
+!  Get number of records in adjoint NetCDF.
+!  We need to do this here since ADM(ng)%Nrec is reset to zero in 
+!  error_covariance.
+!
+          DO ng=1,Ngrids
+            Fcount=ADM(ng)%Fcount
+            Nrec(ng)=ADM(ng)%Nrec(Fcount)
+          END DO
+# endif
 !
 !  Convolve adjoint trajectory with error covariances.
 !
         Lposterior=.FALSE.
+# ifdef RPCG
+!  Set the flag that controls the augmentation of the model error
+!  forcing terms. This is ONLY done in the outer-loop so
+!  LaugWeak=.TRUE. here.
+!
+        LaugWeak=.TRUE.
+        LiNL=outer+1
+        CALL error_covariance (iNLM, driver, outer, inner,              &
+     &                         LiNL, Lini, Lold, Lnew,                  &
+     &                         Rec1, Rec2, Lposterior)
+        IF (exit_flag.ne.NoError) RETURN
+# else
         CALL error_covariance (iNLM, driver, outer, inner,              &
      &                         Lbck, Lini, Lold, Lnew,                  &
      &                         Rec1, Rec2, Lposterior)
         IF (exit_flag.ne.NoError) RETURN
+# endif
+# ifdef RPCG
+!AMM:  AUGMENTED
+!
+!  NOTES: The ITL file contains 5 records -
+!         Rec2 = the new TL initial condition
+!         Rec3 = the sum of the TL initial conditions
+!         Rec4 = B^-1(xb-xk)=sum_j^k-1 G_j lambda_j
+!         Rec5 = the augmented correction to Rec2.
+!         Rec5+1 to Rec5+nADrec/2 = sum of the TLF forcing increments
+!         Rec5+nADrec/2+1 to Rec5+nADrec = B^-1 of the sum of the TLF 
+!                                         forcing increments.
+!  Reset the flag LaugWeak flag.
+!
+          LaugWeak=.FALSE.
+
+# else
+!
+!  Write out nonlinear model initial conditions into INIname, record
+!  INI(ng)%Rindex.
+!
+          DO ng=1,Ngrids
+            CALL wrt_ini (ng, Lnew(ng))
+            IF (exit_flag.ne.NoError) RETURN
+#  if defined ADJUST_STFLUX || defined ADJUST_WSTRESS || \
+     defined ADJUST_BOUNDARY
+            CALL wrt_frc_AD (ng, Lold(ng), INI(ng)%Rindex)
+            IF (exit_flag.ne.NoError) RETURN
+#   endif
+          END DO
+#  endif
+# ifdef RPCG
+!
+! Compute the augmented correction to the adjoint propagator.
+! We need to use sum (x(k)-x(k-1)) before it is updated. This is
+! in record 3 of the ITL file.
+!
+          DO ng=1,Ngrids
+            CALL get_state (ng, iTLM, 4, ITL(ng)%name, Rec3, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL aug_oper (ng, tile, LTLM1, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+! Save this augmented piece in record 5 of the ITL file.
+!
+          DO ng=1,Ngrids
+            CALL tl_wrt_ini (ng, LTLM2, Rec5)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+! Complete the computation of the TL initial condition by adding the
+! contribution from the augmented adjoint propagator.
+!
+          DO ng=1,Ngrids
+            CALL get_state (ng, iTLM, 4, ITL(ng)%name, Rec2, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+            CALL get_state (ng, iTLM, 4, ITL(ng)%name, Rec5, LTLM2)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL sum_grad (ng, tile, LTLM1, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+! Write the final TL increment to Rec2 of the ITL file.
+!
+          DO ng=1,Ngrids
+            CALL tl_wrt_ini (ng, LTLM2, Rec2)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+! Now update the non-linear model initial conditions.
+!
+          LiNL=outer+1
+          DO ng=1,Ngrids
+            CALL get_state (ng, iNLM, 9, INI(ng)%name, LiNL, Lnew(ng))
+            CALL get_state (ng, iADM, 4, ITL(ng)%name, Rec2, LTLM1)
+          END DO
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL ini_adjust (ng, tile, LTLM1, Lnew(ng))
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+!  Write out nonlinear model initial conditions into INIname, record
+!  INI(ng)%Rindex.
+!
+          DO ng=1,Ngrids
+            CALL wrt_ini (ng, Lnew(ng))
+            IF (exit_flag.ne.NoError) RETURN
+#  if defined ADJUST_STFLUX || defined ADJUST_WSTRESS || \
+     defined ADJUST_BOUNDARY
+            CALL wrt_frc_AD (ng, LTLM1, INI(ng)%Rindex)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
+          END DO
+!
+! Compute the new B^-1(x(k)-x(k-1)) term.
+! Gather the final adjoint solutions increments, sum and
+! save in record 4 of the ITL file. Use the tl arrays as temporary
+! storage. 
+!
+! First add the augmented piece which is computed from the previous
+! sum.
+!
+          DO ng=1,Ngrids
+            CALL get_state (ng, iTLM, 4, ITL(ng)%name, Rec4, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL aug_oper (ng, tile, LTLM1, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL sum_grad (ng, tile, LTLM1, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+          DO ng=1,Ngrids
+            ADrec=Nrec(ng)
+            CALL get_state (ng, iTLM, 4, ADM(ng)%name, ADrec, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL sum_grad (ng, tile, LTLM1, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+! Write the current sum of adjoint solutions into record 4 of the ITL file.
+!
+          DO ng=1,Ngrids
+            CALL tl_wrt_ini (ng, LTLM2, Rec4)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+# endif
 !
 !  Convert the current adjoint solution in ADM(ng)%name to impulse
 !  forcing. Write out impulse forcing into TLF(ng)%name NetCDF file.
@@ -920,565 +1289,300 @@
           CALL wrt_impulse (ng, tile, iADM, ADM(ng)%name)
           IF (exit_flag.ne.NoError) RETURN
         END DO
+#ifdef RPCG
 !
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!  Run nonlinear model and compute a "new estimate" of the state
-!  trajectory, X_n(t).
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+! Now Compute the augmented corrections to the weak constraint
+! forcing terms. The sums to far are in records 6 to
+! 6+nADrec/2.
 !
-!  Set new basic state trajectory for next outer loop.
+        DO irec=1,nADrec/2
+          jrec=Rec5+irec
+          DO ng=1,Ngrids
+            CALL get_state (ng, iTLM, 4, ITL(ng)%name, jrec, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
 !
-        DO ng=1,Ngrids
-          LdefHIS(ng)=.TRUE.
-          LwrtHIS(ng)=.TRUE.
-          wrtNLmod(ng)=.TRUE.
-          wrtTLmod(ng)=.FALSE.
-          WRITE (HIS(ng)%name,10) TRIM(FWD(ng)%base), outer
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL aug_oper (ng, tile, LTLM1, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+! Complete the computation of the TLF forcing term by adding the
+! contribution from the augmented adjoint propagator. Specify
+! the value of 7 for the model variable since this the special
+! case in get_state for reading the impulse forcing.
+!
+          DO ng=1,Ngrids
+!TEST       CALL get_state (ng, iTLM, 4, TLF(ng)%name, irec, LTLM1)
+            CALL get_state (ng, 7, 4, TLF(ng)%name, irec, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+!TEST                  CALL sum_grad (ng, tile, LTLM1, LTLM2)
+                CALL sum_imp (ng, tile, LTLM2)
+            END DO
+!$OMP END PARALLEL
+          END DO
+!
+! Write the final forcing increment to he TLF file.
+! Note the original TLF file is overwritten at this point.
+!
+          DO ng=1,Ngrids
+!AMM DO WE NEED TO Reset Rindex HERE????
+            TLF(ng)%Rindex=0
+#ifdef DISTRIBUTE
+            tile=MyRank
+#else
+            tile=-1
+#endif
+            CALL wrt_aug_imp (ng, tile, iTLM, LTLM2, irec, TLF(ng)%name)
+          END DO
+!
         END DO
 !
-!  If weak constraint, the impulses are time-interpolated at each
-!  time-steps.
+!
+! Gather the increments from the final inner-loop and
+! save in record 3 of the ITL file. The current increment
+! is in record 2 and the sum so far is in record 3.
 !
         DO ng=1,Ngrids
-          IF (FrcRec(ng).gt.3) THEN
-            FrequentImpulse(ng)=.TRUE.
-          END IF
+          CALL get_state (ng, iTLM, 4, ITL(ng)%name, Rec2, LTLM1)
+          IF (exit_flag.ne.NoError) RETURN
+          CALL get_state (ng, iTLM, 4, ITL(ng)%name, Rec3, LTLM2)
+          IF (exit_flag.ne.NoError) RETURN
         END DO
-!
-!  Clear tangent arrays before running nonlinear model (important).
 !
         DO ng=1,Ngrids
 !$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
-            CALL initialize_ocean (ng, tile, iTLM)
-            CALL initialize_forces (ng, tile, iTLM)
-# ifdef ADJUST_BOUNDARY
-            CALL initialize_boundary (ng, tile, iTLM)
-# endif
+            CALL sum_grad (ng, tile, LTLM1, LTLM2)
           END DO
-!$OMF END PARALLEL
+!$OMP END PARALLEL
         END DO
 !
-!  Initialize nonlinear model INI(ng)%name file, record outer+2.
-!  Notice that NetCDF record index counter is saved because this
-!  counter is used to write initial conditions.
+! Write the current sum into record 3 of the ITL file.
 !
         DO ng=1,Ngrids
-          indxSave=INI(ng)%Rindex
-          INI(ng)%Rindex=outer+2
-!$OMP PARALLEL
-          CALL initial (ng)
-!$OMP END PARALLEL
+          CALL tl_wrt_ini (ng, LTLM2, Rec3)
           IF (exit_flag.ne.NoError) RETURN
-          INI(ng)%Rindex=indxSave
+         END DO
+#  if defined ADJUST_STFLUX || defined ADJUST_WSTRESS || \
+     defined ADJUST_BOUNDARY
+!
+!  Write the current sum of the forcing and boundary increments
+!  into the INI file into index INI(ng)%Rindex-1 (i.e. we are
+!  overwriting the previous fields. Read the current sum into the
+!  adjoint arrays since this is what wrt_frc_AD uses.
+!
+        DO ng=1,Ngrids
+          CALL get_state (ng, iADM, 4, ITL(ng)%name, Rec3, LTLM1)
+          IF (exit_flag.ne.NoError) RETURN
         END DO
+         DO ng=1,Ngrids
+           CALL wrt_frc_AD (ng, LTLM1, INI(ng)%Rindex)
+           IF (exit_flag.ne.NoError) RETURN
+         END DO
+#  endif
 !
-!  Activate switch to write out final misfit between model and
-!  observations.
+! Gather the model error forcing increments and update the
+! sume in records 6 to 6+nADrec/2.
 !
-        IF (outer.eq.Nouter) THEN
+        DO irec=1,nADrec/2
+          jrec=Rec5+irec
           DO ng=1,Ngrids
-            wrtMisfit(ng)=.TRUE.
+            CALL get_state (ng, iTLM, 4, ITL(ng)%name, jrec, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+!TEST       CALL get_state (ng, iTLM, 4, TLF(ng)%name, irec, LTLM2)
+            CALL get_state (ng, 7, 4, TLF(ng)%name, irec, LTLM2)
+            IF (exit_flag.ne.NoError) RETURN
           END DO
-        END IF
 !
-!  Run nonlinear forced by convolved adjoint trajectory impulses and
-!  compute new basic state trajectory X_n.
-!
-        DO ng=1,Ngrids
-          IF (Master) THEN
-            WRITE (stdout,20) 'NL', ng, ntstart(ng), ntend(ng)
-          END IF
-        END DO
-
+          DO ng=1,Ngrids
 !$OMP PARALLEL
-#ifdef SOLVE3D
-        CALL main3d (RunInterval)
-#else
-        CALL main2d (RunInterval)
-#endif
+            DO tile=first_tile(ng),last_tile(ng),+1
+!TEST          CALL sum_grad (ng, tile, LTLM1, LTLM2)
+               CALL sum_imp (ng, tile, LTLM1)
+          END DO
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
-
-        DO ng=1,Ngrids
-          wrtNLmod(ng)=.FALSE.
-          wrtTLmod(ng)=.FALSE.
         END DO
 !
-!  Report data penalty function.
+! Write the current sum into record jrec of the ITL file.
+!
+          DO ng=1,Ngrids
+!TEST       CALL tl_wrt_ini (ng, LTLM2, jrec)
+            CALL tl_wrt_ini (ng, LTLM1, jrec)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+!
+        END DO
+!
+!  Now compute the background cost function Jb0.
+!  First compute the contribution from the increments in the 
+!  initial conditions, surface forcing, and boundary conditions.
+!
+        Jb0(outer)=0.0_r8
+        DO ng=1,Ngrids
+          CALL get_state (ng, iADM, 8, ITL(ng)%name, Rec4, LTLM1)
+          IF (exit_flag.ne.NoError) RETURN
+          CALL get_state (ng, iTLM, 8, ITL(ng)%name, Rec3, LTLM1)
+          IF (exit_flag.ne.NoError) RETURN
+        END DO
 !
         DO ng=1,Ngrids
-          IF (Master) THEN
-            DO i=0,NstateVar(ng)
-              IF (i.eq.0) THEN
-                string='Total'
-              ELSE
-                string=Vname(1,idSvar(i))
-              END IF
-              IF (FOURDVAR(ng)%NLPenalty(i).ne.0.0_r8) THEN
-                WRITE (stdout,30) outer, inner, 'NLM',                  &
-     &                            FOURDVAR(ng)%NLPenalty(i),            &
-     &                            TRIM(string)
-              END IF
+!$OMP PARALLEL
+          DO tile=first_tile(ng),last_tile(ng),+1
+            CALL comp_Jb0 (ng, tile, iTLM, outer, LTLM1, LTLM1)
+          END DO
+!$OMP END PARALLEL
+        END DO
+!
+!  Now compute the contribution of model error terms to the
+!  background cost function Jb0. 
+!  NOTE: I THINK WE NEED A BETTER WAY OF COMPUTING THE OBS ERROR
+!  CONTRIBUTION TO Jb. THE FOLLOWING CALCULATION IS DANGEROUS BECAUSE
+!  IT RELIES ON THE FACT THAT THE SURFACING FORCING AND OBC TL ARRAYS
+!  READ FROM jrec2 ARE ZERO. THIS MEANS THAT ONLY THE MODEL STATE
+!  CONTRIBUTES TO Jb FOR THE MODEL ERROR TERM, WHICH OF COURSE IS
+!  WHAT SHOULD BE THE CASE. THE SURFACE FORCING AND OBC CONTRIBUTIONS
+!  ARE COMPUTED IN THE PREVIOUS CALL TO COMP_JB0.
+!
+        DO irec=1,nADrec/2
+          jrec1=Rec5+irec
+          jrec2=Rec5+nADrec/2+irec
+          DO ng=1,Ngrids
+            CALL get_state (ng, iADM, 8, ITL(ng)%name, jrec1, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+            CALL get_state (ng, iTLM, 8, ITL(ng)%name, jrec2, LTLM1)
+            IF (exit_flag.ne.NoError) RETURN
+          END DO
+
+          DO ng=1,Ngrids
+!$OMP PARALLEL
+            DO tile=first_tile(ng),last_tile(ng),+1
+                CALL comp_Jb0 (ng, tile, iTLM, outer, LTLM1, LTLM1)
             END DO
-          END IF
-!
-!  Write out final data penalty function to NetCDF file.
-!
-          SourceFile='tl_w4dpsas_ocean.h, ROMS_run'
-
-          CALL netcdf_put_fvar (ng, iNLM, DAV(ng)%name,                 &
-     &                          'NL_fDataPenalty',                      &
-     &                          FOURDVAR(ng)%NLPenalty(0:),             &
-     &                          (/1,outer/), (/NstateVar(ng)+1,1/),     &
-     &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
-!
-!  Clean penalty array before next run of NL model.
-!
-          FOURDVAR(ng)%NLPenalty=0.0_r8
+!$OMP END PARALLEL
+          END DO
         END DO
 !
-!  Close current forward NetCDF file.
+!  Overwrite the TFL netcdf file with the sum of the model error
+!  forcing increments - required for the next run of the NLM and
+!  TLM.
 !
-        DO ng=1,Ngrids
-          CALL netcdf_close (ng, iNLM, FWD(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
-        END DO
-
-      END DO OUTER_LOOP1
-!!
-!! Compute and report model-observation comparison statistics.
-!!
-!!    DO ng=1,Ngrids
-!!      CALL stats_modobs (ng)
-!!      IF (exit_flag.ne.NoError) RETURN
-!!    END DO
+        DO irec=1,nADrec/2
+          jrec=Rec5+irec
+          DO ng=1,Ngrids
+            CALL get_state (ng, iTLM, 8, ITL(ng)%name, jrec, LTLM1)
+          END DO
+          DO ng=1,Ngrids
+!AMM DO WE NEED TO Reset Rindex HERE????
+            TLF(ng)%Rindex=0
+#ifdef DISTRIBUTE
+            tile=MyRank
+#else
+            tile=-1
+#endif
+            CALL wrt_aug_imp (ng, tile, iTLM, LTLM1, irec, TLF(ng)%name)
+          END DO
+       END DO
+#endif
 !
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!  Tangent linear of 4D-PSAS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !
-!  Read observations.
+!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+!  Integrate tangent linear model forced by the convolved adjoint
+!  trajectory (impulse forcing) to compute R_n * PSI at observation
+!  points.
+!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
-      DO ng=1,Ngrids
-        Mstr=NstrObs(ng)
-        CALL netcdf_get_fvar (ng, iTLM, OBS(ng)%name,                   &
-     &                        'obs_value',                              &
-     &                        tl_ObsVal(Mstr:),                         &
-     &                        start = (/NstrObs(ng)/),                  &
-     &                        total = (/Nobs(ng)/))
-      END DO
-!
-!  Reset value of "Nrun" and clear "TLmodVal".
-!
-      Nrun=1
-      TLmodVal=0.0_r8
-!
-!  Start outer loop.
-!
-      OUTER_LOOP2 : DO my_outer=1,Nouter
-        outer=my_outer
-        inner=0
-!
-!  Set basic state trajectory (X_n-1) file to previous outer loop file
-!  (outer-1).
-!
-        DO ng=1,Ngrids
-          WRITE (FWD(ng)%name,10) TRIM(FWD(ng)%base), outer-1
-        END DO
-!
-!  Clear tangent linear forcing arrays before entering inner-loop.
+!  Clear tangent linear forcing arrays.
 !  This is very important since these arrays are non-zero and must
 !  be zero when running the tangent linear model.
 !
-        DO ng=1,Ngrids
+          DO ng=1,Ngrids
 !$OMP PARALLEL
-          DO tile=first_tile(ng),last_tile(ng),+1
-            CALL initialize_forces (ng, tile, iTLM)
+            DO tile=first_tile(ng),last_tile(ng),+1
+              CALL initialize_forces (ng, tile, iTLM)
+# ifdef ADJUST_BOUNDARY
+              CALL initialize_boundary (ng, tile, iTLM)
+# endif
+            END DO
+!$OMP END PARALLEL
           END DO
-!$OMP END PARALLEL
-        END DO
 !
-        INNER_LOOP2 : DO my_inner=0,Ninner
-          inner=my_inner
-
-          IF (Master) THEN
-            WRITE (stdout,60) 'Tangent linear of',                      &
-     &                        uppercase('w4dpsas'), outer, inner
-          END IF
+          DO ng=1,Ngrids
 !
-! Initialize tangent linear conjugate gradient algorithm depending on
-! hot start or outer loop index.
+!AMM: Use fwd_001.nc from original 4D-Var run.
 !
-          IF (inner.eq.0) THEN
-            Lcgini=.TRUE.
-            DO ng=1,Ngrids
-              CALL tl_congrad (ng, iRPM, outer, inner, Ninner, Lcgini)
-            END DO
-          END IF
-!
-!  If initialization step, skip the inner-loop computations.
-!
-          Linner=.FALSE.
-          IF ((inner.ne.0).or.(Nrun.ne.1)) THEN
-            IF (((inner.eq.0).and.LhotStart).or.(inner.ne.0)) THEN
-              Linner=.TRUE.
-            END IF
-          END IF
-!
-!  Start inner loop computations.
-!
-          INNER_COMPUTE2 : IF (Linner) THEN
-!
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!  Integrate adjoint model forced with any vector PSI at the observation
-!  locations and generate adjoint trajectory, Lambda_n(t).
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!
-!  Initialize the adjoint model from rest.
-!
-            DO ng=1,Ngrids
-!$OMP PARALLEL
-              CALL ad_initial (ng)
-!$OMP END PARALLEL
-              IF (exit_flag.ne.NoError) RETURN
-              wrtMisfit(ng)=.FALSE.
-            END DO
-!
-!  Set adjoint history NetCDF parameters.  Define adjoint history
-!  file only once to avoid opening too many files.
-!
-            DO ng=1,Ngrids
-              WRTforce(ng)=.TRUE.
-              IF (Nrun.gt.1) LdefADJ(ng)=.FALSE.
-              Fcount=ADM(ng)%Fcount
-              ADM(ng)%Nrec(Fcount)=0
-              ADM(ng)%Rindex=0
-            END DO
-!
-!  Time-step adjoint model backwards forced with current PSI vector.
-!
-            DO ng=1,Ngrids
-              IF (Master) THEN
-                WRITE (stdout,20) 'AD', ng, ntstart(ng), ntend(ng)
-              END IF
-            END DO
-
-!$OMP PARALLEL
-#ifdef SOLVE3D
-            CALL ad_main3d (RunInterval)
-#else
-            CALL ad_main2d (RunInterval)
-#endif
-!$OMP END PARALLEL
-            IF (exit_flag.ne.NoError) RETURN
-!
-!  Write out last weak-constraint forcing (WRTforce is still .TRUE.)
-!  record into the adjoint history file.  Note that the weak-constraint
-!  forcing is delayed by nADJ time-steps.
-!
-            DO ng=1,Ngrids
-              CALL ad_wrt_his (ng)
-              IF (exit_flag.ne.NoError) RETURN
-            END DO
-!
-!  Write out adjoint initial condition record into the adjoint
-!  history file.
-!
-            DO ng=1,Ngrids
-              WRTforce(ng)=.FALSE.
-              CALL ad_wrt_his (ng)
-              IF (exit_flag.ne.NoError) RETURN
-            END DO
-!
-!  Convolve adjoint trajectory with error covariances.
-!
-            Lposterior=.FALSE.
-            CALL error_covariance (iTLM, driver, outer, inner,          &
-     &                             Lbck, Lini, Lold, Lnew,              &
-     &                             Rec1, Rec2, Lposterior)
-            IF (exit_flag.ne.NoError) RETURN
-!
-!  Convert the current adjoint solution in ADM(ng)%name to impulse
-!  forcing. Write out impulse forcing into TLF(ng)%name NetCDF file.
-!  To facilitate the forcing to the TLM and RPM, the forcing is
-!  processed and written in increasing time coordinates (recall that
-!  the adjoint solution in ADM(ng)%name is backwards in time).
-!
-            IF (Master) THEN
-              WRITE (stdout,40) outer, inner
-            END IF
-            DO ng=1,Ngrids
-              TLF(ng)%Rindex=0
-#ifdef DISTRIBUTE
-              tile=MyRank
-#else
-              tile=-1
-#endif
-              CALL wrt_impulse (ng, tile, iADM, ADM(ng)%name)
-              IF (exit_flag.ne.NoError) RETURN
-            END DO
-!
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!  Integrate tangent linear model forced by the convolved adjoint
-!  trajectory (impulse forcing) to compute R_n * PSI at observation
-!  points.
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            WRITE (FWD(ng)%name,10) TRIM(FWD(ng)%base), outer
+          END DO
 !
 !  Initialize tangent linear model from initial impulse which is now
 !  stored in file ITL(ng)%name.
 !
-            DO ng=1,Ngrids
-              wrtNLmod(ng)=.FALSE.
-              wrtTLmod(ng)=.TRUE.
-            END DO
+          DO ng=1,Ngrids
+            wrtNLmod(ng)=.FALSE.
+            wrtTLmod(ng)=.TRUE.
+            LdefTLM(ng)=.TRUE.
+            LwrtTLM(ng)=.TRUE.
+          END DO
 !
 !  If weak constraint, the impulses are time-interpolated at each
 !  time-steps.
 !
-            DO ng=1,Ngrids
-              IF (FrcRec(ng).gt.3) THEN
-                FrequentImpulse(ng)=.TRUE.
-              END IF
-            END DO
-!
-!  Initialize tangent linear model from ITL(ng)%name, record Rec1.
-!
-            DO ng=1,Ngrids
-              ITL(ng)%Rindex=Rec1
-!$OMP PARALLEL
-              CALL tl_initial (ng)
-!$OMP END PARALLEL
-              IF (exit_flag.ne.NoError) RETURN
-            END DO
-!
-!  Activate switch to write out initial misfit between model and
-!  observations.
-!
-            IF ((outer.eq.1).and.(inner.eq.1)) THEN
-              DO ng=1,Ngrids
-                wrtMisfit(ng)=.TRUE.
-              END DO
+          DO ng=1,Ngrids
+            IF (FrcRec(ng).gt.3) THEN
+              FrequentImpulse(ng)=.TRUE.
             END IF
+          END DO
 !
-!  Set tangent linear history NetCDF parameters.  Define tangent linear
-!  history file at the beggining of each inner loop  to avoid opening
-!  too many NetCDF files.
+!  Initialize tangent linear model from ITLname, record Rec2.
 !
-            DO ng=1,Ngrids
-              IF (inner.gt.1) LdefTLM(ng)=.FALSE.
-              Fcount=TLM(ng)%Fcount
-              TLM(ng)%Nrec(Fcount)=0
-              TLM(ng)%Rindex=0
-            END DO
-!
-!  Run tangent linear model forward and force with convolved adjoint
-!  trajectory impulses. Compute (H M B M' H')_n * PSI at observation
-!  points which are used in the conjugate gradient algorithm.
-!
-            DO ng=1,Ngrids
-              IF (Master) THEN
-                WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
-              END IF
-            END DO
-
+           DO ng=1,Ngrids
+             ITL(ng)%Rindex=Rec2
 !$OMP PARALLEL
-#ifdef SOLVE3D
-            CALL tl_main3d (RunInterval)
-#else
-            CALL tl_main2d (RunInterval)
-#endif
+             CALL tl_initial (ng)
 !$OMP END PARALLEL
-            IF (exit_flag.ne.NoError) RETURN
-
-            DO ng=1,Ngrids
-              wrtNLmod(ng)=.FALSE.
-              wrtTLmod(ng)=.FALSE.
-            END DO
-!
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!  Use conjugate gradient algorithm to find a better approximation
-!  PSI to coefficients Beta_n.
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!
-            Nrun=Nrun+1
-            Lcgini=.FALSE.
-            DO ng=1,Ngrids
-              CALL tl_congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
-              IF (exit_flag.ne.NoError) RETURN
-            END DO
-
-          END IF INNER_COMPUTE2
-
-        END DO INNER_LOOP2
-!
-!-----------------------------------------------------------------------
-!  Once the w_n, have been approximated with sufficient accuracy,
-!  compute estimates of Lambda_n and Xhat_n by carrying out one
-!  backward intergration of the adjoint model and one forward
-!  itegration of the nonlinear model.
-!-----------------------------------------------------------------------
-!
-!  Initialize the adjoint model always from rest.
-!
-        DO ng=1,Ngrids
-!$OMP PARALLEL
-          CALL ad_initial (ng)
-!$OMP END PARALLEL
-          IF (exit_flag.ne.NoError) RETURN
-        END DO
-!
-!  Set adjoint history NetCDF parameters.  Define adjoint history
-!  file one to avoid opening to many files.
-!
-        DO ng=1,Ngrids
-          WRTforce(ng)=.TRUE.
-          IF (Nrun.gt.1) LdefADJ(ng)=.FALSE.
-          Fcount=ADM(ng)%Fcount
-          ADM(ng)%Nrec(Fcount)=0
-          ADM(ng)%Rindex=0
-        END DO
-!
-!  Time-step adjoint model backwards forced with estimated representer
-!  coefficients, Beta_n.
-!
-        DO ng=1,Ngrids
-          IF (Master) THEN
-            WRITE (stdout,20) 'AD', ng, ntstart(ng), ntend(ng)
-          END IF
-        END DO
-
-!$OMP PARALLEL
-#ifdef SOLVE3D
-        CALL ad_main3d (RunInterval)
-#else
-        CALL ad_main2d (RunInterval)
-#endif
-!$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
-!
-!  Write out last weak-constraint forcing (WRTforce is still .TRUE.)
-!  record into the adjoint history file.  Note that the weak-constraint
-!  forcing is delayed by nADJ time-steps.
-!
-        DO ng=1,Ngrids
-          CALL ad_wrt_his (ng)
-          IF (exit_flag.ne.NoError) RETURN
-        END DO
-!
-!  Write out adjoint initial condition record into the adjoint
-!  history file.
-!
-        DO ng=1,Ngrids
-          WRTforce(ng)=.FALSE.
-          CALL ad_wrt_his (ng)
-          IF (exit_flag.ne.NoError) RETURN
-        END DO
-!
-!  Convolve adjoint trajectory with error covariances.
-!
-        Lposterior=.FALSE.
-        CALL error_covariance (iTLM, driver, outer, inner,              &
-     &                         Lbck, Lini, Lold, Lnew,                  &
-     &                         Rec1, Rec2, Lposterior)
-        IF (exit_flag.ne.NoError) RETURN
-!
-!  Convert the current adjoint solution in ADM(ng)%name to impulse
-!  forcing. Write out impulse forcing into TLF(ng)%name NetCDF file.
-!  To facilitate the forcing to the TLM and RPM, the forcing is
-!  processed and written in increasing time coordinates (recall that
-!  the adjoint solution in ADM(ng)%name is backwards in time).
-!
-        IF (Master) THEN
-          WRITE (stdout,50) outer, inner
-        END IF
-        DO ng=1,Ngrids
-          TLF(ng)%Rindex=0
-#ifdef DISTRIBUTE
-          tile=MyRank
-#else
-          tile=-1
-#endif
-          CALL wrt_impulse (ng, tile, iADM, ADM(ng)%name)
-          IF (exit_flag.ne.NoError) RETURN
-        END DO
-!
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!  Integrate tangent linear model forced by the convolved adjoint
-!  trajectory (impulse forcing) to compute R_n * PSI at observation
-!  points.
-!:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-!
-        DO ng=1,Ngrids
-          WRITE (FWD(ng)%name,10) TRIM(FWD(ng)%base), outer
-        END DO
-!
-!  Initialize tangent linear model from initial impulse which is now
-!  stored in file ITL(ng)%name.
-!
-        DO ng=1,Ngrids
-          wrtNLmod(ng)=.FALSE.
-          wrtTLmod(ng)=.TRUE.
-          LdefTLM(ng)=.TRUE.
-          LwrtTLM(ng)=.TRUE.
-        END DO
-!
-!  If weak constraint, the impulses are time-interpolated at each
-!  time-steps.
-!
-        DO ng=1,Ngrids
-          IF (FrcRec(ng).gt.3) THEN
-            FrequentImpulse(ng)=.TRUE.
-          END IF
-        END DO
-!
-!  Initialize tangent linear model from ITL(ng)%name, record Rec1.
-!
-        DO ng=1,Ngrids
-          ITL(ng)%Rindex=Rec1
-!$OMP PARALLEL
-          CALL tl_initial (ng)
-!$OMP END PARALLEL
-          IF (exit_flag.ne.NoError) RETURN
-        END DO
+             IF (exit_flag.ne.NoError) RETURN
+           END DO
 !
 !  Set tangent linear history NetCDF parameters.  Define tangent linear
 !  history file at the beggining of each inner loop  to avoid opening
 !  too many NetCDF files.
 !
         DO ng=1,Ngrids
-!! AMM    IF (inner.gt.1) LdefTLM(ng)=.FALSE.
           Fcount=TLM(ng)%Fcount
           TLM(ng)%Nrec(Fcount)=0
           TLM(ng)%Rindex=0
         END DO
 !
-!  Run tangent linear model forward and force with convolved adjoint
-!  trajectory impulses. Compute (HMBM'H')_n * PSI at observation points
-!  which are used in the conjugate gradient algorithm.
+!  Run tangent linear model.
 !
-        DO ng=1,Ngrids
-          IF (Master) THEN
-            WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
-          END IF
-        END DO
+           DO ng=1,Ngrids
+             IF (Master) THEN
+               WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
+             END IF
+           END DO
 
 !$OMP PARALLEL
 #ifdef SOLVE3D
-        CALL tl_main3d (RunInterval)
+           CALL tl_main3d (RunInterval)
 #else
-        CALL tl_main2d (RunInterval)
+           CALL tl_main2d (RunInterval)
 #endif
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
+           IF (exit_flag.ne.NoError) RETURN
 
-        DO ng=1,Ngrids
-          wrtNLmod(ng)=.FALSE.
-          wrtTLmod(ng)=.FALSE.
-        END DO
+           DO ng=1,Ngrids
+             wrtNLmod(ng)=.FALSE.
+             wrtTLmod(ng)=.FALSE.
+           END DO
+!
 !
 !  Close tangent linear NetCDF file.
 !
@@ -1496,7 +1600,15 @@
           FWD(ng)%ncid=-1
         END DO
 
-      END DO OUTER_LOOP2
+      END DO OUTER_LOOP
+
+!
+!  Done.  Set history file ID to closed state since we manipulated
+!  its indices with the forward file ID which was closed above.
+!
+      DO ng=1,Ngrids
+        HIS(ng)%ncid=-1
+      END DO
 !
  10   FORMAT (a,'_',i3.3,'.nc')
  20   FORMAT (/,1x,a,1x,'ROMS/TOMS: started time-stepping:',            &
@@ -1505,8 +1617,10 @@
      &        1p,e16.10,0p,t68,a)
  40   FORMAT (/,' Converting Convolved Adjoint Trajectory to',          &
      &          ' Impulses: Outer = ',i3.3,' Inner = ',i3.3,/)
- 50   FORMAT (/,'ROMS/TOMS: ',a,1x,a,', Outer = ',i3.3,                 &
-     &          ' Inner = ',i3.3,/)
+#ifdef POSTERIOR_EOFS
+ 50   FORMAT (/,' <<<< Posterior Analysis Error Covariance Matrix',     &
+     &          ' Estimation >>>>',/)
+#endif
 
       RETURN
       END SUBROUTINE ROMS_run
@@ -1529,6 +1643,16 @@
 !  Local variable declarations.
 !
       integer :: Fcount, ng, thread
+!
+!-----------------------------------------------------------------------
+!  Compute and report model-observation comparison statistics.
+!-----------------------------------------------------------------------
+!
+      IF (exit_flag.eq.NoError) THEN
+        DO ng=1,Ngrids
+          CALL stats_modobs (ng)
+        END DO
+      END IF
 !
 !-----------------------------------------------------------------------
 !  If blowing-up, save latest model state into RESTART NetCDF file.

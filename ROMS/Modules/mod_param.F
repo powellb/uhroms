@@ -405,6 +405,14 @@
 !
       integer, allocatable :: NT(:)
       integer :: MT
+# ifdef TIME_CONV
+!  Introduce a variable for the number of time records in the weak
+!     constraint forcing file.
+!
+      integer, allocatable :: Nrect(:)
+      real(r8) :: tauC = 604800.0_r8
+!
+# endif
 !
 !  Total number of climatology tracer type variables to process.
 !
@@ -630,6 +638,10 @@
       allocate ( N(Ngrids) )
 
       allocate ( NT(Ngrids) )
+
+# ifdef TIME_CONV
+      allocate ( Nrect(Ngrids) )
+# endif
 
       allocate ( NTCLM(Ngrids) )
 
@@ -886,6 +898,11 @@
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
+# ifdef TIME_CONV
+!AMM WARNING!!!! THIS NEEDS TO BE SMARTER!!!
+!       Nrect>=(ntimes/nadj)+1
+        Nrect(ng)= 73
+# endif
         I_padd=(Lm(ng)+2)/2-(Lm(ng)+1)/2
         J_padd=(Mm(ng)+2)/2-(Mm(ng)+1)/2
         Im(ng)=Lm(ng)+I_padd

@@ -2,9 +2,9 @@
 #if defined FOUR_DVAR || defined VERIFICATION
       SUBROUTINE def_mod (ng)
 !
-!svn $Id: def_mod.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_mod.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -41,6 +41,9 @@
       integer, parameter :: Natt = 25
 
       integer :: iterDim, datumDim, recordDim, stateDim
+# ifdef RPCG
+      integer :: datumDimp, NouterDimp
+# endif
 # if defined IS4DVAR || defined WEAK_CONSTRAINT
       integer :: MinnerDim, MouterDim, NinnerDim, NouterDim, threeDim
 # endif
@@ -125,6 +128,16 @@
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'datum',         &
      &                 Ndatum(ng), datumDim)
         IF (exit_flag.ne.NoError) RETURN
+
+# ifdef RPCG
+        status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'datum+1',       &
+     &                 Ndatum(ng)+1, datumDimp)
+        IF (exit_flag.ne.NoError) RETURN
+
+        status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Nouter+1',      &
+     &                 Nouter+1, NouterDimp)
+        IF (exit_flag.ne.NoError) RETURN
+# endif
 
 # ifdef FOUR_DVAR
 #  if defined IS4DVAR || defined WEAK_CONSTRAINT
@@ -819,6 +832,24 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmi),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
+#  ifdef BGQC
+!
+!  Background error at observation locations.
+!
+        Vinfo( 1)=Vname(1,idBgEr)
+        Vinfo( 2)=Vname(2,idBgEr)
+        status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idBgEr),     &
+     &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Threshold for background quality control check of observations.
+!
+        Vinfo( 1)=Vname(1,idBgTh)
+        Vinfo( 2)=Vname(2,idBgTh)
+        status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idBgTh),     &
+     &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+#  endif
 # endif
 # ifndef IS4DVAR_SENSITIVITY
 !
@@ -913,14 +944,66 @@
 !
         Vinfo( 1)='zgrad0'
         Vinfo( 2)='initial gradient for minimization, observation space'
+# ifdef RPCG
+        vardim(1)=datumDimp
+# else
+        vardim(1)=datumDim
+# endif
+        vardim(2)=NouterDim
+        status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
+     &                 2, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+# ifdef RPCG
+!
+!  Define initial gradient for minimization.
+!
+        Vinfo( 1)='vgrad0'
+        Vinfo( 2)='initial gradient for minimization, v space'
+        vardim(1)=datumDimp
+        status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
+     &                 1, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Define sum of evolved outer-loop increments in observation space.
+!
+        Vinfo( 1)='Hbk'
+        Vinfo( 2)='evolved sum of increments in observation space'
         vardim(1)=datumDim
         vardim(2)=NouterDim
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
 !
+!  Define outer-loop backgraound cost function.
+!
+        Vinfo( 1)='Jb0'
+        Vinfo( 2)='Outer-loop background cost function'
+        vardim(1)=NouterDimp
+        status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
+     &                 1, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+# endif
+!
 !  Define Lanczos vectors in observation space.
 !
+# ifdef RPCG
+        Vinfo( 1)='vcglwk'
+        Vinfo( 2)='Preconditioned Lanczos vectors, observation space'
+        vardim(1)=datumDimp
+        vardim(2)=MinnerDim
+        vardim(3)=NouterDim
+        status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
+     &                 3, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+        Vinfo( 1)='zcglwk'
+        Vinfo( 2)='Lanczos vectors, observation space'
+        vardim(1)=datumDimp
+        vardim(2)=MinnerDim
+        vardim(3)=NouterDim
+        status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
+     &                 3, vardim, Aval, Vinfo, ncname)
+        IF (exit_flag.ne.NoError) RETURN
+# else
         Vinfo( 1)='zcglwk'
         Vinfo( 2)='Lanczos vectors, observation space'
         vardim(1)=datumDim
@@ -929,6 +1012,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
         IF (exit_flag.ne.NoError) RETURN
+# endif
 !
 !  Define previous values of TLmodVal.
 !

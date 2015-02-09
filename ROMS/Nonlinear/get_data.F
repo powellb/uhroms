@@ -1022,7 +1022,7 @@
 # endif
      &                  OCEAN(ng) % zetaG)
         IF (exit_flag.ne.NoError) RETURN
-# ifndef SOLVE3D
+!AMM# ifndef SOLVE3D
 !
 !  Read 2D momentum.
 !
@@ -1043,7 +1043,7 @@
 #  endif
      &                  OCEAN(ng) % vbarG)
         IF (exit_flag.ne.NoError) RETURN
-# endif
+!AMM# endif
 # ifdef SOLVE3D
 !
 !  Read in 3D momentum.

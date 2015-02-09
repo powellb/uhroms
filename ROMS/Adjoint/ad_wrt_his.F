@@ -2,9 +2,9 @@
 #ifdef ADJOINT
       SUBROUTINE ad_wrt_his (ng)
 !
-!svn $Id: ad_wrt_his.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_wrt_his.F 585 2012-01-03 18:44:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2012 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -102,21 +102,25 @@
 # else
       kout=kstp(ng)
 # endif
-# ifdef WEAK_CONSTRAINT
+# if defined WEAK_CONSTRAINT 
       kfout=2
 # endif
-# ifdef SOLVE3D
+# ifdef BEOFS_ONLY
+      nout=nstp(ng)
+# else
+#   ifdef SOLVE3D
       IF (iic(ng).ne.ntend(ng)) THEN
         nout=nnew(ng)
-# if defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE
+#     if defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE
         LwrtState3d(ng)=.FALSE.
-# endif
+#     endif
       ELSE
-# if defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE
+#     if defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE
         LwrtState3d(ng)=.TRUE.
-# endif
+#     endif
         nout=nstp(ng)
       END IF
+#   endif
 # endif
 !
 !  Set time record index.
@@ -347,7 +351,7 @@
 !
       IF (Hout(idUbar,ng)) THEN
 # ifdef WEAK_CONSTRAINT
-#  ifndef SOLVE3D
+!AMM#  ifndef SOLVE3D
         IF (WRTforce(ng)) THEN
           scale=1.0_r8
           gtype=gfactor*u2dvar
@@ -368,7 +372,7 @@
             RETURN
           END IF
         ELSE
-#  endif
+!AMM#  endif
 # endif
           scale=1.0_r8
           gtype=gfactor*u2dvar
@@ -400,9 +404,9 @@
             RETURN
           END IF
 # ifdef WEAK_CONSTRAINT
-#  ifndef SOLVE3D
+!AMM#  ifndef SOLVE3D
         END IF
-#  endif
+!AMM#  endif
 # endif
       END IF
 
@@ -435,7 +439,7 @@
 !
       IF (Hout(idVbar,ng)) THEN
 # ifdef WEAK_CONSTRAINT
-#  ifndef SOLVE3D
+!AMM#  ifndef SOLVE3D
         IF (WRTforce(ng)) THEN
           scale=1.0_r8
           gtype=gfactor*v2dvar
@@ -456,7 +460,7 @@
             RETURN
           END IF
         ELSE
-#  endif
+!AMM#  endif
 # endif
           scale=1.0_r8
           gtype=gfactor*v2dvar
@@ -488,9 +492,9 @@
             RETURN
           END IF
 # ifdef WEAK_CONSTRAINT
-#  ifndef SOLVE3D
+!AMM#  ifndef SOLVE3D
         END IF
-#  endif
+!AMM#  endif
 # endif
       END IF
 

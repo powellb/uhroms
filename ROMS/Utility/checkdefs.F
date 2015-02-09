@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE checkdefs
 !
-!svn $Id: checkdefs.F 652 2013-02-12 19:00:36Z arango $
+!svn $Id: checkdefs.F 645 2013-01-22 23:21:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1673,17 +1673,17 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+16)=' STOCHASTIC_OPT,'
       idriver=idriver+1
-# ifdef STOCH_OPT_WHITE
+#endif
+#ifdef STOCH_OPT_WHITE
       IF (Master) WRITE (stdout,20) 'STOCH_OPT_WHITE',                  &
      &   'Stochastic Optimals, white noise processes.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' STOCH_OPT_WHITE,'
-# else
+#else
       IF (Master) WRITE (stdout,20) '!STOCH_OPT_WHITE',                 &
      &   'Stochastic Optimals, red noise processes.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+18)=' !STOCH_OPT_WHITE,'
-# endif
 #endif
 #ifdef SWAN_COUPLING
       IF (Master) WRITE (stdout,20) 'SWAN_COUPLING',                    &

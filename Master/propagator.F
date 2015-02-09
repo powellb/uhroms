@@ -47,7 +47,11 @@
 # elif defined FT_EIGENMODES
 #  include "propagator_fte.h"
 # elif defined FORCING_SV
-#  include "propagator_fsv.h"
+#  ifdef HESSIAN_FSV
+#    include "propagator_hfsv.h"
+#  else
+#    include "propagator_fsv.h"
+#  endif
 # elif defined HESSIAN_FSV
 #  include "propagator_hfsv.h"
 # elif defined OPT_PERTURBATION
