@@ -671,11 +671,11 @@
 !
       DO k=1,N(ng)
         zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)/countA(k)
-        zVulA_std(idxA,k,ng)=MIN(0.025_r8*zVulA_avg(idxA,k,ng),
-                                 SQRT(zVulA_std(idxA,k,ng)/countA(k))/2.0_r8)
+        zVulA_std(idxA,k,ng)=MIN(0.025_r8*zVulA_avg(idxA,k,ng),         &
+     &                  SQRT(zVulA_std(idxA,k,ng)/countA(k))/2.0_r8)
         zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)/countB(k)
-        zVulB_std(idxB,k,ng)=MIN(0.025_r8*zVulB_avg(idxB,k,ng),
-                                 SQRT(zVulB_std(idxB,k,ng)/countB(k))/2.0_r8)
+        zVulB_std(idxB,k,ng)=MIN(0.025_r8*zVulB_avg(idxB,k,ng),         &
+     &                  SQRT(zVulB_std(idxB,k,ng)/countB(k))/2.0_r8)
       END DO
       
       RETURN
