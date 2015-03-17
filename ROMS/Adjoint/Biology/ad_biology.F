@@ -31,6 +31,8 @@
 #  include <ad_npzd_iron.h>
 # elif defined NPZD_POWELL
 #  include <ad_npzd_Powell.h>
+# elif defined ISOTOPE
+#  include <ad_isotope.h>
 # endif
 
 #endif
