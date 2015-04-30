@@ -415,7 +415,7 @@
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
-              IF (Bio(i,k,iVulA).GT.0.0_r8) THEN
+              IF (rmask(i,j).EQ.1.0_r8) THEN
                 countA(k) = countA(k) + 1
                 zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)+cff1
                 zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng)+              &
@@ -426,8 +426,8 @@
 !
               cff1=0.0_r8
               DO ii=1,nVulBWeights(ng)
-                delt=vulAtemp(ii) - t(i,j,k,nstp,itemp)
-                dels=vulAsalt(ii) - t(i,j,k,nstp,isalt)
+                delt=vulBtemp(ii) - t(i,j,k,nstp,itemp)
+                dels=vulBsalt(ii) - t(i,j,k,nstp,isalt)
                 cff1=cff1 + vulBwght(ii)*                               &
      &              SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
@@ -439,7 +439,7 @@
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
-              IF (Bio(i,k,iVulB).GT.0.0_r8) THEN
+              IF (rmask(i,j).EQ.1.0_r8) THEN
                 countB = countB + 1
                 zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)+cff1
                 zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng)+              &
