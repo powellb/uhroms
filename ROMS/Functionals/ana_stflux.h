@@ -174,7 +174,7 @@
 !  same time-step.
 !
 !  Compute using model from Merlivat and Jouzel, "Global Climatic
-!  Interpretation of the Deuterium-Oxygen 18 Relationship for 
+!  Interpretation of the Deuterium-Oxygen 18 Relationship for
 !  Precipitation", JGR, vol. 84, 5029--5033, 1979.
 !-----------------------------------------------------------------------
 !
@@ -204,7 +204,7 @@
 ! Compute the roughness length equation: u*^2 / (81.1 * g)
 !
               z0=ustar**2*0.00125693_r8
-  
+
 !
 !  Compute saturation vapor pressure at ocean temperature (mb), using Teten formula.
 !
@@ -226,7 +226,7 @@
               vmu=1.7E-5_r8/rhoair
               sc=vmu*42372.881_r8
               reno=ustar*z0/vmu
-              
+
 !
 ! Compute turbulent resistance based on the Reynold's number
 !
@@ -260,10 +260,10 @@
 !
               qatm=0.62197_r8*(cff1/(FORCES(ng)%Pair(i,j) -             &
      &          0.378_r8*cff1))*FORCES(ng)%Hair(i,j)
-              
 
 
-! 
+
+!
 ! Compute the evaporation for O16
 !
               cff1=OCEAN(ng)%t(i,j,N(ng),nstp(ng),i16O) /               &
@@ -272,13 +272,13 @@
      &              (qsea - qatm)
               evap=FORCES(ng)%evap(i,j) * cff3
 
-! 
+!
 ! Compute the precipitation for O16
 !
               precip=FORCES(ng)%rain(i,j) *                             &
      &                     FORCES(ng)%o16frac(i,j)
 !
-! Set the fluxes for O16              
+! Set the fluxes for O16
 !
               stflx(i,j,i16O)=precip-evap
 !              stflx(i,j,i16O)=ustar
@@ -286,7 +286,7 @@
 #ifdef TL_IOMS
               tl_stflx(i,j,i16O)=precip-evap
 #endif
-! 
+!
 ! Compute the equilibrium fractionation coefficients
 !
               cff1=FORCES(ng)%Tair(i,j)+273.16_r8
@@ -297,7 +297,7 @@
      &                0.4156_r8/cff1 - 2.0667E-3_r8 )
 
 
-! 
+!
 ! Compute the evaporation for O18
 !
               cff1=OCEAN(ng)%t(i,j,N(ng),nstp(ng),i18O) /               &
@@ -306,8 +306,8 @@
      &              FORCES(ng)%o18frac(i,j)/alphair)) /                 &
      &              (qsea - qatm)
               evap=FORCES(ng)%evap(i,j) * (1.0_r8 - kn18) * cff3
- 
-! 
+
+!
 ! Compute the precipitation for O18
 !
               precip=FORCES(ng)%rain(i,j) *                             &
