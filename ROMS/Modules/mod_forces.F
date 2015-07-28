@@ -303,7 +303,7 @@
 #  endif
 # endif
 
-# if defined BULK_FLUXES && defined ISOTOPE && defined ANA_ISOFLUX
+# if defined BULK_FLUXES && defined ISOTOPE
           real(r8), pointer :: o16frac(:,:)
           real(r8), pointer :: o16fracG(:,:,:)
           real(r8), pointer :: o18frac(:,:)
@@ -974,7 +974,7 @@
             FORCES(ng) % o16fracG(i,j,k) = IniVal
             FORCES(ng) % o18fracG(i,j,k) = IniVal
 #  endif
-# endif        
+# endif
 # if !defined LONGWAVE && defined BULK_FLUXES
             FORCES(ng) % lrflxG(i,j,1) = IniVal
             FORCES(ng) % lrflxG(i,j,2) = IniVal

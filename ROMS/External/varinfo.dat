@@ -3324,7 +3324,7 @@
   'kg_nitrogen meter-3'                      ! [kg/m3]
   'O16_east, scalar, series'
   'isotope_time'
-  'idTbry(ieast,i18O)'
+  'idTbry(ieast,i16O)'
   'nulvar'
   1.0d0
 

@@ -3300,7 +3300,7 @@
         Hout(idVsms,ng)=.TRUE.
 # ifdef SOLVE3D
         Hout(idTsur(itemp),ng)=.TRUE.
-#  ifdef EMINUSP
+#  ifdef EMINUSP || defined ISOTOPE
         Hout(idEmPf,ng)=.TRUE.
 #  endif
 # endif
