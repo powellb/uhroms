@@ -33,6 +33,8 @@
 #  include <npzd_iron.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell.h>
+# elif defined ISOTOPE
+#  include <isotope.h>
 # endif
 
 #endif
