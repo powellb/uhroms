@@ -431,18 +431,18 @@
 !-----------------------------------------------------------------------
 !
       CALL get_2dfld (ng, iNLM, ido16frac, ncFRCid(ido16frac,ng),       &
-     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                nFfiles(ng), FRC(1,ng), update(1),                &
      &                LBi, UBi, LBj, UBj, 2, 1,                         &
 #  ifdef MASKING
-     &                GRID(ng) % rmask,                        &
+     &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % o16fracG)
 
       CALL get_2dfld (ng, iNLM, ido18frac, ncFRCid(ido18frac,ng),       &
-     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                nFfiles(ng), FRC(1,ng), update(1),                &
      &                LBi, UBi, LBj, UBj, 2, 1,                         &
 #  ifdef MASKING
-     &                GRID(ng) % rmask,                        &
+     &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % o18fracG)
 # endif

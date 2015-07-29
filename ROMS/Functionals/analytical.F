@@ -207,7 +207,8 @@
 #  include <ana_sst.h>
 # endif
 
-# if defined ANA_STFLUX || defined ANA_SSFLUX || defined ANA_SPFLUX
+# if defined ANA_STFLUX || defined ANA_SSFLUX || defined ANA_SPFLUX || \
+     defined ANA_ISOFLUX
 #  include <ana_stflux.h>
 # endif
 
