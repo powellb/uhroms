@@ -1221,7 +1221,11 @@
 !
 !  Write out surface active traces fluxes.
 !
+# ifdef ISOTOPE
+      DO itrc=1,NT(ng)
+# else
       DO itrc=1,NAT
+# endif
         IF (Hout(idTsur(itrc),ng)) THEN
           IF (itrc.eq.itemp) THEN
 # ifdef SO_SEMI
@@ -1252,35 +1256,6 @@
           END IF
         END IF
       END DO
-
-# ifdef ISOTOPE
-!
-!  Write out surface isotope fluxes.
-!
-      DO itrc=NAT+1,NT(ng)
-        IF (Hout(idTsur(itrc),ng)) THEN
-          scale=1.0_r8
-          gtype=gfactor*r2dvar
-          status=nf_fwrite2d(ng, iNLM, ncHISid(ng),                     &
-     &                       hisVid(idTsur(itrc),ng),                   &
-     &                       tHISindx(ng), gtype,                       &
-     &                       LBi, UBi, LBj, UBj, scale,                 &
-# ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
-# endif
-     &                       FORCES(ng) % stflx(:,:,itrc))
-          IF (status.ne.nf90_noerr) THEN
-            IF (Master) THEN
-              WRITE (stdout,10) TRIM(Vname(1,idTsur(itrc))),            &
-     &                          tHISindx(ng)
-            END IF
-            exit_flag=3
-            ioerror=status
-            RETURN
-          END IF
-        END IF
-      END DO
-# endif
 
 # ifdef BULK_FLUXES
 !

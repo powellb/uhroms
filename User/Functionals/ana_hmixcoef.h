@@ -93,6 +93,9 @@
 !
       USE mod_param
       USE mod_scalars
+#ifdef BIOLOGY
+      USE mod_biology
+#endif
 !
       USE exchange_2d_mod
 #ifdef DISTRIBUTE
@@ -153,7 +156,7 @@
 !  Local variable declarations.
 !
       integer :: Iwrk, i, j, itrc
-      real(r8) :: cff, cff1, cff2, fac
+      real(r8) :: cff, cff1, cff2, cff3, cff4, cff5, fac
 
 #include "set_bounds.h"
 
@@ -490,7 +493,6 @@
        END DO
      END DO
 #  endif
-# endif
 # else
 !!
 !!  Specify your application sponge here.

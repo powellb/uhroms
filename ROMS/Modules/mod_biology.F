@@ -104,6 +104,8 @@
 #  include <npzd_iron_mod.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_mod.h>
+# elif defined ISOTOPE
+#  include <isotope_mod.h>
 # endif
 #endif
 
