@@ -107,6 +107,14 @@
 !  rain         Rain fall rate (kg/m2/s).                              !
 !  rainG        Latest two-time snapshots of input "rain" grided       !
 !                 data used for interpolation.                         !
+!  Surface isotope mass fraction in atmosphere                         !
+!                                                                      !
+!  o16frac      16O mass fraction in kg / kg(H2O)                      !
+!  o16fracG      Latest two-time snapshots of input "O16" grided       !
+!                 data used for interpolation.                         !
+!  o18frac      18O mass fraction in kg / kg(H2O)                      !
+!  o18fracG      Latest two-time snapshots of input "O18" grided       !
+!                 data used for interpolation.                         !
 !                                                                      !
 !  Surface tracer fluxes.                                              !
 !                                                                      !
@@ -150,6 +158,9 @@
 !=======================================================================
 !
         USE mod_kinds
+#if defined ISOTOPE && defined BULK_FLUXES
+        USE mod_biology
+#endif
 
         implicit none
 
@@ -288,6 +299,13 @@
           real(r8), pointer :: EminusP(:,:)
           real(r8), pointer :: evap(:,:)
 #  endif
+# endif
+
+# if defined BULK_FLUXES && defined ISOTOPE
+          real(r8), pointer :: o16frac(:,:)
+          real(r8), pointer :: o16fracG(:,:,:)
+          real(r8), pointer :: o18frac(:,:)
+          real(r8), pointer :: o18fracG(:,:,:)
 # endif
 
           real(r8), pointer :: stflx(:,:,:)
@@ -597,6 +615,16 @@
 #  ifdef EMINUSP
       allocate ( FORCES(ng) % EminusP(LBi:UBi,LBj:UBj) )
       allocate ( FORCES(ng) % evap(LBi:UBi,LBj:UBj) )
+#  endif
+# endif
+
+# if defined BULK_FLUXES && defined ISOTOPE
+      allocate ( FORCES(ng) % o16frac(LBi:UBi,LBj:UBj) )
+      allocate ( FORCES(ng) % o18frac(LBi:UBi,LBj:UBj) )
+
+#  ifndef ANA_STFLUX
+      allocate ( FORCES(ng) % o16fracG(LBi:UBi,LBj:UBj,2) )
+      allocate ( FORCES(ng) % o18fracG(LBi:UBi,LBj:UBj,2) )
 #  endif
 # endif
 
@@ -935,6 +963,14 @@
 #  ifdef EMINUSP
             FORCES(ng) % EminusP(i,j) = IniVal
             FORCES(ng) % evap(i,j) = IniVal
+#  endif
+# endif
+# if defined BULK_FLUXES && defined ISOTOPE
+            FORCES(ng) % o16frac(i,j) = IniVal
+            FORCES(ng) % o18frac(i,j) = IniVal
+#  ifndef ANA_STFLUX
+            FORCES(ng) % o16fracG(i,j,k) = IniVal
+            FORCES(ng) % o18fracG(i,j,k) = IniVal
 #  endif
 # endif
 # if !defined LONGWAVE && defined BULK_FLUXES

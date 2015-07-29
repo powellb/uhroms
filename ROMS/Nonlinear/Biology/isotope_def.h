@@ -1,12 +1,12 @@
 /*
 ** svn $Id$
 ************************************************* Brian Powell, 2014 ***
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                        **
+** Copyright (c) 2002-2015 The ROMS/TOMS Group                        **
 **   Licensed under a MIT/X style license                             **
 **   See License_ROMS.txt                                             **
 ************************************************************************
 **                                                                    **
-**  Defines microbial model parameters.                               **
+**  Defines isotope model parameters.                                 **
 **                                                                    **
 ************************************************************************
 */

@@ -100,6 +100,9 @@
 
       integer :: biodim(2)
 #endif
+#if defined BIOLOGY && defined ISOTOPE
+      integer :: wghtdimA, wghtdimB
+#endif
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer :: ibuffer(2)
 #endif
@@ -2468,6 +2471,8 @@
 #  include <npzd_iron_def.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_def.h>
+# elif defined ISOTOPE
+#  include <isotope_def.h>
 # endif
 #endif
 

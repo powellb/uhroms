@@ -1,12 +1,17 @@
 /*
 ** svn $Id$
 ************************************************* Brian Powell, 2014 ***
-** Copyright (c) 2002-2011 The ROMS/TOMS Group                        **
+** Copyright (c) 2002-2015 The ROMS/TOMS Group                        **
 **   Licensed under a MIT/X style license                             **
 **   See License_ROMS.txt                                             **
 ************************************************************************
-**
-**  Enterococcus                                                      **
+**                                                                    **
+**  Assigns metadata indices for the isotope model variables          **
+**  that are used in input and output NetCDF files.                   **
+**  The metadata information is read from "varinfo.dat".              **
+**                                                                    **
+**  This file is included in file "mod_ncparam.F", routine            **
+**  "initialize_ncparm".                                              **
 **                                                                    **
 ************************************************************************
 */

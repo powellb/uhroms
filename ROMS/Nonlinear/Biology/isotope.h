@@ -2,12 +2,12 @@
 !
 !svn $Id$
 !************************************************ Brian Powell, 2014 ***
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2015 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
 !                                                                      !
-!  Isotope Model.                                                      !
+!  Isotope Model by B. Powell and S. Stevenson                         !
 !                                                                      !
 !***********************************************************************
 !
@@ -106,9 +106,10 @@
 !
 !  Local variable declarations.
 !
-      integer, parameter :: Nsink = 3
+      integer, parameter :: Nsink = 2
 
       integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, ii
+      integer :: Iteradj, kk
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
@@ -116,7 +117,7 @@
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
       real(r8) :: delt, dels
-      
+
       integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
 
@@ -132,7 +133,6 @@
       real(r8), dimension(IminS:ImaxS,N(ng)) :: Hz_inv
       real(r8), dimension(IminS:ImaxS,N(ng)) :: Hz_inv2
       real(r8), dimension(IminS:ImaxS,N(ng)) :: Hz_inv3
-      real(r8), dimension(IminS:ImaxS,N(ng)) :: UVLight, BlueLight
       real(r8), dimension(IminS:ImaxS,N(ng)) :: WL
       real(r8), dimension(IminS:ImaxS,N(ng)) :: WR
       real(r8), dimension(IminS:ImaxS,N(ng)) :: bL
@@ -144,6 +144,10 @@
 !-----------------------------------------------------------------------
 !  Add biological Source/Sink terms.
 !-----------------------------------------------------------------------
+!
+!  Avoid computing source/sink terms if no biological iterations.
+!
+      IF (BioIter(ng).le.0) RETURN
 !
 !  Set time-stepping size (days) according to the number of iterations.
 !

@@ -25,6 +25,8 @@
 #  include <npzd_iron_inp.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_inp.h>
+# elif defined ISOTOPE
+#  include <isotope_inp.h>
 # endif
 #else
       SUBROUTINE read_BioPar

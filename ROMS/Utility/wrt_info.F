@@ -1179,6 +1179,8 @@
 #  include <npzd_iron_wrt.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_wrt.h>
+# elif defined ISOTOPE
+#  include <isotope_wrt.h>
 # endif
 #endif
 

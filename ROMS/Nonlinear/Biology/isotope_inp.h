@@ -2,12 +2,12 @@
 !
 !svn $Id$
 !================================================ Brian Powell, 2014 ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2015 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  This routine reads in microbial ecosystem model input               !
+!  This routine reads in isotope model input                           !
 !  parameters. They are specified in input script "isotope.in".        !
 !                                                                      !
 !=======================================================================
@@ -27,9 +27,11 @@
 !
 !  Local variable declarations.
 !
-      integer :: Npts, Nval, i, itrc, ng, status
+      integer :: Npts, Nval
+      integer :: iTrcStr, iTrcEnd
+      integer :: i, ifield, igrid, itracer, itrc, ng, nline, status
 
-      integer :: decode_line, load_i, load_l, load_r
+      integer :: decode_line, load_i, load_l, load_lbc, load_r
 
       logical, dimension(NBT,Ngrids) :: Ltrc
 
@@ -39,10 +41,20 @@
 
       character (len=40 ) :: KeyWord
       character (len=256) :: line
-      character (len=256), dimension(100) :: Cval
+      character (len=256), dimension(200) :: Cval
 !
 !-----------------------------------------------------------------------
-!  Read in microbial model parameters.
+!  Initialize.
+!-----------------------------------------------------------------------
+!
+      igrid=1                            ! nested grid counter
+      itracer=0                          ! LBC tracer counter
+      iTrcStr=isTvar(idbio(1))           ! first LBC tracer to process
+      iTrcEnd=isTvar(idbio(NBT))         ! last  LBC tracer to process
+      nline=0                            ! LBC multi-line counter
+!
+!-----------------------------------------------------------------------
+!  Read in isotope model parameters.
 !-----------------------------------------------------------------------
 !
       IF (.not.allocated(BioIni)) allocate ( BioIni(MT,Ngrids) )
@@ -50,19 +62,20 @@
         READ (inp,'(a)',ERR=10,END=20) line
         status=decode_line(line, KeyWord, Nval, Cval, Rval)
         IF (status.gt.0) THEN
-          IF (TRIM(KeyWord).eq.'Lbiology') THEN
+          SELECT CASE (TRIM(KeyWord))
+          CASE ('Lbiology')
             Npts=load_l(Nval, Cval, Ngrids, Lbiology)
-          ELSE IF (TRIM(KeyWord).eq.'BioIter') THEN
+          CASE ('BioIter')
             Npts=load_i(Nval, Rval, Ngrids, BioIter)
-          ELSE IF (TRIM(KeyWord).eq.'BioIni(i16O)') THEN
+          CASE ('BioIni(i16O)')
             Npts=load_r(Nval, Rval, Ngrids, BioIni(i16O,1))
-          ELSE IF (TRIM(KeyWord).eq.'BioIni(i18O)') THEN
+          CASE ('BioIni(i18O)')
             Npts=load_r(Nval, Rval, Ngrids, BioIni(i18O,1))
-          ELSE IF (TRIM(KeyWord).eq.'w16O') THEN
+          CASE ('w16O')
             Npts=load_r(Nval, Rval, Ngrids, w16O)
-          ELSE IF (TRIM(KeyWord).eq.'w18O') THEN
+          CASE ('w18O')
             Npts=load_r(Nval, Rval, Ngrids, w18O)
-          ELSE IF (TRIM(KeyWord).eq.'TNU2') THEN
+          CASE ('TNU2')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -70,7 +83,7 @@
                 nl_tnu2(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'TNU4') THEN
+          CASE ('TNU4')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -78,7 +91,7 @@
                 nl_tnu4(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'ad_TNU2') THEN
+          CASE ('ad_TNU2')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -87,7 +100,7 @@
                 tl_tnu2(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'ad_TNU4') THEN
+          CASE ('ad_TNU4')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -96,7 +109,7 @@
                 ad_tnu4(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'AKT_BAK') THEN
+          CASE ('AKT_BAK')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -104,7 +117,7 @@
                 Akt_bak(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'ad_AKT_fac') THEN
+          CASE ('ad_AKT_fac')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -113,7 +126,7 @@
                 tl_Akt_fac(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'TNUDG') THEN
+          CASE ('TNUDG')
             Npts=load_r(Nval, Rval, NBT*Ngrids, Rbio)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -121,8 +134,38 @@
                 Tnudg(i,ng)=Rbio(itrc,ng)
               END DO
             END DO
+          CASE ('LBC(isTvar)')
+            IF (itracer.lt.NBT) THEN
+              itracer=itracer+1
+            ELSE
+              itracer=1                      ! next nested grid
+            END IF
+            ifield=isTvar(idbio(itracer))
+            Npts=load_lbc(Nval, Cval, line, nline, ifield, igrid,     &
+   &                        iTrcStr, iTrcEnd, LBC)
+#if defined ADJOINT || defined TANGENT || defined TL_IOMS
+          CASE ('ad_LBC(isTvar)')
+            IF (itracer.lt.NBT) THEN
+              itracer=itracer+1
+            ELSE
+              itracer=1                      ! next nested grid
+            END IF
+            ifield=isTvar(idbio(itracer))
+            Npts=load_lbc(Nval, Cval, line, nline, ifield, igrid,     &
+   &                      iTrcStr, iTrcEnd, ad_LBC)
+#endif
+#ifdef TCLIMATOLOGY
+          CASE ('LtracerCLM')
+            Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
+            DO ng=1,Ngrids
+              DO itrc=1,NBT
+                i=idbio(itrc)
+                LtracerCLM(i,ng)=Ltrc(itrc,ng)
+              END DO
+            END DO
+#endif
 #ifdef TS_PSOURCE
-          ELSE IF (TRIM(KeyWord).eq.'LtracerSrc') THEN
+          CASE ('LtracerSrc')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -131,7 +174,7 @@
               END DO
             END DO
 #endif
-          ELSE IF (TRIM(KeyWord).eq.'Hout(idTvar)') THEN
+          CASE ('Hout(idTvar)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -145,7 +188,7 @@
                 Hout(i,ng)=Ltrc(itrc,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Hout(idTsur)') THEN
+          CASE ('Hout(idTsur)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -159,8 +202,11 @@
                 Hout(i,ng)=Ltrc(itrc,ng)
               END DO
             END DO
-#ifdef AVERAGES
-          ELSE IF (TRIM(KeyWord).eq.'Aout(idTvar)') THEN
+#if defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
+          CASE ('Aout(idTvar)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO itrc=1,NBT
@@ -170,7 +216,7 @@
             END DO
 #endif
 #ifdef DIAGNOSTICS_TS
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTrate)') THEN
+          CASE ('Dout(iTrate)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -178,7 +224,7 @@
                 Dout(idDtrc(itrc,iTrate),ng)=Ltrc(i,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iThadv)') THEN
+          CASE ('Dout(iThadv)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -186,7 +232,7 @@
                 Dout(idDtrc(itrc,iThadv),ng)=Ltrc(i,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTxadv)') THEN
+          CASE ('Dout(iTxadv)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -194,7 +240,7 @@
                 Dout(idDtrc(itrc,iTxadv),ng)=Ltrc(i,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTyadv)') THEN
+          CASE ('Dout(iTyadv)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -202,7 +248,7 @@
                 Dout(idDtrc(itrc,iTyadv),ng)=Ltrc(i,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTvadv)') THEN
+          CASE ('Dout(iTvadv)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -211,7 +257,7 @@
               END DO
             END DO
 # if defined TS_DIF2 || defined TS_DIF4
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iThdif)') THEN
+          CASE ('Dout(iThdif)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -219,7 +265,7 @@
                 Dout(idDtrc(itrc,iThdif),ng)=Ltrc(i,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTxdif)') THEN
+          CASE ('Dout(iTxdif)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -227,7 +273,7 @@
                 Dout(idDtrc(itrc,iTxdif),ng)=Ltrc(i,ng)
               END DO
             END DO
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTydif)') THEN
+          CASE ('Dout(iTydif)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -236,7 +282,7 @@
               END DO
             END DO
 #  if defined MIX_GEO_TS || defined MIX_ISO_TS
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTsdif)') THEN
+          CASE ('Dout(iTsdif)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -246,7 +292,7 @@
             END DO
 #  endif
 # endif
-          ELSE IF (TRIM(KeyWord).eq.'Dout(iTvdif)') THEN
+          CASE ('Dout(iTvdif)')
             Npts=load_l(Nval, Cval, NBT*Ngrids, Ltrc)
             DO ng=1,Ngrids
               DO i=1,NBT
@@ -344,6 +390,14 @@
      &              'Nudging/relaxation time scale (days)',             &
      &              'for tracer ', i, TRIM(Vname(1,idTvar(i)))
             END DO
+#ifdef TCLIMATOLOGY
+            DO itrc=1,NBT
+              i=idbio(itrc)
+              WRITE (out,110) LtracerCLM(i,ng), 'LtracerCLM',           &
+     &              i, 'Processing climatology on tracer ', i,          &
+     &              TRIM(Vname(1,idTvar(i)))
+            END DO
+#endif
 #ifdef TS_PSOURCE
             DO itrc=1,NBT
               i=idbio(itrc)
@@ -364,7 +418,10 @@
      &            Hout(idTsur(i),ng), 'Hout(idTsur)',                   &
      &            'Write out tracer flux ', i, TRIM(Vname(1,idTvar(i)))
             END DO
-#ifdef AVERAGES
+#if defined AVERAGES    || \
+   (defined AD_AVERAGES && defined ADJOINT) || \
+   (defined RP_AVERAGES && defined TL_IOMS) || \
+   (defined TL_AVERAGES && defined TANGENT)
             WRITE (out,'(1x)')
             DO itrc=1,NBT
               i=idbio(itrc)
@@ -486,7 +543,7 @@
   30  FORMAT (/,' read_BioPar - variable info not yet loaded, ',        &
      &        a,i2.2,a)
   40  FORMAT (/,' read_BioPar - Error while processing line: ',/,a)
-  50  FORMAT (/,/,' Microbial Model Parameters, Grid: ',i2.2,                &
+  50  FORMAT (/,/,' Isotope Model Parameters, Grid: ',i2.2,                &
      &        /,  ' ===============================',/)
   60  FORMAT (1x,i10,2x,a,t30,a)
   70  FORMAT (1p,e11.4,2x,a,t30,a)

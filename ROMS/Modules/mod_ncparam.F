@@ -230,6 +230,8 @@
         integer  :: idRvsh        ! river runoff transport profile
         integer  :: idRwet        ! wet/dry mask on RHO-points
         integer  :: idRzet        ! RHS of free-surface
+        integer  :: ido16frac     ! isotope O16 mass ratio
+        integer  :: ido18frac     ! isotope O18 mass ratio
         integer  :: idrain        ! rainfall rate
         integer  :: idragL        ! bottom linear drag coefficient
         integer  :: idragQ        ! bottom quadratic drag coefficient
@@ -1081,6 +1083,10 @@
               idShea=varid
             CASE ('idrain')
               idrain=varid
+            CASE ('ido16frac')
+              ido16frac=varid
+            CASE ('ido18frac')
+              ido18frac=varid
             CASE ('idEmPf')
               idEmPf=varid
             CASE ('idevap')
@@ -1597,6 +1603,8 @@
 #  include <npzd_Powell_var.h>
 # elif defined NPZD_IRON
 #  include <npzd_iron_var.h>
+# elif defined ISOTOPE
+#  include <isotope_var.h>
 # endif
 #endif
 

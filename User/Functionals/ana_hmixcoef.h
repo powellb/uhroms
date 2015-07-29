@@ -384,6 +384,113 @@
         END DO
       END DO
 #  endif
+# elif defined ISOTOPE_TEST
+#  if defined UV_VIS2
+     Iwrk=INT(user(1))
+     fac=REAL(user(2))
+     cff=(fac-visc2(ng))/REAL(Iwrk)
+
+     DO j=MAX(JstrR,Mm(ng)+1-Iwrk),JendR  ! North
+       cff1=visc2(ng)+cff*REAL(Iwrk-Mm(ng)+j,r8)
+       DO i=IstrR,IendR
+         visc2_r(i,j)=MAX(visc2_r(i,j),cff1)
+         visc2_p(i,j)=MAX(visc2_p(i,j),cff1)
+       END DO
+     END DO
+     DO j=JstrR,MIN(Iwrk,JendR)  ! South
+       cff1=visc2(ng)+cff*REAL(Iwrk-j,r8)
+       DO i=IstrR,IendR
+         visc2_r(i,j)=MAX(visc2_r(i,j),cff1)
+         visc2_p(i,j)=MAX(visc2_p(i,j),cff1)
+       END DO
+     END DO
+     DO i=MAX(IstrR,Lm(ng)+1-Iwrk),IendR  ! East
+       cff1=visc2(ng)+cff*REAL(Iwrk-Lm(ng)+i,r8)
+       DO j=JstrR,JendR
+         visc2_r(i,j)=MAX(visc2_r(i,j),cff1)
+         visc2_p(i,j)=MAX(visc2_p(i,j),cff1)
+       END DO
+     END DO
+     DO i=IstrR,MIN(2*Iwrk,IendR)  ! West
+       cff1=visc2(ng)+cff*REAL(2*Iwrk-i,r8)
+       DO j=JstrR,JendR
+         visc2_r(i,j)=MAX(visc2_r(i,j),cff1)
+         visc2_p(i,j)=MAX(visc2_p(i,j),cff1)
+       END DO
+     END DO
+#  endif
+#  if defined TS_DIF2
+     Iwrk=INT(user(1))
+     fac=REAL(user(3))
+     cff=(fac-tnu2(itemp,ng))/REAL(Iwrk)
+     cff1=(fac-tnu2(isalt,ng))/REAL(Iwrk)
+
+     DO j=MAX(JstrR,Mm(ng)+1-Iwrk),JendR   ! North
+       cff2=tnu2(itemp,ng)+cff1*REAL(Iwrk-Mm(ng)+j,r8)
+       cff3=tnu2(isalt,ng)+cff1*REAL(Iwrk-Mm(ng)+j,r8)
+#   if defined ISOTOPE
+       cff4=tnu2(i16O,ng)+cff1*REAL(Iwrk-Mm(ng)+j,r8)
+       cff5=tnu2(i18O,ng)+cff1*REAL(Iwrk-Mm(ng)+j,r8)
+#   endif
+       DO i=IstrR,IendR
+         diff2(i,j,itemp)=MAX(diff2(i,j,itemp),cff2)
+         diff2(i,j,isalt)=MAX(diff2(i,j,isalt),cff3)
+#   if defined ISOTOPE
+         diff2(i,j,i16O)=MAX(diff2(i,j,i16O),cff4)
+         diff2(i,j,i18O)=MAX(diff2(i,j,i18O),cff5)
+#   endif
+       END DO
+     END DO
+     DO j=JstrR,MIN(Iwrk,JendR)   ! South
+       cff2=tnu2(itemp,ng)+cff1*REAL(Iwrk-j,r8)
+       cff3=tnu2(isalt,ng)+cff1*REAL(Iwrk-j,r8)
+#   if defined ISOTOPE
+       cff4=tnu2(i16O,ng)+cff1*REAL(Iwrk-j,r8)
+       cff5=tnu2(i18O,ng)+cff1*REAL(Iwrk-j,r8)
+#   endif
+       DO i=IstrR,IendR
+         diff2(i,j,itemp)=MAX(diff2(i,j,itemp),cff2)
+         diff2(i,j,isalt)=MAX(diff2(i,j,isalt),cff3)
+#   if defined ISOTOPE
+         diff2(i,j,i16O)=MAX(diff2(i,j,i16O),cff4)
+         diff2(i,j,i18O)=MAX(diff2(i,j,i18O),cff5)
+#   endif
+       END DO
+     END DO
+     DO i=MAX(IstrR,Lm(ng)+1-Iwrk),IendR   ! East
+       cff2=tnu2(itemp,ng)+cff1*REAL(Iwrk-Lm(ng)+i,r8)
+       cff3=tnu2(isalt,ng)+cff1*REAL(Iwrk-Lm(ng)+i,r8)
+#   if defined ISOTOPE
+       cff4=tnu2(i16O,ng)+cff1*REAL(Iwrk-Lm(ng)+i,r8)
+       cff5=tnu2(i18O,ng)+cff1*REAL(Iwrk-Lm(ng)+i,r8)
+#   endif
+       DO j=JstrR,JendR
+         diff2(i,j,itemp)=MAX(diff2(i,j,itemp),cff2)
+         diff2(i,j,isalt)=MAX(diff2(i,j,isalt),cff3)
+#   if defined ISOTOPE
+         diff2(i,j,i16O)=MAX(diff2(i,j,i16O),cff4)
+         diff2(i,j,i18O)=MAX(diff2(i,j,i18O),cff5)
+#   endif
+       END DO
+     END DO
+     DO i=IstrR,MIN(Iwrk,IendR)   ! West
+#   if defined ISOTOPE
+       cff2=tnu2(i16O,ng)+cff1*REAL(Iwrk-i,r8)
+       cff3=tnu2(i18O,ng)+cff1*REAL(Iwrk-i,r8)
+#   endif
+       cff4=tnu2(itemp,ng)+cff1*REAL(Iwrk-i,r8)
+       cff5=tnu2(isalt,ng)+cff1*REAL(Iwrk-i,r8)
+       DO j=JstrR,JendR
+         diff2(i,j,itemp)=MAX(diff2(i,j,itemp),cff2)
+         diff2(i,j,isalt)=MAX(diff2(i,j,isalt),cff3)
+#   if defined ISOTOPE
+         diff2(i,j,i16O)=MAX(diff2(i,j,i16O),cff4)
+         diff2(i,j,i18O)=MAX(diff2(i,j,i18O),cff5)
+#   endif
+       END DO
+     END DO
+#  endif
+# endif
 # else
 !!
 !!  Specify your application sponge here.

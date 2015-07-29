@@ -1350,6 +1350,24 @@
   'r2dvar'
   1.0d0                                            ! 1/rhow (0.001 m3/kg) if m/s
 
+'o16frac'                                          ! Input
+  'O16 mass fraction'
+  'kilogram O16 per kilogram H2O'                  ! [kg kg^-1]
+  'o16frac, scalar, series'
+  'o16frac_time'
+  'ido16frac'
+  'r2dvar'
+  1.0d0                                            ! 1/rhow (0.001 m3/kg) if m/s
+
+'o18frac'                                          ! Input
+  'O18 mass fraction'
+  'kilogram O18 per kilogram H2O'                  ! [kg kg^-1]
+  'o18frac, scalar, series'
+  'o18frac_time'
+  'ido18frac'
+  'r2dvar'
+  1.0d0                                            ! 1/rhow (0.001 m3/kg) if m/s
+
 'evaporation'                                      ! Input
   'evaporation rate'
   'kilogram meter-2 second-1'                      ! [kg m2/s]
@@ -1737,6 +1755,24 @@
   'river_salt, scalar, series'
   'river_time'
   'idRtrc(isalt)'
+  'nulvar'
+  1.0d0
+
+'river_O16'                                     ! Input
+  'river runoff O16'
+  'kg_nitrogen meter-3'                     ! [kg/m3]
+  'river_O16, scalar, series'
+  'river_time'
+  'idRtrc(i16O)'
+  'nulvar'
+  1.0d0
+
+'river_O18'                                      ! Input
+  'river runoff O18'
+  'kg_nitrogen meter-3'                     ! [kg/m3]
+  'river_O18, scalar, series'
+  'river_time'
+  'idRtrc(i18O)'
   'nulvar'
   1.0d0
 
@@ -2870,6 +2906,42 @@
 !---------------------------------------------------------------------
 !
 
+'O16'                                              ! Input/Output
+  'O16 concentration'
+  'kg_nitrogen meter-3'                            ! [kg/m3]
+  'O16, scalar, series'
+  'ocean_time'
+  'idTvar(i16O)'
+  'r3dvar'
+  1.0d0
+
+'O18'                                              ! Input/Output
+  'O18 concentration'
+  'kg_nitrogen meter-3'                            ! [kg/m3]
+  'O18, scalar, series'
+  'ocean_time'
+  'idTvar(i18O)'
+  'r3dvar'
+  1.0d0
+
+'O16'                                              ! Input
+  'O16 concentration function'
+  'kg_nitrogen meter-3'                            ! [kg/m3]
+  'O16, scalar, series'
+  'ocean_time'
+  'idTads(i16O)'
+  'r3dvar'
+  1.0d0
+
+'O18'                                              ! Input
+  'O18 concentration function'
+  'kg_nitrogen meter-3'                            ! [kg/m3]
+  'O18, scalar, series'
+  'ocean_time'
+  'idTads(i18O)'
+  'r3dvar'
+  1.0d0
+
 'NO3'                                              ! Input/Output
   'nitrate concentration'
   'millimole_nitrogen meter-3'                     ! [millimole/m3]
@@ -3282,6 +3354,78 @@
 !
 !  Boundary variables.
 !
+
+'O16_east'                                      ! Input
+  'O16 eastern boundary condition'
+  'kg_nitrogen meter-3'                      ! [kg/m3]
+  'O16_east, scalar, series'
+  'isotope_time'
+  'idTbry(ieast,i16O)'
+  'nulvar'
+  1.0d0
+
+'O16_west'                                      ! Input
+  'O16 western boundary condition'
+  'kg_nitrogen meter-3'                      ! [kg/m3]
+  'O16_west, scalar, series'
+  'isotope_time'
+  'idTbry(iwest,i16O)'
+  'nulvar'
+  1.0d0
+
+'O16_north'                                      ! Input
+  'O16 northern boundary condition'
+  'kg_nitrogen meter-3'                       ! [kg/m3]
+  'O16_north, scalar, series'
+  'isotope_time'
+  'idTbry(inorth,i16O)'
+  'nulvar'
+  1.0d0
+
+'O16_south'                                      ! Input
+  'O16 southern boundary condition'
+  'kg_nitrogen meter-3'                       ! [kg/m3]
+  'O16_south, scalar, series'
+  'isotope_time'
+  'idTbry(isouth,i16O)'
+  'nulvar'
+  1.0d0
+
+'O18_east'                                      ! Input
+  'O18 eastern boundary condition'
+  'kg_nitrogen meter-3'                      ! [kg/m3]
+  'O18_east, scalar, series'
+  'isotope_time'
+  'idTbry(ieast,i18O)'
+  'nulvar'
+  1.0d0
+
+'O18_west'                                      ! Input
+  'O18 western boundary condition'
+  'kg_nitrogen meter-3'                      ! [kg/m3]
+  'O18_west, scalar, series'
+  'isotope_time'
+  'idTbry(iwest,i18O)'
+  'nulvar'
+  1.0d0
+
+'O18_north'                                      ! Input
+  'O18 northern boundary condition'
+  'kg_nitrogen meter-3'                       ! [kg/m3]
+  'O18_north, scalar, series'
+  'isotope_time'
+  'idTbry(inorth,i18O)'
+  'nulvar'
+  1.0d0
+
+'O18_south'                                      ! Input
+  'O18 southern boundary condition'
+  'kg_nitrogen meter-3'                       ! [kg/m3]
+  'O18_south, scalar, series'
+  'isotope_time'
+  'idTbry(isouth,i18O)'
+  'nulvar'
+  1.0d0
 
 'NO3_east'                                         ! Input
   'nitrate eastern boundary condition'

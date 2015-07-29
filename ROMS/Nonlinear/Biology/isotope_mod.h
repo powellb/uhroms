@@ -1,21 +1,17 @@
 !
 !svn $Id$
 !================================================ Brian Powell, 2014 ===
-!  Copyright (c) 2002-2011 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2015 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  Parameters for Enterococcus ecosystem model:                        !
+!  Parameters for Isotope ecosystem model:                             !
 !                                                                      !
-!  AttSW     Light attenuation due to sea water, [1/m].                !
-!  BioIter   Maximum number of iterations to achieve convergence of    !
-!              the nonlinear solution.                                 !
-!  BioIni    Initial concentration for analytical initial (uniform)    !
-!              conditions.                                             !
-!  Ent_Att   Decay of Enterococcus due to UV.                          !
-!  wEntero   Enterococcus sinking rate, [m/day].                       !
-!                                                                      !
+!  BioIni(i16O)   Initial O16 concentration                            !
+!  BioIni(i18O)   Initial O18 concentration                            !
+!  w16O           Sinking-Rate of O16 (enforce mixing if needed)       !
+!  w18O           Sinking-Rate of O18 (enforce mixing if needed)       !
 !=======================================================================
 !
       USE mod_param
@@ -29,16 +25,21 @@
 !
 !  Biological parameters.
 !
-      integer, dimension(Ngrids) :: BioIter
+      integer, allocatable :: BioIter(:)
 
+#ifdef ANA_BIOLOGY
       real(r8), allocatable :: BioIni(:,:)
-      real(r8), dimension(Ngrids) :: w16O, w18O      ! m/day
-      
+#endif
+      real(r8), allocatable :: w16O(:)   ! m/day
+      real(r8), allocatable :: w18O(:)   ! m/day
+
 #ifdef TANGENT
-      real(r8), dimension(Ngrids) :: tl_w16O, tl_w18O
+      real(r8), allocatable :: tl_w16O(:)
+      real(r8), allocatable :: tl_w18O(:)
 #endif
 #ifdef ADJOINT
-      real(r8), dimension(Ngrids) :: ad_w16O, ad_w18O
+      real(r8), allocatable :: ad_w16O(:)
+      real(r8), allocatable :: ad_w18O(:)
 #endif
 
       CONTAINS
@@ -71,6 +72,31 @@
       IF (.not.allocated(idbio)) THEN
         allocate ( idbio(NBT) )
       END IF
+      IF (.not.allocated(BioIter)) THEN
+        allocate ( BioIter(Ngrids) )
+      END IF
+      IF (.not.allocated(w16O)) THEN
+        allocate ( w16O(Ngrids) )
+      END IF
+      IF (.not.allocated(w18O)) THEN
+        allocate ( w18O(Ngrids) )
+      END IF
+#ifdef TANGENT
+      IF (.not.allocated(tl_w16O)) THEN
+        allocate ( tl_w16O(Ngrids) )
+      END IF
+      IF (.not.allocated(tl_w18O)) THEN
+        allocate ( tl_w18O(Ngrids) )
+      END IF
+#endif
+#ifdef ADJOINT
+      IF (.not.allocated(ad_w16O)) THEN
+        allocate ( ad_w16O(Ngrids) )
+      END IF
+      IF (.not.allocated(ad_w18O)) THEN
+        allocate ( ad_w18O(Ngrids) )
+      END IF
+#endif
 !
 !  Set identification indices.
 !

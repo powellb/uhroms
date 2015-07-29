@@ -424,6 +424,29 @@
       IF (exit_flag.ne.NoError) RETURN
 # endif
 
+# if !defined ANA_STFLUX && defined BULK_FLUXES && defined ISOTOPE
+!
+!-----------------------------------------------------------------------
+!  Isotope mass fraction for O18 and O16
+!-----------------------------------------------------------------------
+!
+      CALL get_2dfld (ng, iNLM, ido16frac, ncFRCid(ido16frac,ng),       &
+     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                LBi, UBi, LBj, UBj, 2, 1,                         &
+#  ifdef MASKING
+     &                GRID(ng) % rmask,                        &
+#  endif
+     &                FORCES(ng) % o16fracG)
+
+      CALL get_2dfld (ng, iNLM, ido18frac, ncFRCid(ido18frac,ng),       &
+     &                nFfiles(ng), FRCname(1,ng), update(1),            &
+     &                LBi, UBi, LBj, UBj, 2, 1,                         &
+#  ifdef MASKING
+     &                GRID(ng) % rmask,                        &
+#  endif
+     &                FORCES(ng) % o18fracG)
+# endif
+
 # if !defined ANA_STFLUX && !defined BULK_FLUXES
 !
 !-----------------------------------------------------------------------
@@ -590,7 +613,7 @@
 # endif
 
 # if defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE
-#  ifndef ANA_SPFLUX
+#  if !defined ANA_SPFLUX && !defined ANA_ISOFLUX
 !
 !-----------------------------------------------------------------------
 !  Passive tracers surface fluxes.
