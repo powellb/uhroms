@@ -138,8 +138,6 @@
      &                             ad_Aobs)
 !***********************************************************************
 !
-      USE mod_scalars
-      USE mod_fourdvar
 !
 !  Imported variable declarations.
 !
@@ -287,8 +285,6 @@
 !***********************************************************************
 !
       USE mod_param
-      USE mod_scalars
-      USE mod_fourdvar
 !
 !  Imported variable declarations.
 !
