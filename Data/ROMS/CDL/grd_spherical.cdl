@@ -106,9 +106,9 @@ variables:
 		lon_v:long_name = "longitude of V-points" ;
 		lon_v:units = "degree_east" ;
 		lon_v:standard_name = "longitude" ;
-        double angle(eta_rho, xi_rho) ;
-                angle:long_name = "angle between XI-axis and EAST" ;
-                angle:units = "radians" ;
+double angle(eta_rho, xi_rho) ;
+    angle:long_name = "angle between XI-axis and EAST" ;
+    angle:units = "radians" ;
 		angle:coordinates = "lon_rho lat_rho" ;
 	double mask_rho(eta_rho, xi_rho) ;
 		mask_rho:long_name = "mask on RHO-points" ;

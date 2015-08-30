@@ -447,9 +447,10 @@
 !=======================================================================
 !
           DO Iteradj=1,Iter
+            IF (Iteradj.ne.Iter) THEN
 !
 !-----------------------------------------------------------------------
-!  Vertical sinking terms: Phytoplankton and Detritus
+!  Vertical sinking terms
 !-----------------------------------------------------------------------
 !
 !  Reconstruct vertical profile of selected biological constituents
@@ -694,6 +695,7 @@
 !=======================================================================
 !
           DO Iteradj=1,Iter
+            IF (Iteradj.ne.Iter) THEN
 !
 !-----------------------------------------------------------------------
 !  Vertical sinking terms: Phytoplankton and Detritus

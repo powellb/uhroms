@@ -254,9 +254,6 @@
           ad_BioTrc(ibio,1)=0.0_r8
           ad_BioTrc(ibio,2)=0.0_r8
         END DO
-        DO i=IminS,ImaxS
-          ad_PARsur(i)=0.0_r8
-        END DO
         DO k=0,N(ng)
           DO i=IminS,ImaxS
             ad_FC(i,k)=0.0_r8
@@ -353,21 +350,6 @@
               Bio(i,k,ibio)=BioTrc(ibio,nstp)
             END DO
           END DO
-        END DO
-!
-!  Calculate surface Photosynthetically Available Radiation (PAR).  The
-!  net shortwave radiation is scaled back to Watts/m2 and multiplied by
-!  the fraction that is photosynthetically available, PARfrac.
-!
-        DO i=Istr,Iend
-#ifdef CONST_PAR
-!
-!  Specify constant surface irradiance a la Powell and Spitz.
-!
-          PARsur(i)=158.075_r8
-#else
-          PARsur(i)=PARfrac(ng)*srflx(i,j)*rho0*Cp
-#endif
         END DO
 !
 !=======================================================================
@@ -631,7 +613,7 @@
 !>   &                              tl_cff*Hz(i,j,k)+cff*tl_Hz(i,j,k)
 !>
               ad_Hz(i,j,k)=ad_Hz(i,j,k)+cff*ad_t(i,j,k,nnew,ibio)
-              ad_cff=add_cff+Hz(i,j,k)*ad_t(i,j,k,nnew,ibio)
+              ad_cff=ad_cff+Hz(i,j,k)*ad_t(i,j,k,nnew,ibio)
 !>            tl_cff=tl_Bio(i,k,ibio)-tl_Bio_old(i,k,ibio)
 !>
               ad_Bio_old(i,k,ibio)=ad_Bio_old(i,k,ibio)-ad_cff
@@ -708,21 +690,6 @@
                 Bio(i,k,ibio)=BioTrc(ibio,nstp)
               END DO
             END DO
-          END DO
-!
-!  Calculate surface Photosynthetically Available Radiation (PAR).  The
-!  net shortwave radiation is scaled back to Watts/m2 and multiplied by
-!  the fraction that is photosynthetically available, PARfrac.
-!
-          DO i=Istr,Iend
-#ifdef CONST_PAR
-!
-!  Specify constant surface irradiance a la Powell and Spitz.
-!
-            PARsur(i)=158.075_r8
-#else
-            PARsur(i)=PARfrac(ng)*srflx(i,j)*rho0*Cp
-#endif
           END DO
 !
 !=======================================================================
@@ -1768,6 +1735,7 @@
 !=======================================================================
 !
           DO Iteradj=1,Iter
+            IF (Iteradj.ne.Iter) THEN
 !
 !-----------------------------------------------------------------------
 !  Vertical sinking terms: Isotopes
@@ -2015,6 +1983,7 @@
 !=======================================================================
 !
           DO Iteradj=1,Iter
+            IF (Iteradj.ne.Iter) THEN
 !
 !-----------------------------------------------------------------------
 !  Vertical sinking terms: Isotopes
@@ -2197,6 +2166,7 @@
               END DO
             END IF
           END DO
+        END DO ITER_LOOP1
 !
 !  End of compute basic state arrays I.
 !
@@ -2357,18 +2327,6 @@
         END DO
 
       END DO J_LOOP
-!
-!  Set adjoint vertical sinking velocity vector in the same order as the
-!  identification vector, IDSINK.
-!
-!>    tl_Wbio(2)=tl_wDet(ng)          ! Small detritus
-!>
-      ad_wDet(ng)=ad_wDet(ng)+ad_Wbio(2)
-      ad_Wbio(2)=0.0_r8
-!>    tl_Wbio(1)=tl_wPhy(ng)          ! Phytoplankton
-!>
-      ad_wPhy(ng)=ad_wPhy(ng)+ad_Wbio(1)
-      ad_Wbio(1)=0.0_r8
 
       RETURN
       END SUBROUTINE ad_biology_tile
