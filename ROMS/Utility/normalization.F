@@ -3202,10 +3202,11 @@
       integer :: start(4), total(4)
 
       real(r8) :: Aavg, Amax, Amin, FacAvg, FacSqr, cff, val
+      real(r8) :: Asqr
       real(r8) :: my_time
 
 # ifdef ADJUST_BOUNDARY
-      real(r8) :: Bavg, Bmin, Bmax
+      real(r8) :: Bavg, Bmin, Bmax, Bsqr
 
       real(r8), parameter :: Aspv = 0.0_r8
 # endif
@@ -3366,16 +3367,15 @@
             DO j=Jstr,Jend
               DO i=Istr,Iend
                 Aavg=FacAvg*A2davg(i,j)
+                Asqr=FacAvg*A2dsqr(i,j)
 # ifdef MASKING
                 IF (rmask(i,j).gt.0.0_r8) THEN
-!!                HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                  HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
+                  HnormR(i,j,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
                 ELSE
                   HnormR(i,j,ifile)=0.0_r8
                 END IF
 # else
-!!              HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
+                HnormR(i,j,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 # endif
               END DO
             END DO
@@ -3447,16 +3447,15 @@
             DO j=Jstr,Jend
               DO i=IstrU,Iend
                 Aavg=FacAvg*A2davg(i,j)
+                Asqr=FacAvg*A2dsqr(i,j)
 # ifdef MASKING
                 IF (umask(i,j).gt.0.0_r8) THEN
-!!                HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                  HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
+                  HnormU(i,j,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
                 ELSE
                   HnormU(i,j,ifile)=0.0_r8
                 END IF
 # else
-!!              HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
+                HnormU(i,j,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 # endif
               END DO
             END DO
@@ -3528,16 +3527,15 @@
             DO j=JstrV,Jend
               DO i=Istr,Iend
                 Aavg=FacAvg*A2davg(i,j)
+                Asqr=FacAvg*A2dsqr(i,j)
 # ifdef MASKING
                 IF (vmask(i,j).gt.0.0_r8) THEN
-!!                HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                  HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
+                  HnormV(i,j,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
                 ELSE
                   HnormV(i,j,ifile)=0.0_r8
                 END IF
 # else
-!!              HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
+                HnormV(i,j,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 # endif
               END DO
             END DO
@@ -3622,18 +3620,15 @@
               DO j=Jstr,Jend
                 DO i=IstrU,Iend
                   Aavg=FacAvg*A3davg(i,j,k)
+                  Asqr=FacAvg*A3dsqr(i,j,k)
 #  ifdef MASKING
                   IF (umask(i,j).gt.0.0_r8) THEN
-!!                  VnormU(i,j,k,ifile)=FacSqr/                         &
-!!   &                                  SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
-                    VnormU(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
+                    VnormU(i,j,k,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
                   ELSE
                     VnormU(i,j,k,ifile)=0.0_r8
                   END IF
 #  else
-!!                VnormU(i,j,k,ifile)=FacSqr/                           &
-!!   &                                SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
-                  VnormU(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
+                  VnormU(i,j,k,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 #  endif
                 END DO
               END DO
@@ -3717,18 +3712,15 @@
               DO j=JstrV,Jend
                 DO i=Istr,Iend
                   Aavg=FacAvg*A3davg(i,j,k)
+                  Asqr=FacAvg*A3dsqr(i,j,k)
 #  ifdef MASKING
                   IF (vmask(i,j).gt.0.0_r8) THEN
-!!                  VnormV(i,j,k,ifile)=FacSqr/                         &
-!!   &                                  SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
-                    VnormV(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
+                    VnormV(i,j,k,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
                   ELSE
                     VnormV(i,j,k,ifile)=0.0_r8
                   END IF
 #  else
-!!                VnormV(i,j,k,ifile)=FacSqr/                           &
-!!   &                                SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
-                  VnormV(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
+                  VnormV(i,j,k,ifile)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 #  endif
                 END DO
               END DO
@@ -3850,21 +3842,16 @@
                 DO j=Jstr,Jend
                   DO i=Istr,Iend
                     Aavg=FacAvg*A3davg(i,j,k)
+                    Asqr=FacAvg*A3dsqr(i,j,k)
 #  ifdef MASKING
                     IF (rmask(i,j).gt.0.0_r8) THEN
-!!                    VnormR(i,j,k,ifile,itrc)=FacSqr/                  &
-!!   &                                         SQRT(A3dsqr(i,j,k)-      &
-!!   &                                              Aavg*Aavg)
-                      VnormR(i,j,k,ifile,itrc)=FacSqr/                  &
-     &                                         SQRT(A3dsqr(i,j,k))
+                      VnormR(i,j,k,ifile,itrc)=1.0_r8/                  &
+     &                                         SQRT(Asqr-Aavg*Aavg)
                     ELSE
                       VnormR(i,j,k,ifile,itrc)=0.0_r8
                     END IF
 #  else
-!!                  VnormR(i,j,k,ifile,itrc)=FacSqr/                    &
-!!   &                                       SQRT(A3dsqr(i,j,k)-        &
-!!   &                                            Aavg*Aavg)
-                    VnormR(i,j,k,ifile,itrc)=FacSqr/SQRT(A3dsqr(i,j,k))
+                    VnormR(i,j,k,ifile,itrc)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 #  endif
                   END DO
                 END DO
@@ -4033,31 +4020,29 @@
               IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                 DO j=Jstr,Jend
                   Bavg=FacAvg*B2davg(j)
+                  Bsqr=FacAvg*B2dsqr(j)
 #  ifdef MASKING
                   IF (rmask(i,j).gt.0.0_r8) THEN
-!!                  HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
-                    HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
+                    HnormRobc(j,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                   ELSE
                     HnormRobc(j,ibry)=0.0_r8
                   END IF
 #  else
-!!                HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
-                  HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
+                  HnormRobc(j,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                 END DO
               ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
                 DO i=Istr,Iend
                   Bavg=FacAvg*B2davg(i)
+                  Bsqr=FacAvg*B2dsqr(i)
 #  ifdef MASKING
                   IF (rmask(i,j).gt.0.0_r8) THEN
-!!                  HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
-                    HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
+                    HnormRobc(i,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                   ELSE
                     HnormRobc(i,ibry)=0.0_r8
                   END IF
 #  else
-!!                HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
-                  HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
+                  HnormRobc(i,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                 END DO
               END IF
@@ -4165,31 +4150,29 @@
               IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                 DO j=Jstr,Jend
                   Bavg=FacAvg*B2davg(j)
+                  Bsqr=FacAvg*B2dsqr(j)
 #  ifdef MASKING
                   IF (umask(i,j).gt.0.0_r8) THEN
-!!                  HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
-                    HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
+                    HnormUobc(j,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                   ELSE
                     HnormUobc(j,ibry)=0.0_r8
                   END IF
 #  else
-!!                HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
-                  HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
+                  HnormUobc(j,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                 END DO
               ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
                 DO i=IstrU,Iend
                   Bavg=FacAvg*B2davg(i)
+                  Bsqr=FacAvg*B2dsqr(i)
 #  ifdef MASKING
                   IF (umask(i,j).gt.0.0_r8) THEN
-!!                  HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
-                    HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
+                    HnormUobc(i,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                   ELSE
                     HnormUobc(i,ibry)=0.0_r8
                   END IF
 #  else
-!!                HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
-                  HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
+                  HnormUobc(i,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                 END DO
               END IF
@@ -4297,31 +4280,29 @@
               IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                 DO j=JstrV,Jend
                   Bavg=FacAvg*B2davg(j)
+                  Bsqr=FacAvg*B2dsqr(j)
 #  ifdef MASKING
                   IF (vmask(i,j).gt.0.0_r8) THEN
-!!                  HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
-                    HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
+                    HnormVobc(j,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                   ELSE
                     HnormVobc(j,ibry)=0.0_r8
                   END IF
 #  else
-!!                HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
-                  HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
+                  HnormVobc(j,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                 END DO
               ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
                 DO i=Istr,Iend
                   Bavg=FacAvg*B2davg(i)
+                  Bsqr=FacAvg*B2dsqr(i)
 #  ifdef MASKING
                   IF (vmask(i,j).gt.0.0_r8) THEN
-!!                  HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
-                    HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
+                    HnormVobc(i,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                   ELSE
                     HnormVobc(i,ibry)=0.0_r8
                   END IF
 #  else
-!!                HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
-                  HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
+                  HnormVobc(i,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                 END DO
               END IF
@@ -4451,18 +4432,15 @@
                 DO k=1,N(ng)
                   DO j=Jstr,Jend
                     Bavg=FacAvg*B3davg(j,k)
+                    Bsqr=FacAvg*B3dsqr(j,k)
 #  ifdef MASKING
                     IF (umask(i,j).gt.0.0_r8) THEN
-!!                    VnormUobc(j,k,ibry)=FacSqr/                       &
-!!   &                                    SQRT(B3dsqr(j,k)-Bavg*Bavg)
-                      VnormUobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
+                      VnormUobc(j,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                     ELSE
                       VnormUobc(j,k,ibry)=0.0_r8
                     END IF
 #  else
-!!                  VnormUobc(j,k,ibry)=FacSqr/                         &
-!!   &                                  SQRT(B3dsqr(j,k)-Bavg*Bavg)
-                    VnormUobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
+                    VnormUobc(j,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                   END DO
                 END DO
@@ -4470,18 +4448,15 @@
                 DO k=1,N(ng)
                   DO i=IstrU,Iend
                     Bavg=FacAvg*B3davg(i,k)
+                    Bsqr=FacAvg*B3dsqr(i,k)
 #  ifdef MASKING
                     IF (umask(i,j).gt.0.0_r8) THEN
-!!                    VnormUobc(i,k,ibry)=FacSqr/                       &
-!!   &                                    SQRT(B3dsqr(i,k)-Bavg*Bavg)
-                      VnormUobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
+                      VnormUobc(i,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                     ELSE
                       VnormUobc(i,k,ibry)=0.0_r8
                     END IF
 #  else
-!!                  VnormUobc(i,k,ibry)=FacSqr/                         &
-!!   &                                  SQRT(B3dsqr(i,k)-Bavg*Bavg)
-                    VnormUobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
+                    VnormUobc(i,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                   END DO
                 END DO
@@ -4617,18 +4592,15 @@
                 DO k=1,N(ng)
                   DO j=JstrV,Jend
                     Bavg=FacAvg*B3davg(j,k)
+                    Bsqr=FacAvg*B3dsqr(j,k)
 #  ifdef MASKING
                     IF (vmask(i,j).gt.0.0_r8) THEN
-!!                    VnormVobc(j,k,ibry)=FacSqr/                       &
-!!   &                                    SQRT(B3dsqr(j,k)-Bavg*Bavg)
-                      VnormVobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
+                      VnormVobc(j,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                     ELSE
                       VnormVobc(j,k,ibry)=0.0_r8
                     END IF
 #  else
-!!                  VnormVobc(j,k,ibry)=FacSqr/                         &
-!!   &                                  SQRT(B3dsqr(j,k)-Bavg*Bavg)
-                    VnormVobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
+                    VnormVobc(j,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                   END DO
                 END DO
@@ -4636,18 +4608,15 @@
                 DO k=1,N(ng)
                   DO i=Istr,Iend
                     Bavg=FacAvg*B3davg(i,k)
+                    Bsqr=FacAvg*B3dsqr(i,k)
 #  ifdef MASKING
                     IF (vmask(i,j).gt.0.0_r8) THEN
-!!                    VnormVobc(i,k,ibry)=FacSqr/                       &
-!!   &                                    SQRT(B3dsqr(i,k)-Bavg*Bavg)
-                      VnormVobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
+                      VnormVobc(i,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
                     ELSE
                       VnormVobc(i,k,ibry)=0.0_r8
                     END IF
 #  else
-!!                  VnormVobc(i,k,ibry)=FacSqr/                         &
-!!   &                                  SQRT(B3dsqr(i,k)-Bavg*Bavg)
-                    VnormVobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
+                    VnormVobc(i,k,ibry)=1.0_r8/SQRT(Bsqr-Bavg*Bavg)
 #  endif
                   END DO
                 END DO
@@ -4792,20 +4761,17 @@
                   DO k=1,N(ng)
                     DO j=Jstr,Jend
                       Bavg=FacAvg*B3davg(j,k)
+                      Bsqr=FacAvg*B3dsqr(j,k)
 #  ifdef MASKING
                       IF (rmask(i,j).gt.0.0_r8) THEN
-!!                      VnormRobc(j,k,ibry,itrc)=FacSqr/                &
-!!   &                                           SQRT(B3dsqr(j,k)-      &
-!!   &                                                Bavg*Bavg)
-                        VnormRobc(j,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(j,k))
+                        VnormRobc(j,k,ibry,itrc)=1.0_r8/                &
+     &                                            SQRT(Bsqr-Bavg*Bavg)
                       ELSE
                         VnormRobc(j,k,ibry,itrc)=0.0_r8
                       END IF
 #  else
-!!                    VnormRobc(j,k,ibry,itrc)=FacSqr/                  &
-!!   &                                         SQRT(B3dsqr(j,k)-        &
-!!   &                                              Bavg*Bavg)
-                      VnormRobc(j,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(j,k))
+                      VnormRobc(j,k,ibry,itrc)=1.0_r8/                  &
+     &                                            SQRT(Bsqr-Bavg*Bavg)
 #  endif
                     END DO
                   END DO
@@ -4813,20 +4779,17 @@
                   DO k=1,N(ng)
                     DO i=Istr,Iend
                       Bavg=FacAvg*B3davg(i,k)
+                      Bsqr=FacAvg*B3dsqr(i,k)
 #  ifdef MASKING
                       IF (rmask(i,j).gt.0.0_r8) THEN
-!!                      VnormRobc(i,k,ibry,itrc)=FacSqr/                &
-!!   &                                           SQRT(B3dsqr(i,k)-      &
-!!   &                                                Bavg*Bavg)
-                        VnormRobc(i,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(i,k))
+                        VnormRobc(i,k,ibry,itrc)=1.0_r8/                &
+     &                                            SQRT(Bsqr-Bavg*Bavg)
                       ELSE
                         VnormRobc(i,k,ibry,itrc)=0.0_r8
                       END IF
 #  else
-!!                    VnormRobc(i,k,ibry,itrc)=FacSqr/                  &
-!!   &                                         SQRT(B3dsqr(i,k)-        &
-!!   &                                              Bavg*Bavg)
-                      VnormRobc(i,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(i,k))
+                      VnormRobc(i,k,ibry,itrc)=1.0_r8/                  &
+     &                                            SQRT(Bsqr-Bavg*Bavg)
 #  endif
                     END DO
                   END DO
@@ -4885,7 +4848,7 @@
 !  Set randomization summation factors.
 !
         FacAvg=1.0_r8/REAL(Nrandom,r8)
-        FacSqr=SQRT(REAL(Nrandom-1,r8))
+        FacSqr=SQRT(REAL(Nrandom,r8))
 !
 !  Set time record index to write in normalization NetCDF file.
 !
@@ -4952,16 +4915,15 @@
           DO j=Jstr,Jend
             DO i=IstrU,Iend
               Aavg=FacAvg*A2davg(i,j)
+              Asqr=FacAvg*A2dsqr(i,j)
 #   ifdef MASKING
               IF (umask(i,j).gt.0.0_r8) THEN
-!!              HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
+                HnormSUS(i,j)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
               ELSE
                 HnormSUS(i,j)=0.0_r8
               END IF
 #   else
-!!            HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-              HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
+              HnormSUS(i,j)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 #   endif
             END DO
           END DO
@@ -5033,16 +4995,15 @@
           DO j=JstrV,Jend
             DO i=Istr,Iend
               Aavg=FacAvg*A2davg(i,j)
+              Asqr=FacAvg*A2dsqr(i,j)
 #   ifdef MASKING
               IF (vmask(i,j).gt.0.0_r8) THEN
-!!              HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
+                HnormSVS(i,j)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
               ELSE
                 HnormSVS(i,j)=0.0_r8
               END IF
 #   else
-!!            HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-              HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
+              HnormSVS(i,j)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 #   endif
             END DO
           END DO
@@ -5153,17 +5114,15 @@
               DO j=Jstr,Jend
                 DO i=Istr,Iend
                   Aavg=FacAvg*A2davg(i,j)
+                  Asqr=FacAvg*A2dsqr(i,j)
 #   ifdef MASKING
                   IF (rmask(i,j).gt.0.0_r8) THEN
-!!                  HnormSTF(i,j,itrc)=FacSqr/                          &
-!!   &                                 SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                    HnormSTF(i,j,itrc)=FacSqr/SQRT(A2dsqr(i,j))
+                    HnormSTF(i,j,itrc)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
                   ELSE
                     HnormSTF(i,j,itrc)=0.0_r8
                   END IF
 #   else
-!!                HnormSTF(i,j,itrc)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
-                  HnormSTF(i,j,itrc)=FacSqr/SQRT(A2dsqr(i,j))
+                  HnormSTF(i,j,itrc)=1.0_r8/SQRT(Asqr-Aavg*Aavg)
 #   endif
                 END DO
               END DO
