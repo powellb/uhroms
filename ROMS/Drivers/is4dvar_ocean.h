@@ -1148,9 +1148,10 @@
 !
         DO ng=1,Ngrids
           Lfinp(ng)=LTLM1
-# ifdef BULK_FLUXES
+# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
           CALL get_state (ng, iTLM, 1, ITL(ng)%name, Rec1, Lfinp(ng))
-# else
+# endif
+# if defined NL_BULK_FLUXES || !defined BULK_FLUXES
           CALL get_state (ng, iTLM, 1, ITL(ng)%name, Rec4, Lfinp(ng))
           Lcon=Lfinp(ng)
 !
