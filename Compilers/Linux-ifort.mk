@@ -44,7 +44,7 @@
 
 ifdef USE_NETCDF4
         NC_CONFIG ?= nc-config
-    NETCDF_INCDIR ?= $(shell $(NC_CONFIG) --prefix)/include
+		NETCDF_INCDIR ?= $(subst -I,,$(shell $(NC_CONFIG) --fflags))
              LIBS := $(shell $(NC_CONFIG) --flibs --libs)
 else
     NETCDF_INCDIR ?= /usr/local/include
