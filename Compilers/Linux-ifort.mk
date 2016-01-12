@@ -1,6 +1,6 @@
-# svn $Id$
+# svn $Id: Linux-ifort.mk 645 2013-01-22 23:21:54Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2011 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2013 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -44,8 +44,8 @@
 
 ifdef USE_NETCDF4
         NC_CONFIG ?= nc-config
-    NETCDF_INCDIR ?= $(shell $(NC_CONFIG) --prefix)/include
-             LIBS := $(shell $(NC_CONFIG) --flibs)
+    NETCDF_INCDIR ?= $(subst -I,,$(shell $(NC_CONFIG) --fflags))
+             LIBS := $(shell $(NC_CONFIG) --flibs --libs)
 else
     NETCDF_INCDIR ?= /usr/local/include
     NETCDF_LIBDIR ?= /usr/local/lib
@@ -55,10 +55,10 @@ endif
 ifdef USE_ARPACK
  ifdef USE_MPI
    PARPACK_LIBDIR ?= /opt/intelsoft/PARPACK
-             LIBS += -L$(PARPACK_LIBDIR) -lparpack_intel
+             LIBS += -L$(PARPACK_LIBDIR) -lparpack
  endif
     ARPACK_LIBDIR ?= /opt/intelsoft/PARPACK
-             LIBS += -L$(ARPACK_LIBDIR) -larpack_intel
+             LIBS += -L$(ARPACK_LIBDIR) -larpack
 endif
 
 ifdef USE_MPI
@@ -76,8 +76,9 @@ ifdef USE_OpenMP
 endif
 
 ifdef USE_DEBUG
-          FFLAGS += -g -check all -traceback
-#           FFLAGS += -g -check uninit -ftrapuv -traceback
+#          FFLAGS += -g -check bounds -traceback
+#          FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
+           FFLAGS += -g -check uninit -ftrapuv -traceback
 else
            FFLAGS += -ip -O3
 endif
