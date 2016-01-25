@@ -30,13 +30,33 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_fvar (ng, model, ncname, 'Ent_DecayUV',           &
-     &                      Ent_DecayUV(ng), (/0/), (/0/),              &
+      CALL netcdf_put_fvar (ng, model, ncname, 'Entero_uvd',            &
+     &                      Ent_uvd(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_fvar (ng, model, ncname, 'Ent_GrowthBlue',        &
-     &                      Ent_GrowthBlue(ng), (/0/), (/0/),           &
+      CALL netcdf_put_fvar (ng, model, ncname, 'VulnificusA_uvd',       &
+     &                      VulA_uvd(ng), (/0/), (/0/),                 &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'VulnificusB_uvd',       &
+     &                      VulB_uvd(ng), (/0/), (/0/),                 &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'Entero_blug',           &
+     &                      Ent_blug(ng), (/0/), (/0/),                 &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'VulnificusA_blug',      &
+     &                      VulA_blug(ng), (/0/), (/0/),                &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'VulnificusB_blug',      &
+     &                      VulB_blug(ng), (/0/), (/0/),                &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
@@ -65,13 +85,23 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusA_lag',          &
-     &                      nVulA_lag(ng), (/0/), (/0/),                    &
+      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusA_win',      &
+     &                      nVulA_win(ng), (/0/), (/0/),                &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusB_lag',          &
-     &                      nVulB_lag(ng), (/0/), (/0/),                    &
+      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusB_win',      &
+     &                      nVulB_win(ng), (/0/), (/0/),                &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusA_lag',      &
+     &                      nVulA_lag(ng), (/0/), (/0/),                &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusB_lag',      &
+     &                      nVulB_lag(ng), (/0/), (/0/),                &
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 

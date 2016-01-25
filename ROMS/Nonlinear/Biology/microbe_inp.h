@@ -68,10 +68,18 @@
             Npts=load_r(Nval, Rval, Ngrids, AttSWUV)
           ELSE IF (TRIM(KeyWord).eq.'AttSWBlue') THEN
             Npts=load_r(Nval, Rval, Ngrids, AttSWBlue)
-          ELSE IF (TRIM(KeyWord).eq.'Ent_DecayUV') THEN
-            Npts=load_r(Nval, Rval, Ngrids, Ent_DecayUV)
-          ELSE IF (TRIM(KeyWord).eq.'Ent_GrowthBlue') THEN
-            Npts=load_r(Nval, Rval, Ngrids, Ent_GrowthBlue)
+          ELSE IF (TRIM(KeyWord).eq.'Entero_uvd') THEN
+            Npts=load_r(Nval, Rval, Ngrids, Ent_uvd)
+          ELSE IF (TRIM(KeyWord).eq.'VulnificusA_uvd') THEN
+            Npts=load_r(Nval, Rval, Ngrids, VulA_uvd)
+          ELSE IF (TRIM(KeyWord).eq.'VulnificusB_uvd') THEN
+            Npts=load_r(Nval, Rval, Ngrids, VulB_uvd)
+          ELSE IF (TRIM(KeyWord).eq.'Entero_blug') THEN
+            Npts=load_r(Nval, Rval, Ngrids, Ent_blug)
+          ELSE IF (TRIM(KeyWord).eq.'VulnificusA_blug') THEN
+            Npts=load_r(Nval, Rval, Ngrids, VulA_blug)
+          ELSE IF (TRIM(KeyWord).eq.'VulnificusB_blug') THEN
+            Npts=load_r(Nval, Rval, Ngrids, VulB_blug)
           ELSE IF (TRIM(KeyWord).eq.'wEntero') THEN
             Npts=load_r(Nval, Rval, Ngrids, wEntero)
           ELSE IF (TRIM(KeyWord).eq.'wVulnificusA') THEN
@@ -82,6 +90,32 @@
             Npts=load_r(Nval, Rval, Ngrids, zVulA)
           ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
+          ELSE IF (TRIM(KeyWord).eq.'nVulnificusA_win') THEN
+            Npts=load_i(Nval, Rval, Ngrids, nVulA_win)
+            Npts=0
+            Nmax=0
+            DO ng=1,Ngrids
+              nVulA_win(ng)=MAX(1,nVulA_win(ng))
+              Npts=MAX(Npts,nVulA_win(ng))
+              Nmax=MAX(Nmax,N(ng))
+            END DO
+            IF (.not.allocated(zVulA_win)) THEN
+              allocate ( zVulA_win(Npts, Nmax, Ngrids) )
+            END IF
+            zVulA_win=0.0_r8
+          ELSE IF (TRIM(KeyWord).eq.'nVulnificusB_win') THEN
+            Npts=load_i(Nval, Rval, Ngrids, nVulB_win)
+            Npts=0
+            Nmax=0
+            DO ng=1,Ngrids
+              nVulB_win(ng)=MAX(1,nVulB_win(ng))
+              Npts=MAX(Npts,nVulB_win(ng))
+              Nmax=MAX(Nmax,N(ng))
+            END DO
+            IF (.not.allocated(zVulB_win)) THEN
+              allocate ( zVulB_win(Npts, Nmax, Ngrids) )
+            END IF
+            zVulB_win=0.0_r8
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusA_lag') THEN
             Npts=load_i(Nval, Rval, Ngrids, nVulA_lag)
             Npts=0
@@ -94,9 +128,15 @@
             IF (.not.allocated(zVulA_avg)) THEN
               allocate ( zVulA_avg(Npts, Nmax, Ngrids) )
             END IF
+            zVulA_avg=0.0_r8
             IF (.not.allocated(zVulA_std)) THEN
               allocate ( zVulA_std(Npts, Nmax, Ngrids) )
             END IF
+            zVulA_std=0.0_r8
+            IF (.not.allocated(VulA_pop)) THEN
+              allocate ( VulA_pop(Npts, Nmax, Ngrids) )
+            END IF
+            VulA_pop=0.0_r8
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusB_lag') THEN
             Npts=load_i(Nval, Rval, Ngrids, nVulB_lag)
             Npts=0
@@ -109,9 +149,15 @@
             IF (.not.allocated(zVulB_avg)) THEN
               allocate ( zVulB_avg(Npts, Nmax, Ngrids) )
             END IF
+            zVulB_avg=0.0_r8
             IF (.not.allocated(zVulB_std)) THEN
               allocate ( zVulB_std(Npts, Nmax, Ngrids) )
             END IF
+            zVulB_std=0.0_r8
+            IF (.not.allocated(VulB_pop)) THEN
+              allocate ( VulB_pop(Npts, Nmax, Ngrids) )
+            END IF
+            VulB_pop=0.0_r8
           ELSE IF (TRIM(KeyWord).eq.'nVulAWeights') THEN
             Npts=load_i(Nval, Rval, Ngrids, nVulAWeights)
             DO ng=1,Ngrids
@@ -369,10 +415,18 @@
      &            'UV Light attenuation of seawater (m-1).'
             WRITE (out,70) AttSWBlue(ng), 'AttSWBlue',                  &
      &            'Blue Light attenuation of seawater (m-1).'
-            WRITE (out,70) Ent_GrowthBlue(ng), 'Ent_GrowthBlue',        &
+            WRITE (out,70) Ent_blug(ng), 'Entero_blug',                 &
      &            'Enterococcus growth due to Blue Light (day-1).'
-            WRITE (out,70) Ent_DecayUV(ng), 'Ent_DecayUV',              &
+            WRITE (out,70) VulA_blug(ng), 'VulA_blug',                  &
+     &            'Vulnificus A growth due to Blue Light (day-1).'
+            WRITE (out,70) VulB_blug(ng), 'VulB_blug',                  &
+     &            'Vulnificus B growth due to Blue Light (day-1).'
+            WRITE (out,70) Ent_uvd(ng), 'Entero_uvd',                   &
      &            'Enterococcus decay due to UV Absorption (day-1).'
+            WRITE (out,70) VulA_uvd(ng), 'VulA_uvd',                    &
+     &            'Vulnificus A decay due to UV Absorption (day-1).'
+            WRITE (out,70) VulB_uvd(ng), 'VulB_uvd',                    &
+     &            'Vulnificus B decay due to UV Absorption (day-1).'
             WRITE (out,70) wEntero(ng), 'wEntero',                      &
      &            'Enterococcus sinking rate (m/day).'
             WRITE (out,70) wVulA(ng), 'wVulnificusA',                   &
@@ -383,6 +437,10 @@
      &            'vibrio vulnificus A mortality rate (nmol/day).'
             WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
      &            'vibrio vulnificus B mortality rate (nmol/day).'
+            WRITE (out,60) NvulA_win(ng), 'nVulnificusA_win',           &
+     &         ' vibrio vulnificus A growth average window (steps).'
+            WRITE (out,60) NvulB_win(ng), 'nVulnificusB_win',           &
+     &         ' vibrio vulnificus B growth average window (steps).'
             WRITE (out,60) NvulA_lag(ng), 'nVulnificusA_lag',           &
      &         ' vibrio vulnificus A mortality lag from growth (steps).'
             WRITE (out,60) NvulB_lag(ng), 'nVulnificusB_lag',           &
@@ -391,7 +449,7 @@
               WRITE  (out, 60) NvulAWeights(ng), 'NvulAWeights',        &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS A WEIGHTS'
-              write (out, *) 'TEMP,  SALT,  WEIGHT'
+              write (out, 250) 'TEMP',  'SALT', 'WEIGHT'
               DO i=1,NvulAWeights(ng)
                 WRITE (out,251) vulAtemp(i), vulAsalt(i), vulAwght(i), i
               END DO
@@ -400,7 +458,7 @@
               WRITE  (out, 60) NvulBWeights(ng), 'NvulBWeights',        &
      &            'number of weights to use for microbes.'
               WRITE (out, *) 'VIBRIO VULNIFICUS B WEIGHTS'
-              write (out, *) 'TEMP,  SALT,  WEIGHT'
+              write (out, 250) 'TEMP',  'SALT', 'WEIGHT'
               DO i=1,NvulBWeights(ng)
                 WRITE (out,252) vulBtemp(i), vulBsalt(i), vulBwght(i), i
               END DO
@@ -618,8 +676,9 @@
   90  FORMAT (1p,e11.4,2x,a,'(',i2.2,')',t30,a,/,t32,a,i2.2,':',1x,a)
  100  FORMAT (10x,l1,2x,a,'(',i2.2,')',t30,a,i2.2,':',1x,a)
  110  FORMAT (10x,l1,2x,a,t30,a,i2.2,':',1x,a)
- 251  FORMAT (1p,e11.4,', ',e11.4,', ',e11.4,2x,'weight A ',i2.2,'.')
- 252  FORMAT (1p,e11.4,', ',e11.4,', ',e11.4,2x,'weight B ',i2.2,'.')
+ 250  FORMAT (1p,a11,' ',a11,' ',a11)
+ 251  FORMAT (1p,e11.4,' ',e11.4,' ',e11.4,2x,'weight A ',i2.2,'.')
+ 252  FORMAT (1p,e11.4,' ',e11.4,' ',e11.4,2x,'weight B ',i2.2,'.')
 
       RETURN
       END SUBROUTINE read_BioPar

@@ -37,7 +37,7 @@
      &               SetParAccess = .FALSE.)
       IF (exit_flag.ne.NoError) RETURN
 
-      Vinfo( 1)='Ent_GrowthBlue'
+      Vinfo( 1)='Entero_blug'
       Vinfo( 2)='Growth of Enterococcus due to Blue-Light repair'
       Vinfo( 3)='day-1'
       status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
@@ -45,8 +45,40 @@
      &               SetParAccess = .FALSE.)
       IF (exit_flag.ne.NoError) RETURN
 
-      Vinfo( 1)='Ent_DecayUV'
+      Vinfo( 1)='VulnificusA_blug'
+      Vinfo( 2)='Growth of Vulnificus A due to Blue-Light repair'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='VulnificusB_blug'
+      Vinfo( 2)='Growth of Vulnificus B due to Blue-Light repair'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='Entero_uvd'
       Vinfo( 2)='Mortality of Enterococcus due to UV absorption'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='VulnificusA_uvd'
+      Vinfo( 2)='Mortality of Vulnficus A due to UV absorption'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='VulnificusB_uvd'
+      Vinfo( 2)='Mortality of Vulnficus B due to UV absorption'
       Vinfo( 3)='day-1'
       status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
      &               1, (/0/), Aval, Vinfo, ncname,                     &
@@ -77,8 +109,16 @@
      &               SetParAccess = .FALSE.)
       IF (exit_flag.ne.NoError) RETURN
 
+      Vinfo( 1)='zEntero'
+      Vinfo( 2)='Minimum enterococcus mortality rate'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
       Vinfo( 1)='zVulnificusA'
-      Vinfo( 2)='vibrio Vulnificus A mortality rate'
+      Vinfo( 2)='Minimum vibrio Vulnificus A mortality rate'
       Vinfo( 3)='day-1'
       status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
      &               1, (/0/), Aval, Vinfo, ncname,                     &
@@ -86,8 +126,24 @@
       IF (exit_flag.ne.NoError) RETURN
 
       Vinfo( 1)='zVulnificusB'
-      Vinfo( 2)='vibrio Vulnificus B mortality rate'
+      Vinfo( 2)='Minimum vibrio Vulnificus B mortality rate'
       Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='nVulnificusA_win'
+      Vinfo( 2)='vibrio Vulnificus A mortality rate window-size'
+      Vinfo( 3)='time-steps'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='nVulnificusB_win'
+      Vinfo( 2)='vibrio Vulnificus B mortality rate window-size'
+      Vinfo( 3)='time-steps'
       status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
      &               1, (/0/), Aval, Vinfo, ncname,                     &
      &               SetParAccess = .FALSE.)

@@ -109,15 +109,16 @@
 !
       integer, parameter :: Nsink = 3
 
-      integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks, ii
-      integer :: idxA, idxB, idxAlag, idxBlag
+      integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks
+      integer :: ii, idxA, idxB, idxAlag, idxBlag
+      integer :: idxAwin, idxBwin
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
 
       real(r8) :: Att, ExpAtt, Itop, PARUV, PARBlue
       real(r8) :: cff, cff1, cff2, cff3, cff4, dtdays
       real(r8) :: cffL, cffR, cu, dltL, dltR
-      real(r8) :: delt, dels
+      real(r8) :: delt, dels, ratioA, ratioB
       real(r8), dimension(N(ng)) :: zMeanA, zMeanB, zStdA, zStdB
       integer, dimension(N(ng)) :: countA, countB
       
@@ -169,7 +170,8 @@
       Wbio(3)=wVulB(ng)                  ! Vulnificus B
 
 !
-!  Set up the growth/mortality statistics for each layer
+!     Set up the growth/mortality window and lag indices
+!     for each layer.
 !
       idxA=MOD(iic(ng)-ntstart(ng),nVulA_lag(ng))+1
       idxAlag=idxA+1
@@ -181,31 +183,31 @@
       IF (idxBlag.GT.nVulB_lag(ng)) THEN
         idxBlag=1
       END IF
+      idxAwin=MOD(iic(ng)-ntstart(ng),nVulA_win(ng))+1
+      idxBwin=MOD(iic(ng)-ntstart(ng),nVulB_win(ng))+1
+!
+!     Set up the arrays
+!
       DO k=1,N(ng)
-        IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
-          zMeanA(k)=zVulA(ng)*dtdays
-          zStdA(k)=zMeanA(k)*0.025_r8
-        ELSE
-          zMeanA(k)=zVulA_avg(idxAlag,k,ng)
-          zStdA(k)=zVulA_std(idxAlag,k,ng)
-        END IF
-        IF (iic(ng)-ntstart(ng).LT.nVulA_lag(ng)) THEN
-          zMeanB(k)=zVulB(ng)*dtdays
-          zStdB(k)=zMeanB(k)*0.025_r8
-        ELSE
-          zMeanB(k)=zVulB_avg(idxBlag,k,ng)
-          zStdB(k)=zVulB_std(idxBlag,k,ng)
-        END IF
+        zMeanA(k)=MAX(zVulA_avg(idxAlag,k,ng), zVulA(ng)*dtdays)
+        zStdA(k)=MAX(1.0E-2_r8, zVulA_std(idxAlag,k,ng))
+        zMeanB(k)=MAX(zVulB_avg(idxBlag,k,ng), zVulB(ng)*dtdays)
+        zStdB(k)=MAX(1.0E-2_r8, zVulB_std(idxBlag,k,ng))
         countA(k)=0
         countB(k)=0
+        VulA_pop(idxA,k,ng)=0.0_r8
+        VulB_pop(idxB,k,ng)=0.0_r8
+        zVulA_win(idxAwin,k,ng)=0.0_r8
+        zVulB_win(idxBwin,k,ng)=0.0_r8
         zVulA_avg(idxA,k,ng)=0.0_r8
         zVulA_std(idxA,k,ng)=0.0_r8
         zVulB_avg(idxB,k,ng)=0.0_r8
         zVulB_std(idxB,k,ng)=0.0_r8
       END DO
 
+      
 !
-!  Compute inverse thickness to avoid repeated divisions.
+!     Compute inverse thickness to avoid repeated divisions.
 !
       J_LOOP : DO j=Jstr,Jend
         DO k=1,N(ng)
@@ -386,19 +388,53 @@
           DO k=1,N(ng)
             DO i=Istr,Iend
 !
+!  Compute population ratios
+!
+              IF (Bio(i,k,iVulA).GT.0.0_r8) THEN
+                ratioA = VulA_pop(idxAlag,k,ng) / Bio(i,k,iVulA)
+              END IF
+              IF (Bio(i,k,iVulB).GT.0.0_r8) THEN
+                ratioB = VulB_pop(idxBlag,k,ng) / Bio(i,k,iVulB)
+              END IF
+!
 !  Enterococcus growth to blue-light exposure
 !
-              cff1=dtdays*BlueLight(i,k)*Ent_GrowthBlue(ng)*            &
+              cff1=dtdays*BlueLight(i,k)*Ent_blug(ng)*                  &
      &             Bio(i,k,iEntero)
               Bio(i,k,iEntero)=Bio(i,k,iEntero)+cff1
 !
 !  Enterococcus mortality to UV exposure
 !
-              cff1=dtdays*UVLight(i,k)*Ent_DecayUV(ng)*                 &
+              cff1=dtdays*UVLight(i,k)*Ent_uvd(ng)*                     &
      &             Bio(i,k,iEntero)
               Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
 !
-!  Vibrio Vulnificus A growth. First, compute the growth rate
+!  Vibrio A growth to blue-light exposure
+!
+              cff1=dtdays*BlueLight(i,k)*VulA_blug(ng)*                 &
+     &             Bio(i,k,iVulA)
+              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
+!
+!  Vibrio A mortality to UV exposure
+!
+              cff1=dtdays*UVLight(i,k)*VulA_uvd(ng)*                    &
+     &             Bio(i,k,iVulA)
+              Bio(i,k,iVulA)=Bio(i,k,iVulA)/(1.0_r8+cff1)
+!
+!  Vibrio B growth to blue-light exposure
+!
+              cff1=dtdays*BlueLight(i,k)*VulB_blug(ng)*                 &
+     &             Bio(i,k,iVulB)
+              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
+!
+!  Vibrio B mortality to UV exposure
+!
+              cff1=dtdays*UVLight(i,k)*VulB_uvd(ng)*                    &
+     &             Bio(i,k,iVulB)
+              Bio(i,k,iVulB)=Bio(i,k,iVulB)/(1.0_r8+cff1)
+!
+!  Vibrio Vulnificus A growth. First, compute the growth rate based on T
+!  and S
 !
               cff1=0.0_r8
               DO ii=1,nVulAWeights(ng)
@@ -415,12 +451,14 @@
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
+#ifdef MASKING
               IF (rmask(i,j).EQ.1.0_r8) THEN
+#endif
                 countA(k) = countA(k) + 1
-                zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)+cff1
-                zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng)+              &
-     &              (cff1-zMeanA(k))*(cff1-zMeanA(k))
+                zVulA_win(idxAwin,k,ng)=zVulA_win(idxAwin,k,ng)+cff1
+#ifdef MASKING
               END IF
+#endif
 !
 !  Vibrio Vulnificus B growth. First, compute the growth rate
 !
@@ -439,33 +477,49 @@
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
+#ifdef MASKING
               IF (rmask(i,j).EQ.1.0_r8) THEN
+#endif
                 countB = countB + 1
-                zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)+cff1
-                zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng)+              &
-     &              (cff1-zMeanB(k))*(cff1-zMeanB(k))
+                zVulB_win(idxBwin,k,ng)=zVulB_win(idxBwin,k,ng)+cff1
+#ifdef MASKING
               END IF
+#endif
 !
 !  Vibrio Vulnificus A mortality.
 !
-              CALL gasdev(cff3)
-              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
+!              CALL gasdev(cff3)
+!              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
+              cff2=ABS(zMeanA(k))
               cff1=1.0_r8+cff2
               Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
-
 !
 !  Vibrio Vulnificus B mortality.
 !
-              CALL gasdev(cff3)
-              cff2=ABS(zMeanB(k) + zStdB(k)*cff3)
+!              CALL gasdev(cff3)
+!              cff2=ABS(zMeanB(k) + zStdB(k)*cff3)
+              cff2=ABS(zMeanB(k))
               cff1=1.0_r8+cff2
               Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
+!
+! Store the current abundance
+!
+#ifdef MASKING
+              IF (rmask(i,j).EQ.1.0_r8) THEN
+#endif
+                VulA_pop(idxA,k,ng)=VulA_pop(idxA,k,ng) +         &
+     &               Bio(i,k,iVulA)
+                VulB_pop(idxB,k,ng)=VulB_pop(idxB,k,ng) +         &
+     &               Bio(i,k,iVulB)
+#ifdef MASKING
+              END IF                
+#endif
             END DO
           END DO
-
+          
 !
 !-----------------------------------------------------------------------
-!  Vertical sinking terms: Enterococcus
+!  Vertical sinking terms: Microbes
 !-----------------------------------------------------------------------
 !
 !  Reconstruct vertical profile of selected biological constituents
@@ -670,12 +724,50 @@
 ! Update the mortality statistics
 !
       DO k=1,N(ng)
+        VulA_pop(idxA,k,ng)=VulA_pop(idxA,k,ng)/countA(k)
+        VulB_pop(idxB,k,ng)=VulB_pop(idxB,k,ng)/countB(k)
+        zVulA_win(idxAwin,k,ng)=zVulA_win(idxAwin,k,ng)/countA(k)
+        zVulB_win(idxBwin,k,ng)=zVulB_win(idxBwin,k,ng)/countB(k)
+!
+!     Vibrio A
+!
+        countA(k)=0.0_r8
+        DO i=1,nVulA_win(ng)
+          IF (zVulA_win(i,k,ng).GT.0.0_r8) THEN
+            countA(k)=countA(k)+1
+            zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng) +                 &
+     &           zVulA_win(i,k,ng)
+          END IF
+        END DO
         zVulA_avg(idxA,k,ng)=zVulA_avg(idxA,k,ng)/countA(k)
-        zVulA_std(idxA,k,ng)=MIN(0.025_r8*zVulA_avg(idxA,k,ng),         &
-     &                  SQRT(zVulA_std(idxA,k,ng)/countA(k))/2.0_r8)
+        DO i=1,nVulA_win(ng)
+          IF (zVulA_win(i,k,ng).GT.0.0_r8) THEN
+            zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng) +                 &
+     &           (zVulA_win(i,k,ng)-zVulA_avg(idxA,k,ng)) *             &
+     &           (zVulA_win(i,k,ng)-zVulA_avg(idxA,k,ng))
+          END IF
+        END DO
+        zVulA_std(idxA,k,ng)=zVulA_std(idxA,k,ng)/countA(k)
+!
+!     Vibrio B
+!
+        countB(k)=0.0_r8
+        DO i=1,nVulB_win(ng)
+          IF (zVulB_win(i,k,ng).GT.0.0_r8) THEN
+            countB(k)=countB(k)+1
+            zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng) +                 &
+     &           zVulB_win(i,k,ng)
+          END IF
+        END DO
         zVulB_avg(idxB,k,ng)=zVulB_avg(idxB,k,ng)/countB(k)
-        zVulB_std(idxB,k,ng)=MIN(0.025_r8*zVulB_avg(idxB,k,ng),         &
-     &                  SQRT(zVulB_std(idxB,k,ng)/countB(k))/2.0_r8)
+        DO i=1,nVulB_win(ng)
+          IF (zVulB_win(i,k,ng).GT.0.0_r8) THEN
+            zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng) +                 &
+     &           (zVulB_win(i,k,ng)-zVulB_avg(idxB,k,ng)) *             &
+     &           (zVulB_win(i,k,ng)-zVulB_avg(idxB,k,ng))
+          END IF
+        END DO
+        zVulB_std(idxB,k,ng)=zVulB_std(idxB,k,ng)/countB(k)
       END DO
       
       RETURN

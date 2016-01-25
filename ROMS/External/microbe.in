@@ -67,19 +67,23 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 
 ! UV Light attenuation due to seawater [1/m], {0.067d0}.
 
-       AttSWUV == 0.212d0                          ! k_ext
+       AttSWUV == 0.212d0                          ! m-1
 
 ! Blue Light attenuation due to seawater [1/m], {0.067d0}.
 
-       AttSWBlue == 0.05d0                          ! k_ext
+       AttSWBlue == 0.05d0                          ! m-1
 
-! Growth of enterococcus due to Blue light mmol/day
+! Growth of microbes due to Blue light mmol/day
 
-       Ent_GrowthBlue == 0.003384d0              ! k_g
+       Entero_blug == 0.003384d0                     ! mmol/day
+       VulnificusA_blug == 0.0d0                     ! mmol/day
+       VulnificusB_blug == 0.0d0                     ! mmol/day
 
-! Decay of enterococcus due to UV light mmol/day
+! Decay of microbes due to UV light mmol/day
 
-       Ent_DecayUV == 0.03384d0                 ! k_d
+       Entero_uvd == 0.03384d0                      ! mmol/day
+       VulnificusA_uvd == 0.003d0                   ! mmol/day
+       VulnificusB_uvd == 0.003d0                   ! mmol/day
 
 ! Bacterial sinking rate, [m/day], {0.0d0}.
 
@@ -87,15 +91,20 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
          wVulnificusA == 0.1d0
          wVulnificusB == 0.1d0
 
-! Microbial mortality rates, [nmol/day], {0.0d0}.
+! Minimum microbial mortality rates, [nmol/day], {0.0d0}.
 
+         zEntero == 2.0d-4
          zVulnificusA == 2.0d-4
          zVulnificusB == 2.0d-4
 
-! Microbial mortality time-lag. At each time-step the std of the growth-rate
-! is computed and stored for the number of time-lags. The mortality for each
-! point is then a random sample from this distribution with a mean of the
-! mortality defined above. If DT==60s, then a lag of 60 is a time-lag of 1 hour
+! Microbial mortality time-lag. At each time-step the running mean and std
+! of the given window size of the growth-rate is computed and stored for the
+! number of time-lags. The mortality for each point is then a random sample
+! from this distribution with a mean of the mortality defined above. If
+! DT==60s, then a window size of 720 is a 12 hour averaging window and a
+! lag of 60 is a time-lag of 1 hour
+        nVulnificusA_win = 720                      ! number of time-steps
+        nVulnificusB_win = 720                      ! number of time-steps
         nVulnificusA_lag = 60                      ! number of time-steps
         nVulnificusB_lag = 60                      ! number of time-steps
          

@@ -33,13 +33,18 @@
 
       real(r8), allocatable :: BioIni(:,:)
       real(r8), dimension(Ngrids) :: AttSWUV, AttSWBlue  ! 1/m
-      real(r8), dimension(Ngrids) :: Ent_DecayUV, Ent_GrowthBlue ! nmol/day
+      real(r8), dimension(Ngrids) :: Ent_uvd, Ent_blug ! nmol/day
+      real(r8), dimension(Ngrids) :: VulA_uvd, VulA_blug ! nmol/day
+      real(r8), dimension(Ngrids) :: VulB_uvd, VulB_blug ! nmol/day
       real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
       real(r8), dimension(Ngrids) :: wEntero, wVulA, wVulB      ! m/day
       real(r8), dimension(Ngrids) :: zVulA, zVulB               ! nmol/day
+      real(r8), allocatable :: VulA_pop(:,:,:), VulB_pop(:,:,:)
+      real(r8), allocatable :: zVulA_win(:,:,:), zVulB_win(:,:,:)
       real(r8), allocatable :: zVulA_avg(:,:,:), zVulB_avg(:,:,:)
       real(r8), allocatable :: zVulA_std(:,:,:), zVulB_std(:,:,:)
 
+      integer, dimension(Ngrids) :: nVulA_win, nVulB_win
       integer, dimension(Ngrids) :: nVulA_lag, nVulB_lag
       integer, dimension(Ngrids) :: nVulAWeights, nVulBWeights
       real(r8), dimension(40) :: vulAwght, vulAtemp, vulAsalt
