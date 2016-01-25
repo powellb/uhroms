@@ -215,11 +215,26 @@ Dout(iTvdif) == T T T     ! entero_vdiff, ...   vertical diffusion
 !
 !  AttSW          Light attenuation due to seawater [1/m].
 !
-!  Ent_Att        Decay of enterococcus due to absorption of UV
+!  Entero_blug        Growth of enterococcus due to absorption of Blue Light
+!  VulnificusA_blug   Growth of Vulnificus A due to absorption of Blue Light
+!  VulnificusB_blug   Growth of Vulnificus B due to absorption of Blue Light
+!
+!  Entero_uvd        Decay of enterococcus due to absorption of UV
+!  VulnificusA_uvd   Decay of Vulnficius A due to absorption of UV
+!  VulnificusB_uvd   Decay of Vulnficius B due to absorption of UV
 !
 !  wEntero        Enterococcus sinking rate, [m/day].
 !  wVulnificusA   Vulnificus A sinking rate, [m/day].
 !  wVulnificusB   Vulnificus B sinking rate, [m/day].
+!
+!  zEntero        Enterococcus minimum mortality rate
+!  zVulnificusA   Vulnificus A minimum mortality rate
+!  zVulnificusB   Vulnificus B minimum mortality rate
+!
+!  nVulnificusA_win   Vulnificus A growth rate window averaging size for mortality
+!  nVulnificusB_win   Vulnificus B growth rate window averaging size for mortality
+!  nVulnificusA_lag   Vulnificus A lag period for mortality
+!  nVulnificusB_lag   Vulnificus B lag period for mortality
 !
 !------------------------------------------------------------------------------
 ! Physical Parameters, [1:NBT,1:Ngrids] values are expected.
