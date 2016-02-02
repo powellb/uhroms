@@ -121,7 +121,7 @@
       real(r8) :: delt, dels, ratioA, ratioB
       real(r8), dimension(N(ng)) :: zMeanA, zMeanB, zStdA, zStdB
       integer, dimension(N(ng)) :: countA, countB
-      
+      logical :: enable_Entero, enable_VulA, enable_VulB
       integer, dimension(Nsink) :: idsink
       real(r8), dimension(Nsink) :: Wbio
 
@@ -169,6 +169,18 @@
       Wbio(2)=wVulA(ng)                  ! Vulnificus A
       Wbio(3)=wVulB(ng)                  ! Vulnificus B
 
+!
+!     Determine whether each microbe is enabled
+!
+      enable_Entero=.TRUE.
+      enable_VulA=.TRUE.
+      IF ( iic(ng).LT.nVulA_lag(ng) ) THEN
+         enable_VulA=.FALSE.
+      END IF
+      enable_VulB=.TRUE.
+      IF ( iic(ng).LT.nVulB_lag(ng) ) THEN
+         enable_VulB=.FALSE.
+      END IF
 !
 !     Set up the growth/mortality window and lag indices
 !     for each layer.
@@ -399,39 +411,45 @@
 !
 !  Enterococcus growth to blue-light exposure
 !
-              cff1=dtdays*BlueLight(i,k)*Ent_blug(ng)*                  &
-     &             Bio(i,k,iEntero)
-              Bio(i,k,iEntero)=Bio(i,k,iEntero)+cff1
+              IF (enable_Entero) THEN
+                 cff1=dtdays*BlueLight(i,k)*Ent_blug(ng)*               &
+     &                Bio(i,k,iEntero)
+                 Bio(i,k,iEntero)=Bio(i,k,iEntero)+cff1
 !
 !  Enterococcus mortality to UV exposure
 !
-              cff1=dtdays*UVLight(i,k)*Ent_uvd(ng)*                     &
-     &             Bio(i,k,iEntero)
-              Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
+                 cff1=dtdays*UVLight(i,k)*Ent_uvd(ng)*                  &
+     &                Bio(i,k,iEntero)
+                 Bio(i,k,iEntero)=Bio(i,k,iEntero)/(1.0_r8+cff1)
+              END IF
 !
 !  Vibrio A growth to blue-light exposure
 !
-              cff1=dtdays*BlueLight(i,k)*VulA_blug(ng)*                 &
-     &             Bio(i,k,iVulA)
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
+              IF (enable_VulA) THEN
+                 cff1=dtdays*BlueLight(i,k)*VulA_blug(ng)*              &
+     &                Bio(i,k,iVulA)
+                 Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1
 !
 !  Vibrio A mortality to UV exposure
 !
-              cff1=dtdays*UVLight(i,k)*VulA_uvd(ng)*                    &
-     &             Bio(i,k,iVulA)
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)/(1.0_r8+cff1)
+                 cff1=dtdays*UVLight(i,k)*VulA_uvd(ng)*                 &
+     &                Bio(i,k,iVulA)
+                 Bio(i,k,iVulA)=Bio(i,k,iVulA)/(1.0_r8+cff1)
+              END IF
 !
 !  Vibrio B growth to blue-light exposure
 !
-              cff1=dtdays*BlueLight(i,k)*VulB_blug(ng)*                 &
-     &             Bio(i,k,iVulB)
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
+              IF (enable_VulA) THEN
+                 cff1=dtdays*BlueLight(i,k)*VulB_blug(ng)*              &
+     &                Bio(i,k,iVulB)
+                 Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1
 !
 !  Vibrio B mortality to UV exposure
 !
-              cff1=dtdays*UVLight(i,k)*VulB_uvd(ng)*                    &
-     &             Bio(i,k,iVulB)
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)/(1.0_r8+cff1)
+                 cff1=dtdays*UVLight(i,k)*VulB_uvd(ng)*                 &
+     &                Bio(i,k,iVulB)
+                 Bio(i,k,iVulB)=Bio(i,k,iVulB)/(1.0_r8+cff1)
+              END IF
 !
 !  Vibrio Vulnificus A growth. First, compute the growth rate based on T
 !  and S
@@ -447,7 +465,9 @@
 !  Apply the growth-rate
 !
               cff1=dtdays*cff1
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*Bio(i,k,iVulA)
+              IF (enable_VulA) THEN
+                 Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*Bio(i,k,iVulA)
+              END IF
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
@@ -473,7 +493,9 @@
 !  Apply the growth-rate
 !
               cff1=dtdays*cff1
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)
+              IF (enable_VulB) THEN
+                 Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)
+              END IF
 !
 ! Build the statistics of the growth-rates relative to the decay
 !
@@ -492,7 +514,9 @@
 !              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
               cff2=ABS(zMeanA(k))
               cff1=1.0_r8+cff2
-              Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
+              IF (enable_VulB) THEN
+                 Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
+              END IF
 !
 !  Vibrio Vulnificus B mortality.
 !
@@ -500,7 +524,9 @@
 !              cff2=ABS(zMeanB(k) + zStdB(k)*cff3)
               cff2=ABS(zMeanB(k))
               cff1=1.0_r8+cff2
-              Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
+              IF (enable_VulB) THEN
+                 Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
+              END IF
 !
 ! Store the current abundance
 !
