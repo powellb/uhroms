@@ -102,11 +102,11 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
 ! and the amount to decrease the growth at the carrying capacity
 !
         ccEntero == 10
-        crEntero == 0.75
+        crEntero == 0.25
         ccVulnificusA == 10
-        crVulnificusA == 0.75
+        crVulnificusA == 0.25
         ccVulnificusB == 10
-        crVulnificusB == 0.75
+        crVulnificusB == 0.25
         
 
 ! Microbial mortality time-lag. At each time-step the running mean and std

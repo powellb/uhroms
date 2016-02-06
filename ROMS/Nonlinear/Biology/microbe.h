@@ -465,11 +465,11 @@
 !  Apply the growth-rate weighted by the carrying capacity
 !
               cff2=MAX(0.0,1.0 -                                        &
-     &             (crVulA*EXP(0.05*(Bio(i,k,iVulA)-ccVulA))))
+     &             (crVulA(ng)*EXP(0.05*(Bio(i,k,iVulA)-ccVulA(ng)))))
               cff2=MIN(1.0,cff2)
-              cff1=dtdays*cff1*cff2
+              cff1=dtdays*cff1
               IF (enable_VulA) THEN
-                 Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*Bio(i,k,iVulA)
+                 Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*cff2*Bio(i,k,iVulA)
               END IF
 !
 ! Build the statistics of the growth-rates relative to the decay
@@ -496,11 +496,11 @@
 !  Apply the growth-rate weighted by the carrying capacity
 !
               cff2=MAX(0.0,1.0 -                                        &
-     &             (crVulB*EXP(0.05*(Bio(i,k,iVulB)-ccVulB))))
+     &             (crVulB(ng)*EXP(0.05*(Bio(i,k,iVulB)-ccVulB(ng)))))
               cff2=MIN(1.0,cff2)
-              cff1=dtdays*cff1*cff2
+              cff1=dtdays*cff1
               IF (enable_VulB) THEN
-                 Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)
+                 Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)*cff2
               END IF
 !
 ! Build the statistics of the growth-rates relative to the decay
