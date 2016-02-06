@@ -97,6 +97,18 @@ BioIni(iVulB) == 4.0d0                   ! Vibrio Vulnif. B nmol m^{-3}
          zVulnificusA == 2.0d-4
          zVulnificusB == 2.0d-4
 
+!
+! Carrying Capacity: the population size is set for the carrying capacity
+! and the amount to decrease the growth at the carrying capacity
+!
+        ccEntero == 10
+        crEntero == 0.75
+        ccVulnificusA == 10
+        crVulnificusA == 0.75
+        ccVulnificusB == 10
+        crVulnificusB == 0.75
+        
+
 ! Microbial mortality time-lag. At each time-step the running mean and std
 ! of the given window size of the growth-rate is computed and stored for the
 ! number of time-lags. The mortality for each point is then a random sample

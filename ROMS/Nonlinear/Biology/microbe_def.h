@@ -164,6 +164,54 @@
      &               1, (/0/), Aval, Vinfo, ncname,                     &
      &               SetParAccess = .FALSE.)
       IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='ccEntero'
+      Vinfo( 2)='Enterococcus Carrying Capacity'
+      Vinfo( 3)='population density'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='crEntero'
+      Vinfo( 2)='Fraction of Enterococcus Growth at Carrying Capacity'
+      Vinfo( 3)='fraction'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='ccVulnificusA'
+      Vinfo( 2)='Vulnificus A Carrying Capacity'
+      Vinfo( 3)='population density'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='crVulnificusA'
+      Vinfo( 2)='Fraction of Vul A Growth at Carrying Capacity'
+      Vinfo( 3)='fraction'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='ccVulnificusB'
+      Vinfo( 2)='Vulnificus B Carrying Capacity'
+      Vinfo( 3)='population density'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='crVulnificusB'
+      Vinfo( 2)='Fraction of Vul B Growth at Carrying Capacity'
+      Vinfo( 3)='fraction'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
 !
 !  Vulnificus weight parameters.
 !

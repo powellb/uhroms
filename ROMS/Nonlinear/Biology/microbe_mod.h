@@ -39,6 +39,9 @@
       real(r8), dimension(Ngrids) :: PARfracUV, PARfracBlue ! nondimensional
       real(r8), dimension(Ngrids) :: wEntero, wVulA, wVulB      ! m/day
       real(r8), dimension(Ngrids) :: zVulA, zVulB               ! nmol/day
+      real(r8), dimension(Ngrids) :: ccEntero, crEntero
+      real(r8), dimension(Ngrids) :: ccVulA, crVulA
+      real(r8), dimension(Ngrids) :: ccVulB, crVulB
       real(r8), allocatable :: VulA_pop(:,:,:), VulB_pop(:,:,:)
       real(r8), allocatable :: zVulA_win(:,:,:), zVulB_win(:,:,:)
       real(r8), allocatable :: zVulA_avg(:,:,:), zVulB_avg(:,:,:)

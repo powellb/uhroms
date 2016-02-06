@@ -85,6 +85,36 @@
      &                      ncid = ncid)
       IF (exit_flag.ne.NoError) RETURN
 
+      CALL netcdf_put_fvar (ng, model, ncname, 'ccEntero',              &
+     &                      ccEntero(ng), (/0/), (/0/),                 &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'crEntero',              &
+     &                      crEntero(ng), (/0/), (/0/),                 &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'ccVulnificusA',         &
+     &                      ccVulA(ng), (/0/), (/0/),                   &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'crVulnificusA',         &
+     &                      crVulA(ng), (/0/), (/0/),                   &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'ccVulnificusB',         &
+     &                      ccVulB(ng), (/0/), (/0/),                   &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
+      CALL netcdf_put_fvar (ng, model, ncname, 'crVulnificusB',         &
+     &                      crVulB(ng), (/0/), (/0/),                   &
+     &                      ncid = ncid)
+      IF (exit_flag.ne.NoError) RETURN
+
       CALL netcdf_put_ivar (ng, model, ncname, 'nVulnificusA_win',      &
      &                      nVulA_win(ng), (/0/), (/0/),                &
      &                      ncid = ncid)

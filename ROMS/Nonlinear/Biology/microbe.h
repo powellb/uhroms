@@ -462,9 +462,12 @@
      &              SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
 !
-!  Apply the growth-rate
+!  Apply the growth-rate weighted by the carrying capacity
 !
-              cff1=dtdays*cff1
+              cff2=MAX(0.0,1.0 -                                        &
+     &             (crVulA*EXP(0.05*(Bio(i,k,iVulA)-ccVulA))))
+              cff2=MIN(1.0,cff2)
+              cff1=dtdays*cff1*cff2
               IF (enable_VulA) THEN
                  Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*Bio(i,k,iVulA)
               END IF
@@ -490,9 +493,12 @@
      &              SQRT(0.25*(delt*delt+dels*dels)+1)
               END DO
 !
-!  Apply the growth-rate
+!  Apply the growth-rate weighted by the carrying capacity
 !
-              cff1=dtdays*cff1
+              cff2=MAX(0.0,1.0 -                                        &
+     &             (crVulB*EXP(0.05*(Bio(i,k,iVulB)-ccVulB))))
+              cff2=MIN(1.0,cff2)
+              cff1=dtdays*cff1*cff2
               IF (enable_VulB) THEN
                  Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)
               END IF

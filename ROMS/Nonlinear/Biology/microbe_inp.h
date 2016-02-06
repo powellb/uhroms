@@ -90,6 +90,18 @@
             Npts=load_r(Nval, Rval, Ngrids, zVulA)
           ELSE IF (TRIM(KeyWord).eq.'zVulnificusB') THEN
             Npts=load_r(Nval, Rval, Ngrids, zVulB)
+          ELSE IF (TRIM(KeyWord).eq.'ccEntero') THEN
+            Npts=load_r(Nval, Rval, Ngrids, ccEntero)
+          ELSE IF (TRIM(KeyWord).eq.'crEntero') THEN
+            Npts=load_r(Nval, Rval, Ngrids, crEntero)
+          ELSE IF (TRIM(KeyWord).eq.'ccVulnificusA') THEN
+            Npts=load_r(Nval, Rval, Ngrids, ccVulA)
+          ELSE IF (TRIM(KeyWord).eq.'crVulnificusA') THEN
+            Npts=load_r(Nval, Rval, Ngrids, crVulA)
+          ELSE IF (TRIM(KeyWord).eq.'ccVulnificusB') THEN
+            Npts=load_r(Nval, Rval, Ngrids, ccVulB)
+          ELSE IF (TRIM(KeyWord).eq.'crVulnificusB') THEN
+            Npts=load_r(Nval, Rval, Ngrids, crVulB)
           ELSE IF (TRIM(KeyWord).eq.'nVulnificusA_win') THEN
             Npts=load_i(Nval, Rval, Ngrids, nVulA_win)
             Npts=0
