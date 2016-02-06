@@ -449,6 +449,14 @@
      &            'vibrio vulnificus A mortality rate (nmol/day).'
             WRITE (out,70) zVulB(ng), 'zVulnificusB',                   &
      &            'vibrio vulnificus B mortality rate (nmol/day).'
+            WRITE (out,70) ccVulA(ng), 'ccVulnificusA',                 &
+     &            'vibrio vulnificus A carrying capacity (nmol).'
+            WRITE (out,70) crVulA(ng), 'crVulnificusA',                 &
+     &            'vibrio vulnificus A carrying capacity growth ratio.'
+            WRITE (out,70) ccVulB(ng), 'ccVulnificusB',                 &
+     &            'vibrio vulnificus B carrying capacity (nmol).'
+            WRITE (out,70) crVulB(ng), 'crVulnificusB',                 &
+     &            'vibrio vulnificus B carrying capacity growth ratio.'
             WRITE (out,60) NvulA_win(ng), 'nVulnificusA_win',           &
      &         ' vibrio vulnificus A growth average window (steps).'
             WRITE (out,60) NvulB_win(ng), 'nVulnificusB_win',           &
