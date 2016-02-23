@@ -518,7 +518,7 @@
 !
 !              CALL gasdev(cff3)
 !              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
-              cff2=ABS(zMeanA(k))
+              cff2=ratioA*ABS(zMeanA(k))
               cff1=1.0_r8+cff2
               IF (enable_VulB) THEN
                  Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
@@ -528,7 +528,7 @@
 !
 !              CALL gasdev(cff3)
 !              cff2=ABS(zMeanB(k) + zStdB(k)*cff3)
-              cff2=ABS(zMeanB(k))
+              cff2=ratioB*ABS(zMeanB(k))
               cff1=1.0_r8+cff2
               IF (enable_VulB) THEN
                  Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
