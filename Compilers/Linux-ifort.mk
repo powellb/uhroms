@@ -80,7 +80,7 @@ ifdef USE_DEBUG
 #          FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
            FFLAGS += -g -check uninit -ftrapuv -traceback
 else
-           FFLAGS += -ip -O3
+           FFLAGS += -ip -O2
 endif
 
 ifdef USE_MCT
