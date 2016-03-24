@@ -30,7 +30,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: iregion, MyModel
+      integer :: iregion, MyModel, NSUB
 
       integer :: my_getpid
 #ifndef DISTRIBUTE
@@ -45,7 +45,15 @@
 ! Initialize timing for all threads.
 !-----------------------------------------------------------------------
 !
-!  Insure that MyModel is not zero.  Notice that zero value is used to
+!  Set number of subdivisions, same as for global reductions.
+!
+#ifdef MPI
+      NSUB=1
+#else
+      NSUB=numthreads
+#endif
+!
+!  Ensure that MyModel is not zero.  Notice that zero value is used to
 !  indicate restart of the nonlinear model.
 !
       MyModel=MAX(1,model)
@@ -70,7 +78,7 @@
 #endif
  10     FORMAT (a,i3,a,i8,a)
         thread_count=thread_count+1
-        IF (thread_count.eq.numthreads) thread_count=0
+        IF (thread_count.eq.NSUB) thread_count=0
 !$OMP END CRITICAL (START_WCLOCK)
       END IF
       RETURN
@@ -101,7 +109,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: imodel, iregion, MyModel
+      integer :: imodel, iregion, MyModel, NSUB
 
       integer :: my_threadnum
 
@@ -121,6 +129,14 @@
 !-----------------------------------------------------------------------
 !  Compute elapsed wall time for all threads.
 !-----------------------------------------------------------------------
+!
+!  Set number of subdivisions, same as for global reductions.
+!
+#ifdef MPI
+      NSUB=1
+#else
+      NSUB=numthreads
+#endif
 !
 !  Insure that MyModel is not zero.  Notice that zero value is used to
 !  indicate restart of the nonlinear model.
@@ -146,6 +162,7 @@
 !
 !  Report total elapsed time (seconds) for each CPU.
 !
+        IF (ng.eq.1) THEN
 #ifdef DISTRIBUTE
         CALL mp_barrier (ng)
         WRITE (stdout,10) ' Node   #', MyRank, ' CPU:',                 &
@@ -155,7 +172,8 @@
         WRITE (stdout,10) ' Thread #', MyThread, ' CPU:',               &
      &                    Cend(region,MyModel,ng)
 #endif
- 10     FORMAT (a,i3,a,f12.3)
+ 10      FORMAT (a,i3,a,f12.3)
+       END IF
 !
 ! Report elapsed time profile for each region of the code.
 !
@@ -176,7 +194,7 @@
             END DO
           END IF
         END DO
-        IF (thread_count.eq.numthreads) THEN
+        IF (thread_count.eq.NSUB) THEN
           thread_count=0
 #ifdef DISTRIBUTE
           op_handle(0:Nregion)='SUM'
@@ -191,7 +209,7 @@
             END DO
           END DO
 #endif
-          IF (Master) THEN
+          IF (Master.and.(ng.eq.1)) THEN
             total=0.0_r8
             DO imodel=1,4
               total=total+Csum(region,imodel,ng)
