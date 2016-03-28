@@ -24,7 +24,7 @@
 # First the defaults
 #
                FC := ifort
-           FFLAGS := -heap-arrays -fp-model precise
+           FFLAGS := -heap-arrays
               CPP := /usr/bin/cpp
          CPPFLAGS := -P -traditional
           LDFLAGS :=
@@ -80,7 +80,7 @@ ifdef USE_DEBUG
 #          FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
            FFLAGS += -g -check uninit -ftrapuv -traceback
 else
-           FFLAGS += -ip -O3
+           FFLAGS += -O3 -xHost -ip
 endif
 
 ifdef USE_MCT
