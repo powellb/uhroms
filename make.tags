@@ -1,0 +1,4 @@
+.PHONY: etags
+etags:
+	rm -f TAGS
+	find ROMS -name "*\.F" | xargs etags -a --language=fortran
