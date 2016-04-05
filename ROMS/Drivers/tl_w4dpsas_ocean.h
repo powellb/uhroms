@@ -635,11 +635,11 @@
 !
       DO ng=1,Ngrids
         IF (Master) THEN
-          DO i=0,NstateVar(ng)
+          DO i=0,NobsVar(ng)
             IF (i.eq.0) THEN
               string='Total'
             ELSE
-              string=Vname(1,idSvar(i))
+              string=FOURDVAR(ng)%Oname(i)
             END IF
             IF (FOURDVAR(ng)%NLPenalty(i).ne.0.0_r8) THEN
               WRITE (stdout,30) outer, inner, 'NLM',                    &
@@ -656,7 +656,7 @@
         CALL netcdf_put_fvar (ng, iNLM, DAV(ng)%name,                   &
      &                        'NL_iDataPenalty',                        &
      &                        FOURDVAR(ng)%NLPenalty(0:),               &
-     &                        (/1/), (/NstateVar(ng)+1/),               &
+     &                        (/1/), (/NobsVar(ng)+1/),                 &
      &                        ncid = DAV(ng)%ncid)
         IF (exit_flag.ne.NoError) RETURN
 !
