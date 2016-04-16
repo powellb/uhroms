@@ -1611,7 +1611,7 @@
 !>
               ad_t(i,j,k  ,nstp,itrc)=ad_t(i,j,k  ,nstp,itrc)+          &
      &                                cff1*ad_FC(i,k)
-              ad_t(i,j,k+1,nstp,itrc)=ad_t(i,j,k+1,nstp,itrc)+
+              ad_t(i,j,k+1,nstp,itrc)=ad_t(i,j,k+1,nstp,itrc)+          &
      &                                cff2*ad_FC(i,k)
               ad_cff1=ad_cff1+t(i,j,k  ,nstp,itrc)*ad_FC(i,k)
               ad_cff2=ad_cff2+t(i,j,k+1,nstp,itrc)*ad_FC(i,k)
@@ -1625,7 +1625,7 @@
               ad_cff2=0.0_r8
               ad_cff1=0.0_r8
             END DO
-          END DO
+!BSP: ??          END DO
 
 #  else
 !
