@@ -924,7 +924,7 @@
                       WRITE (stdout,50) outer, inner,                   &
      &                                  FOURDVAR(ng)%NLobsCost(i)/      &
      &                                  FOURDVAR(ng)%CostNorm(i),       &
-     &                                  TRIM(FOURDVAR(ng)%Oname(i))
+     &                                  TRIM(Oname(i))
                     END IF
                   END IF
                   FOURDVAR(ng)%NLobsCost(i)=0.0
@@ -1299,7 +1299,7 @@
                 WRITE (stdout,50) outer, inner,                         &
      &                            FOURDVAR(ng)%NLobsCost(i)/            &
      &                            FOURDVAR(ng)%CostNorm(i),             &
-     &                            TRIM(FOURDVAR(ng)%Oname(i))
+     &                            TRIM(Oname(i))
               END IF
             END IF
           END DO

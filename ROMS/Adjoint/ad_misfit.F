@@ -474,7 +474,7 @@
             DO i=1,NobsVar(ng)
               IF (FOURDVAR(ng)%ObsCount(i).gt.0) THEN
                 ie=is+FOURDVAR(ng)%ObsCount(i)-1
-                WRITE (stdout,10) TRIM(FOURDVAR(ng)%Oname(i)), is, ie,  &
+                WRITE (stdout,10) TRIM(Oname(i)), is, ie,               &
      &                            ie-is+1, FOURDVAR(ng)%ObsReject(i)
                 is=ie+1
                 ObsSum=ObsSum+FOURDVAR(ng)%ObsCount(i)

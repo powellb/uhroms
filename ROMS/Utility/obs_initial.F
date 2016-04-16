@@ -106,7 +106,7 @@
             OBS(ng)%Vid(idOval)=var_id(i)
           ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idOmeta))) THEN
             got_var(idOmeta)=.TRUE.                                 
-            obsVid(idOmeta,ng)=var_id(i)                            
+            OBS(ng)%Vid(idOmeta)=var_id(i)                            
           END IF
         END DO
 !
@@ -184,7 +184,7 @@
         END IF
         IF (.not.got_var(idOmeta)) THEN                                  
           IF (Master) WRITE (stdout,10) TRIM(Vname(1,idOmeta)),         &
-     &                                  TRIM(OBSname(ng))                
+     &                                  TRIM(OBS(ng)%name)                
           exit_flag=2                                                    
           RETURN                                                         
         END IF                                                           

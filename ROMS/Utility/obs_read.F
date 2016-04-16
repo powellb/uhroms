@@ -192,9 +192,9 @@
 !
 !  Read in observation meta values.                                      
 !                                                                        
-        CALL netcdf_get_fvar (ng, model, OBSname(ng), Vname(1,idOmeta), &
+        CALL netcdf_get_fvar (ng, model, OBS(ng)%name, Vname(1,idOmeta), &
      &                        ObsMeta(Mstr:),                           &
-     &                        ncid = ncOBSid(ng),                       &
+     &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))                      
         IF (exit_flag.ne.NoError) RETURN                                 

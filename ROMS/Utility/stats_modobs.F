@@ -217,7 +217,7 @@
           IF (Ncount(i).gt.0) THEN
             ic=ic+1
             is(ic)=i
-            svar_name(ic)=TRIM(FOURDVAR(ng)%Oname(i))
+            svar_name(ic)=TRIM(Oname(i))
             text(ic)='-----------'
           END IF
         END DO

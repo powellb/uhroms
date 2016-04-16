@@ -642,7 +642,7 @@
               IF (i.eq.0) THEN
                 string='Total'
               ELSE
-                 string=FOURDVAR(ng)%Oname(i)
+                 string=Oname(i)
               END IF
               IF (FOURDVAR(ng)%DataPenalty(i).ne.0.0_r8) THEN
                 WRITE (stdout,30) outer, inner, 'RPM',                  &
@@ -1172,7 +1172,7 @@
               IF (i.eq.0) THEN
                 string='Total'
               ELSE
-                 string=FOURDVAR(ng)%Oname(i)
+                 string=Oname(i)
               END IF
               IF (FOURDVAR(ng)%DataPenalty(i).ne.0.0_r8) THEN
                 WRITE (stdout,30) outer, inner, 'RPM',                  &
