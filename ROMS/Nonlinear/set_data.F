@@ -489,7 +489,7 @@
 !-----------------------------------------------------------------------
 !
       DO itrc=NAT+1,NT(ng)
-#   if defined ANA_SPFLUX || defined ANA_ISOFLUX
+#   if defined ANA_SPFLUX
         CALL ana_stflux (ng, tile, iNLM, itrc)
 #   else
         CALL set_2dfld_tile (ng, tile, iNLM, idTsur(itrc),              &

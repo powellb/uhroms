@@ -825,6 +825,18 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+16)=' IMPLICIT_VCONV,'
 #endif
+#ifdef ISOTOPE
+      IF (Master) WRITE (stdout,20) 'ISOTOPE',                          &
+     &   'Simulate Isotopes.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+9)=' ISOTOPE,'
+#endif
+#ifdef ISOTOPE_FLUXES
+      IF (Master) WRITE (stdout,20) 'ISOTOPE_FLUXES',                   &
+     &   'Use Bulk Flux formulations for isotope fluxes.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' ISOTOPE_FLUXES,'
+#endif
 #if defined LIMIT_BSTRESS && defined SOLVE3D  && !defined BBL_MODEL
       IF (Master) WRITE (stdout,20) 'LIMIT_BSTRESS',                    &
      &   'Limit bottom stress to maintain bottom velocity direction.'

@@ -326,6 +326,15 @@
         CALL nesting (9)
 # endif
 
+# if defined ISOTOPE && defined ISOTOPE_FLUXES
+!
+!-----------------------------------------------------------------------
+!  Set flux fields for isotopes based on the bulk fluxes
+!-----------------------------------------------------------------------
+!
+        CALL isotope_stflux(ng, tile, iNLM)
+# endif
+        
 # ifdef ADJUST_BOUNDARY
 !
 !-----------------------------------------------------------------------
