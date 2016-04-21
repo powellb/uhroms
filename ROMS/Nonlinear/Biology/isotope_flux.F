@@ -26,26 +26,28 @@
       SUBROUTINE isotope_stflux (ng, tile, model)
 !***********************************************************************
 !
-      USE mod_forces
-      USE mod_ncparam
-      USE mod_ocean
       USE mod_param
       USE mod_grid
+      USE mod_forces
+      USE mod_ocean
       USE mod_stepping
 !
 ! Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
 
+!
+!  Local variable declarations.
+!
 #include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 17)
+      CALL wclock_on (ng, model, 6)
 # endif
       CALL isotope_stflux_tile (ng, tile, model,                        &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          IminS, ImaxS, JminS, JmaxS,             &
-     &                          nstp(ng), nnew(ng),                     &
+     &                          nstp(ng),                               &
 #  ifdef MASKING
      &                          GRID(ng) % rmask,                       &
 #  endif
@@ -68,19 +70,17 @@
      &                          OCEAN(ng) % rho)
       
 # ifdef PROFILE
-      CALL wclock_off (ng, model, 17)
+      CALL wclock_off (ng, model, 6)
 # endif
-#endif
       RETURN
       END SUBROUTINE isotope_stflux
 
-#if defined ISOTOPE_FLUXES && defined BULK_FLUXES
 !
 !***********************************************************************
       SUBROUTINE isotope_stflux_tile (ng, tile, model,                  &
      &                            LBi, UBi, LBj, UBj, LBk, UBk,         &
      &                            IminS, ImaxS, JminS, JmaxS,           &
-     &                            nstp, nnew,                           &
+     &                            nstp,                                 &
 # ifdef MASKING
      &                            rmask,                                &
 # endif
@@ -103,22 +103,18 @@
      &                            rho)
 !***********************************************************************
 !
+      USE mod_biology
       USE mod_param
       USE mod_scalars
       USE shapiro_mod
 !
-      USE exchange_2d_mod
-#  ifdef DISTRIBUTE
-      USE mp_exchange_mod, ONLY : mp_exchange2d
-#  endif
-
 !
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
-      integer, intent(in) :: nstp, nnew
+      integer, intent(in) :: nstp
 !
 # ifdef ASSUMED_SHAPE
 #  ifdef MASKING
@@ -167,11 +163,11 @@
 !  Local variable declarations.
 !
       integer :: i, j
-      real(r8) :: precip, evap, ustar, z0, rhoair, vmu, sc, reno
+      real(r8) :: precip, pevap, ustar, z0, rhoair, vmu, sc, reno
       real(r8) :: cff1, cff2, cff3, kn18, alphoce, alphair
       real(r8) :: qsea, qatm, delq, Hlv
 
-#include "set_bounds.h"
+# include "set_bounds.h"
 !
 !-----------------------------------------------------------------------
 !  Compute isotopic surface fluxes.
@@ -254,13 +250,13 @@
                delq=MAX(1.0E-5_r8,ABS(qsea-qatm))
                delq=SIGN(delq, qsea-qatm)
 # ifdef EMINUSP
-               evap=evap(i,j)
+               pevap=evap(i,j)
 # else
 !     
 !     Compute total evaporation from salt flux, (E-P) :
 !     E = (stflx*(freshwater density)+P)
 !     
-               evap=(stflx(i,j,isalt)*1000.0_r8) + rain(i,j)
+               pevap=(stflx(i,j,isalt)*1000.0_r8) + rain(i,j)
 # endif
 !     
 !     Compute the evaporation for O16
@@ -323,29 +319,6 @@
      &                      rmask,                                      &
 # endif
      &                      stflx(:,:,i18O))
-
-!
-!-----------------------------------------------------------------------
-!  Exchange boundary data.
-!-----------------------------------------------------------------------
-!
-      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
-        CALL exchange_r2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          stflx(:,:,i16O))
-        CALL exchange_r2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          stflx(:,:,i18O))
-      END IF
-
-# ifdef DISTRIBUTE
-      CALL mp_exchange2d (ng, tile, model, 2,                           &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints,                                 &
-     &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    stflx(:,:,i16O),                              &
-     &                    stflx(:,:,i18O))
-# endif
 
       RETURN
       END SUBROUTINE isotope_stflux_tile
