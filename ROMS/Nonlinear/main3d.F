@@ -97,6 +97,9 @@
 # if defined SSH_TIDES || defined UV_TIDES
       USE set_tides_mod, ONLY : set_tides
 # endif
+# if defined ISOTOPE && defined ISOTOPE_FLUXES
+      USE isotope_stflux_mod, ONLY : isotope_stflux
+# endif
       USE set_vbc_mod, ONLY : set_vbc
       USE set_zeta_mod, ONLY : set_zeta
       USE step2d_mod, ONLY : step2d

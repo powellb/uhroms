@@ -1,5 +1,6 @@
 #include "cppdefs.h"
-      SUBROUTINE isotope_stflux (ng, tile, model)
+      MODULE isotope_stflux_mod
+      
 #if defined ISOTOPE_FLUXES && defined BULK_FLUXES
 !     
 !svn $Id$
@@ -9,15 +10,28 @@
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  Compute the surface fluxes of isotopes                              !
+!  Thus module computes the surface fluxes of isotopes                 !
 !                                                                      !
 !=======================================================================
+!
+      implicit none
+!
+      PRIVATE
+      PUBLIC  :: isotope_stflux
+!
+      CONTAINS
+
+!
+!***********************************************************************
+      SUBROUTINE isotope_stflux (ng, tile, model)
+!***********************************************************************
 !
       USE mod_forces
       USE mod_ncparam
       USE mod_ocean
       USE mod_param
       USE mod_grid
+      USE mod_stepping
 !
 ! Imported variable declarations.
 !
@@ -56,8 +70,11 @@
 # ifdef PROFILE
       CALL wclock_off (ng, model, 17)
 # endif
+#endif
       RETURN
       END SUBROUTINE isotope_stflux
+
+#if defined ISOTOPE_FLUXES && defined BULK_FLUXES
 !
 !***********************************************************************
       SUBROUTINE isotope_stflux_tile (ng, tile, model,                  &
@@ -107,9 +124,9 @@
 #  ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:,LBj:)
 #  endif
-      real(r8), intent(out) :: stflx(LBi:,LBj:,:)
+      real(r8), intent(inout) :: stflx(LBi:,LBj:,:)
 #  ifdef TL_IOMS
-      real(r8), intent(out) :: tl_stflx(LBi:,LBj:,:)
+      real(r8), intent(inout) :: tl_stflx(LBi:,LBj:,:)
 #  endif
       real(r8), intent(in) :: Pair(LBi:,LBj:)
       real(r8), intent(in) :: Hair(LBi:,LBj:)
@@ -128,9 +145,9 @@
 #  ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
 #  endif
-      real(r8), intent(out) :: stflx(LBi:UBi,LBj:UBj,NT(ng))
+      real(r8), intent(inout) :: stflx(LBi:UBi,LBj:UBj,NT(ng))
 #  ifdef TL_IOMS
-      real(r8), intent(out) :: tl_stflx(LBi:UBi,LBj:UBj,NT(ng))
+      real(r8), intent(inout) :: tl_stflx(LBi:UBi,LBj:UBj,NT(ng))
 #  endif
       real(r8), intent(in) :: Pair(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: Hair(LBi:UBi,LBj:UBj)
@@ -330,6 +347,9 @@
      &                    stflx(:,:,i18O))
 # endif
 
-#endif
       RETURN
       END SUBROUTINE isotope_stflux_tile
+
+#endif
+      END MODULE isotope_stflux_mod
+
