@@ -71,7 +71,6 @@
 #define ANA_BPFLUX
 
 #define BULK_FLUXES
-#define ANA_ISOFLUX
 
 #if defined BULK_FLUXES
 #  define LONGWAVE_OUT
@@ -84,8 +83,8 @@
 
 #define AVERAGES
 
-#define BIOLOGY
 #define ISOTOPE
+#define ISOTOPE_FLUXES
 
 #ifdef DIAGNOSTIC
 #  define DIAGNOSTICS_BIO

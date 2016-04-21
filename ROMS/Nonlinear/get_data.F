@@ -424,7 +424,7 @@
       IF (exit_flag.ne.NoError) RETURN
 # endif
 
-# if !defined ANA_STFLUX && defined BULK_FLUXES && defined ISOTOPE
+# if !defined ANA_SPFLUX && defined BULK_FLUXES && defined ISOTOPE_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Isotope mass fraction for O18 and O16
@@ -613,7 +613,7 @@
 # endif
 
 # if defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE
-#  if !defined ANA_SPFLUX && !defined ANA_ISOFLUX
+#  if !defined ANA_SPFLUX && !defined ISOTOPE_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Passive tracers surface fluxes.

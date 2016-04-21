@@ -61,14 +61,6 @@
 !
       USE mod_param
       USE mod_scalars
-#ifdef ANA_ISOFLUX
-      USE mod_biology
-      USE mod_forces
-      USE mod_ocean
-      USE mod_grid
-      USE mod_stepping
-      USE shapiro_mod
-#endif
       USE exchange_2d_mod, ONLY : exchange_r2d_tile
 #ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
@@ -101,11 +93,6 @@
 !  Local variable declarations.
 !
       integer :: i, j
-#ifdef ANA_ISOFLUX
-      real(r8) :: precip, evap, ustar, z0, rhoair, vmu, sc, reno
-      real(r8) :: cff1, cff2, cff3, kn18, alphoce, alphair
-      real(r8) :: qsea, qatm, delq, Hlv
-#endif
 
 #include "set_bounds.h"
 !

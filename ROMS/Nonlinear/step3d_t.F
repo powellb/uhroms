@@ -1177,9 +1177,16 @@
           DO k=1,N(ng)
             DO j=JstrR,JendR
               DO i=IstrR,IendR
-                t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                  &
+# if defined ISOTOPE_PACIFIC
+                 IF (z_r(i,j,k).GT.-3500.0_r8 .AND.                     &
+     &               z_r(i,j,k).LT.-1000.0_r8) THEN
+# endif
+                   t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+               &
      &                             dt(ng)*Tnudgcof(i,j,itrc)*           &
      &                             (tclm(i,j,k,ic)-t(i,j,k,nnew,itrc))
+# if defined ISOTOPE_PACIFIC
+                END IF
+# endif
               END DO
             END DO
           END DO

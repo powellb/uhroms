@@ -304,7 +304,7 @@
 #   endif
 #  endif
 
-#  if defined BULK_FLUXES && defined ISOTOPE
+#  if !defined ANA_SPFLUX && defined BULK_FLUXES && defined ISOTOPE_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Isotope mass fraction for O18 and O16
@@ -482,7 +482,8 @@
 #   endif
 #  endif
 
-#  if defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE
+#  if (defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE) && \
+      ! defined ISOTOPE_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Set kinematic surface and bottom pasive tracer fluxes (T m/s).

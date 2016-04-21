@@ -1,4 +1,6 @@
+#include "cppdefs.h"
       SUBROUTINE isotope_stflux (ng, tile, model)
+#if defined ISOTOPE_FLUXES && defined BULK_FLUXES
 !     
 !svn $Id$
 !================================================ Brian Powell, 2014 ===
@@ -11,9 +13,11 @@
 !                                                                      !
 !=======================================================================
 !
-      USE mod_param
       USE mod_forces
       USE mod_ncparam
+      USE mod_ocean
+      USE mod_param
+      USE mod_grid
 !
 ! Imported variable declarations.
 !
@@ -21,58 +25,127 @@
 
 #include "tile.h"
 !
+# ifdef PROFILE
+      CALL wclock_on (ng, model, 17)
+# endif
       CALL isotope_stflux_tile (ng, tile, model,                        &
-     &                      LBi, UBi, LBj, UBj,                         &
-     &                      IminS, ImaxS, JminS, JmaxS,                 &
-#ifdef TL_IOMS
-     &                      FORCES(ng) % tl_stflx,                      &
-#endif
-     &                      FORCES(ng) % stflx)
-
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          IminS, ImaxS, JminS, JmaxS,             &
+     &                          nstp(ng), nnew(ng),                     &
+#  ifdef MASKING
+     &                          GRID(ng) % rmask,                       &
+#  endif
+     &                          FORCES(ng) % stflx,                     &
+#  ifdef TL_IOMS
+     &                          FORCES(ng) % tl_stflx,                  &
+#  endif
+     &                          FORCES(ng) % Pair,                      &
+     &                          FORCES(ng) % Hair,                      &
+     &                          FORCES(ng) % Tair,                      &
+     &                          FORCES(ng) % sustr,                     &
+     &                          FORCES(ng) % svstr,                     &
+#  ifdef EMINUSP
+     &                          FORCES(ng) % evap,                      &
+#  endif
+     &                          FORCES(ng) % rain,                      &
+     &                          FORCES(ng) % o16frac,                   &
+     &                          FORCES(ng) % o18frac,                   &
+     &                          OCEAN(ng) % t,                          &
+     &                          OCEAN(ng) % rho)
+      
+# ifdef PROFILE
+      CALL wclock_off (ng, model, 17)
+# endif
       RETURN
       END SUBROUTINE isotope_stflux
 !
 !***********************************************************************
       SUBROUTINE isotope_stflux_tile (ng, tile, model,                  &
-     &                            LBi, UBi, LBj, UBj,                   &
+     &                            LBi, UBi, LBj, UBj, LBk, UBk,         &
      &                            IminS, ImaxS, JminS, JmaxS,           &
-#ifdef TL_IOMS
+     &                            nstp, nnew,                           &
+# ifdef MASKING
+     &                            rmask,                                &
+# endif
+     &                            stflx,                                &
+# ifdef TL_IOMS
      &                            tl_stflx,                             &
-#endif
-     &                            stflx)
+# endif
+     &                            Pair,                                 &
+     &                            Hair,                                 &
+     &                            Tair,                                 &
+     &                            sustr,                                &
+     &                            svstr,                                &
+# ifdef EMINUSP
+     &                            evap,                                 &
+# endif
+     &                            rain,                                 &
+     &                            o16frac,                              &
+     &                            o18frac,                              &
+     &                            t,                                    &
+     &                            rho)
 !***********************************************************************
 !
       USE mod_param
       USE mod_scalars
-      USE mod_biology
-      USE mod_forces
-      USE mod_ocean
-      USE mod_grid
-      USE mod_stepping
       USE shapiro_mod
-
-      USE exchange_2d_mod, ONLY : exchange_r2d_tile
-#ifdef DISTRIBUTE
+!
+      USE exchange_2d_mod
+#  ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
-#endif
+#  endif
+
 !
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
-      integer, intent(in) :: LBi, UBi, LBj, UBj
+      integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
+      integer, intent(in) :: nstp, nnew
 !
-#ifdef ASSUMED_SHAPE
-      real(r8), intent(inout) :: stflx(LBi:,LBj:,:)
-# ifdef TL_IOMS
-      real(r8), intent(inout) :: tl_stflx(LBi:,LBj:,:)
+# ifdef ASSUMED_SHAPE
+#  ifdef MASKING
+      real(r8), intent(in) :: rmask(LBi:,LBj:)
+#  endif
+      real(r8), intent(out) :: stflx(LBi:,LBj:,:)
+#  ifdef TL_IOMS
+      real(r8), intent(out) :: tl_stflx(LBi:,LBj:,:)
+#  endif
+      real(r8), intent(in) :: Pair(LBi:,LBj:)
+      real(r8), intent(in) :: Hair(LBi:,LBj:)
+      real(r8), intent(in) :: Tair(LBi:,LBj:)
+      real(r8), intent(in) :: sustr(LBi:,LBj:)
+      real(r8), intent(in) :: svstr(LBi:,LBj:)
+#  ifdef EMINUSP
+      real(r8), intent(in) :: evap(LBi:,LBj:)
+#  endif
+      real(r8), intent(in) :: rain(LBi:,LBj:)
+      real(r8), intent(in) :: o16frac(LBi:,LBj:)
+      real(r8), intent(in) :: o18frac(LBi:,LBj:)
+      real(r8), intent(in) :: t(LBi:,LBj:,:,:,:)
+      real(r8), intent(in) :: rho(LBi:,LBj:,:)
+# else
+#  ifdef MASKING
+      real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
+#  endif
+      real(r8), intent(out) :: stflx(LBi:UBi,LBj:UBj,NT(ng))
+#  ifdef TL_IOMS
+      real(r8), intent(out) :: tl_stflx(LBi:UBi,LBj:UBj,NT(ng))
+#  endif
+      real(r8), intent(in) :: Pair(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: Hair(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: Tair(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: sustr(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: svstr(LBi:UBi,LBj:UBj)
+#  ifdef EMINUSP
+      real(r8), intent(in) :: evap(LBi:UBi,LBj:UBj)
+#  endif
+      real(r8), intent(in) :: rain(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: o16frac(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: o18frac(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
+      real(r8), intent(in) :: rho(LBi:UBi,LBj:UBj,N(ng))
 # endif
-#else
-      real(r8), intent(inout) :: stflx(LBi:UBi,LBj:UBj,NT(ng))
-# ifdef TL_IOMS
-      real(r8), intent(inout) :: tl_stflx(LBi:UBi,LBj:UBj,NT(ng))
-# endif
-#endif
 !
 !  Local variable declarations.
 !
@@ -93,40 +166,36 @@
 !
       DO j=JstrR,JendR
          DO i=IstrR,IendR
-            IF (FORCES(ng)%Pair(i,j).gt.0) THEN
+            IF (Pair(i,j).gt.0) THEN
 !
 !     Compute saturation vapor pressure at ocean temperature (mb),
 !     using Teten formula.
 !
-               cff1=(1.0007_r8+3.46E-6_r8*FORCES(ng)%Pair(i,j))*        &
+               cff1=(1.0007_r8 + 3.46E-6_r8*Pair(i,j))*                 &
      &              6.1121_r8*EXP(17.502_r8*                            &
-     &              OCEAN(ng)%t(i,j,N(ng),nstp(ng),itemp) /             &
-     &              (240.97_r8+(OCEAN(ng)%t(i,j,N(ng),nstp(ng),itemp))))
+     &              t(i,j,UBk,nstp,itemp) /                             &
+     &              (240.97_r8 + (t(i,j,UBk,nstp,itemp))))
 !
 !     Compute Qsea (kg/kg) from saturation vapor pressure.
 !
-               qsea=0.62197_r8*(cff1/(FORCES(ng)%Pair(i,j) -            &
-     &              0.378_r8*cff1))
+               qsea=0.62197_r8*(cff1/(Pair(i,j) - 0.378_r8*cff1))
 !
 !     Compute the density of surface air
 !
-               cff2=cff1*FORCES(ng)%Hair(i,j) / FORCES(ng)%Pair(i,j)
-               rhoair=FORCES(ng)%Pair(i,j) * 100.0_r8 /                 &
-     &              (blk_Rgas*(FORCES(ng)%Tair(i,j)+273.16_r8))*        &
-     &              (1+0.61_r8*cff2)
+               cff2=cff1*Hair(i,j) / Pair(i,j)
+               rhoair=Pair(i,j) * 100.0_r8 /                            &
+     &              (blk_Rgas*(Tair(i,j)+273.16_r8))*(1+0.61_r8*cff2)
 !
 !     Compute the frictional velocity
 !
-               cff2=0.5_r8 * (FORCES(ng)%sustr(i,j) +                   &
-     &              FORCES(ng)%sustr(MIN(i+1,Lm(ng)),j))
-               cff3=0.5_r8 * (FORCES(ng)%svstr(i,j) +                   &
-     &              FORCES(ng)%svstr(i,MIN(j+1,Mm(ng))))
+               cff2=0.5_r8 * (sustr(i,j) + sustr(i+1,j))
+               cff3=0.5_r8 * (svstr(i,j) + svstr(i,j+1))
                cff1=SQRT(cff2*cff2 + cff3*cff3)
                ustar=SQRT(cff1)
 !
 !     Compute the roughness length equation: u*^2 / (81.1 * g)
 !
-               z0=ustar**2*0.00125693_r8
+               z0=ustar**2 * 0.00125693_r8
 !
 !     kinematic viscosity, sc, and reynold's number
 !
@@ -154,115 +223,113 @@
 !     Compute saturation vapor pressure at air temperature (mb),
 !     using Teten formula.
 !     
-               cff1=(1.0007_r8+3.46E-6_r8*FORCES(ng)%Pair(i,j))*        &
-     &              6.1121_r8*EXP(17.502_r8*FORCES(ng)%Tair(i,j) /      &
-     &              (240.97_r8+(FORCES(ng)%Tair(i,j))))
+               cff1=(1.0007_r8+3.46E-6_r8*Pair(i,j))*                   &
+     &              6.1121_r8*EXP(17.502_r8*Tair(i,j) /                 &
+     &              (240.97_r8+Tair(i,j)))
 !     
 !     Compute Qatm (kg/kg) from saturation vapor pressure.
 !     
-               qatm=0.62197_r8*(cff1/(FORCES(ng)%Pair(i,j) -            &
-     &              0.378_r8*cff1))*FORCES(ng)%Hair(i,j)
+               qatm=0.62197_r8*(cff1/(Pair(i,j) -                       &
+     &              0.378_r8*cff1))*Hair(i,j)
 !     
 !     Compute vapor deficit
 !     
                delq=MAX(1.0E-5_r8,ABS(qsea-qatm))
                delq=SIGN(delq, qsea-qatm)
-#ifdef EMINUSP
-               evap=FORCES(ng)%evap(i,j)
-#else
+# ifdef EMINUSP
+               evap=evap(i,j)
+# else
 !     
 !     Compute total evaporation from salt flux, (E-P) :
 !     E = (stflx*(freshwater density)+P)
 !     
-               evap=(stflx(i,j,isalt)*1000.0_r8) + FORCES(ng)%rain(i,j)
-#endif
+               evap=(stflx(i,j,isalt)*1000.0_r8) + rain(i,j)
+# endif
 !     
 !     Compute the evaporation for O16
 !     
-               cff1=OCEAN(ng)%t(i,j,N(ng),nstp(ng),i16O) /              &
-     &              (OCEAN(ng)%rho(i,j,N(ng)) + rho0)
-               cff3=((qsea*cff1) - qatm * FORCES(ng)%o16frac(i,j)) /    &
-     &              (delq)
+               cff1=t(i,j,UBk,nstp,i16O) / (rho(i,j,UBk) + rho0)
+               cff3=((qsea*cff1) - qatm * o16frac(i,j)) / delq
 !     
 !     Compute the precipitation for O16
 !     
-               precip=FORCES(ng)%rain(i,j) *                            &
-     &              FORCES(ng)%o16frac(i,j)
+               precip=rain(i,j) * o16frac(i,j)
 !     
 !     Set the fluxes for O16
 !     
                stflx(i,j,i16O)=precip - (evap*cff3)
-#ifdef TL_IOMS
+# ifdef TL_IOMS
                tl_stflx(i,j,i16O)=0.0_r8
-#endif
+# endif
 !     
 !     Compute the equilibrium fractionation coefficients
 !     
-               cff1=FORCES(ng)%Tair(i,j)+273.16_r8
+               cff1=Tair(i,j)+273.16_r8
                alphair=EXP(1.137E3_r8/(cff1*cff1) -                     &
      &              0.4156_r8/cff1 - 2.0667E-3_r8 )
-               cff1=OCEAN(ng)%t(i,j,N(ng),nstp(ng),itemp)+273.16_r8
+               cff1=t(i,j,UBk,nstp,itemp)+273.16_r8
                alphoce=EXP(1.137E3_r8/(cff1*cff1) -                     &
      &              0.4156_r8/cff1 - 2.0667E-3_r8 )
 !     
 !     Compute the evaporation for O18
 !     
-               cff1=OCEAN(ng)%t(i,j,N(ng),nstp(ng),i18O) /              &
-     &              (OCEAN(ng)%rho(i,j,N(ng)) + rho0)
+               cff1=t(i,j,UBk,nstp,i18O) / (rho(i,j,UBk) + rho0)
                cff3=((qsea*cff1/alphoce) - (qatm *                      &
-     &              FORCES(ng)%o18frac(i,j)/alphair)) /                 &
-     &              (delq)
+     &              o18frac(i,j)/alphair)) / delq
 !     
 !     Compute the precipitation for O18
 !     
-               precip=FORCES(ng)%rain(i,j) *                            &
-     &              FORCES(ng)%o18frac(i,j)
+               precip=rain(i,j) * o18frac(i,j)
 !     
 !     Set the fluxes for O18
 !     
                stflx(i,j,i18O)=precip-(evap * (1.0_r8 - kn18) * cff3)
-#ifdef TL_IOMS
+# ifdef TL_IOMS
                tl_stflx(i,j,i18O)=0.0_r8
-#endif
+# endif
             END IF
          END DO
       END DO
 !
 !     Apply the Shapiro Filter to the fluxes of O16 and O18
 !
+
       CALL shapiro2d_tile(ng, tile, model, LBi, UBi, LBj, UBj,          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
-     &                      GRID(ng)%rmask, stflx(:,:,i16O))
+# ifdef MASKING
+     &                      rmask,                                      &
+# endif
+     &                      stflx(:,:,i16O))
       CALL shapiro2d_tile(ng, tile, model, LBi, UBi, LBj, UBj,          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
-     &                      GRID(ng)%rmask, stflx(:,:,i18O))
+# ifdef MASKING
+     &                      rmask,                                      &
+# endif
+     &                      stflx(:,:,i18O))
+
 !
+!-----------------------------------------------------------------------
 !  Exchange boundary data.
+!-----------------------------------------------------------------------
 !
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          stflx(:,:,itrc))
-#ifdef TL_IOMS
+     &                          stflx(:,:,i16O))
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          tl_stflx(:,:,itrc))
-#endif
+     &                          stflx(:,:,i18O))
       END IF
 
-#ifdef DISTRIBUTE
-      CALL mp_exchange2d (ng, tile, model, 1,                           &
+# ifdef DISTRIBUTE
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    stflx(:,:,itrc))
-# ifdef TL_IOMS
-      CALL mp_exchange2d (ng, tile, model, 1,                           &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    NghostPoints,                                 &
-     &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    tl_stflx(:,:,itrc))
+     &                    stflx(:,:,i16O),                              &
+     &                    stflx(:,:,i18O))
 # endif
+
 #endif
       RETURN
       END SUBROUTINE isotope_stflux_tile
