@@ -270,7 +270,7 @@
 !     
 !     Set the fluxes for O16
 !     
-               stflx(i,j,i16O)=precip - (evap*cff3)
+               stflx(i,j,i16O)=precip - (pevap*cff3)
 # ifdef TL_IOMS
                tl_stflx(i,j,i16O)=0.0_r8
 # endif
@@ -296,7 +296,7 @@
 !     
 !     Set the fluxes for O18
 !     
-               stflx(i,j,i18O)=precip-(evap * (1.0_r8 - kn18) * cff3)
+               stflx(i,j,i18O)=precip-(pevap * (1.0_r8 - kn18) * cff3)
 # ifdef TL_IOMS
                tl_stflx(i,j,i18O)=0.0_r8
 # endif
