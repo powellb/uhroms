@@ -335,7 +335,11 @@
 !  Set flux fields for isotopes based on the bulk fluxes
 !-----------------------------------------------------------------------
 !
-        CALL isotope_stflux(ng, tile, iNLM)
+        DO ng=1,Ngrids
+          DO tile=first_tile(ng),last_tile(ng),+1
+             CALL isotope_stflux(ng, tile, iNLM)
+          END DO
+       END DO
 # endif
         
 # ifdef ADJUST_BOUNDARY

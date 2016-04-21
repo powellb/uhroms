@@ -1,6 +1,5 @@
 #include "cppdefs.h"
       MODULE isotope_stflux_mod
-      
 #if defined ISOTOPE_FLUXES && defined BULK_FLUXES
 !     
 !svn $Id$

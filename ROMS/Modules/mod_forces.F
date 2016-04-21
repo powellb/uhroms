@@ -969,8 +969,10 @@
             FORCES(ng) % o16frac(i,j) = IniVal
             FORCES(ng) % o18frac(i,j) = IniVal
 #  ifndef ANA_STFLUX
-            FORCES(ng) % o16fracG(i,j,k) = IniVal
-            FORCES(ng) % o18fracG(i,j,k) = IniVal
+            FORCES(ng) % o16fracG(i,j,1) = IniVal
+            FORCES(ng) % o16fracG(i,j,2) = IniVal
+            FORCES(ng) % o18fracG(i,j,1) = IniVal
+            FORCES(ng) % o18fracG(i,j,2) = IniVal
 #  endif
 # endif
 # if !defined LONGWAVE && defined BULK_FLUXES
