@@ -314,6 +314,9 @@
 #  else
             CALL bulk_flux (ng, tile)
 #  endif
+#  if defined ISOTOPE && defined ISOTOPE_FLUXES
+            CALL isotope_stflux(ng, tile, iNLM)
+#  endif
 # endif
 # ifdef BBL_MODEL
             CALL bblm (ng, tile)
@@ -329,18 +332,6 @@
         CALL nesting (9)
 # endif
 
-# if defined ISOTOPE && defined ISOTOPE_FLUXES
-!
-!-----------------------------------------------------------------------
-!  Set flux fields for isotopes based on the bulk fluxes
-!-----------------------------------------------------------------------
-!
-        DO ng=1,Ngrids
-          DO tile=first_tile(ng),last_tile(ng),+1
-             CALL isotope_stflux(ng, tile, iNLM)
-          END DO
-       END DO
-# endif
         
 # ifdef ADJUST_BOUNDARY
 !

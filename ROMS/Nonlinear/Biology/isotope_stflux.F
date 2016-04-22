@@ -106,6 +106,10 @@
       USE mod_param
       USE mod_scalars
       USE shapiro_mod
+      USE exchange_2d_mod, ONLY : exchange_r2d_tile
+# ifdef DISTRIBUTE
+      USE mp_exchange_mod, ONLY : mp_exchange2d
+# endif
 !
 !
 !  Imported variable declarations.
@@ -305,7 +309,6 @@
 !
 !     Apply the Shapiro Filter to the fluxes of O16 and O18
 !
-
       CALL shapiro2d_tile(ng, tile, model, LBi, UBi, LBj, UBj,          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
 # ifdef MASKING
@@ -318,10 +321,41 @@
      &                      rmask,                                      &
 # endif
      &                      stflx(:,:,i18O))
+!
+!  Exchange boundary data.
+!
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+         DO itrc=NAT+1,NT(ng)
+            CALL exchange_r2d_tile (ng, tile,                           &
+     &                              LBi, UBi, LBj, UBj,                 &
+     &                              stflx(:,:,itrc))
+# ifdef TL_IOMS
+            CALL exchange_r2d_tile (ng, tile,                           &
+     &                              LBi, UBi, LBj, UBj,                 &
+     &                              tl_stflx(:,:,itrc))
+         END DO
+# endif
+      END IF
+      
+# ifdef DISTRIBUTE
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
+     &                    LBi, UBi, LBj, UBj,                           &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
+     &                    stflx(:,:,i16O),                              &
+     &                    stflx(:,:,i18O))
+#  ifdef TL_IOMS
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
+     &                    LBi, UBi, LBj, UBj,                           &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
+     &                    tl_stflx(:,:,i16O),                           &
+     &                    tl_stflx(:,:,i18O))
+#  endif
+# endif
 
       RETURN
       END SUBROUTINE isotope_stflux_tile
-
 #endif
       END MODULE isotope_stflux_mod
 
