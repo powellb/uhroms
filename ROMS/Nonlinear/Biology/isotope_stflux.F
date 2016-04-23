@@ -165,7 +165,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, j
+      integer :: i, j, itrc
       real(r8) :: precip, pevap, ustar, z0, rhoair, vmu, sc, reno
       real(r8) :: cff1, cff2, cff3, kn18, alphoce, alphair
       real(r8) :: qsea, qatm, delq, Hlv
@@ -333,8 +333,8 @@
             CALL exchange_r2d_tile (ng, tile,                           &
      &                              LBi, UBi, LBj, UBj,                 &
      &                              tl_stflx(:,:,itrc))
-         END DO
 # endif
+         END DO
       END IF
       
 # ifdef DISTRIBUTE
