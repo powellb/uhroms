@@ -794,6 +794,7 @@
       allocate ( wrote_Zobs(Ngrids) )
 
       allocate ( NstateVar(Ngrids) )
+      allocate ( NobsVar(Ngrids) )
       allocate ( Ndatum(Ngrids) )
       allocate ( Nsurvey(Ngrids) )
       allocate ( ObsSurvey(Ngrids) )
