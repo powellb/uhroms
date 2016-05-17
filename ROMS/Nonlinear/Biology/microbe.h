@@ -365,7 +365,7 @@
 !
             PARUV=PARsurUV(i)
             PARBlue=PARsurBlue(i)
-            ratioDep=MAX(1.0_r8,h(i,j,k)/6.0_r8)
+            ratioDep=MAX(1.0_r8,h(i,j)/6.0_r8)
             IF (PARsurUV(i).gt.0.0_r8.and.PARsurBlue(i).gt.0.0_r8) THEN
               DO k=N(ng),1,-1
 !
