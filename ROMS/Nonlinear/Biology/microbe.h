@@ -48,6 +48,7 @@
      &                   GRID(ng) % rmask,                              &
 #endif
      &                   GRID(ng) % Hz,                                 &
+     &                   GRID(ng) % h,                                  &
      &                   GRID(ng) % z_r,                                &
      &                   GRID(ng) % z_w,                                &
      &                   FORCES(ng) % srflx,                            &
@@ -67,7 +68,7 @@
 #ifdef MASKING
      &                         rmask,                                   &
 #endif
-     &                         Hz, z_r, z_w,                            &
+     &                         Hz, h, z_r, z_w,                         &
      &                         srflx,                                   &
      &                         t)
 !-----------------------------------------------------------------------
@@ -90,6 +91,7 @@
       real(r8), intent(in) :: rmask(LBi:,LBj:)
 # endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
+      real(r8), intent(in) :: h(LBi:,LBj:,:)
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
       real(r8), intent(in) :: z_w(LBi:,LBj:,0:)
       real(r8), intent(in) :: srflx(LBi:,LBj:)
@@ -120,6 +122,7 @@
       real(r8) :: cffL, cffR, cu, dltL, dltR
       real(r8) :: delt, dels, ratioA, ratioB
       real(r8), dimension(N(ng)) :: zMeanA, zMeanB, zStdA, zStdB
+      real(r8) :: ratioDep
       integer, dimension(N(ng)) :: countA, countB
       logical :: enable_Entero, enable_VulA, enable_VulB
       integer, dimension(Nsink) :: idsink
@@ -361,6 +364,7 @@
 !
             PARUV=PARsurUV(i)
             PARBlue=PARsurBlue(i)
+            ratioDep=MAX(1.0_r8,h(i,j,k)/6.0_r8)
             IF (PARsurUV(i).gt.0.0_r8.and.PARsurBlue(i).gt.0.0_r8) THEN
               DO k=N(ng),1,-1
 !
@@ -403,10 +407,10 @@
 !  Compute population ratios
 !
               IF (Bio(i,k,iVulA).GT.0.0_r8) THEN
-                ratioA = VulA_pop(idxAlag,k,ng) / Bio(i,k,iVulA)
+                ratioA =  Bio(i,k,iVulA) / VulA_pop(idxAlag,k,ng)
               END IF
               IF (Bio(i,k,iVulB).GT.0.0_r8) THEN
-                ratioB = VulB_pop(idxBlag,k,ng) / Bio(i,k,iVulB)
+                ratioB = Bio(i,k,iVulB) / VulB_pop(idxBlag,k,ng)
               END IF
 !
 !  Enterococcus growth to blue-light exposure
@@ -467,9 +471,9 @@
               cff2=MAX(0.0,1.0 -                                        &
      &             (crVulA(ng)*EXP(0.05*(Bio(i,k,iVulA)-ccVulA(ng)))))
               cff2=MIN(1.0,cff2)
-              cff1=dtdays*cff1
+              cff1=dtdays*cff1*cff2
               IF (enable_VulA) THEN
-                 Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*cff2*Bio(i,k,iVulA)
+                 Bio(i,k,iVulA)=Bio(i,k,iVulA)+cff1*Bio(i,k,iVulA)
               END IF
 !
 ! Build the statistics of the growth-rates relative to the decay
@@ -498,9 +502,9 @@
               cff2=MAX(0.0,1.0 -                                        &
      &             (crVulB(ng)*EXP(0.05*(Bio(i,k,iVulB)-ccVulB(ng)))))
               cff2=MIN(1.0,cff2)
-              cff1=dtdays*cff1
+              cff1=dtdays*cff1*cff2
               IF (enable_VulB) THEN
-                 Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)*cff2
+                 Bio(i,k,iVulB)=Bio(i,k,iVulB)+cff1*Bio(i,k,iVulB)
               END IF
 !
 ! Build the statistics of the growth-rates relative to the decay
@@ -518,9 +522,9 @@
 !
 !              CALL gasdev(cff3)
 !              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
-              cff2=ratioA*ABS(zMeanA(k))
+              cff2=ratioA*ratioDep*ABS(zMeanA(k))
               cff1=1.0_r8+cff2
-              IF (enable_VulB) THEN
+              IF (enable_VulA) THEN
                  Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
               END IF
 !
@@ -528,7 +532,7 @@
 !
 !              CALL gasdev(cff3)
 !              cff2=ABS(zMeanB(k) + zStdB(k)*cff3)
-              cff2=ratioB*ABS(zMeanB(k))
+              cff2=ratioB*ratioDep*ABS(zMeanB(k))
               cff1=1.0_r8+cff2
               IF (enable_VulB) THEN
                  Bio(i,k,iVulB)=Bio(i,k,iVulB)/cff1
