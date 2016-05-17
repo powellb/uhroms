@@ -91,7 +91,7 @@
       real(r8), intent(in) :: rmask(LBi:,LBj:)
 # endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
-      real(r8), intent(in) :: h(LBi:,LBj:,:)
+      real(r8), intent(in) :: h(LBi:,LBj:)
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
       real(r8), intent(in) :: z_w(LBi:,LBj:,0:)
       real(r8), intent(in) :: srflx(LBi:,LBj:)
@@ -101,6 +101,7 @@
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
 # endif
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,UBk)
+      real(r8), intent(in) :: h(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,UBk)
       real(r8), intent(in) :: z_w(LBi:UBi,LBj:UBj,0:UBk)
       real(r8), intent(in) :: srflx(LBi:UBi,LBj:UBj)
