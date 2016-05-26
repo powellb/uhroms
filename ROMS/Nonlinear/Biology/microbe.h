@@ -113,7 +113,7 @@
       integer, parameter :: Nsink = 3
 
       integer :: Iter, i, ibio, isink, itime, itrc, iTrcMax, j, k, ks
-      integer :: ii, idxA, idxB, idxAlag, idxBlag
+      integer :: ii, idxA, idxB, idxAlag, idxBlag, idxApast, idxBpast
       integer :: idxAwin, idxBwin
 
       real(r8), parameter :: MinVal = 1.0e-6_r8
@@ -194,10 +194,18 @@
       IF (idxAlag.GT.nVulA_lag(ng)) THEN
         idxAlag=1
       END IF
+      idxApast=idxA-1
+      IF (idxApast.LT.1) THEN
+        idxApast=nVulA_lag(ng)
+      END IF
       idxB=MOD(iic(ng)-ntstart(ng),nVulB_lag(ng))+1
       idxBlag=idxB+1
       IF (idxBlag.GT.nVulB_lag(ng)) THEN
         idxBlag=1
+      END IF
+      idxBpast=idxB-1
+      IF (idxBpast.LT.1) THEN
+        idxBpast=nVulB_lag(ng)
       END IF
       idxAwin=MOD(iic(ng)-ntstart(ng),nVulA_win(ng))+1
       idxBwin=MOD(iic(ng)-ntstart(ng),nVulB_win(ng))+1
@@ -408,10 +416,10 @@
 !  Compute population ratios
 !
               IF (Bio(i,k,iVulA).GT.0.0_r8) THEN
-                ratioA =  Bio(i,k,iVulA) / VulA_pop(idxAlag,k,ng)
+                ratioA = VulA_pop(idxAlag,k,ng)/VulA_pop(idxApast,k,ng)
               END IF
               IF (Bio(i,k,iVulB).GT.0.0_r8) THEN
-                ratioB = Bio(i,k,iVulB) / VulB_pop(idxBlag,k,ng)
+                ratioB = VulB_pop(idxBlag,k,ng)/VulB_pop(idxBpast,k,ng) 
               END IF
 !
 !  Enterococcus growth to blue-light exposure
