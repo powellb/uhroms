@@ -531,7 +531,8 @@
 !
 !              CALL gasdev(cff3)
 !              cff2=ABS(zMeanA(k) + zStdA(k)*cff3)
-              cff2=ratioA*ratioDep*ABS(zMeanA(k))
+!              cff2=ratioA*ratioDep*ABS(zMeanA(k))
+              cff2=zVulA(ng) * dtdays * ratioA
               cff1=1.0_r8+cff2
               IF (enable_VulA) THEN
                  Bio(i,k,iVulA)=Bio(i,k,iVulA)/cff1
