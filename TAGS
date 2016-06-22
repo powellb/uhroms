@@ -1,20 +1,9 @@
 
-ROMS/Adjoint/ad_u3dbc_im.F,75
-      SUBROUTINE ad_u3dbc 27,1191
-      SUBROUTINE ad_u3dbc_tile 52,1971
-
-ROMS/Adjoint/ad_wrt_his.F,73
-      SUBROUTINE ad_wrt_his 3,36
-      SUBROUTINE ad_wrt_his1061,37202
-
-ROMS/Adjoint/ad_conv_bry2d.F,145
-      SUBROUTINE ad_conv_r2d_bry_tile 63,3814
-      SUBROUTINE ad_conv_u2d_bry_tile 373,15556
-      SUBROUTINE ad_conv_v2d_bry_tile 680,27311
-
-ROMS/Adjoint/ad_def_his.F,73
-      SUBROUTINE ad_def_his 3,36
-      SUBROUTINE ad_def_his1310,46045
+ROMS/Adjoint/ad_forcing.F,160
+      SUBROUTINE ad_forcing 25,969
+      SUBROUTINE ad_forcing_tile 66,2623
+      SUBROUTINE ad_forcing 230,7840
+      SUBROUTINE ad_forcing_tile 286,10118
 
 ROMS/Adjoint/ad_initial.F,72
       SUBROUTINE ad_initial 3,36
@@ -31,10 +20,6 @@ ROMS/Adjoint/ad_main2d.F,70
 ROMS/Adjoint/ad_main3d.F,70
       SUBROUTINE ad_main3d 3,60
       SUBROUTINE ad_main3d855,27340
-
-ROMS/Adjoint/ad_misfit.F,77
-      SUBROUTINE ad_misfit 23,1050
-      SUBROUTINE ad_misfit_tile 65,2742
 
 ROMS/Adjoint/ad_obc_adjust.F,178
       SUBROUTINE ad_obc_adjust 36,1595
@@ -60,6 +45,12 @@ ROMS/Adjoint/ad_pre_step3d.F,86
       SUBROUTINE ad_pre_step3d 44,2303
       SUBROUTINE ad_pre_step3d_tile 152,7395
 
+ROMS/Adjoint/ad_set_vbc.F,165
+      SUBROUTINE ad_set_vbc 31,1320
+      SUBROUTINE ad_set_vbc_tile 120,5041
+      SUBROUTINE ad_set_vbc 1120,45256
+      SUBROUTINE ad_set_vbc_tile 1164,46925
+
 ROMS/Adjoint/ad_sqlq.F,101
       SUBROUTINE ad_sqlq 6,130
       SUBROUTINE reclqbs 216,6242
@@ -81,13 +72,13 @@ ROMS/Adjoint/ad_uv3drelax.F,83
       SUBROUTINE ad_uv3drelax 28,1136
       SUBROUTINE ad_uv3drelax_tile 74,2917
 
-ROMS/Adjoint/ad_v2dbc_im.F,75
-      SUBROUTINE ad_v2dbc 28,1240
-      SUBROUTINE ad_v2dbc_tile 59,2394
-
 ROMS/Adjoint/ad_v3dbc_im.F,75
       SUBROUTINE ad_v3dbc 27,1191
       SUBROUTINE ad_v3dbc_tile 52,1971
+
+ROMS/Adjoint/ad_variability.F,88
+      SUBROUTINE ad_variability 55,3039
+      SUBROUTINE ad_variability_tile 146,6907
 
 ROMS/Adjoint/ad_bc_bry3d.F,137
       SUBROUTINE ad_bc_r3d_bry_tile 28,1406
@@ -102,6 +93,10 @@ ROMS/Adjoint/ad_conv_2d.F,133
 ROMS/Adjoint/ad_convolution.F,89
       SUBROUTINE ad_convolution 84,5156
       SUBROUTINE ad_convolution_tile 206,10835
+
+ROMS/Adjoint/ad_def_his.F,73
+      SUBROUTINE ad_def_his 3,36
+      SUBROUTINE ad_def_his1310,46045
 
 ROMS/Adjoint/ad_exchange_2d.F,195
       SUBROUTINE ad_exchange_p2d_tile 43,2508
@@ -165,13 +160,9 @@ ROMS/Adjoint/ad_set_zeta.F,81
       SUBROUTINE ad_set_zeta 26,1039
       SUBROUTINE ad_set_zeta_tile 57,2017
 
-ROMS/Adjoint/ad_u2dbc_im.F,75
-      SUBROUTINE ad_u2dbc 28,1240
-      SUBROUTINE ad_u2dbc_tile 59,2394
-
-ROMS/Adjoint/ad_variability.F,88
-      SUBROUTINE ad_variability 55,3039
-      SUBROUTINE ad_variability_tile 146,6907
+ROMS/Adjoint/ad_wrt_his.F,73
+      SUBROUTINE ad_wrt_his 3,36
+      SUBROUTINE ad_wrt_his1061,37202
 
 ROMS/Adjoint/ad_zetabc.F,77
       SUBROUTINE ad_zetabc 27,1168
@@ -218,21 +209,17 @@ ROMS/Adjoint/ad_exchange_3d.F,245
       SUBROUTINE ad_exchange_v3d_tile 1280,48111
       SUBROUTINE ad_exchange_w3d_tile 1690,63227
 
-ROMS/Adjoint/ad_set_vbc.F,165
-      SUBROUTINE ad_set_vbc 31,1320
-      SUBROUTINE ad_set_vbc_tile 120,5041
-      SUBROUTINE ad_set_vbc 1120,45256
-      SUBROUTINE ad_set_vbc_tile 1164,46925
+ROMS/Adjoint/ad_misfit.F,77
+      SUBROUTINE ad_misfit 23,1050
+      SUBROUTINE ad_misfit_tile 65,2742
+
+ROMS/Adjoint/ad_t3drelax.F,81
+      SUBROUTINE ad_t3drelax 28,1136
+      SUBROUTINE ad_t3drelax_tile 69,2668
 
 ROMS/Adjoint/ad_extract_obs.F,89
       SUBROUTINE ad_extract_obs2d 127,8266
       SUBROUTINE ad_extract_obs3d 273,13342
-
-ROMS/Adjoint/ad_forcing.F,160
-      SUBROUTINE ad_forcing 25,969
-      SUBROUTINE ad_forcing_tile 66,2623
-      SUBROUTINE ad_forcing 230,7840
-      SUBROUTINE ad_forcing_tile 286,10118
 
 ROMS/Adjoint/ad_frc_adjust.F,85
       SUBROUTINE ad_frc_adjust 33,1566
@@ -260,12 +247,22 @@ ROMS/Adjoint/ad_ini_fields.F,348
       SUBROUTINE ad_out_zeta 1748,75495
       SUBROUTINE ad_out_zeta_tile 1799,77215
 
-ROMS/Adjoint/ad_t3drelax.F,81
-      SUBROUTINE ad_t3drelax 28,1136
-      SUBROUTINE ad_t3drelax_tile 69,2668
+ROMS/Adjoint/ad_u2dbc_im.F,75
+      SUBROUTINE ad_u2dbc 28,1240
+      SUBROUTINE ad_u2dbc_tile 59,2394
 
-ROMS/Modules/mod_arrays.F,34
-      SUBROUTINE mod_arrays 2,21
+ROMS/Adjoint/ad_u3dbc_im.F,75
+      SUBROUTINE ad_u3dbc 27,1191
+      SUBROUTINE ad_u3dbc_tile 52,1971
+
+ROMS/Adjoint/ad_v2dbc_im.F,75
+      SUBROUTINE ad_v2dbc 28,1240
+      SUBROUTINE ad_v2dbc_tile 59,2394
+
+ROMS/Adjoint/ad_conv_bry2d.F,145
+      SUBROUTINE ad_conv_r2d_bry_tile 63,3814
+      SUBROUTINE ad_conv_u2d_bry_tile 373,15556
+      SUBROUTINE ad_conv_v2d_bry_tile 680,27311
 
 ROMS/Modules/mod_average.F,92
       SUBROUTINE allocate_average 291,12058
@@ -275,43 +272,76 @@ ROMS/Modules/mod_bbl.F,80
       SUBROUTINE allocate_bbl 58,2636
       SUBROUTINE initialize_bbl 94,4094
 
-ROMS/Modules/mod_boundary.F,95
-      SUBROUTINE allocate_boundary 706,33611
-      SUBROUTINE initialize_boundary 1339,56253
-
 ROMS/Modules/mod_clima.F,87
       SUBROUTINE allocate_clima 162,7802
       SUBROUTINE initialize_clima 272,11531
-
-ROMS/Modules/mod_coupler.F,44
-      SUBROUTINE allocate_coupler 219,7058
 
 ROMS/Modules/mod_coupling.F,91
       SUBROUTINE allocate_coupling 98,3521
       SUBROUTINE initialize_coupling 187,6896
 
-ROMS/Modules/mod_diags.F,85
-      SUBROUTINE allocate_diags 86,3945
-      SUBROUTINE initialize_diags 147,6402
-
 ROMS/Modules/mod_floats.F,43
       SUBROUTINE allocate_floats 139,5466
-
-ROMS/Modules/mod_forces.F,90
-      SUBROUTINE allocate_forces 430,17953
-      SUBROUTINE initialize_forces 746,27650
 
 ROMS/Modules/mod_fourdvar.F,92
       SUBROUTINE allocate_fourdvar755,28733
       SUBROUTINE initialize_fourdvar842,31306
 
+ROMS/Modules/mod_mixing.F,90
+      SUBROUTINE allocate_mixing 372,14234
+      SUBROUTINE initialize_mixing 650,23140
+
+ROMS/Modules/mod_nesting.F,140
+      SUBROUTINE allocate_nesting2d 138,6460
+      SUBROUTINE allocate_nesting3d 271,10625
+      SUBROUTINE allocate_nesting4d 434,15797
+
+ROMS/Modules/mod_ocean.F,88
+      SUBROUTINE allocate_ocean 272,10612
+      SUBROUTINE initialize_ocean 540,20846
+
+ROMS/Modules/mod_param.F,86
+      SUBROUTINE allocate_param619,26191
+      SUBROUTINE initialize_param691,28019
+
+ROMS/Modules/mod_scalars.F,92
+      SUBROUTINE allocate_scalars1509,63352
+      SUBROUTINE initialize_scalars1938,74754
+
+ROMS/Modules/mod_sources.F,43
+      SUBROUTINE allocate_sources 79,3809
+
+ROMS/Modules/mod_storage.F,43
+      SUBROUTINE allocate_storage171,7785
+
+ROMS/Modules/mod_tides.F,87
+      SUBROUTINE allocate_tides 129,6496
+      SUBROUTINE initialize_tides 294,12035
+
+ROMS/Modules/mod_arrays.F,34
+      SUBROUTINE mod_arrays 2,21
+
+ROMS/Modules/mod_boundary.F,95
+      SUBROUTINE allocate_boundary 706,33611
+      SUBROUTINE initialize_boundary 1339,56253
+
+ROMS/Modules/mod_coupler.F,44
+      SUBROUTINE allocate_coupler 219,7058
+
+ROMS/Modules/mod_diags.F,85
+      SUBROUTINE allocate_diags 86,3945
+      SUBROUTINE initialize_diags 147,6402
+
+ROMS/Modules/mod_forces.F,90
+      SUBROUTINE allocate_forces 430,17953
+      SUBROUTINE initialize_forces 746,27650
+
 ROMS/Modules/mod_grid.F,86
       SUBROUTINE allocate_grid 301,13686
       SUBROUTINE initialize_grid 490,21083
 
-ROMS/Modules/mod_ncparam.F,90
-      SUBROUTINE allocate_ncparam507,26154
-      SUBROUTINE initialize_ncparam626,29530
+ROMS/Modules/mod_iounits.F,43
+      SUBROUTINE allocate_iounits164,9582
 
 ROMS/Modules/mod_netcdf.F,1745
       SUBROUTINE netcdf_get_dim 182,7357
@@ -356,42 +386,12 @@ ROMS/Modules/mod_parallel.F,90
       SUBROUTINE allocate_parallel139,3977
       SUBROUTINE initialize_parallel187,5593
 
-ROMS/Modules/mod_scalars.F,92
-      SUBROUTINE allocate_scalars1509,63352
-      SUBROUTINE initialize_scalars1938,74754
-
 ROMS/Modules/mod_stepping.F,43
       SUBROUTINE allocate_stepping97,4318
 
-ROMS/Modules/mod_iounits.F,43
-      SUBROUTINE allocate_iounits164,9582
-
-ROMS/Modules/mod_mixing.F,90
-      SUBROUTINE allocate_mixing 372,14234
-      SUBROUTINE initialize_mixing 650,23140
-
-ROMS/Modules/mod_nesting.F,140
-      SUBROUTINE allocate_nesting2d 138,6460
-      SUBROUTINE allocate_nesting3d 271,10625
-      SUBROUTINE allocate_nesting4d 434,15797
-
-ROMS/Modules/mod_ocean.F,88
-      SUBROUTINE allocate_ocean 272,10612
-      SUBROUTINE initialize_ocean 540,20846
-
-ROMS/Modules/mod_param.F,86
-      SUBROUTINE allocate_param619,26191
-      SUBROUTINE initialize_param691,28019
-
-ROMS/Modules/mod_sources.F,43
-      SUBROUTINE allocate_sources 79,3809
-
-ROMS/Modules/mod_storage.F,43
-      SUBROUTINE allocate_storage171,7785
-
-ROMS/Modules/mod_tides.F,87
-      SUBROUTINE allocate_tides 129,6496
-      SUBROUTINE initialize_tides 294,12035
+ROMS/Modules/mod_ncparam.F,90
+      SUBROUTINE allocate_ncparam507,26154
+      SUBROUTINE initialize_ncparam626,29530
 
 ROMS/Nonlinear/Sediment/sed_bed.F,73
       SUBROUTINE sed_bed 31,1346
@@ -416,21 +416,6 @@ ROMS/Nonlinear/Sediment/sed_surface.F,81
 ROMS/Nonlinear/Sediment/sediment.F,35
       SUBROUTINE sediment 77,4682
 
-ROMS/Nonlinear/set_avg.F,120
-      SUBROUTINE set_avg 33,1518
-      SUBROUTINE set_avg_tile 104,4245
-      SUBROUTINE set_detide_tile 3892,149002
-
-ROMS/Nonlinear/set_vbc.F,150
-      SUBROUTINE set_vbc 27,1021
-      SUBROUTINE set_vbc_tile 99,3761
-      SUBROUTINE set_vbc 594,21975
-      SUBROUTINE set_vbc_tile 635,23333
-
-ROMS/Nonlinear/step3d_t.F,76
-      SUBROUTINE step3d_t 36,1857
-      SUBROUTINE step3d_t_tile 124,5398
-
 ROMS/Nonlinear/conv_bry3d.F,137
       SUBROUTINE conv_r3d_bry_tile 67,3985
       SUBROUTINE conv_u3d_bry_tile 694,25759
@@ -453,22 +438,20 @@ ROMS/Nonlinear/exchange_3d.F,227
       SUBROUTINE exchange_v3d_tile 683,22363
       SUBROUTINE exchange_w3d_tile 896,28927
 
-ROMS/Nonlinear/omega.F,108
-      SUBROUTINE omega 28,1228
-      SUBROUTINE omega_tile 84,3186
-      SUBROUTINE scale_omega 255,8983
-
-ROMS/Nonlinear/output.F,64
-      SUBROUTINE output 3,38
-      SUBROUTINE output442,15462
-
 ROMS/Nonlinear/pre_step3d.F,80
       SUBROUTINE pre_step3d 39,2003
       SUBROUTINE pre_step3d_tile 126,5814
 
-ROMS/Nonlinear/vwalk_floats.F,83
-      SUBROUTINE vwalk_floats 32,1456
-      SUBROUTINE vwalk_floats_tile 77,2960
+ROMS/Nonlinear/set_data.F,109
+      SUBROUTINE set_data 3,38
+      SUBROUTINE set_data_tile 41,1458
+      SUBROUTINE set_data1283,51050
+
+ROMS/Nonlinear/set_vbc.F,150
+      SUBROUTINE set_vbc 27,1021
+      SUBROUTINE set_vbc_tile 99,3761
+      SUBROUTINE set_vbc 594,21975
+      SUBROUTINE set_vbc_tile 635,23333
 
 ROMS/Nonlinear/wetdry.F,37
       SUBROUTINE wetdry_tile 21,886
@@ -502,6 +485,11 @@ ROMS/Nonlinear/bc_bry2d.F,127
       SUBROUTINE bc_r2d_bry_tile 27,1385
       SUBROUTINE bc_u2d_bry_tile 97,3463
       SUBROUTINE bc_v2d_bry_tile 167,5545
+
+ROMS/Nonlinear/bc_bry3d.F,128
+      SUBROUTINE bc_r3d_bry_tile 27,1385
+      SUBROUTINE bc_u3d_bry_tile 117,3909
+      SUBROUTINE bc_v3d_bry_tile 207,6437
 
 ROMS/Nonlinear/bvf_mix.F,73
       SUBROUTINE bvf_mix 27,1177
@@ -547,6 +535,12 @@ ROMS/Nonlinear/main3d.F,64
       SUBROUTINE main3d 3,62
       SUBROUTINE main3d631,19407
 
+ROMS/Nonlinear/obc_adjust.F,158
+      SUBROUTINE obc_adjust 35,1628
+      SUBROUTINE obc_adjust_tile 62,2403
+      SUBROUTINE load_obc 494,22779
+      SUBROUTINE load_obc_tile 536,24500
+
 ROMS/Nonlinear/tkebc_im.F,69
       SUBROUTINE tkebc 26,1127
       SUBROUTINE tkebc_tile 51,1971
@@ -590,10 +584,10 @@ ROMS/Nonlinear/rhs3d.F,70
       SUBROUTINE rhs3d 25,1022
       SUBROUTINE rhs3d_tile 179,6986
 
-ROMS/Nonlinear/bc_bry3d.F,128
-      SUBROUTINE bc_r3d_bry_tile 27,1385
-      SUBROUTINE bc_u3d_bry_tile 117,3909
-      SUBROUTINE bc_v3d_bry_tile 207,6437
+ROMS/Nonlinear/set_avg.F,120
+      SUBROUTINE set_avg 33,1518
+      SUBROUTINE set_avg_tile 104,4245
+      SUBROUTINE set_detide_tile 3892,149002
 
 ROMS/Nonlinear/bulk_flux.F,150
       SUBROUTINE bulk_flux 63,3808
@@ -614,18 +608,6 @@ ROMS/Nonlinear/set_zeta.F,74
       SUBROUTINE set_zeta 25,933
       SUBROUTINE set_zeta_tile 56,1822
 
-ROMS/Nonlinear/step3d_uv.F,78
-      SUBROUTINE step3d_uv 26,1107
-      SUBROUTINE step3d_uv_tile 117,5281
-
-ROMS/Nonlinear/step_floats.F,81
-      SUBROUTINE step_floats 42,2162
-      SUBROUTINE step_floats_tile 74,3369
-
-ROMS/Nonlinear/t3dbc_im.F,69
-      SUBROUTINE t3dbc 25,1004
-      SUBROUTINE t3dbc_tile 50,1783
-
 ROMS/Nonlinear/u3dbc_im.F,69
       SUBROUTINE u3dbc 25,1004
       SUBROUTINE u3dbc_tile 50,1772
@@ -633,6 +615,10 @@ ROMS/Nonlinear/u3dbc_im.F,69
 ROMS/Nonlinear/v3dbc_im.F,69
       SUBROUTINE v3dbc 25,1004
       SUBROUTINE v3dbc_tile 50,1772
+
+ROMS/Nonlinear/vwalk_floats.F,83
+      SUBROUTINE vwalk_floats 32,1456
+      SUBROUTINE vwalk_floats_tile 77,2960
 
 ROMS/Nonlinear/get_idata.F,70
       SUBROUTINE get_idata 3,42
@@ -660,16 +646,14 @@ ROMS/Nonlinear/main2d.F,64
       SUBROUTINE main2d 3,63
       SUBROUTINE main2d413,12941
 
-ROMS/Nonlinear/obc_adjust.F,158
-      SUBROUTINE obc_adjust 35,1628
-      SUBROUTINE obc_adjust_tile 62,2403
-      SUBROUTINE load_obc 494,22779
-      SUBROUTINE load_obc_tile 536,24500
+ROMS/Nonlinear/omega.F,108
+      SUBROUTINE omega 28,1228
+      SUBROUTINE omega_tile 84,3186
+      SUBROUTINE scale_omega 255,8983
 
-ROMS/Nonlinear/set_data.F,109
-      SUBROUTINE set_data 3,38
-      SUBROUTINE set_data_tile 41,1458
-      SUBROUTINE set_data1283,51050
+ROMS/Nonlinear/output.F,64
+      SUBROUTINE output 3,38
+      SUBROUTINE output442,15462
 
 ROMS/Nonlinear/set_depth.F,166
       SUBROUTINE set_depth 32,1379
@@ -686,6 +670,22 @@ ROMS/Nonlinear/set_massflux.F,172
 ROMS/Nonlinear/set_tides.F,77
       SUBROUTINE set_tides 25,1058
       SUBROUTINE set_tides_tile 87,3344
+
+ROMS/Nonlinear/step3d_t.F,76
+      SUBROUTINE step3d_t 36,1857
+      SUBROUTINE step3d_t_tile 124,5398
+
+ROMS/Nonlinear/step3d_uv.F,78
+      SUBROUTINE step3d_uv 26,1107
+      SUBROUTINE step3d_uv_tile 117,5281
+
+ROMS/Nonlinear/step_floats.F,81
+      SUBROUTINE step_floats 42,2162
+      SUBROUTINE step_floats_tile 74,3369
+
+ROMS/Nonlinear/t3dbc_im.F,69
+      SUBROUTINE t3dbc 25,1004
+      SUBROUTINE t3dbc_tile 50,1783
 
 ROMS/Obsolete/t3dbc_ex.F,69
       SUBROUTINE t3dbc 25,1004
@@ -710,6 +710,54 @@ ROMS/Obsolete/v2dbc_ex.F,68
 ROMS/Obsolete/v3dbc_ex.F,69
       SUBROUTINE v3dbc 25,1004
       SUBROUTINE v3dbc_tile 50,1772
+
+ROMS/Representer/rp_rho_eos.F,125
+      SUBROUTINE rp_rho_eos 47,2641
+      SUBROUTINE rp_rho_eos_tile 119,5487
+      SUBROUTINE rp_rho_eos_tile 1089,46203
+
+ROMS/Representer/rp_rhs3d.F,76
+      SUBROUTINE rp_rhs3d 28,1248
+      SUBROUTINE rp_rhs3d_tile 220,9087
+
+ROMS/Representer/rp_set_data.F,118
+      SUBROUTINE rp_set_data 3,36
+      SUBROUTINE rp_set_data_tile 41,1468
+      SUBROUTINE rp_set_data1783,74610
+
+ROMS/Representer/rp_set_depth.F,255
+      SUBROUTINE rp_set_depth 40,1695
+      SUBROUTINE rp_set_depth_tile 88,3404
+      SUBROUTINE rp_set_depth_bry 448,17707
+      SUBROUTINE rp_set_depth_bry_tile 482,18787
+      SUBROUTINE rp_bath 960,36655
+      SUBROUTINE rp_bath_tile 990,37516
+
+ROMS/Representer/rp_set_massflux.F,89
+      SUBROUTINE rp_set_massflux 30,1343
+      SUBROUTINE rp_set_massflux_tile 77,3269
+
+ROMS/Representer/rp_set_vbc.F,163
+      SUBROUTINE rp_set_vbc 32,1393
+      SUBROUTINE rp_set_vbc_tile 116,5057
+      SUBROUTINE rp_set_vbc 921,39911
+      SUBROUTINE rp_set_vbc_tile 965,41558
+
+ROMS/Representer/rp_set_zeta.F,81
+      SUBROUTINE rp_set_zeta 26,1039
+      SUBROUTINE rp_set_zeta_tile 57,1940
+
+ROMS/Representer/rp_step3d_t.F,82
+      SUBROUTINE rp_step3d_t 37,1937
+      SUBROUTINE rp_step3d_t_tile 133,6017
+
+ROMS/Representer/rp_step3d_uv.F,84
+      SUBROUTINE rp_step3d_uv 31,1479
+      SUBROUTINE rp_step3d_uv_tile 138,6857
+
+ROMS/Representer/rp_t3dbc_im.F,75
+      SUBROUTINE rp_t3dbc 28,1266
+      SUBROUTINE rp_t3dbc_tile 53,2057
 
 ROMS/Representer/rp_t3drelax.F,81
       SUBROUTINE rp_t3drelax 29,1137
@@ -813,132 +861,8 @@ ROMS/Representer/rp_pre_step3d.F,86
       SUBROUTINE rp_pre_step3d 43,2302
       SUBROUTINE rp_pre_step3d_tile 151,7439
 
-ROMS/Representer/rp_rho_eos.F,125
-      SUBROUTINE rp_rho_eos 47,2641
-      SUBROUTINE rp_rho_eos_tile 119,5487
-      SUBROUTINE rp_rho_eos_tile 1089,46203
-
-ROMS/Representer/rp_rhs3d.F,76
-      SUBROUTINE rp_rhs3d 28,1248
-      SUBROUTINE rp_rhs3d_tile 220,9087
-
-ROMS/Representer/rp_set_data.F,118
-      SUBROUTINE rp_set_data 3,36
-      SUBROUTINE rp_set_data_tile 41,1468
-      SUBROUTINE rp_set_data1783,74610
-
-ROMS/Representer/rp_set_depth.F,255
-      SUBROUTINE rp_set_depth 40,1695
-      SUBROUTINE rp_set_depth_tile 88,3404
-      SUBROUTINE rp_set_depth_bry 448,17707
-      SUBROUTINE rp_set_depth_bry_tile 482,18787
-      SUBROUTINE rp_bath 960,36655
-      SUBROUTINE rp_bath_tile 990,37516
-
-ROMS/Representer/rp_set_massflux.F,89
-      SUBROUTINE rp_set_massflux 30,1343
-      SUBROUTINE rp_set_massflux_tile 77,3269
-
-ROMS/Representer/rp_set_vbc.F,163
-      SUBROUTINE rp_set_vbc 32,1393
-      SUBROUTINE rp_set_vbc_tile 116,5057
-      SUBROUTINE rp_set_vbc 921,39911
-      SUBROUTINE rp_set_vbc_tile 965,41558
-
-ROMS/Representer/rp_set_zeta.F,81
-      SUBROUTINE rp_set_zeta 26,1039
-      SUBROUTINE rp_set_zeta_tile 57,1940
-
-ROMS/Representer/rp_step3d_t.F,82
-      SUBROUTINE rp_step3d_t 37,1937
-      SUBROUTINE rp_step3d_t_tile 133,6017
-
-ROMS/Representer/rp_step3d_uv.F,84
-      SUBROUTINE rp_step3d_uv 31,1479
-      SUBROUTINE rp_step3d_uv_tile 138,6857
-
-ROMS/Representer/rp_t3dbc_im.F,75
-      SUBROUTINE rp_t3dbc 28,1266
-      SUBROUTINE rp_t3dbc_tile 53,2057
-
 ROMS/SeaIce/seaice.F,29
        SUBROUTINE seaice1,0
-
-ROMS/Tangent/tl_main2d.F,70
-      SUBROUTINE tl_main2d 3,61
-      SUBROUTINE tl_main2d405,12910
-
-ROMS/Tangent/tl_main3d.F,70
-      SUBROUTINE tl_main3d 3,60
-      SUBROUTINE tl_main3d617,19980
-
-ROMS/Tangent/tl_obc_adjust.F,178
-      SUBROUTINE tl_obc_adjust 36,1595
-      SUBROUTINE tl_obc_adjust_tile 64,2380
-      SUBROUTINE tl_obc2d_adjust 475,21077
-      SUBROUTINE tl_obc2d_adjust_tile 512,22378
-
-ROMS/Tangent/tl_obc_volcons.F,178
-      SUBROUTINE tl_obc_flux 26,1118
-      SUBROUTINE tl_obc_flux_tile 64,2744
-      SUBROUTINE tl_set_DUV_bc_tile 309,11511
-      SUBROUTINE tl_conserve_mass_tile 525,20334
-
-ROMS/Tangent/tl_omega.F,75
-      SUBROUTINE tl_omega 34,1686
-      SUBROUTINE tl_omega_tile 95,4058
-
-ROMS/Tangent/tl_output.F,69
-      SUBROUTINE tl_output 3,36
-      SUBROUTINE tl_output275,9633
-
-ROMS/Tangent/tl_pre_step3d.F,86
-      SUBROUTINE tl_pre_step3d 43,2302
-      SUBROUTINE tl_pre_step3d_tile 141,6947
-
-ROMS/Tangent/tl_rho_eos.F,124
-      SUBROUTINE tl_rho_eos 47,2641
-      SUBROUTINE tl_rho_eos_tile 119,5487
-      SUBROUTINE tl_rho_eos_tile 902,39878
-
-ROMS/Tangent/tl_rhs3d.F,76
-      SUBROUTINE tl_rhs3d 28,1248
-      SUBROUTINE tl_rhs3d_tile 225,9342
-
-ROMS/Tangent/tl_set_data.F,118
-      SUBROUTINE tl_set_data 3,36
-      SUBROUTINE tl_set_data_tile 41,1468
-      SUBROUTINE tl_set_data1500,59986
-
-ROMS/Tangent/tl_set_massflux.F,89
-      SUBROUTINE tl_set_massflux 30,1343
-      SUBROUTINE tl_set_massflux_tile 77,3269
-
-ROMS/Tangent/tl_set_vbc.F,163
-      SUBROUTINE tl_set_vbc 32,1393
-      SUBROUTINE tl_set_vbc_tile 112,4761
-      SUBROUTINE tl_set_vbc 787,32559
-      SUBROUTINE tl_set_vbc_tile 830,34077
-
-ROMS/Tangent/tl_set_zeta.F,81
-      SUBROUTINE tl_set_zeta 26,1039
-      SUBROUTINE tl_set_zeta_tile 57,1940
-
-ROMS/Tangent/tl_sqlq.F,68
-        SUBROUTINE tl_sqlq(6,123
-      SUBROUTINE tl_sqlq125,4224
-
-ROMS/Tangent/tl_step3d_t.F,82
-      SUBROUTINE tl_step3d_t 37,1937
-      SUBROUTINE tl_step3d_t_tile 133,6017
-
-ROMS/Tangent/tl_step3d_uv.F,84
-      SUBROUTINE tl_step3d_uv 31,1479
-      SUBROUTINE tl_step3d_uv_tile 138,6857
-
-ROMS/Tangent/tl_t3dbc_im.F,75
-      SUBROUTINE tl_t3dbc 28,1266
-      SUBROUTINE tl_t3dbc_tile 53,2057
 
 ROMS/Tangent/tl_balance.F,80
       SUBROUTINE tl_balance 58,3256
@@ -996,21 +920,17 @@ ROMS/Tangent/tl_ini_fields.F,170
       SUBROUTINE tl_ini_zeta 786,33585
       SUBROUTINE tl_ini_zeta_tile 839,35322
 
-ROMS/Tangent/tl_lmd_swfrac.F,83
-      SUBROUTINE tl_lmd_swfrac_tile 6,128
-      SUBROUTINE tl_lmd_swfrac101,4341
+ROMS/Tangent/tl_sqlq.F,68
+        SUBROUTINE tl_sqlq(6,123
+      SUBROUTINE tl_sqlq125,4224
 
-ROMS/Tangent/tl_set_depth.F,255
-      SUBROUTINE tl_set_depth 40,1695
-      SUBROUTINE tl_set_depth_tile 88,3406
-      SUBROUTINE tl_set_depth_bry 395,15626
-      SUBROUTINE tl_set_depth_bry_tile 429,16706
-      SUBROUTINE tl_bath 832,31589
-      SUBROUTINE tl_bath_tile 861,32376
+ROMS/Tangent/tl_step3d_t.F,82
+      SUBROUTINE tl_step3d_t 37,1937
+      SUBROUTINE tl_step3d_t_tile 133,6017
 
-ROMS/Tangent/tl_t3drelax.F,80
-      SUBROUTINE tl_t3drelax 24,735
-      SUBROUTINE tl_t3drelax_tile 64,2193
+ROMS/Tangent/tl_t3dbc_im.F,75
+      SUBROUTINE tl_t3dbc 28,1266
+      SUBROUTINE tl_t3dbc_tile 53,2057
 
 ROMS/Tangent/tl_u2dbc_im.F,75
       SUBROUTINE tl_u2dbc 28,1242
@@ -1068,39 +988,112 @@ ROMS/Tangent/tl_initial.F,72
       SUBROUTINE tl_initial 3,36
       SUBROUTINE tl_initial758,22711
 
+ROMS/Tangent/tl_lmd_swfrac.F,83
+      SUBROUTINE tl_lmd_swfrac_tile 6,128
+      SUBROUTINE tl_lmd_swfrac101,4341
+
+ROMS/Tangent/tl_main2d.F,70
+      SUBROUTINE tl_main2d 3,61
+      SUBROUTINE tl_main2d405,12910
+
+ROMS/Tangent/tl_main3d.F,70
+      SUBROUTINE tl_main3d 3,60
+      SUBROUTINE tl_main3d617,19980
+
+ROMS/Tangent/tl_obc_adjust.F,178
+      SUBROUTINE tl_obc_adjust 36,1595
+      SUBROUTINE tl_obc_adjust_tile 64,2380
+      SUBROUTINE tl_obc2d_adjust 475,21077
+      SUBROUTINE tl_obc2d_adjust_tile 512,22378
+
+ROMS/Tangent/tl_obc_volcons.F,178
+      SUBROUTINE tl_obc_flux 26,1118
+      SUBROUTINE tl_obc_flux_tile 64,2744
+      SUBROUTINE tl_set_DUV_bc_tile 309,11511
+      SUBROUTINE tl_conserve_mass_tile 525,20334
+
+ROMS/Tangent/tl_omega.F,75
+      SUBROUTINE tl_omega 34,1686
+      SUBROUTINE tl_omega_tile 95,4058
+
+ROMS/Tangent/tl_output.F,69
+      SUBROUTINE tl_output 3,36
+      SUBROUTINE tl_output275,9633
+
+ROMS/Tangent/tl_pre_step3d.F,86
+      SUBROUTINE tl_pre_step3d 43,2302
+      SUBROUTINE tl_pre_step3d_tile 141,6947
+
+ROMS/Tangent/tl_rho_eos.F,124
+      SUBROUTINE tl_rho_eos 47,2641
+      SUBROUTINE tl_rho_eos_tile 119,5487
+      SUBROUTINE tl_rho_eos_tile 902,39878
+
+ROMS/Tangent/tl_rhs3d.F,76
+      SUBROUTINE tl_rhs3d 28,1248
+      SUBROUTINE tl_rhs3d_tile 225,9342
+
+ROMS/Tangent/tl_set_data.F,118
+      SUBROUTINE tl_set_data 3,36
+      SUBROUTINE tl_set_data_tile 41,1468
+      SUBROUTINE tl_set_data1500,59986
+
+ROMS/Tangent/tl_set_depth.F,255
+      SUBROUTINE tl_set_depth 40,1695
+      SUBROUTINE tl_set_depth_tile 88,3406
+      SUBROUTINE tl_set_depth_bry 395,15626
+      SUBROUTINE tl_set_depth_bry_tile 429,16706
+      SUBROUTINE tl_bath 832,31589
+      SUBROUTINE tl_bath_tile 861,32376
+
+ROMS/Tangent/tl_set_massflux.F,89
+      SUBROUTINE tl_set_massflux 30,1343
+      SUBROUTINE tl_set_massflux_tile 77,3269
+
+ROMS/Tangent/tl_set_vbc.F,163
+      SUBROUTINE tl_set_vbc 32,1393
+      SUBROUTINE tl_set_vbc_tile 112,4761
+      SUBROUTINE tl_set_vbc 787,32559
+      SUBROUTINE tl_set_vbc_tile 830,34077
+
+ROMS/Tangent/tl_set_zeta.F,81
+      SUBROUTINE tl_set_zeta 26,1039
+      SUBROUTINE tl_set_zeta_tile 57,1940
+
+ROMS/Tangent/tl_step3d_uv.F,84
+      SUBROUTINE tl_step3d_uv 31,1479
+      SUBROUTINE tl_step3d_uv_tile 138,6857
+
 ROMS/Tangent/tl_set_avg.F,79
       SUBROUTINE tl_set_avg 26,1088
       SUBROUTINE tl_set_avg_tile 68,2490
 
-ROMS/Utility/abort.F,29
-      SUBROUTINE abort 2,21
+ROMS/Tangent/tl_t3drelax.F,80
+      SUBROUTINE tl_t3drelax 24,735
+      SUBROUTINE tl_t3drelax_tile 64,2193
 
-ROMS/Utility/back_cost.F,78
-      SUBROUTINE back_cost 70,4471
-      SUBROUTINE back_cost_tile 133,6848
+ROMS/Utility/checkadj.F,31
+      SUBROUTINE checkadj2,21
 
-ROMS/Utility/binv_norm.F,77
-      SUBROUTINE binv_norm 23,760
-      SUBROUTINE binv_norm_tile 145,5987
+ROMS/Utility/def_info.F,32
+      SUBROUTINE def_info 2,21
 
-ROMS/Utility/read_couplepar.F,80
-      SUBROUTINE read_CouplePar 3,43
-      SUBROUTINE read_CouplePar301,11538
+ROMS/Utility/def_norm.F,68
+      SUBROUTINE def_norm 3,38
+      SUBROUTINE def_norm952,34314
+
+ROMS/Utility/inquire.F,31
+      SUBROUTINE inquire 2,21
 
 ROMS/Utility/wrt_tides.F,70
       SUBROUTINE wrt_tides 3,92
       SUBROUTINE wrt_tides279,10888
 
-ROMS/Utility/array_modes.F,109
-      SUBROUTINE rep_check 37,1555
-      SUBROUTINE rep_eigen 126,4279
-      SUBROUTINE rep_clip 200,6530
+ROMS/Utility/checkdefs.F,32
+      SUBROUTINE checkdefs2,21
 
-ROMS/Utility/checkadj.F,31
-      SUBROUTINE checkadj2,21
-
-ROMS/Utility/def_var.F,32
-      FUNCTION def_var 75,4887
+ROMS/Utility/checkerror.F,32
+      FUNCTION CheckError 2,21
 
 ROMS/Utility/distribute.F,1370
       SUBROUTINE mp_barrier 86,3981
@@ -1153,6 +1146,12 @@ ROMS/Utility/extract_obs.F,83
       SUBROUTINE extract_obs2d 126,8180
       SUBROUTINE extract_obs3d 267,12970
 
+ROMS/Utility/frc_weak.F,163
+      SUBROUTINE frc_ADgather 26,967
+      SUBROUTINE frc_ADgather_tile 87,3669
+      SUBROUTINE frc_clear 342,11580
+      SUBROUTINE frc_clear_tile 390,13500
+
 ROMS/Utility/gasdev.F,67
       SUBROUTINE gasdev_s 2,21
       SUBROUTINE gasdev_v 74,2617
@@ -1161,16 +1160,23 @@ ROMS/Utility/get_3dfld.F,70
       SUBROUTINE get_3dfld 3,36
       SUBROUTINE get_3dfld292,12023
 
-ROMS/Utility/read_fltbiopar.F,39
-      SUBROUTINE read_FltBioPar20,936
+ROMS/Utility/get_bounds.F,321
+      SUBROUTINE get_bounds 2,21
+      SUBROUTINE get_domain 261,8824
+      SUBROUTINE get_domain_edges 412,14480
+      SUBROUTINE get_iobounds 622,22665
+      SUBROUTINE get_tile 739,28674
+      SUBROUTINE tile_bounds_1d 877,36480
+      SUBROUTINE tile_bounds_2d 933,38757
+      SUBROUTINE var_bounds 1009,42183
 
-ROMS/Utility/wrt_hessian.F,75
-      SUBROUTINE wrt_hessian 7,248
-      SUBROUTINE wrt_hessian485,16954
+ROMS/Utility/rescale_HSS.F,119
+      SUBROUTINE rescale_HSS 20,544
+      SUBROUTINE rescale_HSS_tile 90,3130
+      SUBROUTINE read_state 319,11130
 
-ROMS/Utility/def_mod.F,67
-      SUBROUTINE def_mod 3,67
-      SUBROUTINE def_mod1249,45205
+ROMS/Utility/wrt_info.F,32
+      SUBROUTINE wrt_info 2,21
 
 ROMS/Utility/ini_adjust.F,698
       SUBROUTINE ini_adjust 54,1904
@@ -1195,27 +1201,25 @@ ROMS/Utility/ini_lanczos.F,121
       SUBROUTINE ini_lanczos_tile 135,5916
       SUBROUTINE read_state 614,25068
 
-ROMS/Utility/ludcmp.F,30
-      SUBROUTINE ludcmp 2,21
+ROMS/Utility/lanc_resid.F,78
+      SUBROUTINE lanc_resid 19,659
+      SUBROUTINE lanc_resid_tile 99,4022
 
 ROMS/Utility/metrics.F,73
       SUBROUTINE metrics 23,912
       SUBROUTINE metrics_tile 103,4673
 
-ROMS/Utility/obs_write.F,71
-      SUBROUTINE obs_write 3,93
-      SUBROUTINE obs_write1029,43602
+ROMS/Utility/obs_initial.F,74
+      SUBROUTINE obs_initial 3,93
+      SUBROUTINE obs_initial310,10171
 
-ROMS/Utility/read_sedpar.F,36
-      SUBROUTINE read_SedPar17,792
+ROMS/Utility/read_asspar.F,76
+      SUBROUTINE read_AssPar 4,115
+      SUBROUTINE read_AssPar1152,47447
 
-ROMS/Utility/convolve.F,79
-      SUBROUTINE convolve 47,2500
-      SUBROUTINE error_covariance 148,5844
-
-ROMS/Utility/def_norm.F,68
-      SUBROUTINE def_norm 3,38
-      SUBROUTINE def_norm952,34314
+ROMS/Utility/back_cost.F,78
+      SUBROUTINE back_cost 70,4471
+      SUBROUTINE back_cost_tile 133,6848
 
 ROMS/Utility/def_rst.F,31
       SUBROUTINE def_rst 2,21
@@ -1224,57 +1228,62 @@ ROMS/Utility/def_station.F,75
       SUBROUTINE def_station 3,37
       SUBROUTINE def_station2316,87592
 
-ROMS/Utility/inner2state.F,396
-      SUBROUTINE tl_inner2state 32,1288
-      SUBROUTINE tl_inner2state_tile 153,6365
-      SUBROUTINE ad_inner2state 1378,51521
-      SUBROUTINE ad_inner2state_tile 1496,56573
-      SUBROUTINE ini_C_norm 2088,76467
-      SUBROUTINE ini_C_norm_tile 2210,81668
-      SUBROUTINE ini_EA_norm 2871,107551
-      SUBROUTINE ini_EA_norm_tile 2990,112650
-      SUBROUTINE read_state 3687,139782
+ROMS/Utility/def_tides.F,70
+      SUBROUTINE def_tides 3,92
+      SUBROUTINE def_tides658,22874
+
+ROMS/Utility/def_var.F,32
+      FUNCTION def_var 75,4887
+
+ROMS/Utility/read_phypar.F,35
+      SUBROUTINE read_PhyPar 2,21
 
 ROMS/Utility/state_addition.F,41
       SUBROUTINE state_addition 27,1284
 
-ROMS/Utility/uv_rotate.F,77
-      SUBROUTINE uv_rotate2d 28,1119
-      SUBROUTINE uv_rotate3d 148,5314
+ROMS/Utility/state_copy.F,37
+      SUBROUTINE state_copy 24,1053
 
-ROMS/Utility/wrt_aug_imp.F,74
-      SUBROUTINE wrt_aug_imp 3,65
-      SUBROUTINE wrt_aug_imp290,10568
+ROMS/Utility/sum_grad.F,75
+      SUBROUTINE sum_grad 25,1020
+      SUBROUTINE sum_grad_tile 79,3116
 
 ROMS/Utility/wrt_diags.F,70
       SUBROUTINE wrt_diags 3,40
       SUBROUTINE wrt_diags292,10007
 
-ROMS/Utility/wrt_evolved.F,74
-      SUBROUTINE wrt_evolved 3,64
-      SUBROUTINE wrt_evolved481,16784
+ROMS/Utility/wrt_hessian.F,75
+      SUBROUTINE wrt_hessian 7,248
+      SUBROUTINE wrt_hessian485,16954
 
-ROMS/Utility/wrt_gst.F,66
-      SUBROUTINE wrt_gst 3,69
-      SUBROUTINE wrt_gst265,10578
-
-ROMS/Utility/get_2dfld.F,33
-      SUBROUTINE get_2dfld 2,21
+ROMS/Utility/cgradient.F,485
+      SUBROUTINE cgradient 138,9110
+      SUBROUTINE cgradient_tile 287,15552
+      SUBROUTINE tl_new_state 1416,60256
+      SUBROUTINE read_state 2339,92854
+      SUBROUTINE new_direction 2940,114014
+      SUBROUTINE hessian 3619,135967
+      SUBROUTINE lanczos 4476,168022
+      SUBROUTINE new_gradient 5248,200659
+      SUBROUTINE hessian_evecs 5636,216458
+      SUBROUTINE cg_write 6415,247833
+      SUBROUTINE new_cost 6623,255835
+      SUBROUTINE precond 7143,276751
 
 ROMS/Utility/get_3dfldr.F,72
       SUBROUTINE get_3dfldr 3,60
       SUBROUTINE get_3dfldr293,12107
 
-ROMS/Utility/read_stapar.F,74
-      SUBROUTINE read_StaPar 3,37
-      SUBROUTINE read_StaPar603,28777
+ROMS/Utility/get_cycle.F,33
+      SUBROUTINE get_cycle 2,21
 
-ROMS/Utility/set_3dfld.F,40
-      SUBROUTINE set_3dfld_tile 22,964
+ROMS/Utility/read_sedpar.F,36
+      SUBROUTINE read_SedPar17,792
 
-ROMS/Utility/set_ngfldr.F,71
-      SUBROUTINE set_ngfldr 3,36
-      SUBROUTINE set_ngfldr141,5597
+ROMS/Utility/set_diags.F,111
+      SUBROUTINE set_diags 3,40
+      SUBROUTINE set_diags_tile 52,1911
+      SUBROUTINE set_diags623,22559
 
 ROMS/Utility/set_scoord.F,72
       SUBROUTINE set_scoord 3,36
@@ -1284,9 +1293,11 @@ ROMS/Utility/set_weights.F,73
       SUBROUTINE set_weights 3,36
       SUBROUTINE set_weights239,8303
 
-ROMS/Utility/sfilter.F,71
-      SUBROUTINE sfilter(22,827
-      SUBROUTINE ad_sfilter(153,6861
+ROMS/Utility/shapiro.F,174
+      SUBROUTINE shapiro2d_tile 26,1310
+      SUBROUTINE shapiro3d_tile 129,4552
+      SUBROUTINE ad_shapiro2d_tile 233,7914
+      SUBROUTINE ad_shapiro3d_tile 367,12267
 
 ROMS/Utility/state_dotprod.F,40
       SUBROUTINE state_dotprod 53,2639
@@ -1307,33 +1318,16 @@ ROMS/Utility/strings.F,144
       FUNCTION lowercase 155,6259
       FUNCTION uppercase 206,8424
 
-ROMS/Utility/wrt_his.F,31
-      SUBROUTINE wrt_his 2,21
+ROMS/Utility/obs_read.F,68
+      SUBROUTINE obs_read 3,93
+      SUBROUTINE obs_read327,13045
 
-ROMS/Utility/def_tides.F,70
-      SUBROUTINE def_tides 3,92
-      SUBROUTINE def_tides658,22874
+ROMS/Utility/get_2dfld.F,33
+      SUBROUTINE get_2dfld 2,21
 
-ROMS/Utility/erf.F,278
-      FUNCTION ERF 42,1959
-      FUNCTION ERFC 72,2885
-      FUNCTION ERFCC 102,3844
-      FUNCTION GAMMLN 141,5560
-      FUNCTION GAMMP 188,7291
-      FUNCTION GAMMQ 231,8674
-      SUBROUTINE gser 275,10139
-      SUBROUTINE gcf 342,12096
-      FUNCTION AERF 409,14087
-
-ROMS/Utility/frc_weak.F,163
-      SUBROUTINE frc_ADgather 26,967
-      SUBROUTINE frc_ADgather_tile 87,3669
-      SUBROUTINE frc_clear 342,11580
-      SUBROUTINE frc_clear_tile 390,13500
-
-ROMS/Utility/nf_fwrite2d.F,74
-      FUNCTION nf_fwrite2d 53,3072
-      FUNCTION nf_fwrite2d 347,10931
+ROMS/Utility/get_2dfldr.F,72
+      SUBROUTINE get_2dfldr 3,36
+      SUBROUTINE get_2dfldr287,11756
 
 ROMS/Utility/nf_fwrite2d_bry.F,40
       FUNCTION nf_fwrite2d_bry 50,2888
@@ -1371,25 +1365,26 @@ ROMS/Utility/nrutil.F,593
       FUNCTION reallocate_rm 417,14224
       FUNCTION reallocate_im 454,15625
 
-ROMS/Utility/rescale_HSS.F,119
-      SUBROUTINE rescale_HSS 20,544
-      SUBROUTINE rescale_HSS_tile 90,3130
-      SUBROUTINE read_state 319,11130
+ROMS/Utility/obs_cost.F,67
+      SUBROUTINE obs_cost 3,67
+      SUBROUTINE obs_cost237,9069
 
-ROMS/Utility/set_diags.F,111
-      SUBROUTINE set_diags 3,40
-      SUBROUTINE set_diags_tile 52,1911
-      SUBROUTINE set_diags623,22559
+ROMS/Utility/rpcg_lanczos.F,195
+      SUBROUTINE rpcg_lanczos 4,66
+      SUBROUTINE RPevecs 1156,45917
+      SUBROUTINE rprecond 1256,49022
+      SUBROUTINE cg_write_rpcg 1405,53432
+      SUBROUTINE rpcg_lanczos1673,64049
 
 ROMS/Utility/set_ngfld.F,33
       SUBROUTINE set_ngfld 2,21
 
-ROMS/Utility/state_scale.F,38
-      SUBROUTINE state_scale 24,1056
+ROMS/Utility/set_ngfldr.F,71
+      SUBROUTINE set_ngfldr 3,36
+      SUBROUTINE set_ngfldr141,5597
 
-ROMS/Utility/stats_modobs.F,76
-      SUBROUTINE stats_modobs 3,93
-      SUBROUTINE stats_modobs298,12359
+ROMS/Utility/set_3dfld.F,40
+      SUBROUTINE set_3dfld_tile 22,964
 
 ROMS/Utility/zeta_balance.F,633
       SUBROUTINE balance_ref 51,2547
@@ -1409,22 +1404,12 @@ ROMS/Utility/zeta_balance.F,633
       SUBROUTINE ad_r2d_bc 2753,100550
       SUBROUTINE ad_r2d_dotp 2910,105552
 
-ROMS/Utility/cgradient.F,485
-      SUBROUTINE cgradient 138,9110
-      SUBROUTINE cgradient_tile 287,15552
-      SUBROUTINE tl_new_state 1416,60256
-      SUBROUTINE read_state 2339,92854
-      SUBROUTINE new_direction 2940,114014
-      SUBROUTINE hessian 3619,135967
-      SUBROUTINE lanczos 4476,168022
-      SUBROUTINE new_gradient 5248,200659
-      SUBROUTINE hessian_evecs 5636,216458
-      SUBROUTINE cg_write 6415,247833
-      SUBROUTINE new_cost 6623,255835
-      SUBROUTINE precond 7143,276751
+ROMS/Utility/obs_write.F,71
+      SUBROUTINE obs_write 3,93
+      SUBROUTINE obs_write1029,43602
 
-ROMS/Utility/checkdefs.F,32
-      SUBROUTINE checkdefs2,21
+ROMS/Utility/checkvars.F,33
+      SUBROUTINE checkvars 2,21
 
 ROMS/Utility/mp_exchange.F,505
       SUBROUTINE tile_neighbors 73,4694
@@ -1461,30 +1446,22 @@ ROMS/Utility/nf_fread4d.F,72
 ROMS/Utility/nf_fwrite3d_bry.F,40
       FUNCTION nf_fwrite3d_bry 52,3034
 
-ROMS/Utility/obs_cost.F,67
-      SUBROUTINE obs_cost 3,67
-      SUBROUTINE obs_cost237,9069
-
 ROMS/Utility/obs_depth.F,69
       SUBROUTINE obs_depth 4,115
       SUBROUTINE obs_depth99,3676
 
-ROMS/Utility/rpcg_lanczos.F,195
-      SUBROUTINE rpcg_lanczos 4,66
-      SUBROUTINE RPevecs 1156,45917
-      SUBROUTINE rprecond 1256,49022
-      SUBROUTINE cg_write_rpcg 1405,53432
-      SUBROUTINE rpcg_lanczos1673,64049
+ROMS/Utility/sfilter.F,71
+      SUBROUTINE sfilter(22,827
+      SUBROUTINE ad_sfilter(153,6861
 
-ROMS/Utility/wrt_info.F,32
-      SUBROUTINE wrt_info 2,21
+ROMS/Utility/lbc.F,115
+      SUBROUTINE lbc_getatt 27,1610
+      SUBROUTINE lbc_putatt 310,14566
+      SUBROUTINE lbc_report 458,20301
 
-ROMS/Utility/checkvars.F,33
-      SUBROUTINE checkvars 2,21
-
-ROMS/Utility/def_diags.F,70
-      SUBROUTINE def_diags 3,40
-      SUBROUTINE def_diags770,25370
+ROMS/Utility/stats_modobs.F,76
+      SUBROUTINE stats_modobs 3,93
+      SUBROUTINE stats_modobs298,12359
 
 ROMS/Utility/def_floats.F,72
       SUBROUTINE def_floats 3,35
@@ -1498,8 +1475,12 @@ ROMS/Utility/extract_sta.F,82
       SUBROUTINE extract_sta2d 62,3946
       SUBROUTINE extract_sta3d 332,12623
 
-ROMS/Utility/state_copy.F,37
-      SUBROUTINE state_copy 24,1053
+ROMS/Utility/get_ngfldr.F,72
+      SUBROUTINE get_ngfldr 3,36
+      SUBROUTINE get_ngfldr271,11198
+
+ROMS/Utility/ludcmp.F,30
+      SUBROUTINE ludcmp 2,21
 
 ROMS/Utility/white_noise.F,214
       SUBROUTINE white_noise1d 49,2338
@@ -1508,18 +1489,9 @@ ROMS/Utility/white_noise.F,214
       SUBROUTINE white_noise3d 352,10739
       SUBROUTINE white_noise3d_bry 476,14245
 
-ROMS/Utility/get_bounds.F,321
-      SUBROUTINE get_bounds 2,21
-      SUBROUTINE get_domain 261,8824
-      SUBROUTINE get_domain_edges 412,14480
-      SUBROUTINE get_iobounds 622,22665
-      SUBROUTINE get_tile 739,28674
-      SUBROUTINE tile_bounds_1d 877,36480
-      SUBROUTINE tile_bounds_2d 933,38757
-      SUBROUTINE var_bounds 1009,42183
-
-ROMS/Utility/get_cycle.F,33
-      SUBROUTINE get_cycle 2,21
+ROMS/Utility/wpoints.F,73
+      SUBROUTINE wpoints 39,1347
+      SUBROUTINE wpoints_tile 75,2617
 
 ROMS/Utility/get_date.F,178
       SUBROUTINE get_date 2,21
@@ -1539,11 +1511,11 @@ ROMS/Utility/get_gst.F,66
 ROMS/Utility/get_ngfld.F,33
       SUBROUTINE get_ngfld 2,21
 
+ROMS/Utility/get_state.F,33
+      SUBROUTINE get_state 2,21
+
 ROMS/Utility/get_varcoords.F,37
       SUBROUTINE get_varcoords 2,21
-
-ROMS/Utility/inquire.F,31
-      SUBROUTINE inquire 2,21
 
 ROMS/Utility/nf_fread2d.F,72
       FUNCTION nf_fread2d 48,2823
@@ -1597,15 +1569,16 @@ ROMS/Utility/set_masks.F,120
       SUBROUTINE set_masks_tile 105,4367
       SUBROUTINE set_avg_masks 439,15963
 
-ROMS/Utility/shapiro.F,174
-      SUBROUTINE shapiro2d_tile 26,1310
-      SUBROUTINE shapiro3d_tile 129,4552
-      SUBROUTINE ad_shapiro2d_tile 233,7914
-      SUBROUTINE ad_shapiro3d_tile 367,12267
-
 ROMS/Utility/sqlq.F,61
         SUBROUTINE sqlq 4,68
       SUBROUTINE sqlq108,4023
+
+ROMS/Utility/state_scale.F,38
+      SUBROUTINE state_scale 24,1056
+
+ROMS/Utility/sum_imp.F,72
+      SUBROUTINE sum_imp 20,731
+      SUBROUTINE sum_imp_tile 63,2469
 
 ROMS/Utility/timers.F,70
       SUBROUTINE wclock_on 2,21
@@ -1636,9 +1609,9 @@ ROMS/Utility/wrt_station.F,75
       SUBROUTINE wrt_station 3,37
       SUBROUTINE wrt_station1482,68512
 
-ROMS/Utility/obs_initial.F,74
-      SUBROUTINE obs_initial 3,93
-      SUBROUTINE obs_initial310,10171
+ROMS/Utility/time_corr.F,70
+      SUBROUTINE time_corr 3,70
+      SUBROUTINE time_corr749,26567
 
 ROMS/Utility/set_2dfld.F,40
       SUBROUTINE set_2dfld_tile 21,949
@@ -1646,9 +1619,8 @@ ROMS/Utility/set_2dfld.F,40
 ROMS/Utility/set_2dfldr.F,41
       SUBROUTINE set_2dfldr_tile 22,966
 
-ROMS/Utility/lanc_resid.F,78
-      SUBROUTINE lanc_resid 19,659
-      SUBROUTINE lanc_resid_tile 99,4022
+ROMS/Utility/wrt_his.F,31
+      SUBROUTINE wrt_his 2,21
 
 ROMS/Utility/packing.F,1146
       SUBROUTINE c_norm2 72,1883
@@ -1680,16 +1652,12 @@ ROMS/Utility/packing.F,1146
       SUBROUTINE sp_acoef 8203,241868
       FUNCTION sp_autoc 8273,244318
 
-ROMS/Utility/wrt_floats.F,72
-      SUBROUTINE wrt_floats 3,35
-      SUBROUTINE wrt_floats285,10698
+ROMS/Utility/uv_rotate.F,77
+      SUBROUTINE uv_rotate2d 28,1119
+      SUBROUTINE uv_rotate3d 148,5314
 
-ROMS/Utility/get_ngfldr.F,72
-      SUBROUTINE get_ngfldr 3,36
-      SUBROUTINE get_ngfldr271,11198
-
-ROMS/Utility/get_state.F,33
-      SUBROUTINE get_state 2,21
+ROMS/Utility/def_his.F,31
+      SUBROUTINE def_his 2,21
 
 ROMS/Utility/grid_coords.F,74
        SUBROUTINE grid_coords 3,60
@@ -1710,13 +1678,26 @@ ROMS/Utility/inp_par.F,316
       FUNCTION load_s1d 1563,58295
       FUNCTION load_s2d 1735,64584
 
-ROMS/Utility/read_fltpar.F,74
-      SUBROUTINE read_FltPar 3,35
-      SUBROUTINE read_FltPar322,12700
+ROMS/Utility/read_stapar.F,74
+      SUBROUTINE read_StaPar 3,37
+      SUBROUTINE read_StaPar603,28777
 
-ROMS/Utility/get_2dfldr.F,72
-      SUBROUTINE get_2dfldr 3,36
-      SUBROUTINE get_2dfldr287,11756
+ROMS/Utility/comp_Jb0.F,154
+      SUBROUTINE comp_Jb0 25,963
+      SUBROUTINE comp_Jb0_tile 112,4641
+      SUBROUTINE aug_oper 336,14299
+      SUBROUTINE aug_oper_tile 391,16418
+
+ROMS/Utility/inner2state.F,396
+      SUBROUTINE tl_inner2state 32,1288
+      SUBROUTINE tl_inner2state_tile 153,6365
+      SUBROUTINE ad_inner2state 1378,51521
+      SUBROUTINE ad_inner2state_tile 1496,56573
+      SUBROUTINE ini_C_norm 2088,76467
+      SUBROUTINE ini_C_norm_tile 2210,81668
+      SUBROUTINE ini_EA_norm 2871,107551
+      SUBROUTINE ini_EA_norm_tile 2990,112650
+      SUBROUTINE read_state 3687,139782
 
 ROMS/Utility/interpolate.F,195
       SUBROUTINE linterp2d 32,1486
@@ -1725,31 +1706,28 @@ ROMS/Utility/interpolate.F,195
       LOGICAL FUNCTION try_range 786,34419
       LOGICAL FUNCTION inside 863,37234
 
-ROMS/Utility/lbc.F,115
-      SUBROUTINE lbc_getatt 27,1610
-      SUBROUTINE lbc_putatt 310,14566
-      SUBROUTINE lbc_report 458,20301
-
 ROMS/Utility/lubksb.F,30
       SUBROUTINE lubksb 2,21
 
-ROMS/Utility/obs_read.F,68
-      SUBROUTINE obs_read 3,93
-      SUBROUTINE obs_read327,13045
+ROMS/Utility/nf_fwrite2d.F,74
+      FUNCTION nf_fwrite2d 53,3072
+      FUNCTION nf_fwrite2d 347,10931
 
-ROMS/Utility/sum_imp.F,72
-      SUBROUTINE sum_imp 20,731
-      SUBROUTINE sum_imp_tile 63,2469
+ROMS/Utility/wrt_evolved.F,74
+      SUBROUTINE wrt_evolved 3,64
+      SUBROUTINE wrt_evolved481,16784
 
-ROMS/Utility/checkerror.F,32
-      FUNCTION CheckError 2,21
+ROMS/Utility/binv_norm.F,77
+      SUBROUTINE binv_norm 23,760
+      SUBROUTINE binv_norm_tile 145,5987
+
+ROMS/Utility/close_io.F,69
+      SUBROUTINE close_inp 2,21
+      SUBROUTINE close_out129,4315
 
 ROMS/Utility/def_hessian.F,76
       SUBROUTINE def_hessian 6,243
       SUBROUTINE def_hessian1098,37220
-
-ROMS/Utility/def_his.F,31
-      SUBROUTINE def_his 2,21
 
 ROMS/Utility/def_impulse.F,74
       SUBROUTINE def_impulse 3,44
@@ -1763,27 +1741,39 @@ ROMS/Utility/def_lanczos.F,75
       SUBROUTINE def_lanczos 3,41
       SUBROUTINE def_lanczos1039,35166
 
-ROMS/Utility/read_asspar.F,76
-      SUBROUTINE read_AssPar 4,115
-      SUBROUTINE read_AssPar1152,47447
+ROMS/Utility/def_mod.F,67
+      SUBROUTINE def_mod 3,67
+      SUBROUTINE def_mod1249,45205
 
-ROMS/Utility/sum_grad.F,75
-      SUBROUTINE sum_grad 25,1020
-      SUBROUTINE sum_grad_tile 79,3116
+ROMS/Utility/erf.F,278
+      FUNCTION ERF 42,1959
+      FUNCTION ERFC 72,2885
+      FUNCTION ERFCC 102,3844
+      FUNCTION GAMMLN 141,5560
+      FUNCTION GAMMP 188,7291
+      FUNCTION GAMMQ 231,8674
+      SUBROUTINE gser 275,10139
+      SUBROUTINE gcf 342,12096
+      FUNCTION AERF 409,14087
 
-ROMS/Utility/wpoints.F,73
-      SUBROUTINE wpoints 39,1347
-      SUBROUTINE wpoints_tile 75,2617
+ROMS/Utility/read_biopar.F,37
+      SUBROUTINE read_BioPar30,1161
+
+ROMS/Utility/wrt_aug_imp.F,74
+      SUBROUTINE wrt_aug_imp 3,65
+      SUBROUTINE wrt_aug_imp290,10568
 
 ROMS/Utility/wrt_error.F,71
       SUBROUTINE wrt_error 4,116
       SUBROUTINE wrt_error501,17950
 
-ROMS/Utility/def_info.F,32
-      SUBROUTINE def_info 2,21
+ROMS/Utility/wrt_floats.F,72
+      SUBROUTINE wrt_floats 3,35
+      SUBROUTINE wrt_floats285,10698
 
-ROMS/Utility/read_phypar.F,35
-      SUBROUTINE read_PhyPar 2,21
+ROMS/Utility/wrt_gst.F,66
+      SUBROUTINE wrt_gst 3,69
+      SUBROUTINE wrt_gst265,10578
 
 ROMS/Utility/congrad.F,180
       SUBROUTINE congrad 4,67
@@ -1791,6 +1781,10 @@ ROMS/Utility/congrad.F,180
       SUBROUTINE rprecond 1292,49732
       SUBROUTINE cg_write 1460,54196
       SUBROUTINE congrad1706,63554
+
+ROMS/Utility/convolve.F,79
+      SUBROUTINE convolve 47,2500
+      SUBROUTINE error_covariance 148,5844
 
 ROMS/Utility/cost_grad.F,78
       SUBROUTINE cost_grad 42,2248
@@ -1807,85 +1801,91 @@ ROMS/Utility/def_error.F,72
       SUBROUTINE def_error 4,116
       SUBROUTINE def_error1046,35928
 
-ROMS/Utility/time_corr.F,70
-      SUBROUTINE time_corr 3,70
-      SUBROUTINE time_corr749,26567
+ROMS/Utility/read_couplepar.F,80
+      SUBROUTINE read_CouplePar 3,43
+      SUBROUTINE read_CouplePar301,11538
 
-ROMS/Utility/close_io.F,69
-      SUBROUTINE close_inp 2,21
-      SUBROUTINE close_out129,4315
+ROMS/Utility/def_diags.F,70
+      SUBROUTINE def_diags 3,40
+      SUBROUTINE def_diags770,25370
 
-ROMS/Utility/comp_Jb0.F,154
-      SUBROUTINE comp_Jb0 25,963
-      SUBROUTINE comp_Jb0_tile 112,4641
-      SUBROUTINE aug_oper 336,14299
-      SUBROUTINE aug_oper_tile 391,16418
+ROMS/Utility/read_fltbiopar.F,39
+      SUBROUTINE read_FltBioPar20,936
 
-ROMS/Utility/read_biopar.F,37
-      SUBROUTINE read_BioPar30,1161
+ROMS/Utility/abort.F,29
+      SUBROUTINE abort 2,21
 
-ROMS/Tangent/tl_uv3dmix.F,0
+ROMS/Utility/array_modes.F,109
+      SUBROUTINE rep_check 37,1555
+      SUBROUTINE rep_eigen 126,4279
+      SUBROUTINE rep_clip 200,6530
 
-ROMS/Tangent/tl_t3dmix.F,0
+ROMS/Utility/read_fltpar.F,74
+      SUBROUTINE read_FltPar 3,35
+      SUBROUTINE read_FltPar322,12700
 
 ROMS/Tangent/tl_step2d.F,0
 
 ROMS/Tangent/tl_prsgrd.F,0
 
+ROMS/Tangent/tl_uv3dmix.F,0
+
+ROMS/Tangent/tl_t3dmix.F,0
+
 ROMS/Tangent/Biology/tl_biology.F,0
-
-ROMS/Representer/rp_t3dmix.F,0
-
-ROMS/Representer/rp_step2d.F,0
 
 ROMS/Representer/rp_prsgrd.F,0
 
 ROMS/Representer/rp_uv3dmix.F,0
 
+ROMS/Representer/rp_t3dmix.F,0
+
+ROMS/Representer/rp_step2d.F,0
+
 ROMS/Representer/Biology/rp_biology.F,0
 
 ROMS/Programs/types.F,0
+
+ROMS/Nonlinear/bbl.F,0
 
 ROMS/Nonlinear/step2d.F,0
 
 ROMS/Nonlinear/uv3dmix.F,0
 
-ROMS/Nonlinear/radiation_stress.F,0
-
 ROMS/Nonlinear/t3dmix.F,0
 
-ROMS/Nonlinear/bbl.F,0
+ROMS/Nonlinear/radiation_stress.F,0
 
 ROMS/Nonlinear/prsgrd.F,0
 
-ROMS/Nonlinear/Biology/biology.F,0
-
 ROMS/Nonlinear/Biology/biology_floats.F,0
 
-ROMS/Modules/mod_sedbed.F,0
-
-ROMS/Modules/mod_strings.F,0
+ROMS/Nonlinear/Biology/biology.F,0
 
 ROMS/Modules/mod_sediment.F,0
 
-ROMS/Modules/mod_kinds.F,0
-
 ROMS/Modules/mod_eoscoef.F,0
+
+ROMS/Modules/mod_behavior.F,0
+
+ROMS/Modules/mod_strings.F,0
+
+ROMS/Modules/mod_sedbed.F,0
+
+ROMS/Modules/mod_kinds.F,0
 
 ROMS/Modules/mod_eclight.F,0
 
 ROMS/Modules/mod_biology.F,0
 
-ROMS/Modules/mod_behavior.F,0
-
 ROMS/Functionals/analytical.F,0
+
+ROMS/Adjoint/ad_uv3dmix.F,0
 
 ROMS/Adjoint/ad_prsgrd.F,0
 
 ROMS/Adjoint/ad_t3dmix.F,0
 
 ROMS/Adjoint/ad_step2d.F,0
-
-ROMS/Adjoint/ad_uv3dmix.F,0
 
 ROMS/Adjoint/Biology/ad_biology.F,0
