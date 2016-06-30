@@ -303,10 +303,10 @@
 !     Name of Observations
 !
         character(len=10), parameter :: Oname(20) =                     &
-     &       (/ 'ZETA', 'UBAR', 'VBAR', 'U', 'V', 'TEMP', 'SALT',       &
+     &       (/ 'zeta', 'ubar', 'vbar', 'u', 'v', 'temp', 'salt',       &
      &       '_08_', '_09_', '_10_', '_11_', '_12_', '_13_',            &
      &       '_14_', '_15_', '_16_', '_17_', '_18_', '_19_',            &
-     &       'Radials' /)
+     &       'radials' /)
 !
 !  Number of interpolation weights and (I,J,K) indices offsets.
 !

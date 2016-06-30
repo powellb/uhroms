@@ -470,12 +470,12 @@
 #  ifdef DISTRIBUTE
           CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
-     &                           NghostPoints, EWperiodic, NSperiodic,  &
-     &                           f_v)
+     &                           NghostPoints, EWperiodic(ng),          &
+     &                           NSperiodic(ng), f_v)
           CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
-     &                           NghostPoints, EWperiodic, NSperiodic,  &
-     &                           f_u)
+     &                           NghostPoints, EWperiodic(ng),          &
+     &                           NSperiodic(ng), f_u)
 #  endif
         END IF
 # endif
