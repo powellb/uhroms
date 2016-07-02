@@ -381,17 +381,11 @@
             Ztop=Adepth(i1,j1,N(ng))
             Zbot=Adepth(i1,j1,1    )
             IF (Zobs(iobs).ge.Ztop) THEN
-              r1=0.0_r8                        ! If shallower, ignore.
+              k1=N(ng)
+              k2=N(ng)
+              r1=1.0_r8                        ! If shallower, set to surface
               r2=0.0_r8
-# ifdef BGQC
-#  ifdef IS4DVAR
-              IF (inner.eq.0.and.wrtNLmod(ng)) ObsScale(iobs)=0.0_r8
-#  else
-              IF (inner.eq.0.and.outer.eq.0) ObsScale(iobs)=0.0_r8
-#  endif
-# else
-              ObsScale(iobs)=0.0_r8
-# endif
+              Zobs(iobs)=REAL(N(ng),r8)
             ELSE IF (Zbot.ge.Zobs(iobs)) THEN
               r1=0.0_r8                        ! If deeper, ignore.
               r2=0.0_r8
