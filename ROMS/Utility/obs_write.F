@@ -59,6 +59,7 @@
       real(r8) :: df1, df2, Thresh
 # endif
       real(r8) :: misfit(Mobs), uradial(Mobs), vradial(Mobs)
+      real(r8) :: noscale(Mobs)
 
       character (len=50) :: string
 
@@ -114,13 +115,13 @@
 !
           DO iobs=Mstr,Mend
             IF (ObsProv(iobs).le.5) THEN
-               BgThresh(iobs)=100000.0_r8
+              BgThresh(iobs)=100000.0_r8
             ELSE
-!AMM              IF (ObsType(iobs).eq.6) BgThresh(iobs)=16.0_r8
-!AMM              IF (ObsType(iobs).eq.7) BgThresh(iobs)=16.0_r8
-              IF (ObsType(iobs).eq.6) BgThresh(iobs)=user(1)**2
-              IF (ObsType(iobs).eq.7) BgThresh(iobs)=user(1)**2
-            ENDIF
+              IF (ObsType(iobs).eq.6) BgThresh(iobs)=16.0_r8
+              IF (ObsType(iobs).eq.7) BgThresh(iobs)=16.0_r8
+!               IF (ObsType(iobs).eq.6) BgThresh(iobs)=user(1)**2
+!               IF (ObsType(iobs).eq.7) BgThresh(iobs)=user(1)**2
+            END IF
           END DO
 #  endif
         END IF
@@ -566,7 +567,7 @@
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, noscale,                         &
      &                        Tobs, Xobs, Yobs,                         &
      &                        GRID(ng)%angler,                          &
 #    ifdef MASKING
@@ -653,7 +654,7 @@
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, noscale,                         &
      &                        Tobs, Xobs, Yobs,                         &
      &                        GRID(ng)%angler,                          &
 #    ifdef MASKING
