@@ -164,8 +164,8 @@
           IF (exit_flag.ne.NoError) RETURN
         END IF
         Load_Zobs(ng)=.FALSE.
-        IF ((MINVAL(Zobs).lt.0.0_r8).or.                                &
-     &      (MAXVAL(Zobs).lt.0.0_r8)) THEN
+        IF ((MINVAL(Zobs).le.0.0_r8).or.                                &
+     &      (MAXVAL(Zobs).le.0.0_r8)) THEN
           Load_Zobs(ng)=.TRUE.
         END IF
 
