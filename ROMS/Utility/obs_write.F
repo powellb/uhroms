@@ -558,6 +558,7 @@
           END DO
           uradial=IniVal
           vradial=IniVal
+          noscale=IniVal
 #   ifdef CURVGRID
 !     Get the grid angle for each observation location          
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
@@ -580,11 +581,11 @@
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
-     &                        uXmin(ng), uXmax(ng)+0.5,                 &
+     &                        uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,       &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
      &                        ObsType,  noscale,                        &
-     &                        Tobs, Xobs+0.5, Yobs, Zobs,               &
+     &                        Tobs, Xobs+0.5_r8, Yobs, Zobs,            &
      &                        OCEAN(ng)%u(:,:,:,NOUT),                  &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING
@@ -605,10 +606,10 @@
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
-     &                        vYmin(ng), vYmax(ng)+0.5,                 &
+     &                        vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,       &
      &                        time(ng), dt(ng),                         &
      &                        ObsType, ObsScale,                        &
-     &                        Tobs, Xobs, Yobs+0.5, Zobs,               &
+     &                        Tobs, Xobs, Yobs+0.5_r8, Zobs,            &
      &                        OCEAN(ng)%v(:,:,:,NOUT),                  &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING
@@ -645,7 +646,7 @@
           END DO
           uradial=IniVal
           vradial=IniVal
-          rangler=IniVal
+          noscale=IniVal
 #   ifdef CURVGRID
 !     Get the grid angle for each observation location          
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
@@ -668,11 +669,11 @@
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
-     &                        uXmin(ng), uXmax(ng)+0.5,                 &
+     &                        uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,       &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
      &                        ObsType,  noscale,                        &
-     &                        Tobs, Xobs+0.5, Yobs, Zobs,               &
+     &                        Tobs, Xobs+0.5_r8, Yobs, Zobs,            &
      &                        OCEAN(ng)%tl_u(:,:,:,NOUT),               &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING
@@ -693,10 +694,10 @@
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
-     &                        vYmin(ng), vYmax(ng)+0.5,                 &
+     &                        vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,       &
      &                        time(ng), dt(ng),                         &
      &                        ObsType, ObsScale,                        &
-     &                        Tobs, Xobs, Yobs+0.5, Zobs,               &
+     &                        Tobs, Xobs, Yobs+0.5_r8, Zobs,            &
      &                        OCEAN(ng)%tl_v(:,:,:,NOUT),               &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING

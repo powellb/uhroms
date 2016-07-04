@@ -436,10 +436,10 @@
      &                           isRadial,                              &
      &                           Mobs, 1, Nobs(ng),                     &
      &                           vXmin(ng), vXmax(ng),                  &
-     &                           vYmin(ng), vYmax(ng),                  &
+     &                           vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,    &
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
-     &                           Tobs, Xobs, Yobs+0.5, Zobs,            &
+     &                           Tobs, Xobs, Yobs+0.5_r8, Zobs,         &
      &                           f_v, z_v,                              &
 #  ifdef MASKING
      &                           vmask,                                 &
@@ -457,11 +457,11 @@
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
      &                           isRadial,                              &
      &                           Mobs, 1, Nobs(ng),                     &
-     &                           uXmin(ng), uXmax(ng),                  &
+     &                           uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,    &
      &                           uYmin(ng), uYmax(ng),                  &
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
-     &                           Tobs, Xobs+0.5, Yobs, Zobs,            &
+     &                           Tobs, Xobs+0.5_r8, Yobs, Zobs,         &
      &                           f_u, z_v,                              &
 #  ifdef MASKING
      &                           umask,                                 &
