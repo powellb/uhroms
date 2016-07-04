@@ -356,10 +356,6 @@
               ad_uradial(iobs)=ADmodVal(iobs)*COS(ObsMeta(iobs))
               ad_vradial(iobs)=ADmodVal(iobs)*SIN(ObsMeta(iobs))
 #  endif
-              ADmodVal(iobs)=IniVal
-            ELSE
-              ad_uradial(iobs)=ADmodVal(iobs)
-              ad_vradial(iobs)=ADmodVal(iobs)
             END IF
           END DO
           DO k=1,N(ng)
@@ -375,12 +371,11 @@
      &                           isRadial,                              &
      &                           Mobs, 1, Nobs(ng),                     &
      &                           vXmin(ng), vXmax(ng),                  &
-     &                           vYmin(ng), vYmax(ng),                  &
+     &                           vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,    &
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
-     &                           Tobs, Xobs, Yobs+0.5, Zobs,            &
-     &                           ad_v(:,:,:,nfrc),                      &
-     &                           z_v,                                   &
+     &                           Tobs, Xobs, Yobs+0.5_r8, Zobs,         &
+     &                           ad_v(:,:,:,nfrc), z_v                  &
 #  ifdef MASKING
      &                           vmask,                                 &
 #  endif
@@ -397,13 +392,12 @@
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
      &                           isRadial,                              &
      &                           Mobs, 1, Nobs(ng),                     &
-     &                           uXmin(ng), uXmax(ng),                  &
+     &                           uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,    &
      &                           uYmin(ng), uYmax(ng),                  &
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
-     &                           Tobs, Xobs+0.5, Yobs, Zobs,            &
-     &                           ad_u(:,:,:,nfrc),                      &
-     &                           z_v,                                   &
+     &                           Tobs, Xobs+0.5_r8, Yobs, Zobs,         &
+     &                           ad_u(:,:,:,nfrc), z_v,                 &
 #  ifdef MASKING
      &                           umask,                                 &
 #  endif
@@ -442,6 +436,9 @@
             ELSE IF (ObsType(iobs).eq.isVvel) THEN
               FOURDVAR(ng)%ObsReject(isVvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVvel)+1
+            ELSE IF (ObsType(iobs).eq.isRadial) THEN
+              FOURDVAR(ng)%ObsReject(isRadial)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.isTvar(itrc)) THEN

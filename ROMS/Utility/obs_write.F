@@ -1128,6 +1128,9 @@
             ELSE IF (ObsType(iobs).eq.isVvel) THEN
               FOURDVAR(ng)%ObsReject(isVvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVvel)+1
+            ELSE IF (ObsType(iobs).eq.isRadial) THEN
+              FOURDVAR(ng)%ObsReject(isRadial)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.isTvar(itrc)) THEN
