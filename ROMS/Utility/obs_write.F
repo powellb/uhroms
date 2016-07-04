@@ -580,10 +580,10 @@
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
-     &                        uXmin(ng), uXmax(ng),                     &
+     &                        uXmin(ng), uXmax(ng)+0.5,                 &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType,  ObsScale,                       &
+     &                        ObsType,  noscale,                        &
      &                        Tobs, Xobs+0.5, Yobs, Zobs,               &
      &                        OCEAN(ng)%u(:,:,:,NOUT),                  &
      &                        GRID(ng)%z_v,                             &
@@ -605,7 +605,7 @@
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
-     &                        vYmin(ng), vYmax(ng),                     &
+     &                        vYmin(ng), vYmax(ng)+0.5,                 &
      &                        time(ng), dt(ng),                         &
      &                        ObsType, ObsScale,                        &
      &                        Tobs, Xobs, Yobs+0.5, Zobs,               &
@@ -618,6 +618,7 @@
 !     Once both are loaded, compute the radial velocity
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.isRadial) THEN
+              ObsScale(iobs) = ObsScale(iobs)*noscale(iobs)
 #   ifdef CURVGRID
               NLmodVal(iobs)=                                           &
      &         uradial(iobs)*COS(ObsMeta(iobs)-ObsAngler(iobs))+        &
@@ -667,10 +668,10 @@
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
-     &                        uXmin(ng), uXmax(ng),                     &
+     &                        uXmin(ng), uXmax(ng)+0.5,                 &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType,  ObsScale,                       &
+     &                        ObsType,  noscale,                        &
      &                        Tobs, Xobs+0.5, Yobs, Zobs,               &
      &                        OCEAN(ng)%tl_u(:,:,:,NOUT),               &
      &                        GRID(ng)%z_v,                             &
@@ -692,7 +693,7 @@
      &                        isRadial,                                 &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
-     &                        vYmin(ng), vYmax(ng),                     &
+     &                        vYmin(ng), vYmax(ng)+0.5,                 &
      &                        time(ng), dt(ng),                         &
      &                        ObsType, ObsScale,                        &
      &                        Tobs, Xobs, Yobs+0.5, Zobs,               &
@@ -705,6 +706,7 @@
 !     Once both are loaded, compute the radial velocity
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.isRadial) THEN
+              ObsScale(iobs) = ObsScale(iobs)*noscale(iobs)
 #   ifdef CURVGRID
               TLmodVal(iobs)=                                           &
      &         uradial(iobs)*COS(ObsMeta(iobs)-ObsAngler(iobs))+        &
