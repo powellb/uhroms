@@ -374,7 +374,7 @@
           ELSE
             Ztop=Adepth(i1,j1,N(ng))
             Zbot=Adepth(i1,j1,1    )
-            IF (Zobs(iobs).eq.0.0_r8.or.Zobs(iobs).ge.Ztop) THEN
+            IF (Zobs(iobs).ge.Ztop) THEN
               k1=N(ng)
               k2=N(ng)                         ! Set the surface obs
               r1=1.0_r8                        
