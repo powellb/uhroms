@@ -375,7 +375,7 @@
      &                           time(ng), dt(ng),                      &
      &                           ObsType, ObsScale,                     &
      &                           Tobs, Xobs, Yobs+0.5_r8, Zobs,         &
-     &                           ad_v(:,:,:,nfrc), z_v                  &
+     &                           ad_v(:,:,:,nfrc), z_v,                 &
 #  ifdef MASKING
      &                           vmask,                                 &
 #  endif
