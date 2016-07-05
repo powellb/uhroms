@@ -56,7 +56,7 @@
 !
 !  Initialize observations processing counters.
 !
-        DO i=1,NobsVar(ng)
+        DO i=1,NstateVar(ng)
           FOURDVAR(ng)%ObsCount(i)=0
           FOURDVAR(ng)%ObsReject(i)=0
         END DO
@@ -190,15 +190,6 @@
      &                        total = (/Nobs(ng)/))
         IF (exit_flag.ne.NoError) RETURN
 !
-!  Read in observation meta values.                                      
-!                                                                        
-        CALL netcdf_get_fvar (ng, model, OBS(ng)%name, Vname(1,idOmeta), &
-     &                        ObsMeta(Mstr:),                           &
-     &                        ncid = OBS(ng)%ncid,                      &
-     &                        start = (/NstrObs(ng)/),                  &
-     &                        total = (/Nobs(ng)/))                      
-        IF (exit_flag.ne.NoError) RETURN                                 
-!
 # ifdef WEAK_CONSTRAINT
 !  Read in observation error covariance.
 # else
@@ -296,9 +287,6 @@
           ELSE IF (ObsType(iobs).eq.isVvel) THEN
             FOURDVAR(ng)%ObsCount(isVvel)=                              &
      &                           FOURDVAR(ng)%ObsCount(isVvel)+1
-          ELSE IF (ObsType(iobs).eq.isRadial) THEN
-            FOURDVAR(ng)%ObsCount(isRadial)=                            &
-     &                           FOURDVAR(ng)%ObsCount(isRadial)+1
           ELSE
             DO itrc=1,NT(ng)
               IF (ObsType(iobs).eq.isTvar(itrc)) THEN
