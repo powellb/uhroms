@@ -60,7 +60,7 @@
 !  Process vertical positions.
 !
       DO iobs=Mstr,Mend
-        IF (Zobs(iobs).lt.0.0_r8) THEN
+!        IF (Zobs(iobs).lt.0.0_r8) THEN
           r_bound=((rXmin(ng) .le.Xobs(iobs)).and.                      &
      &             (Xobs(iobs).lt.rXmax(ng))).and.                      &
      &            ((rYmin(ng) .le.Yobs(iobs)).and.                      &
@@ -82,15 +82,11 @@
               Zobs(iobs)=IniVal
             END IF
           ELSE
-            DO itrc=1,NT(ng)
-              IF (ObsType(iobs).eq.isTvar(itrc)) THEN
-                IF (.not.r_bound) THEN
-                  Zobs(iobs)=IniVal
-                END IF
-              END IF
-            END DO
+            IF (.not.r_bound) THEN
+              Zobs(iobs)=IniVal
+            END IF
           END IF
-        END IF
+!        END IF
       END DO
 
       RETURN
