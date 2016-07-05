@@ -175,7 +175,7 @@
 !  Zobs values in all nodes by itself to facilitate exchages between
 !  tiles latter before writting into observation NetCDF file.
 !
-        IF (.not.wrote_Zobs(ng)) THEN
+        IF (.not.wrote_Zobs(ng).and.Load_Zobs(ng)) THEN
           CALL obs_depth (ng, MyRank, model)
         END IF
 #  endif
