@@ -92,6 +92,7 @@
       USE ad_extract_obs_mod, ONLY : ad_extract_obs2d
 # ifdef SOLVE3D
       USE ad_extract_obs_mod, ONLY : ad_extract_obs3d
+      USE ad_extract_tomography_mod, ONLY : ad_extract_tomography
 # endif
 !
 !  Imported variable declarations.
@@ -334,6 +335,7 @@
           END IF
         END DO
 !
+!-----------------------------------------------------------------------
 !  Radial Velocity
 !
 ! The forward problem for CURVGRID is:
@@ -343,6 +345,7 @@
 ! We need to do the u and v separately, given by:
 !      f_v = f_v + ADmodVal*sin(meta-angler)
 !      f_u = f_u + ADmodVal*cos(meta-angler)
+!-----------------------------------------------------------------------
 !
         IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
           DO iobs=1,Nobs(ng)
@@ -403,6 +406,23 @@
 #  endif
      &                           ad_uradial)
         END IF
+        
+!
+!-----------------------------------------------------------------------
+!  For tomographic measurements, we need only use the adjoint
+!  of the extract_tomography
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0) THEN
+          CALL ad_extract_tomography (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,     &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, 1, Nobs(ng),                        &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, ad_t(:,:,:,nfrc,:), ADmodVal)
+        END IF
+        
 # endif
 # if defined DISTRIBUTE && !defined BGQC
 !
@@ -420,34 +440,8 @@
 !
         DO iobs=1,Nobs(ng)
           IF (ObsScale(iobs).lt.1.0) THEN
-            IF  (ObsType(iobs).eq.isFsur) THEN
-              FOURDVAR(ng)%ObsReject(isFsur)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isFsur)+1
-            ELSE IF (ObsType(iobs).eq.isUbar) THEN
-              FOURDVAR(ng)%ObsReject(isUbar)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isUbar)+1
-            ELSE IF (ObsType(iobs).eq.isVbar) THEN
-              FOURDVAR(ng)%ObsReject(isVbar)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isVbar)+1
-# ifdef SOLVE3D
-            ELSE IF (ObsType(iobs).eq.isUvel) THEN
-              FOURDVAR(ng)%ObsReject(isUvel)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isUvel)+1
-            ELSE IF (ObsType(iobs).eq.isVvel) THEN
-              FOURDVAR(ng)%ObsReject(isVvel)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isVvel)+1
-            ELSE IF (ObsType(iobs).eq.isRadial) THEN
-              FOURDVAR(ng)%ObsReject(isRadial)=                         &
-     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
-            ELSE
-              DO itrc=1,NT(ng)
-                IF (ObsType(iobs).eq.isTvar(itrc)) THEN
-                  i=isTvar(itrc)
-                  FOURDVAR(ng)%ObsReject(i)=FOURDVAR(ng)%ObsReject(i)+1
-                END IF
-              END DO
-# endif
-            END IF
+            FOURDVAR(ng)%ObsReject(ObsType(iobs))=                      &
+                             FOURDVAR(ng)%ObsReject(ObsType(iobs))+1
           END IF
         END DO
 !

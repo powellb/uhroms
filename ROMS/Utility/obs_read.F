@@ -299,6 +299,9 @@
           ELSE IF (ObsType(iobs).eq.isRadial) THEN
             FOURDVAR(ng)%ObsCount(isRadial)=                            &
      &                           FOURDVAR(ng)%ObsCount(isRadial)+1
+          ELSE IF (ObsType(iobs).eq.isTravelTime) THEN
+            FOURDVAR(ng)%ObsCount(isTravelTime)=                        &
+     &                           FOURDVAR(ng)%ObsCount(isTravelTime)+1
           ELSE
             DO itrc=1,NT(ng)
               IF (ObsType(iobs).eq.isTvar(itrc)) THEN
@@ -309,6 +312,74 @@
 # endif
           END IF
         END DO
+ !
+ !-----------------------------------------------------------------------
+!  If we have tomographic observations, then the ray information
+!  must be loaded
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0) THEN
+!
+!  Read in ray ID.
+!
+          CALL netcdf_get_ivar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idRayID),                       &
+     &                          RayID,                                  &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Nray(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in ray X-grid location.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idRayX),                        &
+     &                          RayX(:),                                &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Nray(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in ray Y-grid location.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idRayY),                        &
+     &                          RayY(:),                                &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Nray(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in ray Z-grid location.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idRayZ),                        &
+     &                          RayZ(:),                                &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Nray(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in ray depth in meters.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idRayD),                        &
+     &                          RayDepth(:),                            &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Nray(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in ray arc length.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idRayL),                        &
+     &                          RayLength(:),                           &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Nray(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+        END IF
 !
 !-----------------------------------------------------------------------
 !  If applicable, set next observation survey time to process.

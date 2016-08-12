@@ -217,6 +217,12 @@
         integer  :: idQair        ! surface air humidity
         integer  :: idPair        ! surface air pressure
         integer  :: idPbar        ! streamfunction
+        integer  :: idRayID       ! tomography ray id
+        integer  :: idRayX        ! tomography ray X-grid location
+        integer  :: idRayY        ! tomography ray Y-grid location
+        integer  :: idRayZ        ! tomography ray Z-grid location
+        integer  :: idRayD        ! tomography ray depth
+        integer  :: idRayL        ! tomography ray arc length
         integer  :: idRdir        ! river runoff direction
         integer  :: idRepo        ! river runoff ETA-positions
         integer  :: idRflg        ! river runoff flag
@@ -414,6 +420,7 @@
         integer  :: isVbar = 3                ! 2D V-velocity
         integer  :: isUvel = 4                ! 3D U-velocity
         integer  :: isVvel = 5                ! 3D V-velocity
+        integer  :: isTravelTime = 20         ! Acoustic Travel-Time
         integer  :: isRadial = 20             ! Radial HF velocity
         integer  :: isUstr                    ! surface u-stress
         integer  :: isVstr                    ! surface v-stress
@@ -1586,6 +1593,18 @@
               idMOMi=varid
             CASE ('idMOMf')
               idMOMf=varid
+            CASE ('idRayID')
+              idRayID=varid
+            CASE ('idRayX')
+              idRayX=varid
+            CASE ('idRayY')
+              idRayY=varid
+            CASE ('idRayZ')
+              idRayZ=varid
+            CASE ('idRayD')
+              idRayD=varid
+            CASE ('idRayL')
+              idRayL=varid
 #endif
 
 #ifdef BIOLOGY

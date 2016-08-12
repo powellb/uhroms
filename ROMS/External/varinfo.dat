@@ -5413,3 +5413,58 @@
   'idOpro'
   'nulvar'
   1.0d0
+
+'ray_id'                                           ! Input
+  'ray ID for path information'
+  'nondimensional'
+  'nulvar'
+  'ray_datum'
+  'idRayID'
+  'nulvar'
+  1.0d0
+
+'ray_Xgrid'                                        ! Input
+  'ray path x-grid location'
+  'nondimensional'
+  'nulvar'
+  'ray_datum'
+  'idRayX'
+  'nulvar'
+  1.0d0
+
+'ray_Ygrid'                                        ! Input
+  'ray path y-grid location'
+  'nondimensional'
+  'nulvar'
+  'ray_datum'
+  'idRayY'
+  'nulvar'
+  1.0d0
+
+'ray_Zgrid'                                        ! Input
+  'ray path z-grid location'
+  'nondimensional'
+  'nulvar'
+  'ray_datum'
+  'idRayZ'
+  'nulvar'
+  1.0d0
+
+'ray_depth'                                        ! Input
+  'ray path depth'
+  'meters'
+  'nulvar'
+  'ray_datum'
+  'idRayD'
+  'nulvar'
+  1.0d0
+
+'ray_length'                                       ! Input
+  'ray path arc length'
+  'nondimensional'
+  'nulvar'
+  'ray_datum'
+  'idRayL'
+  'nulvar'
+  1.0d0
+

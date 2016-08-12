@@ -18,7 +18,7 @@
 # ifdef BBL_MODEL_NOT_YET
       USE mod_bbl
 # endif
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR
 #  ifdef SOLVE3D
       USE mod_coupling
 #  endif
@@ -177,9 +177,10 @@
 !
        IniRec=1
 
-# elif defined FOUR_DVAR    && \
+# elif defined TLM_CHECK || defined VERIFICATION || \
+      (defined FOUR_DVAR && \
      !(defined HESSIAN_SV   || defined HESSIAN_SO || \
-       defined HESSIAN_FSV) || defined TLM_CHECK
+       defined HESSIAN_FSV))
 !
 !-----------------------------------------------------------------------
 !  If variational data assimilation, reset several IO switches and
@@ -188,7 +189,7 @@
 !
 !$OMP MASTER
 
-#  ifndef IS4DVAR_SENSITIVITY
+#  if !defined IS4DVAR_SENSITIVITY && !defined VERIFICATION
 #   ifdef IS4DVAR
 !
 !  Set switch to create (TRUE) tangent linear initial conditions and

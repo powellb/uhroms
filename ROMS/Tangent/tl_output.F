@@ -18,7 +18,7 @@
 !
       USE mod_param
       USE mod_parallel
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || defined VERIFICATION
       USE mod_fourdvar
 # endif
       USE mod_iounits
@@ -235,7 +235,7 @@
       END IF
 # endif
 
-# if defined FOUR_DVAR
+# if defined FOUR_DVAR || defined VERIFICATION
 #  ifdef OBSERVATIONS
 !
 !-----------------------------------------------------------------------

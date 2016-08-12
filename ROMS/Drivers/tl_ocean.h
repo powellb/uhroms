@@ -41,6 +41,9 @@
       USE mod_parallel
       USE mod_iounits
       USE mod_scalars
+#ifdef VERIFICATION
+      USE mod_fourdvar
+#endif
 
 #ifdef MCT_LIB
 !
@@ -148,6 +151,12 @@
 !$OMP PARALLEL
         CALL mod_arrays (allocate_vars)
 !$OMP END PARALLEL
+#ifdef VERIFICATION
+!
+!  Allocate and initialize observation arrays.
+!
+        CALL initialize_fourdvar
+#endif
 
       END IF
 
@@ -179,6 +188,20 @@
 !$OMP END PARALLEL
         IF (exit_flag.ne.NoError) RETURN
       END DO
+#ifdef VERIFICATION
+!
+!  Create out NetCDF file containing model solution at observation
+!  locations.
+!
+      IF (Nrun.eq.1) THEN
+        DO ng=1,Ngrids
+          LdefMOD(ng)=.TRUE.
+          wrtTLmod(ng)=.TRUE.
+          CALL def_mod (ng)
+          IF (exit_flag.ne.NoError) RETURN
+        END DO
+      END IF
+#endif
 !
 !  Initialize run or ensemble counter.
 !
@@ -256,10 +279,23 @@
       USE mod_iounits
       USE mod_ncparam
       USE mod_scalars
+#ifdef VERIFICATION
+      USE mod_fourdvar
+#endif
 !
 !  Local variable declarations.
 !
       integer :: Fcount, ng, thread
+#ifdef VERIFICATION
+!
+!-----------------------------------------------------------------------
+!  Compute and report model-observation comparison statistics.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        CALL stats_modobs (ng)
+      END DO
+#endif
 !
 !-----------------------------------------------------------------------
 !  If blowing-up, save latest model state into RESTART NetCDF file.

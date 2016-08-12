@@ -89,6 +89,7 @@
       USE ad_extract_obs_mod, ONLY : ad_extract_obs2d
 # ifdef SOLVE3D
       USE ad_extract_obs_mod, ONLY : ad_extract_obs3d
+      USE ad_extract_tomography_mod, ONLY : ad_extract_tomography
 # endif
 !
 !  Imported variable declarations.
@@ -478,6 +479,40 @@
      &                           NSperiodic(ng), f_u)
 #  endif
         END IF
+
+!
+!-----------------------------------------------------------------------
+!  For tomographic measurements, we need only use the adjoint
+!  of the extract_tomography
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0) THEN
+          DO k=1,N(ng)
+            DO i=LBi,UBi
+              DO j=LBj,UBj
+                f_t(i,j,k,isTemp)=0.0_r8
+                f_t(i,j,k,isSalt)=0.0_r8
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_tomography (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,     &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, 1, Nobs(ng),                        &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, f_t, ADmodVal)
+#   ifdef DISTRIBUTE
+          CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           NghostPoints, EWperiodic(ng),          &
+     &                           NSperiodic(ng), f_t(:,:,:,isTemp))
+          CALL ad_mp_exchange3d (ng, tile, iADM, 1,                     &
+     &                             LBi, UBi, LBj, UBj, 1, N(ng),        &
+     &                             NghostPoints, EWperiodic(ng),        &
+     &                             NSperiodic(ng), f_t(:,:,:,isSalt))
+#   endif
+        END IF
 # endif
 # if defined DISTRIBUTE && !defined BGQC
 !
@@ -497,34 +532,8 @@
 !
         DO iobs=Mstr,Mend
           IF (ObsScale(iobs).lt.1.0) THEN
-            IF  (ObsType(iobs).eq.isFsur) THEN
-              FOURDVAR(ng)%ObsReject(isFsur)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isFsur)+1
-            ELSE IF (ObsType(iobs).eq.isUbar) THEN
-              FOURDVAR(ng)%ObsReject(isUbar)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isUbar)+1
-            ELSE IF (ObsType(iobs).eq.isVbar) THEN
-              FOURDVAR(ng)%ObsReject(isVbar)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isVbar)+1
-# ifdef SOLVE3D
-            ELSE IF (ObsType(iobs).eq.isUvel) THEN
-              FOURDVAR(ng)%ObsReject(isUvel)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isUvel)+1
-            ELSE IF (ObsType(iobs).eq.isVvel) THEN
-              FOURDVAR(ng)%ObsReject(isVvel)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isVvel)+1
-            ELSE IF (ObsType(iobs).eq.isRadial) THEN
-              FOURDVAR(ng)%ObsReject(isRadial)=                         &
-     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
-            ELSE
-              DO itrc=1,NT(ng)
-                IF (ObsType(iobs).eq.isTvar(itrc)) THEN
-                  i=isTvar(itrc)
-                  FOURDVAR(ng)%ObsReject(i)=FOURDVAR(ng)%ObsReject(i)+1
-                END IF
-              END DO
-# endif
-            END IF
+            FOURDVAR(ng)%ObsReject(ObsType(iobs))=                      &
+                             FOURDVAR(ng)%ObsReject(ObsType(iobs))+1
           END IF
         END DO
 !

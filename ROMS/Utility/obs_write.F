@@ -32,6 +32,10 @@
       USE extract_obs_mod, ONLY : extract_obs2d
 # ifdef SOLVE3D
       USE extract_obs_mod, ONLY : extract_obs3d
+      USE extract_tomography_mod, ONLY : extract_tomography
+#  ifdef TANGENT
+      USE tl_extract_tomography_mod, ONLY : tl_extract_tomography
+#  endif      
 # endif
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
@@ -542,8 +546,16 @@
 #  endif
         END DO
 !
-!  Radial HF-Radar observations. We need to get u and v, then we will
-!  compute the radial component
+!-----------------------------------------------------------------------
+!  Radial Velocity
+!
+! The forward problem for CURVGRID is:
+!         r = u*cos(meta-angler) + v*sin(meta-angler)
+! (if not CURVGRID, angler=0)
+! 
+!     Grab the u and v components from the model to compute the model
+!     radial.        
+!-----------------------------------------------------------------------
 !
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
@@ -721,6 +733,38 @@
           END DO
         END IF
 #  endif
+!
+!-----------------------------------------------------------------------
+!   Acoustic Tomography: If we encounter a travel time, then we need
+!   to call the appropriate function to sort through the ray paths and
+!   compute the sound speed.
+!-----------------------------------------------------------------------
+!
+#   ifndef IS4DVAR_SENSITIVITY
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0)) THEN
+          CALL extract_tomography (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,        &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, NLmodVal)
+        END IF
+#   endif
+#   ifdef TLM_OBS
+        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
+     &      (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0)) THEN
+          CALL tl_extract_tomography (ng, 0,                            &
+     &                        Lm(ng)+1, 1, Mm(ng)+1,                    &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, TLmodVal)
+        END IF
+#   endif
 # endif
 
 # ifdef BGQC
@@ -1112,34 +1156,8 @@
 !
         DO iobs=Mstr,Mend
           IF (ObsScale(iobs).lt.1.0) THEN
-            IF  (ObsType(iobs).eq.isFsur) THEN
-              FOURDVAR(ng)%ObsReject(isFsur)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isFsur)+1
-            ELSE IF (ObsType(iobs).eq.isUbar) THEN
-              FOURDVAR(ng)%ObsReject(isUbar)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isUbar)+1
-            ELSE IF (ObsType(iobs).eq.isVbar) THEN
-              FOURDVAR(ng)%ObsReject(isVbar)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isVbar)+1
-# ifdef SOLVE3D
-            ELSE IF (ObsType(iobs).eq.isUvel) THEN
-              FOURDVAR(ng)%ObsReject(isUvel)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isUvel)+1
-            ELSE IF (ObsType(iobs).eq.isVvel) THEN
-              FOURDVAR(ng)%ObsReject(isVvel)=                           &
-     &                              FOURDVAR(ng)%ObsReject(isVvel)+1
-            ELSE IF (ObsType(iobs).eq.isRadial) THEN
-              FOURDVAR(ng)%ObsReject(isRadial)=                         &
-     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
-            ELSE
-              DO itrc=1,NT(ng)
-                IF (ObsType(iobs).eq.isTvar(itrc)) THEN
-                  i=isTvar(itrc)
-                  FOURDVAR(ng)%ObsReject(i)=FOURDVAR(ng)%ObsReject(i)+1
-                END IF
-              END DO
-# endif
-            END IF
+            FOURDVAR(ng)%ObsReject(ObsType(iobs))=                      &
+                             FOURDVAR(ng)%ObsReject(ObsType(iobs))+1
           END IF
         END DO
 !

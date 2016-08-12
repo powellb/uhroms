@@ -863,6 +863,7 @@
         IF (exit_flag.ne.NoError) RETURN
 # endif
 # if defined IS4DVAR         || defined IS4DVAR_SENSITIVITY || \
+     (defined TANGENT && defined VERIFICATION) || \
      defined WEAK_CONSTRAINT
 !
 !  Tangent linear or representer model at observation points.
