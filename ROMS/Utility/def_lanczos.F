@@ -2,9 +2,9 @@
 #if defined IS4DVAR
       SUBROUTINE def_lanczos (ng)
 !
-!svn $Id: def_lanczos.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_lanczos.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -93,9 +93,9 @@
 !
       IF (Master) THEN
         IF (LdefLCZ(ng)) THEN
-          WRITE (stdout,10) TRIM(ncname)
+          WRITE (stdout,10) ng, TRIM(ncname)
         ELSE
-          WRITE (stdout,20) TRIM(ncname)
+          WRITE (stdout,20) ng, TRIM(ncname)
         END IF
       END IF
 !
@@ -335,7 +335,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered u-momemtum type variables.
+!  Define dimension vectors for staggered u-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         u2dgrd(1)=DimIDs(18)
@@ -362,7 +362,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered v-momemtum type variables.
+!  Define dimension vectors for staggered v-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         v2dgrd(1)=DimIDs(19)
@@ -390,7 +390,7 @@
 # endif
 # ifdef SOLVE3D
 !
-!  Define dimension vector for staggered w-momemtum type variables.
+!  Define dimension vector for staggered w-momentum type variables.
 !
 #  if defined WRITE_WATER && defined MASKING
         w3dgrd(1)=DimIDs(23)
@@ -1023,8 +1023,10 @@
         LCZ(ng)%Rindex=rec_size
       END IF QUERY
 !
-  10  FORMAT (3x,'DEF_LANCZOS  - creating Lanczos  file: ',a)
-  20  FORMAT (3x,'DEF_LANCZOS  - inquiring Lanczos file: ',a)
+  10  FORMAT (6x,'DEF_LANCZOS - creating  Lanczos', t43,                &
+     &        ' file, Grid ',i2.2,': ', a)
+  20  FORMAT (6x,'DEF_LANCZOS - inquiring Lanczos', t43,                &
+     &        ' file, Grid ',i2.2,': ', a)
   30  FORMAT (/,' DEF_LANCZOS - unable to create Lanczos NetCDF file:', &
      &        1x,a)
   40  FORMAT (a,', Lanczos vectors')

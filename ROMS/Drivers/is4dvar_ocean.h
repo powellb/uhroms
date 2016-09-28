@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE ocean_control_mod
 !
-!svn $Id: is4dvar_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: is4dvar_ocean.h 807 2016-07-09 02:03:55Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -232,6 +232,17 @@
         IF (exit_flag.ne.NoError) RETURN
       END DO
 #endif
+!
+!-----------------------------------------------------------------------
+!  Create 4D-Var analysis file that used as initial conditions for the
+!  next data assimilation cycle.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        LdefDAI(ng)=.TRUE.
+        CALL def_dai (ng)
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
 
       RETURN
       END SUBROUTINE ROMS_initialize
@@ -249,6 +260,7 @@
       USE mod_parallel
       USE mod_fourdvar
       USE mod_iounits
+      USE mod_mixing
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
@@ -264,6 +276,9 @@
       USE cost_grad_mod, ONLY : cost_grad
       USE ini_adjust_mod, ONLY : ini_adjust
       USE ini_fields_mod, ONLY : ini_fields
+#ifdef ADJUST_BOUNDARY
+      USE mod_boundary, ONLY : initialize_boundary
+#endif
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
       USE mod_forces, ONLY : initialize_forces
 #endif
@@ -360,6 +375,16 @@
         END IF
 #endif
 !
+!  Clear nonlinear mixing arrays.
+!
+        DO ng=1,Ngrids
+!$OMP PARALLEL
+          DO tile=first_tile(ng),last_tile(ng),+1
+            CALL initialize_mixing (ng, tile, iNLM)
+          END DO
+!$OMP END PARALLEL
+        END DO
+!
 !  Initialize nonlinear model. If outer=1, the model is initialized
 !  with the background or reference state. Otherwise, the model is
 !  initialized with the estimated initial conditions from previous
@@ -371,11 +396,12 @@
           RST(ng)%Rindex=0
           Fcount=RST(ng)%Fcount
           RST(ng)%Nrec(Fcount)=0
-!$OMP PARALLEL
-          CALL initial (ng)
-!$OMP END PARALLEL
-          IF (exit_flag.ne.NoError) RETURN
         END DO
+
+!$OMP PARALLEL
+        CALL initial
+!$OMP END PARALLEL
+        IF (exit_flag.ne.NoError) RETURN
 !
 !  If first pass, save nonlinear initial conditions (currently in time
 !  index 1, background) into next record (Lbck) of INI(ng)%name NetCDF
@@ -651,6 +677,24 @@
 !$OMP END PARALLEL
           IF (exit_flag.ne.NoError) RETURN
 
+#ifdef EVOLVED_LCZ
+!
+!  Write evolved tangent Lanczos vector into hessian netcdf file for use
+!  later.
+!
+!  NOTE: When using this option, it is important to set LhessianEV and
+!  Lprecond to FALSE in s4dvar.in, otherwise the evolved Lanczos vectors
+!  with be overwritten by the Hessian eigenvectors. The fix to this is to
+!  define a new netcdf file that contains the evolved Lanczos vectors.
+!
+          IF (inner.ne.0) THEN
+            DO ng=1,Ngrids
+              CALL wrt_evolved (ng, kstp(ng), nrhs(ng))
+              IF (exit_flag.ne.NoERRor) RETURN
+            END DO
+          END IF
+#endif
+
 #ifdef MULTIPLE_TLM
 !
 !  If multiple TLM history NetCDF files, close current NetCDF file.
@@ -704,6 +748,9 @@
               CALL initialize_ocean (ng, tile, iADM)
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
               CALL initialize_forces (ng, tile, iADM)
+#endif
+#ifdef ADJUST_BOUNDARY
+              CALL initialize_boundary (ng, tile, iADM)
 #endif
             END DO
 !$OMP END PARALLEL
@@ -1104,7 +1151,7 @@
 !  Note that Lfinp=Lbinp so the the forcing and boundary
 !  adjustments are both processsed correctly.
 # ifdef BALANCE_OPERATOR
-!  Currently, We don't need the call to tl_balance below, but we
+!  Currently, We do not need the call to tl_balance below, but we
 !  might later if we impose a balance constraint on the wind stress
 !  corrections.
 # endif
@@ -1113,9 +1160,10 @@
 !
         DO ng=1,Ngrids
           Lfinp(ng)=LTLM1
-# ifdef BULK_FLUXES
+# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
           CALL get_state (ng, iTLM, 1, ITL(ng)%name, Rec1, Lfinp(ng))
-# else
+# endif
+# if defined NL_BULK_FLUXES || !defined BULK_FLUXES
           CALL get_state (ng, iTLM, 1, ITL(ng)%name, Rec4, Lfinp(ng))
           Lcon=Lfinp(ng)
 !
@@ -1173,6 +1221,16 @@
         WRITE (HIS(ng)%name,10) TRIM(FWD(ng)%base), Nouter
       END DO
 !
+!  Clear nonlinear mixing arrays.
+!
+      DO ng=1,Ngrids
+!$OMP PARALLEL
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL initialize_mixing (ng, tile, iNLM)
+        END DO
+!$OMP END PARALLEL
+      END DO
+!
 !  Initialize nonlinear model with estimated initial conditions.
 !
       DO ng=1,Ngrids
@@ -1182,11 +1240,12 @@
         RST(ng)%Rindex=0
         Fcount=RST(ng)%Fcount
         RST(ng)%Nrec(Fcount)=0
-!$OMP PARALLEL
-        CALL initial (ng)
-!$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
       END DO
+
+!$OMP PARALLEL
+      CALL initial
+!$OMP END PARALLEL
+      IF (exit_flag.ne.NoError) RETURN
 !
 ! Clear NLobsCost.
 !
@@ -1269,13 +1328,13 @@
  20   FORMAT (/,1x,a,1x,'ROMS/TOMS: started time-stepping:',            &
      &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')',/)
  30   FORMAT (/,' (',i3.3,',',i3.3,'): TLM Cost Jb, J  = ',             &
-     &        1p,e16.10,0p,1x,1p,e16.10,0p,t68,1p,e10.4,' %')
+     &        1p,e17.10,0p,1x,1p,e17.10,0p,t68,1p,e11.4,' %')
  40   FORMAT (/,'>(',i3.3,',',i3.3,'): NLM Cost     J  = ',             &
-     &        17x,1p,e16.10,0p)
+     &        18x,1p,e17.10,0p)
  50   FORMAT (' (',i3.3,',',i3.3,'): NLM Cost     J  = ',               &
-     &        17x,1p,e16.10,0p,t68,a)
+     &        18x,1p,e17.10,0p,t69,a)
  60   FORMAT (/,1x,'(',i3.3,',',i3.3,'): Optimality (2*J/Nobs) = ',     &
-     &        1p,e16.10,/)
+     &        1p,e17.10,/)
 
       RETURN
       END SUBROUTINE ROMS_run
@@ -1297,7 +1356,24 @@
 !
 !  Local variable declarations.
 !
-      integer :: Fcount, ng, thread
+      integer :: Fcount, ng, tile, thread
+!
+!-----------------------------------------------------------------------
+!  Write out 4D-Var analysis fields that used as initial conditions for
+!  the next data assimilation cycle.
+!-----------------------------------------------------------------------
+!
+#ifdef DISTRIBUTE
+      tile=MyRank
+#else
+      tile=-1
+#endif
+!
+      IF (exit_flag.eq.NoError) THEN
+        DO ng=1,Ngrids
+          CALL wrt_dai (ng, tile)
+        END DO
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Compute and report model-observation comparison statistics.

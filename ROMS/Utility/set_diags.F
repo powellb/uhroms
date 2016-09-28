@@ -2,9 +2,9 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE set_diags (ng, tile)
 !
-!svn $Id: set_diags.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: set_diags.F 812 2016-08-05 19:07:23Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -109,8 +109,6 @@
 !-----------------------------------------------------------------------
 !
       IF (nDIA(ng).eq.0) RETURN
-
-# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
 !
 !-----------------------------------------------------------------------
 ! Initialize time-averaged diagnostic arrays when appropriate.  Notice
@@ -123,41 +121,42 @@
      &    ((iic(ng).ge.ntsDIA(ng)).and.(nDIA(ng).eq.1)).or.             &
      &    ((nrrec(ng).gt.0).and.(iic(ng).eq.ntstart(ng)))) THEN
 
-#  ifdef WET_DRY
+# ifdef WET_DRY
 !
 !  If wetting and drying, initialize time dependent counters for wet
 !  points. The time averaged field at each point is only accumulated
-!  over wet points since its multiplied by the appropriate mask.
+!  over wet points since it is multiplied by the appropriate mask.
 !
         DO j=Jstr,JendR
           DO i=Istr,IendR
             GRID(ng)%pmask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%pmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%pmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=JstrR,JendR
           DO i=IstrR,IendR
             GRID(ng)%rmask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%rmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%rmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=JstrR,JendR
           DO i=Istr,IendR
             GRID(ng)%umask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%umask_io(i,j),     &
+     &                                  MIN(GRID(ng)%umask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=Jstr,JendR
           DO i=IstrR,IendR
             GRID(ng)%vmask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%vmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%vmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
-#  endif
+# endif
+# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
 !
 !  Initialize.
 !
@@ -169,7 +168,7 @@
                 DO i=IstrR,IendR
                   DIAGS(ng)%DiaTrc(i,j,k,it,idiag)=                     &
 #   ifdef WET_DRY
-     &                      GRID(ng)%rmask_io(i,j)*                     &
+     &                      GRID(ng)%rmask_full(i,j)*                   &
 #   endif
      &                      DIAGS(ng)%DiaTwrk(i,j,k,it,idiag)
                 END DO
@@ -184,18 +183,18 @@
             DO i=Istr,IendR
               DIAGS(ng)%DiaU2d(i,j,idiag)=                              &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                  GRID(ng)%umask_full(i,j)*                       &
 #   endif
-     &                                    DIAGS(ng)%DiaU2wrk(i,j,idiag)
+     &                  DIAGS(ng)%DiaU2wrk(i,j,idiag)
             END DO
           END DO
           DO j=Jstr,JendR
             DO i=IstrR,IendR
               DIAGS(ng)%DiaV2d(i,j,idiag)=                              &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                  GRID(ng)%vmask_full(i,j)*                       &
 #   endif
-     &                                    DIAGS(ng)%DiaV2wrk(i,j,idiag)
+     &                  DIAGS(ng)%DiaV2wrk(i,j,idiag)
             END DO
           END DO
         END DO
@@ -206,7 +205,7 @@
               DO i=Istr,IendR
                 DIAGS(ng)%DiaU3d(i,j,k,idiag)=                          &
 #    ifdef WET_DRY
-     &                    GRID(ng)%umask_io(i,j)*                       &
+     &                    GRID(ng)%umask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaU3wrk(i,j,k,idiag)
               END DO
@@ -215,7 +214,7 @@
               DO i=IstrR,IendR
                 DIAGS(ng)%DiaV3d(i,j,k,idiag)=                          &
 #    ifdef WET_DRY
-     &                    GRID(ng)%vmask_io(i,j)*                       &
+     &                    GRID(ng)%vmask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaV3wrk(i,j,k,idiag)
               END DO
@@ -224,6 +223,7 @@
         END DO
 #   endif
 #  endif
+# endif
 !
 !-----------------------------------------------------------------------
 !  Accumulate time-averaged fields.
@@ -231,7 +231,7 @@
 !
       ELSE IF (iic(ng).gt.ntsDIA(ng)) THEN
 
-#  ifdef WET_DRY
+# ifdef WET_DRY
 !
 !  If wetting and drying, accumulate wet points counters.
 !  points. The time averaged field at each point is only accumulated
@@ -241,7 +241,7 @@
           DO i=Istr,IendR
             GRID(ng)%pmask_dia(i,j)=GRID(ng)%pmask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%pmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%pmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -249,7 +249,7 @@
           DO i=IstrR,IendR
             GRID(ng)%rmask_dia(i,j)=GRID(ng)%rmask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%rmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%rmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -257,7 +257,7 @@
           DO i=Istr,IendR
             GRID(ng)%umask_dia(i,j)=GRID(ng)%umask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%umask_io(i,j),     &
+     &                                  MIN(GRID(ng)%umask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -265,11 +265,12 @@
           DO i=IstrR,IendR
             GRID(ng)%vmask_dia(i,j)=GRID(ng)%vmask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%vmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%vmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
-#  endif
+# endif
+# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
 !
 !  Accumulate diagnostic terms.
 !
@@ -282,7 +283,7 @@
                   DIAGS(ng)%DiaTrc(i,j,k,it,idiag)=                     &
      &                      DIAGS(ng)%DiaTrc(i,j,k,it,idiag)+           &
 #   ifdef WET_DRY
-     &                      GRID(ng)%rmask_io(i,j)*                     &
+     &                      GRID(ng)%rmask_full(i,j)*                   &
 #   endif
      &                      DIAGS(ng)%DiaTwrk(i,j,k,it,idiag)
                 END DO
@@ -297,7 +298,7 @@
             DO i=Istr,IendR
               DIAGS(ng)%DiaU2d(i,j,idiag)=DIAGS(ng)%DiaU2d(i,j,idiag)+  &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                                    GRID(ng)%umask_full(i,j)*     &
 #   endif
      &                                    DIAGS(ng)%DiaU2wrk(i,j,idiag)
             END DO
@@ -306,7 +307,7 @@
             DO i=IstrR,IendR
               DIAGS(ng)%DiaV2d(i,j,idiag)=DIAGS(ng)%DiaV2d(i,j,idiag)+  &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                                    GRID(ng)%vmask_full(i,j)*     &
 #   endif
      &                                    DIAGS(ng)%DiaV2wrk(i,j,idiag)
             END DO
@@ -320,7 +321,7 @@
                 DIAGS(ng)%DiaU3d(i,j,k,idiag)=                          &
      &                    DIAGS(ng)%DiaU3d(i,j,k,idiag)+                &
 #    ifdef WET_DRY
-     &                    GRID(ng)%umask_io(i,j)*                       &
+     &                    GRID(ng)%umask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaU3wrk(i,j,k,idiag)
               END DO
@@ -330,7 +331,7 @@
                 DIAGS(ng)%DiaV3d(i,j,k,idiag)=                          &
      &                    DIAGS(ng)%DiaV3d(i,j,k,idiag)+                &
 #    ifdef WET_DRY
-     &                    GRID(ng)%vmask_io(i,j)*                       &
+     &                    GRID(ng)%vmask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaV3wrk(i,j,k,idiag)
               END DO
@@ -339,8 +340,8 @@
         END DO
 #   endif
 #  endif
-      END IF
 # endif
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Convert accumulated sums into time-averages, if appropriate

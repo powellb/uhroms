@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: w4dvar_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: w4dvar_ocean.h 807 2016-07-09 02:03:55Z arango $
 !=================================================== Andrew M. Moore ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -241,6 +241,17 @@
         IF (exit_flag.ne.NoError) RETURN
       END DO
 #endif
+!
+!-----------------------------------------------------------------------
+!  Create 4D-Var analysis file that used as initial conditions for the
+!  next data assimilation cycle.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        LdefDAI(ng)=.TRUE.
+        CALL def_dai (ng)
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
 
       RETURN
       END SUBROUTINE ROMS_initialize
@@ -350,11 +361,12 @@
         wrtNLmod(ng)=.TRUE.
         wrtRPmod(ng)=.FALSE.
         wrtTLmod(ng)=.FALSE.
-!$OMP PARALLEL
-        CALL initial (ng)
-!$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
       END DO
+
+!$OMP PARALLEL
+      CALL initial
+!$OMP END PARALLEL
+      IF (exit_flag.ne.NoError) RETURN
 !
 !  Save nonlinear initial conditions (currently in time index 1,
 !  background) into record "Lini" of INI(ng)%name NetCDF file. The
@@ -1439,7 +1451,7 @@
  20   FORMAT (/,1x,a,1x,'ROMS/TOMS: started time-stepping:',            &
      &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')',/)
  30   FORMAT (' (',i3.3,',',i3.3,'): ',a,' data penalty, Jdata = ',     &
-     &        1p,e16.10,0p,t68,a)
+     &        1p,e17.10,0p,t68,a)
  40   FORMAT (/,' Converting Convolved Adjoint Trajectory to',          &
      &          ' Impulses: Outer = ',i3.3,' Inner = ',i3.3,/)
 #ifdef POSTERIOR_EOFS
@@ -1467,7 +1479,24 @@
 !
 !  Local variable declarations.
 !
-      integer :: Fcount, ng, thread
+      integer :: Fcount, ng, tile, thread
+!
+!-----------------------------------------------------------------------
+!  Write out 4D-Var analysis fields that used as initial conditions for
+!  the next data assimilation cycle.
+!-----------------------------------------------------------------------
+!
+#ifdef DISTRIBUTE
+      tile=MyRank
+#else
+      tile=-1
+#endif
+!
+      IF (exit_flag.eq.NoError) THEN
+        DO ng=1,Ngrids
+          CALL wrt_dai (ng, tile)
+        END DO
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Compute and report model-observation comparison statistics.

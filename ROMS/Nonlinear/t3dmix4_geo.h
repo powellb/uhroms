@@ -1,10 +1,8 @@
-#undef MIX_STABILITY
-
       SUBROUTINE t3dmix4 (ng, tile)
 !
-!svn $Id: t3dmix4_geo.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: t3dmix4_geo.h 795 2016-05-11 01:42:43Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !****************************************** Alexander F. Shchepetkin ***
@@ -15,7 +13,7 @@
 !***********************************************************************
 !
       USE mod_param
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
       USE mod_clima
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -45,6 +43,10 @@
      &                   GRID(ng) % umask,                              &
      &                   GRID(ng) % vmask,                              &
 #endif
+#ifdef WET_DRY
+     &                   GRID(ng) % umask_wet,                          &
+     &                   GRID(ng) % vmask_wet,                          &
+#endif
      &                   GRID(ng) % om_v,                               &
      &                   GRID(ng) % on_u,                               &
      &                   GRID(ng) % pm,                                 &
@@ -61,7 +63,7 @@
 #else
      &                   MIXING(ng) % diff4,                            &
 #endif
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
      &                   CLIMA(ng) % tclm,                              &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -83,6 +85,9 @@
 #ifdef MASKING
      &                         umask, vmask,                            &
 #endif
+#ifdef WET_DRY
+     &                         umask_wet, vmask_wet,                    &
+#endif
      &                         om_v, on_u, pm, pn,                      &
      &                         Hz, z_r,                                 &
 #ifdef DIFF_3DCOEF
@@ -94,7 +99,7 @@
 #else
      &                         diff4,                                   &
 #endif
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
      &                         tclm,                                    &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -119,6 +124,10 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+# endif
 # ifdef DIFF_3DCOEF
 #  ifdef TS_U3ADV_SPLIT
       real(r8), intent(in) :: diff3d_u(LBi:,LBj:,:)
@@ -135,7 +144,7 @@
       real(r8), intent(in) :: pn(LBi:,LBj:)
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
-# ifdef CLIMA_TS_MIX
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -146,6 +155,10 @@
 # ifdef MASKING
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
 # endif
 # ifdef DIFF_3DCOEF
 #  ifdef TS_U3ADV_SPLIT
@@ -163,7 +176,7 @@
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
-# ifdef CLIMA_TS_MIX
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng))
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -178,7 +191,7 @@
       integer :: Imin, Imax, Jmin, Jmax
       integer :: i, itrc, j, k, k1, k2
 
-      real(r8) :: cff, cff1, cff2, cff3, cff4
+      real(r8) :: cff, cff1, cff2, cff3, cff4, dife, difx
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: LapT
 
@@ -226,7 +239,7 @@
 !          FS,dTdz(:,:,k1) k-1/2   W-points
 !          FS,dTdz(:,:,k2) k+1/2   W-points
 !
-#ifdef MIX_STABILITY
+#ifdef TS_MIX_STABILITY
 !  In order to increase stability, the rotated biharmonic is applied
 !  as: 3/4 t(:,:,:,nrhs,:) + 1/4 t(:,:,:,nstp,:).
 !
@@ -244,18 +257,26 @@
 #ifdef MASKING
                 cff=cff*umask(i,j)
 #endif
+#ifdef WET_DRY
+                cff=cff*umask_wet(i,j)
+#endif
                 dZdx(i,j,k2)=cff*(z_r(i  ,j,k+1)-                       &
      &                            z_r(i-1,j,k+1))
-#ifdef MIX_STABILITY
+#if defined TS_MIX_STABILITY
                 dTdx(i,j,k2)=cff*(0.75_r8*(t(i  ,j,k+1,nrhs,itrc)-      &
      &                                     t(i-1,j,k+1,nrhs,itrc))+     &
      &                            0.25_r8*(t(i  ,j,k+1,nstp,itrc)-      &
      &                                     t(i-1,j,k+1,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-                dTdx(i,j,k2)=cff*((t(i  ,j,k+1,nrhs,itrc)-              &
-     &                             tclm(i  ,j,k+1,itrc))-               &
-     &                            (t(i-1,j,k+1,nrhs,itrc)-              &
-     &                             tclm(i-1,j,k+1,itrc)))
+#elif defined TS_MIX_CLIMA
+                IF (LtracerCLM(itrc,ng)) THEN
+                  dTdx(i,j,k2)=cff*((t(i  ,j,k+1,nrhs,itrc)-            &
+     &                               tclm(i  ,j,k+1,itrc))-             &
+     &                              (t(i-1,j,k+1,nrhs,itrc)-            &
+     &                               tclm(i-1,j,k+1,itrc)))
+                ELSE
+                  dTdx(i,j,k2)=cff*(t(i  ,j,k+1,nrhs,itrc)-             &
+     &                              t(i-1,j,k+1,nrhs,itrc))
+                END IF
 #else
                 dTdx(i,j,k2)=cff*(t(i  ,j,k+1,nrhs,itrc)-               &
      &                            t(i-1,j,k+1,nrhs,itrc))
@@ -268,18 +289,26 @@
 #ifdef MASKING
                 cff=cff*vmask(i,j)
 #endif
+#ifdef WET_DRY
+                cff=cff*vmask_wet(i,j)
+#endif
                 dZde(i,j,k2)=cff*(z_r(i,j  ,k+1)-                       &
      &                            z_r(i,j-1,k+1))
-#ifdef MIX_STABILITY
+#if defined TS_MIX_STABILITY
                 dTde(i,j,k2)=cff*(0.75_r8*(t(i,j  ,k+1,nrhs,itrc)-      &
      &                                     t(i,j-1,k+1,nrhs,itrc))+     &
      &                            0.25_r8*(t(i,j  ,k+1,nstp,itrc)-      &
      &                                     t(i,j-1,k+1,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-                dTde(i,j,k2)=cff*((t(i,j  ,k+1,nrhs,itrc)-              &
-     &                             tclm(i,j  ,k+1,itrc))-               &
-     &                            (t(i,j-1,k+1,nrhs,itrc)-              &
-     &                             tclm(i,j-1,k+1,itrc)))
+#elif defined TS_MIX_CLIMA
+                IF (LtracerCLM(itrc,ng)) THEN
+                  dTde(i,j,k2)=cff*((t(i,j  ,k+1,nrhs,itrc)-            &
+     &                               tclm(i,j  ,k+1,itrc))-             &
+     &                              (t(i,j-1,k+1,nrhs,itrc)-            &
+     &                               tclm(i,j-1,k+1,itrc)))
+                ELSE
+                  dTde(i,j,k2)=cff*(t(i,j  ,k+1,nrhs,itrc)-             &
+     &                              t(i,j-1,k+1,nrhs,itrc))
+                END IF
 #else
                 dTde(i,j,k2)=cff*(t(i,j  ,k+1,nrhs,itrc)-               &
      &                            t(i,j-1,k+1,nrhs,itrc))
@@ -299,16 +328,21 @@
               DO i=Imin-1,Imax+1
                 cff=1.0_r8/(z_r(i,j,k+1)-                               &
      &                      z_r(i,j,k  ))
-#ifdef MIX_STABILITY
+#if defined TS_MIX_STABILITY
                 dTdz(i,j,k2)=cff*(0.75_r8*(t(i,j,k+1,nrhs,itrc)-        &
      &                                     t(i,j,k  ,nrhs,itrc))+       &
      &                            0.25_r8*(t(i,j,k+1,nstp,itrc)-        &
      &                                     t(i,j,k  ,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-                dTdz(i,j,k2)=cff*((t(i,j,k+1,nrhs,itrc)-                &
-     &                             tclm(i,j,k+1,itrc))-                 &
-     &                            (t(i,j,k  ,nrhs,itrc)-                &
-     &                             tclm(i,j,k  ,itrc)))
+#elif defined TS_MIX_CLIMA
+                IF (LtracerCLM(itrc,ng)) THEN
+                  dTdz(i,j,k2)=cff*((t(i,j,k+1,nrhs,itrc)-              &
+     &                               tclm(i,j,k+1,itrc))-               &
+     &                              (t(i,j,k  ,nrhs,itrc)-              &
+     &                               tclm(i,j,k  ,itrc)))
+                ELSE
+                  dTdz(i,j,k2)=cff*(t(i,j,k+1,nrhs,itrc)-               &
+     &                              t(i,j,k  ,nrhs,itrc))
+                END IF
 #else
                 dTdz(i,j,k2)=cff*(t(i,j,k+1,nrhs,itrc)-                 &
      &                            t(i,j,k  ,nrhs,itrc))
@@ -370,19 +404,23 @@
                 DO i=Imin,Imax
 #ifdef DIFF_3DCOEF
 # ifdef TS_U3ADV_SPLIT
-                  cff=0.125_r8*(diff3d_u(i,j,k  )+diff3d_u(i+1,j,k  )+  &
-     &                          diff3d_u(i,j,k+1)+diff3d_u(i+1,j,k+1))
+                  difx=0.125_r8*(diff3d_u(i,j,k  )+diff3d_u(i+1,j,k  )+ &
+     &                           diff3d_u(i,j,k+1)+diff3d_u(i+1,j,k+1))
+                  dife=0.125_r8*(diff3d_v(i,j,k  )+diff3d_v(i,j+1,k  )+ &
+     &                           diff3d_v(i,j,k+1)+diff3d_v(i,j+1,k+1))
 # else
-                  cff=0.5_r8*diff3d_r(i,j,k)
+                  difx=0.5_r8*diff3d_r(i,j,k)
+                  dife=difx
 # endif
 #else
-                  cff=0.5_r8*diff4(i,j,itrc)
+                  difx=0.5_r8*diff4(i,j,itrc)
+                  dife=difx
 #endif
                   cff1=MIN(dZdx(i  ,j,k1),0.0_r8)
                   cff2=MIN(dZdx(i+1,j,k2),0.0_r8)
                   cff3=MAX(dZdx(i  ,j,k2),0.0_r8)
                   cff4=MAX(dZdx(i+1,j,k1),0.0_r8)
-                  FS(i,j,k2)=cff*                                       &
+                  FS(i,j,k2)=difx*                                      &
      &                       (cff1*(cff1*dTdz(i,j,k2)-                  &
      &                              dTdx(i  ,j,k1))+                    &
      &                        cff2*(cff2*dTdz(i,j,k2)-                  &
@@ -391,22 +429,13 @@
      &                              dTdx(i  ,j,k2))+                    &
      &                        cff4*(cff4*dTdz(i,j,k2)-                  &
      &                              dTdx(i+1,j,k1)))
-#ifdef DIFF_3DCOEF
-# ifdef TS_U3ADV_SPLIT
-                  cff=0.125_r8*(diff3d_v(i,j,k  )+diff3d_v(i,j+1,k  )+  &
-     &                          diff3d_v(i,j,k+1)+diff3d_v(i,j+1,k+1))
-# else
-                  cff=0.5_r8*diff3d_r(i,j,k)
-# endif
-#else
-                  cff=0.5_r8*diff4(i,j,itrc)
-#endif
+!
                   cff1=MIN(dZde(i,j  ,k1),0.0_r8)
                   cff2=MIN(dZde(i,j+1,k2),0.0_r8)
                   cff3=MAX(dZde(i,j  ,k2),0.0_r8)
                   cff4=MAX(dZde(i,j+1,k1),0.0_r8)
                   FS(i,j,k2)=FS(i,j,k2)+                                &
-     &                       cff*                                       &
+     &                       dife*                                      &
      &                       (cff1*(cff1*dTdz(i,j,k2)-                  &
      &                              dTde(i,j  ,k1))+                    &
      &                        cff2*(cff2*dTdz(i,j,k2)-                  &
@@ -439,102 +468,119 @@
 !  Apply boundary conditions (except periodic; closed or gradient)
 !  to the first harmonic operator.
 !
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.EWperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-              IF (LBC(iwest,isTvar(itrc),ng)%closed) THEN
-                DO k=1,N(ng)
-                  DO j=Jmin,Jmax
-                    LapT(Istr-1,j,k)=0.0_r8
-                  END DO
+        IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+            IF (LBC(iwest,isTvar(itrc),ng)%closed) THEN
+              DO k=1,N(ng)
+                DO j=Jmin,Jmax
+                  LapT(Istr-1,j,k)=0.0_r8
                 END DO
-              ELSE
-                DO k=1,N(ng)
-                  DO j=Jmin,Jmax
-                    LapT(Istr-1,j,k)=LapT(Istr,j,k)
-                  END DO
+              END DO
+            ELSE
+              DO k=1,N(ng)
+                DO j=Jmin,Jmax
+                  LapT(Istr-1,j,k)=LapT(Istr,j,k)
                 END DO
-              END IF
-            END IF
-            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-              IF (LBC(ieast,isTvar(itrc),ng)%closed) THEN
-                DO k=1,N(ng)
-                  DO j=Jmin,Jmax
-                    LapT(Iend+1,j,k)=0.0_r8
-                  END DO
-                END DO
-              ELSE
-                DO k=1,N(ng)
-                  DO j=Jmin,Jmax
-                    LapT(Iend+1,j,k)=LapT(Iend,j,k)
-                  END DO
-                END DO
-              END IF
+              END DO
             END IF
           END IF
-
-          IF (.not.NSperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-              IF (LBC(isouth,isTvar(itrc),ng)%closed) THEN
-                DO k=1,N(ng)
-                  DO i=Imin,Imax
-                    LapT(i,Jstr-1,k)=0.0_r8
-                  END DO
+        END IF
+!
+        IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+            IF (LBC(ieast,isTvar(itrc),ng)%closed) THEN
+              DO k=1,N(ng)
+                DO j=Jmin,Jmax
+                  LapT(Iend+1,j,k)=0.0_r8
                 END DO
-              ELSE
-                DO k=1,N(ng)
-                  DO i=Imin,Imax
-                    LapT(i,Jstr-1,k)=LapT(i,Jstr,k)
-                  END DO
+              END DO
+            ELSE
+              DO k=1,N(ng)
+                DO j=Jmin,Jmax
+                  LapT(Iend+1,j,k)=LapT(Iend,j,k)
                 END DO
-              END IF
-            END IF
-            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-              IF (LBC(inorth,isTvar(itrc),ng)%closed) THEN
-                DO k=1,N(ng)
-                  DO i=Imin,Imax
-                    LapT(i,Jend+1,k)=0.0_r8
-                  END DO
-                END DO
-              ELSE
-                DO k=1,N(ng)
-                  DO i=Imin,Imax
-                    LapT(i,Jend+1,k)=LapT(i,Jend,k)
-                  END DO
-                END DO
-              END IF
+              END DO
             END IF
           END IF
+        END IF
+!
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+            IF (LBC(isouth,isTvar(itrc),ng)%closed) THEN
+              DO k=1,N(ng)
+                DO i=Imin,Imax
+                  LapT(i,Jstr-1,k)=0.0_r8
+                END DO
+              END DO
+            ELSE
+              DO k=1,N(ng)
+                DO i=Imin,Imax
+                  LapT(i,Jstr-1,k)=LapT(i,Jstr,k)
+                END DO
+              END DO
+            END IF
+          END IF
+        END IF
+!
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+            IF (LBC(inorth,isTvar(itrc),ng)%closed) THEN
+              DO k=1,N(ng)
+                DO i=Imin,Imax
+                  LapT(i,Jend+1,k)=0.0_r8
+                END DO
+              END DO
+            ELSE
+              DO k=1,N(ng)
+                DO i=Imin,Imax
+                  LapT(i,Jend+1,k)=LapT(i,Jend,k)
+                END DO
+              END DO
+            END IF
+          END IF
+        END IF
+!
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng).or.        &
+     &            CompositeGrid(iwest ,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
+            DO k=1,N(ng)
+              LapT(Istr-1,Jstr-1,k)=0.5_r8*                             &
+     &                              (LapT(Istr  ,Jstr-1,k)+             &
+     &                               LapT(Istr-1,Jstr  ,k))
+            END DO
+          END IF
+        END IF
 
-          IF (.not.(EWperiodic(ng).or.NSperiodic(ng))) THEN
-            IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
-              DO k=1,N(ng)
-                LapT(Istr-1,Jstr-1,k)=0.5_r8*                           &
-     &                                (LapT(Istr  ,Jstr-1,k)+           &
-     &                                 LapT(Istr-1,Jstr  ,k))
-              END DO
-            END IF
-            IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
-              DO k=1,N(ng)
-                LapT(Iend+1,Jstr-1,k)=0.5_r8*                           &
-     &                                (LapT(Iend  ,Jstr-1,k)+           &
-     &                                 LapT(Iend+1,Jstr  ,k))
-              END DO
-            END IF
-            IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
-              DO k=1,N(ng)
-                LapT(Istr-1,Jend+1,k)=0.5_r8*                           &
-     &                                (LapT(Istr  ,Jend+1,k)+           &
-     &                                 LapT(Istr-1,Jend  ,k))
-              END DO
-            END IF
-            IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-              DO k=1,N(ng)
-                LapT(Iend+1,Jend+1,k)=0.5_r8*                           &
-     &                                (LapT(Iend  ,Jend+1,k)+           &
-     &                                 LapT(Iend+1,Jend  ,k))
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng).or.        &
+     &            CompositeGrid(ieast ,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
+            DO k=1,N(ng)
+              LapT(Iend+1,Jstr-1,k)=0.5_r8*                             &
+     &                              (LapT(Iend  ,Jstr-1,k)+             &
+     &                               LapT(Iend+1,Jstr  ,k))
+            END DO
+          END IF
+        END IF
+
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng).or.        &
+     &            CompositeGrid(iwest ,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
+            DO k=1,N(ng)
+              LapT(Istr-1,Jend+1,k)=0.5_r8*                             &
+     &                              (LapT(Istr  ,Jend+1,k)+             &
+     &                               LapT(Istr-1,Jend  ,k))
+            END DO
+          END IF
+        END IF
+
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng).or.        &
+     &            CompositeGrid(ieast ,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
+            DO k=1,N(ng)
+              LapT(Iend+1,Jend+1,k)=0.5_r8*                             &
+     &                              (LapT(Iend  ,Jend+1,k)+             &
+     &                               LapT(Iend+1,Jend  ,k))
+            END DO
           END IF
         END IF
 !
@@ -552,6 +598,9 @@
 #ifdef MASKING
                 cff=cff*umask(i,j)
 #endif
+#ifdef WET_DRY
+                cff=cff*umask_wet(i,j)
+#endif
                 dZdx(i,j,k2)=cff*(z_r(i  ,j,k+1)-                       &
      &                            z_r(i-1,j,k+1))
                 dTdx(i,j,k2)=cff*(LapT(i  ,j,k+1)-                      &
@@ -563,6 +612,9 @@
                 cff=0.5_r8*(pn(i,j)+pn(i,j-1))
 #ifdef MASKING
                 cff=cff*vmask(i,j)
+#endif
+#ifdef WET_DRY
+                cff=cff*vmask_wet(i,j)
 #endif
                 dZde(i,j,k2)=cff*(z_r(i,j  ,k+1)-                       &
      &                            z_r(i,j-1,k+1))
@@ -646,19 +698,23 @@
                 DO i=Istr,Iend
 #ifdef DIFF_3DCOEF
 # ifdef TS_U3ADV_SPLIT
-                  cff=0.125_r8*(diff3d_u(i,j,k  )+diff3d_u(i+1,j,k  )+  &
-     &                          diff3d_u(i,j,k+1)+diff3d_u(i+1,j,k+1))
+                  difx=0.125_r8*(diff3d_u(i,j,k  )+diff3d_u(i+1,j,k  )+ &
+     &                           diff3d_u(i,j,k+1)+diff3d_u(i+1,j,k+1))
+                  dife=0.125_r8*(diff3d_v(i,j,k  )+diff3d_v(i,j+1,k  )+ &
+     &                           diff3d_v(i,j,k+1)+diff3d_v(i,j+1,k+1))
 # else
-                  cff=0.5_r8*diff3d_r(i,j,k)
+                  difx=0.5_r8*diff3d_r(i,j,k)
+                  dife=difx
 # endif
 #else
-                  cff=0.5_r8*diff4(i,j,itrc)
+                  difx=0.5_r8*diff4(i,j,itrc)
+                  dife=difx
 #endif
                   cff1=MIN(dZdx(i  ,j,k1),0.0_r8)
                   cff2=MIN(dZdx(i+1,j,k2),0.0_r8)
                   cff3=MAX(dZdx(i  ,j,k2),0.0_r8)
                   cff4=MAX(dZdx(i+1,j,k1),0.0_r8)
-                  FS(i,j,k2)=cff*                                       &
+                  FS(i,j,k2)=difx*                                      &
      &                       (cff1*(cff1*dTdz(i,j,k2)-                  &
      &                              dTdx(i  ,j,k1))+                    &
      &                        cff2*(cff2*dTdz(i,j,k2)-                  &
@@ -667,22 +723,13 @@
      &                              dTdx(i  ,j,k2))+                    &
      &                        cff4*(cff4*dTdz(i,j,k2)-                  &
      &                              dTdx(i+1,j,k1)))
-#ifdef DIFF_3DCOEF
-# ifdef TS_U3ADV_SPLIT
-                  cff=0.125_r8*(diff3d_v(i,j,k  )+diff3d_v(i,j+1,k  )+  &
-     &                          diff3d_v(i,j,k+1)+diff3d_v(i,j+1,k+1))
-# else
-                  cff=0.5_r8*diff3d_r(i,j,k)
-# endif
-#else
-                  cff=0.5_r8*diff4(i,j,itrc)
-#endif
+!
                   cff1=MIN(dZde(i,j  ,k1),0.0_r8)
                   cff2=MIN(dZde(i,j+1,k2),0.0_r8)
                   cff3=MAX(dZde(i,j  ,k2),0.0_r8)
                   cff4=MAX(dZde(i,j+1,k1),0.0_r8)
                   FS(i,j,k2)=FS(i,j,k2)+                                &
-     &                       cff*                                       &
+     &                       dife*                                      &
      &                       (cff1*(cff1*dTdz(i,j,k2)-                  &
      &                              dTde(i,j  ,k1))+                    &
      &                        cff2*(cff2*dTdz(i,j,k2)-                  &

@@ -1,8 +1,8 @@
       SUBROUTINE ad_biology (ng,tile)
 !
-!svn $Id: ad_npzd_iron.h 655 2013-03-14 21:33:50Z arango $
+!svn $Id: ad_npzd_iron.h 795 2016-05-11 01:42:43Z arango $
 !************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
@@ -268,6 +268,8 @@
 !
         ad_PAR=0.0_r8
         ad_Att=0.0_r8
+        ad_ExpAtt=0.0_r8
+        ad_Itop=0.0_r8
         ad_dltL=0.0_r8
         ad_dltR=0.0_r8
         ad_cu=0.0_r8

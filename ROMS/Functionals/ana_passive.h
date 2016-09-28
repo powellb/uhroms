@@ -1,8 +1,8 @@
       SUBROUTINE ana_passive (ng, tile, model)
 !
-!! svn $Id: ana_passive.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_passive.h 795 2016-05-11 01:42:43Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -64,7 +64,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, ip, itrc, j, k
+      integer :: i, iage, ip, itrc, j, k
 
 #include "set_bounds.h"
 !
@@ -72,20 +72,38 @@
 !  Set analytical initial conditions for passive inert tracers.
 !-----------------------------------------------------------------------
 !
-#if defined MY_OPTION
+#if defined MY_APPLICATION
+# ifdef AGE_MEAN
+      DO ip=1,NPT,2
+        itrc=inert(ip)
+        iage=inert(ip+1)
+        DO k=1,N(ng)
+          DO j=JstrT,JendT
+            DO i=IstrT,IendT
+              t(i,j,k,1,itrc)=???
+              t(i,j,k,2,itrc)=t(i,j,k,1,itrc)
+              t(i,j,k,1,iage)=0.0_r8
+              t(i,j,k,2,iage)=t(i,j,k,1,iage)
+            END DO
+          END DO
+        END DO
+      END DO
+# else
       DO ip=1,NPT
         itrc=inert(ip)
         DO k=1,N(ng)
-          DO j=JstrR,JendR
-            DO i=IstrR,IendR
+          DO j=JstrT,JendT
+            DO i=IstrT,IendT
               t(i,j,k,1,itrc)=???
               t(i,j,k,2,itrc)=t(i,j,k,1,itrc)
             END DO
           END DO
         END DO
       END DO
+# endif
 #else
       ana_passive.h: no values provided for t(:,:,:,1,inert(itrc))
 #endif
+
       RETURN
       END SUBROUTINE ana_passive_tile

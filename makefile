@@ -1,6 +1,6 @@
-# svn $Id: makefile 645 2013-01-22 23:21:54Z arango $
+# svn $Id: makefile 807 2016-07-09 02:03:55Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
-# Copyright (c) 2002-2013 The ROMS/TOMS Group             Kate Hedstrom :::
+# Copyright (c) 2002-2016 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -28,9 +28,10 @@
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-NEED_VERSION := 3.80 3.81 3.82
-$(if $(filter $(MAKE_VERSION),$(NEED_VERSION)),,        \
- $(error This makefile requires one of GNU make version $(NEED_VERSION).))
+ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
+ $(error This makefile requires GNU make version 3.80 or higher. \
+		Your current version is: $(MAKE_VERSION))
+endif
 
 #--------------------------------------------------------------------------
 #  Initialize some things.

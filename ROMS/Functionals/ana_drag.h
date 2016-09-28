@@ -1,8 +1,8 @@
       SUBROUTINE ana_drag (ng, tile, model)
 !
-!! svn $Id: ana_drag.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_drag.h 795 2016-05-11 01:42:43Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -143,20 +143,20 @@
 !
 #if defined UPWELLING
 # if defined UV_LOGDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           ZoBot(i,j)=0.05_r8*(1.0_r8+TANH(GRID(ng)%h(i,j)/50.0_r8))
         END DO
       END DO
 # elif defined UV_LDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           rdrag(i,j)=0.002_r8*(1.0_r8-TANH(GRID(ng)%h(i,j)/150.0_r8))
         END DO
       END DO
 # elif defined UV_QDRAG
-      DO j=JstrR,JendR          ! based on Chezy coefficient (g/c^2)
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT          ! based on Chezy coefficient (g/c^2)
+        DO i=IstrT,IendT
           cff=1.8_r8*GRID(ng)%h(i,j)*LOG(GRID(ng)%h(i,j))
           rdrag2(i,j)=g/(cff*cff)
         END DO
@@ -164,20 +164,20 @@
 # endif
 #else
 # if defined UV_LOGDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           ZoBot(i,j)=???
         END DO
       END DO
 # elif defined UV_LDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           rdrag(i,j)=???
         END DO
       END DO
 # elif defined UV_QDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           rdrag2(i,j)=???
         END DO
       END DO
@@ -218,8 +218,8 @@
 !  Load bottom roughness length into bottom properties array.
 !-----------------------------------------------------------------------
 !
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           bottom(i,j,izdef)=ZoBot(i,j)
         END DO
       END DO

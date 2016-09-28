@@ -1,7 +1,7 @@
 /*
-** svn $Id: mixed_layer.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: mixed_layer.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -18,7 +18,8 @@
 #define ANA_GRID
 #define SALINITY
 #define SOLVE3D
-#define SPLINES
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define ANA_INITIAL
 #define ANA_SMFLUX
 #define ANA_STFLUX
@@ -26,8 +27,6 @@
 #define ANA_SSFLUX
 #define ANA_BSFLUX
 #define TS_U3HADVECTION
-#define NORTHERN_WALL
-#define SOUTHERN_WALL
 
 #undef  MY25_MIXING
 #define GLS_MIXING
@@ -35,6 +34,7 @@
 #if defined GLS_MIXING
 # define KANTHA_CLAYSON
 # define N2S2_HORAVG
+# define RI_SPLINES
 # define CRAIG_BANNER
 # define CHARNOK
 # undef  ZOS_HSIG

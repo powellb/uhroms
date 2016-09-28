@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: nl_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: nl_ocean.h 798 2016-05-21 17:04:58Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -180,12 +180,10 @@
 !  if applicable.
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
 !$OMP PARALLEL
-        CALL initial (ng)
+      CALL initial
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
-      END DO
+      IF (exit_flag.ne.NoError) RETURN
 !
 !  Initialize run or ensemble counter.
 !
@@ -193,14 +191,25 @@
 
 #ifdef VERIFICATION
 !
-!  Create out NetCDF file containing model solution at observation
-!  locations.
+!  Create NetCDF file for model solution at observation locations.
 !
       IF (Nrun.eq.1) THEN
         DO ng=1,Ngrids
           LdefMOD(ng)=.TRUE.
           wrtNLmod(ng)=.TRUE.
           CALL def_mod (ng)
+          IF (exit_flag.ne.NoError) RETURN
+        END DO
+      END IF
+#endif
+#ifdef ENKF_RESTART
+!
+!  Create Ensenble Kalman Filter (EnKF) reastart NetCDF file.
+!
+      IF (Nrun.eq.1) THEN
+        DO ng=1,Ngrids
+          LdefDAI(ng)=.TRUE.
+          CALL def_dai (ng)
           IF (exit_flag.ne.NoError) RETURN
         END DO
       END IF
@@ -238,11 +247,13 @@
 !  Time-step nonlinear model over all nested grids, if applicable.
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
-        IF (Master) THEN
+      IF (Master) THEN
+        WRITE (stdout,'(1x)')
+        DO ng=1,Ngrids
           WRITE (stdout,10) 'NL', ng, ntstart(ng), ntend(ng)
-        END IF
-      END DO
+        END DO
+        WRITE (stdout,'(1x)')
+      END IF
 
 !$OMP PARALLEL
 #ifdef SOLVE3D
@@ -254,8 +265,8 @@
 
       IF (exit_flag.ne.NoError) RETURN
 !
- 10   FORMAT (/,1x,a,1x,'ROMS/TOMS: started time-stepping:',            &
-     &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')',/)
+ 10   FORMAT (1x,a,1x,'ROMS/TOMS: started time-stepping:',              &
+     &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')')
 
       RETURN
       END SUBROUTINE ROMS_run
@@ -277,7 +288,29 @@
 !  Local variable declarations.
 !
       integer :: Fcount, ng, thread
+#ifdef ENKF_RESTART
+      integer :: tile
+#endif
 
+#ifdef ENKF_RESTART
+!
+!-----------------------------------------------------------------------
+!  Write out initial conditions for the next time window of the Ensemble
+!  Kalman (EnKF) filter.
+!-----------------------------------------------------------------------
+!
+# ifdef DISTRIBUTE
+      tile=MyRank
+# else
+      tile=-1
+# endif
+!
+      IF (exit_flag.eq.NoError) THEN
+        DO ng=1,Ngrids
+          CALL wrt_dai (ng, tile)
+        END DO
+      END IF
+#endif
 #ifdef VERIFICATION
 !
 !-----------------------------------------------------------------------

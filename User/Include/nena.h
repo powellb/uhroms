@@ -1,7 +1,7 @@
 /*
-** svn $Id: nena.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: nena.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -18,16 +18,15 @@
 #define UV_COR
 #define UV_QDRAG
 #define UV_VIS2
-#define UV_PSOURCE
 #define MIX_S_UV
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_U3HADVECTION
 #define TS_SVADVECTION
-#define TS_PSOURCE
 #define SOLVE3D
 #define SALINITY
 #define NONLIN_EOS
 #define CURVGRID
-#define SPLINES
 #define MASKING
 #define AVERAGES
 #define SRELAXATION
@@ -40,8 +39,8 @@
 # define LMD_CONVEC
 # define LMD_SKPP
 # define LMD_NONLOCAL
+# define RI_MIXING
 #endif
-#undef  GLS_MIXING
 #define BIO_FENNEL
 #ifdef BIO_FENNEL
 # define CARBON
@@ -51,10 +50,6 @@
 # define ANA_SPFLUX
 # define ANA_BPFLUX
 #endif
-#undef  M2CLIMATOLOGY
-#undef  M3CLIMATOLOGY
-#undef  TCLIMATOLOGY
-#undef  ZCLIMATOLOGY
 
 #define ANA_BSFLUX
 #define ANA_BTFLUX

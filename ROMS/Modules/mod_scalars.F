@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_scalars.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -142,6 +142,7 @@
 !    dt            Size baroclinic timestep (s).
 !    dtfast        Size barotropic timestep (s).
 !    run_time      Total run time for all nested grids (s).
+!    io_time       Current I/O time (s) processed in "get_state".
 !    tdays         Model time clock (days).
 !    time          Model time clock (s).
 !    time_code     Model time clock (string, Day HH:MM:SS)
@@ -177,10 +178,13 @@
         integer, allocatable :: ndtfast(:)
         integer, allocatable :: nfast(:)
 
-        real(r8), allocatable :: dt(:)                   ! seconds
-        real(r8), allocatable :: dtfast(:)               ! seconds
         real(r8), allocatable :: tdays(:)                ! days
         real(r8), allocatable :: time(:)                 ! seconds
+!$OMP THREADPRIVATE (tdays, time)
+
+        real(r8), allocatable :: dt(:)                   ! seconds
+        real(r8), allocatable :: dtfast(:)               ! seconds
+
         real(r8), allocatable :: TimeEnd(:)              ! seconds
         real(r8), allocatable :: AVGtime(:)              ! seconds
         real(r8), allocatable :: DIAtime(:)              ! seconds
@@ -190,11 +194,14 @@
 
         real(r8), dimension(8) :: r_date
         real(r8) :: dstart = 0.0_r8                      ! days
+        real(r8) :: io_time = 0.0_r8                     ! seconds
         real(r8) :: run_time = 0.0_r8                    ! seconds
         real(r8) :: tide_start = 0.0_r8                  ! days
         real(r8) :: time_ref = 0.0_r8                    ! YYYYMMDD.dd
 
         character (len=14), allocatable :: time_code(:)  ! DD HH:MM:SS
+!$OMP THREADPRIVATE (time_code)
+
         character (len=19) :: r_text
 
 #if defined POWER_LAW && defined SOLVE3D
@@ -240,6 +247,12 @@
 !
         integer, allocatable :: ntimes(:)
 !
+!  Time-step counter for current execution time-window.
+!
+        integer, allocatable :: step_counter(:)
+
+!$OMP THREADPRIVATE (step_counter)
+!
 !  Number of time interval divisions for Stochastic Optimals.  It must
 !  a multiple of "ntimes".
 !
@@ -263,6 +276,7 @@
         integer, allocatable :: ntfirst(:)      ! Forward-Euler step
         integer, allocatable :: ntstart(:)      ! Start step
         integer, allocatable :: ntend(:)        ! End step
+!!$OMP THREADPRIVATE (ntfirst, ntstart, ntend)
 !
 !  Adjoint model or tangent linear model impulse forcing time record
 !  counter and number of records available.
@@ -276,7 +290,8 @@
 !  Control switches.
 !-----------------------------------------------------------------------
 !
-!  Switch to proccess nudging coefficients.
+!  Switch to proccess nudging coefficients for radiation open boundary
+!  conditions.
 !
         logical, allocatable :: NudgingCoeff(:)
 !
@@ -339,8 +354,20 @@
 !
 !  Composite grid a refined grids switches. They are .FALSE. by default.
 !
-        logical, allocatable :: ComposedGrid(:)
+        logical, allocatable :: CompositeGrid(:,:)
         logical, allocatable :: RefinedGrid(:)
+!
+!  Refinement grid scale factor from donor grid.
+!
+        integer, allocatable :: RefineScale(:)
+!
+!  Switch to extract donor grid (coarse) data at the refinement grid
+!  contact point locations. The coarse data is extracted at the first
+!  sub-refined time step.  Recall that the finer grid time-step is
+!  smaller than the coarser grid by a factor of RefineScale(:). This
+!  switch is only relevant during refinement nesting.
+!
+        logical, allocatable :: GetDonorData(:)
 !
 !  Periodic boundary swiches for distributed-memory exchanges.
 !
@@ -355,15 +382,30 @@
         logical, allocatable :: tl_VolCons(:,:)
 #endif
 !
-!  Switch indicating which tracer field needs to be processed for
-!  climatology.
+!  Switches to read and process climatology fields.
 !
-        logical, allocatable :: LtracerCLM(:,:)
+        logical, allocatable :: CLM_FILE(:)          ! Process NetCDF
+        logical, allocatable :: Lclimatology(:)      ! any field
+        logical, allocatable :: LsshCLM(:)           ! free-surface
+        logical, allocatable :: Lm2CLM(:)            ! 2D momentum
+        logical, allocatable :: Lm3CLM(:)            ! 3D momentum
+        logical, allocatable :: LtracerCLM(:,:)      ! tracers
 !
-!  Switch indicating which tracer field needs to be processed for
-!  Sources/Sinks terms.
+!  Switched to nudge to climatology fields.
 !
-        logical, allocatable :: LtracerSrc(:,:)
+        logical, allocatable :: Lnudging(:)          ! any field
+        logical, allocatable :: LnudgeM2CLM(:)       ! 2D momentum
+        logical, allocatable :: LnudgeM3CLM(:)       ! 3D momentum
+        logical, allocatable :: LnudgeTCLM(:,:)      ! tracers
+!
+!  Switches to activate point Source/Sinks in an application:
+!    * Horizontal momentum transport (u or v)
+!    * Vertical mass transport (w)
+!    * Tracer transport
+!
+        logical, allocatable :: LuvSrc(:)            ! momentum
+        logical, allocatable :: LwSrc(:)             ! mass
+        logical, allocatable :: LtracerSrc(:,:)      ! tracers
 !
 !  Execution termination flag.
 !
@@ -395,9 +437,9 @@
         integer, parameter :: linear = 0        ! linear interpolation
         integer, parameter :: cubic  = 1        ! cubic  interpolation
 !
-        integer :: InterpFlag = cubic          ! interpolation flag
+        integer :: InterpFlag = linear          ! interpolation flag
 !
-!  Shallowest and Deepest levels to apply bottom momemtum stresses as
+!  Shallowest and Deepest levels to apply bottom momentum stresses as
 !  a bodyforce
 !
         integer, allocatable :: levsfrc(:)
@@ -459,6 +501,11 @@
         real(r8), allocatable :: LatMin(:)      ! degrees north
         real(r8), allocatable :: LatMax(:)      ! degrees north
 !
+!  Constant used in the Shchepetkin boundary conditions for 2D momentum,
+!  Co = 1.0_r8/(2.0_r8+SQRT(2.0_r8)).
+!
+        real(r8) :: Co
+!
 !  Number of digits in grid size for format statements.
 !
         integer, allocatable :: Idigits(:)
@@ -486,8 +533,14 @@
         real(r8), allocatable :: DXmax(:)
         real(r8), allocatable :: DYmin(:)
         real(r8), allocatable :: DYmax(:)
+#ifdef SOLVE3D
         real(r8), allocatable :: DZmin(:)
         real(r8), allocatable :: DZmax(:)
+#endif
+!$OMP THREADPRIVATE (DXmin, DXmax, DYmin, DYmax)
+#ifdef SOLVE3D
+!$OMP THREADPRIVATE (DZmin, DZmax)
+#endif
 !
 !  Maximum size of a grid node (m) over the whole curvilinear grid
 !  application. Used for scaling horizontal mixing by the grid size.
@@ -540,13 +593,14 @@
         real(r8), allocatable :: gamma2(:)
 !
 !  Weighting coefficient for the newest (implicit) time step derivatives
-!  in the Crack-Nicolson implicit scheme (usually, lambda=0.5).
+!  using either a Crack-Nicolson implicit scheme (lambda=0.5) or a
+!  backward implicit scheme (lambda=1.0).
 !
-#ifdef SPLINES
-        real(r8) :: lambda = 1.0_r8             ! backward implicit
+#if defined SPLINES_VDIFF || defined SPLINES_VVISC
+        real(r8) :: lambda = 1.0_r8
 #else
 !!      real(r8) :: lambda = 0.5_r8
-        real(r8) :: lambda = 1.0_r8             ! backward implicit
+        real(r8) :: lambda = 1.0_r8
 #endif
 !
 !  Jerlov water type to assign everywhere, range values: 1 - 5.
@@ -725,6 +779,14 @@
 
         real(r8), allocatable :: ad_Akt_fac(:,:)     ! ADM tracers
         real(r8), allocatable :: tl_Akt_fac(:,:)     ! TLM tracers
+
+!
+!  Switches to increase/decrease horizontal viscosity and/or diffusion
+!  in specific areas of the application domain (like sponge areas).
+!
+        logical, allocatable :: Lsponge(:)
+        logical, allocatable :: LuvSponge(:)         ! viscosity
+        logical, allocatable :: LtracerSponge(:,:)   ! diffusion
 !
 !-----------------------------------------------------------------------
 !  IO parameters.
@@ -734,6 +796,7 @@
 !
         logical, allocatable :: LdefADJ(:)       ! Adjoint file
         logical, allocatable :: LdefAVG(:)       ! Average file
+        logical, allocatable :: LdefDAI(:)       ! DA initial/restart
         logical, allocatable :: LdefDIA(:)       ! Diagnostics file
         logical, allocatable :: LdefERR(:)       ! 4DVar error file
         logical, allocatable :: LdefFLT(:)       ! Floats file
@@ -742,8 +805,10 @@
         logical, allocatable :: LdefINI(:)       ! Initial file
         logical, allocatable :: LdefIRP(:)       ! Initial RPM file
         logical, allocatable :: LdefITL(:)       ! Initial TLM file
-        logical, allocatable :: LdefLCZ(:)       ! Lanczos file
+        logical, allocatable :: LdefLCZ(:)       ! Lanczos Vectors file
+        logical, allocatable :: LdefLZE(:)       ! Evolved Lanczos file
         logical, allocatable :: LdefMOD(:)       ! 4DVAR file
+        logical, allocatable :: LdefQCK(:)       ! Quicksave file
         logical, allocatable :: LdefRST(:)       ! Restart file
         logical, allocatable :: LdefSTA(:)       ! Stations file
         logical, allocatable :: LdefTIDE(:)      ! tide forcing file
@@ -755,6 +820,7 @@
         logical, allocatable :: LwrtDIA(:)       ! Write diagnostic file
         logical, allocatable :: LwrtHIS(:)       ! Write history file
         logical, allocatable :: LwrtPER(:)       ! Write during ensemble
+        logical, allocatable :: LwrtQCK(:)       ! write quicksave file
         logical, allocatable :: LwrtRST(:)       ! Write restart file
         logical, allocatable :: LwrtTLM(:)       ! Write tangent file
         logical, allocatable :: LwrtTLF(:)       ! Write impulse file
@@ -794,6 +860,7 @@
         integer, allocatable :: ndefAVG(:)       ! Average file
         integer, allocatable :: ndefDIA(:)       ! Diagnostics file
         integer, allocatable :: ndefHIS(:)       ! History file
+        integer, allocatable :: ndefQCK(:)       ! Quicksave file
         integer, allocatable :: ndefTLM(:)       ! Tangent linear file
 !
 !  Starting timestep for accumulation of output.
@@ -808,6 +875,7 @@
         integer, allocatable :: nDIA(:)          ! Diagnostics file
         integer, allocatable :: nFLT(:)          ! Floats file
         integer, allocatable :: nHIS(:)          ! History file
+        integer, allocatable :: nQCK(:)          ! Quicksave file
         integer, allocatable :: nRST(:)          ! Restart file
         integer, allocatable :: nSTA(:)          ! Stations file
         integer, allocatable :: nTLM(:)          ! Tangent linear file
@@ -890,6 +958,7 @@
 !  applications.
 !
         logical, allocatable :: synchro_flag(:)
+!$OMP THREADPRIVATE (synchro_flag)
 !
 !  Switch to inialize model with latest time record from initial
 !  (restart/history) NetCDF file.
@@ -1024,6 +1093,11 @@
         real(r8), allocatable :: Hdecay(:,:,:)
 !
 !  Initial conditions, model and surface forcing error covariance
+!  temporal decorrelation scales (second).
+!
+        real(r8), allocatable :: Tdecay(:,:)
+!
+!  Initial conditions, model and surface forcing error covariance
 !  vertical decorrelation scales (m).
 !
         real(r8), allocatable :: Vdecay(:,:,:)
@@ -1037,6 +1111,38 @@
 !  scales (m).
 !
         real(r8), allocatable :: VdecayB(:,:,:)
+!
+!  Method for background quality control of observations, [Ngrids].
+!
+!      [1] Quality control in terms of state variable indices
+!      [2] Quality control in terms of observation provenance
+!
+        integer, allocatable :: bgqc_type(:)
+!
+!  Background quality control standard deviation value for not
+!  rejection of observations.
+!
+        real(r8) :: bgqc_large = 1.0E+5_r8
+!
+!  Number of observation provenances used in background quality control,
+!  [Ngrids]. Only used when bgqc_type(ng)=2.
+!
+        integer, allocatable :: Nprovenance(:)
+!
+!  Observation provenance indices to process during background quality
+!  control of observations, [MAXVAL(Nprovenance),Ngrids].
+!
+        integer, allocatable :: Iprovenance(:,:)
+!
+!  Background quality control threshold standard deviations in terms
+!  of observation provenance indices, [MAXVAL(Nprovenance),Ngrids].
+!
+        real(r8), allocatable :: P_bgqc(:,:)
+!
+!  Background quality control threshold standard deviations in terms
+!  of state variable indices, [MstateVar,Ngrids]
+!
+        real(r8), allocatable :: S_bgqc(:,:)
 #endif
 !
 !-----------------------------------------------------------------------
@@ -1192,6 +1298,23 @@
 !  Water clarity parameters.
 !-----------------------------------------------------------------------
 !
+!  The water type classification is based on Jerlov water type using
+!  a double exponential function for light absorption:
+!
+!    Array
+!    Index   WaterType   Examples
+!    -----   ---------   --------
+!
+!      1         I       Open Pacific
+!      2         IA      Eastern Mediterranean, Indian Ocean
+!      3         IB      Western Mediterranean, Open Atlantic
+!      4         II      Coastal waters, Azores
+!      5         III     Coastal waters, North Sea
+!      6         1       Skagerrak Strait
+!      7         3       Baltic
+!      8         5       Black Sea
+!      9         7       Dark coastal water
+!
 !    lmd_mu1       Reciprocal of the absorption coefficient for solar
 !                    wavelength band 1 as a function of the Jerlov
 !                    water type.
@@ -1201,14 +1324,17 @@
 !    lmd_r1        Fraction of total radiance for wavelength band 1 as
 !                    a function of the Jerlov water type.
 !
-        real(r8), dimension(5) :: lmd_mu1 =                             &
-     &            (/ 0.35_r8, 0.6_r8, 1.0_r8, 1.5_r8, 1.4_r8 /)
+        real(r8), dimension(9) :: lmd_mu1 =                             &
+     &            (/ 0.35_r8, 0.6_r8,  1.0_r8,  1.5_r8, 1.4_r8,         &
+     &               0.42_r8, 0.37_r8, 0.33_r8, 0.0_r8 /)
 
-        real(r8), dimension(5) :: lmd_mu2 =                             &
-     &            (/ 23.0_r8, 20.0_r8, 17.0_r8, 14.0_r8, 7.9_r8 /)
+        real(r8), dimension(9) :: lmd_mu2 =                             &
+     &            (/ 23.0_r8,  20.0_r8,  17.0_r8,  14.0_r8, 7.9_r8,     &
+     &                5.13_r8,  3.54_r8,  2.34_r8,  1.51_r8 /)
 
-        real(r8), dimension(5) :: lmd_r1 =                              &
-     &            (/ 0.58_r8, 0.62_r8, 0.67_r8, 0.77_r8, 0.78_r8 /)
+        real(r8), dimension(9) :: lmd_r1 =                              &
+     &            (/ 0.58_r8, 0.62_r8, 0.67_r8, 0.77_r8, 0.78_r8,       &
+     &               0.57_r8, 0.57_r8, 0.57_r8, 0.55_r8 /)
 #endif
 
 #ifdef LMD_MIXING
@@ -1571,6 +1697,15 @@
       allocate ( iic(Ngrids) )
       allocate ( iif(Ngrids) )
 
+      allocate ( DXmin(Ngrids) )
+      allocate ( DXmax(Ngrids) )
+      allocate ( DYmin(Ngrids) )
+      allocate ( DYmax(Ngrids) )
+#ifdef SOLVE3D
+      allocate ( DZmin(Ngrids) )
+      allocate ( DZmax(Ngrids) )
+#endif
+
       allocate ( FrcRec(Ngrids) )
       allocate ( SOrec(Ngrids) )
 !$OMP END PARALLEL
@@ -1600,8 +1735,6 @@
 
       allocate ( dt(Ngrids) )
       allocate ( dtfast(Ngrids) )
-      allocate ( tdays(Ngrids) )
-      allocate ( time(Ngrids) )
       allocate ( TimeEnd(Ngrids) )
       allocate ( AVGtime(Ngrids) )
       allocate ( DIAtime(Ngrids) )
@@ -1609,12 +1742,19 @@
       allocate ( ObsTime(Ngrids) )
       allocate ( FrcTime(Ngrids) )
 
-      allocate ( time_code(Ngrids) )
-
       allocate ( ntimes(Ngrids) )
+      allocate ( first_time(Ngrids) )
+
       allocate ( ntfirst(Ngrids) )
       allocate ( ntstart(Ngrids) )
       allocate ( ntend(Ngrids) )
+!$OMP PARALLEL
+      allocate ( synchro_flag(Ngrids) )
+      allocate ( step_counter(Ngrids) )
+      allocate ( tdays(Ngrids) )
+      allocate ( time(Ngrids) )
+      allocate ( time_code(Ngrids) )
+!$OMP END PARALLEL
 
       allocate ( NrecFrc(Ngrids) )
 
@@ -1627,8 +1767,10 @@
       allocate ( Lsediment(Ngrids) )
       allocate ( Lstations(Ngrids) )
 
-      allocate ( ComposedGrid(Ngrids) )
+      allocate ( CompositeGrid(4,Ngrids) )
       allocate ( RefinedGrid(Ngrids) )
+      allocate ( RefineScale(Ngrids) )
+      allocate ( GetDonorData(Ngrids) )
 
       allocate ( EWperiodic(Ngrids) )
       allocate ( NSperiodic(Ngrids) )
@@ -1639,8 +1781,24 @@
       allocate ( tl_VolCons(4,Ngrids) )
 #endif
 
+      allocate ( Lsponge(Ngrids) )
+      allocate ( LuvSponge(Ngrids) )
+      allocate ( LtracerSponge(MT,Ngrids) )
+
+      allocate ( CLM_FILE(Ngrids) )
+      allocate ( Lclimatology(Ngrids) )
+      allocate ( LsshCLM(Ngrids) )
+      allocate ( Lm2CLM(Ngrids) )
+      allocate ( Lm3CLM(Ngrids) )
       allocate ( LtracerCLM(MT,Ngrids) )
 
+      allocate ( Lnudging(Ngrids) )
+      allocate ( LnudgeM2CLM(Ngrids) )
+      allocate ( LnudgeM3CLM(Ngrids) )
+      allocate ( LnudgeTCLM(MT,Ngrids) )
+
+      allocate ( LuvSrc(Ngrids) )
+      allocate ( LwSrc(Ngrids) )
       allocate ( LtracerSrc(MT,Ngrids) )
 
       allocate ( maxspeed(Ngrids) )
@@ -1673,15 +1831,6 @@
 #ifdef SOLVE3D
       allocate ( Kdigits(Ngrids) )
 #endif
-
-      allocate ( first_time(Ngrids) )
-
-      allocate ( DXmin(Ngrids) )
-      allocate ( DXmax(Ngrids) )
-      allocate ( DYmin(Ngrids) )
-      allocate ( DYmax(Ngrids) )
-      allocate ( DZmin(Ngrids) )
-      allocate ( DZmax(Ngrids) )
 
       allocate ( grdmax(Ngrids) )
 
@@ -1762,6 +1911,7 @@
 
       allocate ( LdefADJ(Ngrids) )
       allocate ( LdefAVG(Ngrids) )
+      allocate ( LdefDAI(Ngrids) )
       allocate ( LdefDIA(Ngrids) )
       allocate ( LdefERR(Ngrids) )
       allocate ( LdefFLT(Ngrids) )
@@ -1771,7 +1921,9 @@
       allocate ( LdefIRP(Ngrids) )
       allocate ( LdefITL(Ngrids) )
       allocate ( LdefLCZ(Ngrids) )
+      allocate ( LdefLZE(Ngrids) )
       allocate ( LdefMOD(Ngrids) )
+      allocate ( LdefQCK(Ngrids) )
       allocate ( LdefRST(Ngrids) )
       allocate ( LdefSTA(Ngrids) )
       allocate ( LdefTIDE(Ngrids) )
@@ -1783,6 +1935,7 @@
       allocate ( LwrtDIA(Ngrids) )
       allocate ( LwrtHIS(Ngrids) )
       allocate ( LwrtPER(Ngrids) )
+      allocate ( LwrtQCK(Ngrids) )
       allocate ( LwrtRST(Ngrids) )
       allocate ( LwrtTLM(Ngrids) )
       allocate ( LwrtTLF(Ngrids) )
@@ -1808,6 +1961,7 @@
       allocate ( ndefAVG(Ngrids) )
       allocate ( ndefDIA(Ngrids) )
       allocate ( ndefHIS(Ngrids) )
+      allocate ( ndefQCK(Ngrids) )
       allocate ( ndefTLM(Ngrids) )
 
       allocate ( ntsAVG(Ngrids) )
@@ -1818,6 +1972,7 @@
       allocate ( nDIA(Ngrids) )
       allocate ( nFLT(Ngrids) )
       allocate ( nHIS(Ngrids) )
+      allocate ( nQCK(Ngrids) )
       allocate ( nRST(Ngrids) )
       allocate ( nSTA(Ngrids) )
       allocate ( nTLM(Ngrids) )
@@ -1842,7 +1997,6 @@
 
       allocate ( nrrec(Ngrids) )
 
-      allocate ( synchro_flag(Ngrids) )
       allocate ( LastRec(Ngrids) )
 
       allocate ( LcycleADJ(Ngrids) )
@@ -1885,8 +2039,14 @@
       allocate ( Hdecay(2,MstateVar,Ngrids) )
       allocate ( Vdecay(2,MstateVar,Ngrids) )
 
+      allocate ( Tdecay(MstateVar,Ngrids) )
+
       allocate ( HdecayB(MstateVar,4,Ngrids) )
       allocate ( VdecayB(MstateVar,4,Ngrids) )
+
+      allocate ( bgqc_type(Ngrids) )
+      allocate ( Nprovenance(Ngrids) )
+      allocate ( S_bgqc(MstateVar,Ngrids) )
 #endif
 
       allocate ( obcfac(Ngrids) )
@@ -2073,8 +2233,9 @@
 !
       DO ng=1,Ngrids
         LastRec(ng)=.FALSE.
-        ComposedGrid(ng)=.FALSE.
+        CompositeGrid(1:4,ng)=.FALSE.
         RefinedGrid(ng)=.FALSE.
+        GetDonorData(ng)=.FALSE.
         Lbiology(ng)=.TRUE.
         LcycleADJ(ng)=.FALSE.
         LcycleRST(ng)=.FALSE.
@@ -2126,15 +2287,14 @@
 #ifdef SWAN_COUPLING
       Infinity=one/zero
 #endif
+      Co=1.0_r8/(2.0_r8+SQRT(2.0_r8))
       gorho0=g/rho0
       DO ng=1,Ngrids
         EWperiodic(ng)=.FALSE.
         NSperiodic(ng)=.FALSE.
         NudgingCoeff(ng)=.FALSE.
         ObcData(ng)=.FALSE.
-        ntfirst(ng)=1
-        ntstart(ng)=1
-        ntend(ng)=0
+        RefineScale(ng)=0
         gamma2(ng)=-1.0_r8
         Vtransform(ng)=1
         Vstretching(ng)=1
@@ -2153,9 +2313,23 @@
 #ifdef SOLVE3D
         Kdigits(ng)=INT(LOG10(REAL(N (ng),r8)))+1
 #endif
+        CLM_FILE(ng)=.FALSE.
+        Lnudging(ng)=.FALSE.
+        LnudgeM2CLM(ng)=.FALSE.
+        LnudgeM3CLM(ng)=.FALSE.
+        Lclimatology(ng)=.FALSE.
+        Lm2CLM(ng)=.FALSE.
+        Lm3CLM(ng)=.FALSE.
+        LsshCLM(ng)=.FALSE.
+        Lsponge(ng)=.FALSE.
+        LuvSponge(ng)=.FALSE.
+        LuvSrc(ng)=.FALSE.
+        LwSrc(ng)=.FALSE.
         DO itrc=1,MT
+          LnudgeTCLM(itrc,ng)=.FALSE.
           LtracerCLM(itrc,ng)=.FALSE.
           LtracerSrc(itrc,ng)=.FALSE.
+          LtracerSponge(itrc,ng)=.FALSE.
           ad_Akt_fac(itrc,ng)=1.0_r8
           tl_Akt_fac(itrc,ng)=1.0_r8
           ad_tnu2(itrc,ng)=IniVal
@@ -2202,6 +2376,18 @@
       Tobc_in = IniVal
       Tobc_out = IniVal
 #endif
+!
+!  Initialize thread private variables.
+!
+!$OMP PARALLEL
+      synchro_flag=.FALSE.
+
+      ntfirst=1
+      ntstart=1
+      ntend=0
+      step_counter=0
+!$OMP END PARALLEL
+
 #if defined LMD_SKPP || defined LMD_BKPP
 !
 !  Proportionality coefficient parameterizing boundary layer
@@ -2219,6 +2405,7 @@
 
       Cnorm=.FALSE.
       Hdecay=IniVal
+      Tdecay=IniVal
       Vdecay=IniVal
 
       CnormB=.FALSE.
@@ -2239,6 +2426,7 @@
 
         LdefADJ(ng)=.FALSE.
         LdefAVG(ng)=.TRUE.
+        LdefDAI(ng)=.FALSE.
         LdefDIA(ng)=.TRUE.
         LdefERR(ng)=.FALSE.
 #ifdef FLOATS
@@ -2270,8 +2458,6 @@
 #endif
         LwrtTime(ng)=.TRUE.
         ldefout(ng)=.FALSE.
-
-        synchro_flag(ng)=.FALSE.
 
       END DO
 

@@ -2,9 +2,9 @@
       MODULE ad_set_vbc_mod
 #ifdef ADJOINT
 !
-!svn $Id: ad_set_vbc.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_set_vbc.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -353,6 +353,7 @@
 !
       ad_cff1=0.0_r8
       ad_cff2=0.0_r8
+      ad_cff3=0.0_r8
 
 #  if (!defined BBL_MODEL_NOT_YET || defined ICESHELF) && \
         defined UV_LOGDRAG
@@ -399,7 +400,7 @@
      &                     LBi, UBi, LBj, UBj,                          &
      &                     ad_bvstr)
 !
-!  Save adjoint bottom momentun flux for output purposes.
+!  Save adjoint bottom momentum flux for output purposes.
 !
       DO j=JstrR,JendR
         DO i=Istr,IendR
@@ -1088,6 +1089,49 @@
         END DO
       END DO
 #  endif
+
+#  ifdef LIMIT_STFLX_COOLING
+!
+!-----------------------------------------------------------------------
+!  If net heat flux is cooling and SST is at freezing point or below
+!  then suppress further cooling. Note: stflx sign convention is that
+!  positive means heating the ocean (J Wilkin).
+!-----------------------------------------------------------------------
+!
+!  Below the surface heat flux stflx(:,:,itemp) is ZERO if cooling AND
+!  the SST is cooler that the threshold.  The value is retained if
+!  warming.
+!
+!    cff3 = 0      if SST warmer than threshold (cff1) - change nothing
+!    cff3 = 1      if SST colder than threshold (cff1)
+!
+!    0.5*(cff2-ABS(cff2)) = 0                        if flux is warming
+!                         = stflx(:,:,itemp)         if flux is cooling
+!
+      cff1=-2.0_r8              ! nominal SST threshold to cease cooling
+      DO j=JstrR,JendR
+        DO i=IstrR,IendR
+          cff2=stflx(i,j,itemp)
+          cff3=0.5_r8*(1.0_r8+SIGN(1.0_r8,cff1-t(i,j,N(ng),nrhs,itemp)))
+!>        tl_stflx(i,j,itemp)=(1.0_r8-                                  &
+!>   &                         cff3*0.5_r8*(1.0_r8-SIGN(1.0_r8,cff2)))* &
+!>   &                        tl_cff2
+!>
+          ad_cff2=ad_cff2+                                              &
+     &            (1.0_r8-cff3*0.5_r8*(1.0_r8-SIGN(1.0_r8,cff2)))*      &
+     &            ad_stfx(i,j,itemp)
+          ad_stflx(i,j,itemp)=0.0_r8
+!>        tl_cff3=0.5_r8*SIGN(1.0_r8, cff1-t(i,j,N(ng),nrhs,itemp))*0.0
+!>        tl_cff3=0.0_r8
+!>
+!>        tl_cff2=tl_stflx(i,j,itemp)
+!>
+          ad_stflx(i,j,itemp)=ad_stflx(i,j,itemp)+ad_cff2
+          ad_cff2=0.0_r8
+        END DO
+      END DO
+#  endif
+
 #  ifdef QCORRECTION
 !
 !-----------------------------------------------------------------------
@@ -1272,7 +1316,7 @@
      &                     LBi, UBi, LBj, UBj,                          &
      &                     ad_bustr)
 !
-!  Save adjoint bottom momentun flux for output purposes.
+!  Save adjoint bottom momentum flux for output purposes.
 !
       DO j=JstrR,JendR
         DO i=Istr,IendR

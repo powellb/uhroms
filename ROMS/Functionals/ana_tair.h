@@ -1,8 +1,8 @@
       SUBROUTINE ana_tair (ng, tile, model)
 !
-!! svn $Id: ana_tair.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_tair.h 795 2016-05-11 01:42:43Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -78,14 +78,14 @@
 !-----------------------------------------------------------------------
 !
 #if defined BENCHMARK
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Tair(i,j)=4.0_r8
         END DO
       END DO
 #elif defined BL_TEST
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Tair(i,j)=23.567_r8
         END DO
       END DO

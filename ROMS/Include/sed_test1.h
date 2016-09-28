@@ -1,7 +1,7 @@
 /*
-** svn $Id: sed_test1.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: sed_test1.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -14,10 +14,11 @@
 */
 
 #define UV_ADV
-#define UV_PSOURCE
 #define UV_LOGDRAG
 #define UV_VIS4
 #define MIX_S_UV
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_U3HADVECTION
 #define TS_C4VADVECTION
 #define TS_DIF4
@@ -28,11 +29,11 @@
 #ifdef SEDIMENT
 # define SUSPLOAD
 #endif
-#define  SPLINES
 #define MY25_MIXING
 #ifdef MY25_MIXING
 # define KANTHA_CLAYSON
 # define N2S2_HORAVG
+# define RI_SPLINES
 #endif
 #define ANA_BPFLUX
 #define ANA_BSFLUX

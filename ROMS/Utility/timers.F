@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE wclock_on (ng, model, region)
 !
-!svn $Id: timers.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: timers.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -53,7 +53,7 @@
       NSUB=numthreads
 #endif
 !
-!  Ensure that MyModel is not zero.  Notice that zero value is used to
+!  Insure that MyModel is not zero.  Notice that zero value is used to
 !  indicate restart of the nonlinear model.
 !
       MyModel=MAX(1,model)
@@ -160,17 +160,18 @@
 
 !$OMP CRITICAL (FINALIZE_WCLOCK)
 !
-!  Report total elapsed time (seconds) for each CPU.
+!  Report total elapsed time (seconds) for each CPU.  We get the same
+!  time for all nested grids.
 !
         IF (ng.eq.1) THEN
 #ifdef DISTRIBUTE
-        CALL mp_barrier (ng)
-        WRITE (stdout,10) ' Node   #', MyRank, ' CPU:',                 &
-     &                    Cend(region,MyModel,ng)
-        CALL my_flush (stdout)
+          CALL mp_barrier (ng)
+          WRITE (stdout,10) ' Node   #', MyRank, ' CPU:',               &
+     &                      Cend(region,MyModel,ng)
+         CALL my_flush (stdout)
 #else
-        WRITE (stdout,10) ' Thread #', MyThread, ' CPU:',               &
-     &                    Cend(region,MyModel,ng)
+         WRITE (stdout,10) ' Thread #', MyThread, ' CPU:',              &
+     &                     Cend(region,MyModel,ng)
 #endif
  10      FORMAT (a,i3,a,f12.3)
        END IF
@@ -228,8 +229,9 @@
           DO imodel=1,4
             IF (Master.and.(Csum(region,imodel,ng).gt.0.0_r8)) THEN
               WRITE (stdout,30) TRIM(label(imodel)),                    &
-     &                          ' model elapsed time profile:'
- 30           FORMAT (/,1x,a,a,/)
+     &                          'model elapsed time profile, Grid:',    &
+     &                          ng
+ 30           FORMAT (/,1x,a,1x,a,1x,i2.2/)
             END IF
             sumcpu=0.0_r8
             sumper=0.0_r8
@@ -261,7 +263,8 @@
             END DO
             IF (Master.and.(total.gt.0.0_r8)) THEN
               WRITE (stdout,30) TRIM(label(imodel)),                    &
-     &                          ' model message Passage profile:'
+     &                          'model message Passage profile, Grid:', &
+     &                          ng
             END IF
             sumcpu=0.0_r8
             sumper=0.0_r8
@@ -285,7 +288,7 @@
 # endif
           IF (Master) WRITE (stdout,60) Csum(region,MyModel,ng)
   60      FORMAT (/,' All percentages are with respect to total time =',&
-     &            5x,f12.3)
+     &            5x,f12.3,/)
 #endif
         END IF
 !$OMP END CRITICAL (FINALIZE_WCLOCK)

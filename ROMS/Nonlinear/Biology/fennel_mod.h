@@ -1,7 +1,7 @@
 !
-!svn $Id: fennel_mod.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: fennel_mod.h 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -33,7 +33,7 @@
 !   PhyCN    Phytoplankton Carbon:Nitrogen ratio [mol_C/mol_N].        !
 !   PhyIP    Phytoplankton NH4 inhibition parameter [1/(mmol_N)].      !
 !   PhyIS    Phytoplankton, initial slope of the P-I curve             !
-!              [mg_C/(mg_Chl W m-2 day)].                              !
+!              [1/(W m-2 day)].                                        !
 !   ZooMin   Phytoplankton minimum threshold value [mmol_N/m3].        !
 !   PhyMR    Phytoplankton mortality rate [1/day] to small detritus.   !
 !   SDeAR    Small detritus aggregation rate into Large detritus       !

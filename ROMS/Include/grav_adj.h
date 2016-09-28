@@ -1,7 +1,7 @@
 /*
-** svn $Id: grav_adj.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: grav_adj.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -17,13 +17,14 @@
 #define UV_LDRAG
 #define MIX_S_UV
 #define DJ_GRADPS
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #undef  TS_U3HADVECTION
 #undef  TS_SVADVECTION
 #define TS_MPDATA
 #define TS_DIF2
 #define MIX_S_TS
 #define SOLVE3D
-#define SPLINES
 #define AVERAGES
 #define ANA_GRID
 #define ANA_INITIAL

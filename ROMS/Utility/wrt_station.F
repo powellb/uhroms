@@ -2,9 +2,9 @@
 #ifdef STATIONS
       SUBROUTINE wrt_station (ng)
 !
-!svn $Id: wrt_station.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wrt_station.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -234,7 +234,7 @@
      &                    GRID(ng) % CosAngler,                         &
      &                    GRID(ng) % SinAngler,                         &
 # ifdef MASKING
-     &                    GRID(ng) % rmask_io,                          &
+     &                    GRID(ng) % rmask_full,                        &
 # endif
      &                    OCEAN(ng) % ubar(:,:,KOUT),                   &
      &                    OCEAN(ng) % vbar(:,:,KOUT),                   &
@@ -325,7 +325,7 @@
      &                    GRID(ng) % CosAngler,                         &
      &                    GRID(ng) % SinAngler,                         &
 #  ifdef MASKING
-     &                    GRID(ng) % rmask_io,                          &
+     &                    GRID(ng) % rmask_full,                        &
 #  endif
      &                    OCEAN(ng) % u(:,:,:,NOUT),                    &
      &                    OCEAN(ng) % v(:,:,:,NOUT),                    &

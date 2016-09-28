@@ -2,9 +2,9 @@
 #if defined TANGENT || defined TL_IOMS
       SUBROUTINE tl_wrt_his (ng)
 !
-!svn $Id: tl_wrt_his.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tl_wrt_his.F 807 2016-07-09 02:03:55Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -136,7 +136,7 @@
      &                   TLM(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask,                              &
 #  endif
      &                   FORCES(ng) % tl_ustr(:,:,:,Lfout(ng)))
       IF (status.ne.nf90_noerr) THEN
@@ -156,7 +156,7 @@
      &                   TLM(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask,                              &
 #  endif
      &                   FORCES(ng) % tl_vstr(:,:,:,Lfout(ng)))
       IF (status.ne.nf90_noerr) THEN
@@ -183,7 +183,7 @@
      &                       TLM(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,   &
 #  ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
+     &                       GRID(ng) % rmask,                          &
 #  endif
      &                       FORCES(ng)% tl_tflux(:,:,:,Lfout(ng),itrc))
           IF (status.ne.nf90_noerr) THEN
@@ -209,7 +209,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #  ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask,                            &
 #  endif
      &                     FORCES(ng) % tl_sustr)
         IF (status.ne.nf90_noerr) THEN
@@ -231,7 +231,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #  ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask,                            &
 #  endif
      &                     FORCES(ng) % tl_svstr)
         IF (status.ne.nf90_noerr) THEN
@@ -256,7 +256,7 @@
      &                       TLM(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, scale,                 &
 #   ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
+     &                       GRID(ng) % rmask,                          &
 #   endif
      &                       FORCES(ng) % tl_stflx(:,:,itrc))
           IF (status.ne.nf90_noerr) THEN
@@ -282,13 +282,17 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 # ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 # endif
 # ifdef WET_DRY
      &                     OCEAN(ng) % tl_zeta(:,:,KOUT),               &
      &                     SetFillVal = .FALSE.)
 # else
+#  ifdef FORCING_SV
+     &                     OCEAN(ng) % f_zeta(:,:))
+#  else
      &                     OCEAN(ng) % tl_zeta(:,:,KOUT))
+#  endif
 # endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
@@ -303,7 +307,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #  ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #  endif
      &                     OCEAN(ng) % tl_rzeta(:,:,KOUT))
         IF (status.ne.nf90_noerr) THEN
@@ -351,9 +355,13 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 # ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 # endif
+# ifdef FORCING_SV
+     &                     OCEAN(ng) % f_ubar(:,:))
+# else
      &                     OCEAN(ng) % tl_ubar(:,:,KOUT))
+# endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idUbar)), TLM(ng)%Rindex
@@ -368,7 +376,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #   ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 #   endif
      &                     OCEAN(ng) % tl_rubar(:,:,KOUT))
         IF (status.ne.nf90_noerr) THEN
@@ -386,7 +394,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #    ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 #    endif
      &                     COUPLING(ng) % tl_rufrc)
         IF (status.ne.nf90_noerr) THEN
@@ -402,7 +410,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #   ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 #   endif
      &                     COUPLING(ng) % tl_DU_avg1)
         IF (status.ne.nf90_noerr) THEN
@@ -417,7 +425,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #   ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 #   endif
      &                     COUPLING(ng) % tl_DU_avg2)
         IF (status.ne.nf90_noerr) THEN
@@ -466,9 +474,13 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 # ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 # endif
+# ifdef FORCING_SV
+     &                     OCEAN(ng) % f_vbar(:,:))
+# else
      &                     OCEAN(ng) % tl_vbar(:,:,KOUT))
+# endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idVbar)), TLM(ng)%Rindex
@@ -483,7 +495,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #   ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 #   endif
      &                     OCEAN(ng) % tl_rvbar(:,:,KOUT))
         IF (status.ne.nf90_noerr) THEN
@@ -501,7 +513,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #    ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 #    endif
      &                     COUPLING(ng) % tl_rvfrc)
         IF (status.ne.nf90_noerr) THEN
@@ -517,7 +529,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #   ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 #   endif
      &                     COUPLING(ng) % tl_DV_avg1)
         IF (status.ne.nf90_noerr) THEN
@@ -532,7 +544,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, scale,                   &
 #   ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 #   endif
      &                     COUPLING(ng) % tl_DV_avg2)
         IF (status.ne.nf90_noerr) THEN
@@ -582,9 +594,13 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #  ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 #  endif
+#  ifdef FORCING_SV
+     &                     OCEAN(ng) % f_u(:,:,:))
+#  else
      &                     OCEAN(ng) % tl_u(:,:,:,NOUT))
+#  endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idUvel)), TLM(ng)%Rindex
@@ -598,7 +614,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #   ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask_full,                       &
 #   endif
      &                     OCEAN(ng) % tl_ru(:,:,:,NOUT))
         IF (status.ne.nf90_noerr) THEN
@@ -646,9 +662,13 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #  ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 #  endif
+#  ifdef FORCING_SV
+     &                     OCEAN(ng) % f_v(:,:,:))
+#  else
      &                     OCEAN(ng) % tl_v(:,:,:,NOUT))
+#  endif
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idVvel)), TLM(ng)%Rindex
@@ -662,7 +682,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #   ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask_full,                       &
 #   endif
      &                     OCEAN(ng) % tl_rv(:,:,:,NOUT))
         IF (status.ne.nf90_noerr) THEN
@@ -711,9 +731,13 @@
      &                       TLM(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, 1, N(ng), scale,       &
 #  ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
+     &                       GRID(ng) % rmask,                          &
 #  endif
+#  ifdef FORCING_SV
+     &                       OCEAN(ng) % f_t(:,:,:,itrc))
+#  else
      &                       OCEAN(ng) % tl_t(:,:,:,NOUT,itrc))
+#  endif
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,idTvar(itrc))),            &
@@ -763,7 +787,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #  ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #  endif
      &                     OCEAN(ng) % tl_rho)
         IF (status.ne.nf90_noerr) THEN
@@ -789,7 +813,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #   ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #   endif
 #   ifdef WEAK_CONSTRAINT
      &                     MIXING(ng) % Akv,                            &
@@ -816,7 +840,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #   ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #   endif
 #   ifdef WEAK_CONSTRAINT
      &                     MIXING(ng) % Akt(:,:,:,itemp),               &
@@ -844,7 +868,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #    ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #    endif
 #    ifdef WEAK_CONSTRAINT
      &                     MIXING(ng) % Akt(:,:,:,isalt),               &
@@ -873,7 +897,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #    ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #    endif
      &                     MIXING(ng) % tl_tke(:,:,:,NOUT),             &
      &                     SetFillVal = .FALSE.)
@@ -892,7 +916,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #    ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #    endif
      &                     MIXING(ng) % tl_Akk)
         IF (status.ne.nf90_noerr) THEN
@@ -914,7 +938,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #    ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #    endif
      &                     MIXING(ng) % tl_gls(:,:,:,NOUT),             &
      &                     SetFillVal = .FALSE.)
@@ -933,7 +957,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #    ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #    endif
      &                     MIXING(ng) % tl_Lscale)
         IF (status.ne.nf90_noerr) THEN
@@ -951,7 +975,7 @@
      &                     TLM(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 0, N(ng), scale,         &
 #     ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #     endif
      &                     MIXING(ng) % tl_Akp)
         IF (status.ne.nf90_noerr) THEN

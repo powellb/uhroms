@@ -1,13 +1,13 @@
 #include "cppdefs.h"
-#if defined IS4DVAR              || \
-    (defined WEAK_CONSTRAINT     && \
-     (defined POSTERIOR_EOFS     || defined POSTERIOR_ERROR_I || \
-      defined POSTERIOR_ERROR_F))
+#if defined IS4DVAR               || \
+    (defined WEAK_CONSTRAINT      && \
+     (defined POSTERIOR_EOFS      || defined POSTERIOR_ERROR_I || \
+      defined POSTERIOR_ERROR_F)) ||  defined LCZ_FINAL
       SUBROUTINE def_hessian (ng)
 !
-!svn $Id: def_hessian.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_hessian.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -67,6 +67,11 @@
 
       integer :: def_dim
 
+# ifdef EVOLVED_LCZ
+      integer :: MinnerDim, NinnerDim, NouterDim
+      integer :: vardim(2)
+# endif
+
 # ifdef SOLVE3D
       integer :: t3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #  ifdef ADJUST_BOUNDARY
@@ -96,9 +101,9 @@
 !
       IF (Master) THEN
         IF (LdefHSS(ng)) THEN
-          WRITE (stdout,10) TRIM(ncname)
+          WRITE (stdout,10) ng, TRIM(ncname)
         ELSE
-          WRITE (stdout,20) TRIM(ncname)
+          WRITE (stdout,20) ng, TRIM(ncname)
         END IF
       END IF
 !
@@ -169,6 +174,22 @@
         status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'xy_v',          &
      &                 IOBOUNDS(ng)%xy_v, DimIDs(19))
         IF (exit_flag.ne.NoError) RETURN
+# endif
+
+# ifdef EVOLVED_LCZ
+
+        status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'Ninner',        &
+     &                 Ninner, NinnerDim)
+        IF (exit_flag.ne.NoError) RETURN
+
+        status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'Minner',        &
+     &                 Ninner+1, MinnerDim)
+        IF (exit_flag.ne.NoError) RETURN
+
+        status=def_dim(ng, iADM, HSS(ng)%ncid, ncname, 'Nouter',        &
+     &                 Nouter, NouterDim)
+        IF (exit_flag.ne.NoError) RETURN
+
 # endif
 
 # ifdef SOLVE3D
@@ -332,7 +353,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered u-momemtum type variables.
+!  Define dimension vectors for staggered u-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         u2dgrd(1)=DimIDs(18)
@@ -359,7 +380,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered v-momemtum type variables.
+!  Define dimension vectors for staggered v-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         v2dgrd(1)=DimIDs(19)
@@ -387,7 +408,7 @@
 # endif
 # ifdef SOLVE3D
 !
-!  Define dimension vector for staggered w-momemtum type variables.
+!  Define dimension vector for staggered w-momentum type variables.
 !
 #  if defined WRITE_WATER && defined MASKING
         w3dgrd(1)=DimIDs(23)
@@ -1031,8 +1052,10 @@
         HSS(ng)%Rindex=rec_size
       END IF QUERY
 !
-  10  FORMAT (3x,'DEF_HESSIAN  - creating Hessian  file: ',a)
-  20  FORMAT (3x,'DEF_HESSIAN  - inquiring Hessian file: ',a)
+  10  FORMAT (6x,'DEF_HESSIAN - creating  Hessian', t43,                &
+     &        ' file, Grid ',i2.2,': ', a)
+  20  FORMAT (6x,'DEF_HESSIAN - inquiring Hessian', t43,                &
+     &        ' file, Grid ',i2.2,': ', a)
   30  FORMAT (/,' DEF_HESSIAN - unable to create Hessian NetCDF file:', &
      &        1x,a)
   40  FORMAT (a,', Hessian eigenvectors')

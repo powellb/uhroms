@@ -3,15 +3,19 @@
    (defined POSTERIOR_ERROR_F || defined POSTERIOR_ERROR_I)
       SUBROUTINE wrt_error (ng, kout, nout)
 !
-!svn $Id: wrt_error.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wrt_error.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
 !  This routine writes full posterior error covariance (diagonal) x    !
 !  matrix for weak constraint 4DVar data assimilation.                 !
+!                                                                      !
+!  Notice that only momentum is affected by the full time-averaged     !
+!  masks.  If applicable, these mask contains information about        !
+!  river runoff and time-dependent wetting and drying variations.      !
 !                                                                      !
 !=======================================================================
 !
@@ -126,7 +130,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % rmask_io,                           &
+     &                   GRID(ng) % rmask,                              &
 # endif
      &                   OCEAN(ng)% tl_zeta(:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -171,7 +175,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask_full,                         &
 # endif
      &                   OCEAN(ng) % tl_ubar(:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -216,7 +220,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask_full,                         &
 # endif
      &                   OCEAN(ng) % tl_vbar(:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -263,7 +267,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, N(ng), scale,           &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask_full,                         &
 #  endif
      &                   OCEAN(ng) % tl_u(:,:,:,nout))
       IF (status.ne.nf90_noerr) THEN
@@ -308,7 +312,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, N(ng), scale,           &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask_full,                         &
 #  endif
      &                   OCEAN(ng) % tl_v(:,:,:,nout))
       IF (status.ne.nf90_noerr) THEN
@@ -354,7 +358,7 @@
      &                     ERR(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #  ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #  endif
      &                     OCEAN(ng) % tl_t(:,:,:,nout,itrc))
         IF (status.ne.nf90_noerr) THEN
@@ -411,7 +415,7 @@
      &                       ERR(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,   &
 #   ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
+     &                       GRID(ng) % rmask,                          &
 #   endif
      &                       FORCES(ng) % tl_tflux(:,:,:,kout,itrc))
           IF (status.ne.nf90_noerr) THEN
@@ -439,7 +443,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask,                              &
 #  endif
      &                   FORCES(ng) % tl_ustr(:,:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -459,7 +463,7 @@
      &                   ERR(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask,                              &
 #  endif
      &                   FORCES(ng) % tl_vstr(:,:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -481,19 +485,35 @@
       IF (exit_flag.ne.NoError) RETURN
 
 # ifdef SOLVE3D
+#  ifdef NESTING
+      IF (Master) WRITE (stdout,20) kout, nout, ERR(ng)%Rindex, ng
+#  else
       IF (Master) WRITE (stdout,20) kout, nout, ERR(ng)%Rindex
+#  endif
 # else
+#  ifdef NESTING
+      IF (Master) WRITE (stdout,20) kout, ERR(ng)%Rindex, ng
+#  else
       IF (Master) WRITE (stdout,20) kout, ERR(ng)%Rindex
+#  endif
 # endif
 !
   10  FORMAT (/,' WRT_ERROR - error while writing variable: ',a,/,      &
      &        15x,'into 4DVar error NetCDF file for time record: ',i4)
 # ifdef SOLVE3D
   20  FORMAT (3x,'WRT_ERROR    - wrote error    fields (Index=', i1,    &
+#  ifdef NESTING
+     &        ',',i1,') into time record = ',i7.7,2x,i2.2)
+#  else
      &        ',',i1,') into time record = ',i7.7)
+#  endif
 # else
   20  FORMAT (3x,'WRT_ERROR    - wrote error    fields (Index=', i1,    &
+#  ifdef NESTING
+     &        ') into time record = ',i7.7,2x,i2.2)
+#  else
      &        ') into time record = ',i7.7)
+#  endif
 # endif
       RETURN
       END SUBROUTINE wrt_error

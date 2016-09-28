@@ -2,9 +2,9 @@
 #if (defined TANGENT || defined TL_IOMS) && defined FOUR_DVAR
       SUBROUTINE tl_wrt_ini (ng, Tindex, OutRec)
 !
-!svn $Id: tl_wrt_ini.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tl_wrt_ini.F 807 2016-07-09 02:03:55Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -17,6 +17,10 @@
 !     ng         Nested grid number.                                   !
 !     Tindex     State variables time index to write.                  !
 !     OutRec     NetCDF file unlimited dimension record to write.      !
+!                                                                      !
+!  Notice that only momentum is affected by the full time-averaged     !
+!  masks.  If applicable, these mask contains information about        !
+!  river runoff and time-dependent wetting and drying variations.      !
 !                                                                      !
 !=======================================================================
 !
@@ -70,7 +74,11 @@
 
       real(r8) :: my_time, scale
 
+# ifdef RPCG
+      character (len=35) :: string
+# else
       character (len=15) :: string
+# endif
 !
       LBi=LBOUND(GRID(ng)%h,DIM=1)
       UBi=UBOUND(GRID(ng)%h,DIM=1)
@@ -118,7 +126,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % rmask_io,                           &
+     &                   GRID(ng) % rmask,                              &
 # endif
 # ifdef WET_DRY
      &                   OCEAN(ng) % tl_zeta(:,:,Tindex),               &
@@ -167,7 +175,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask_full,                         &
 # endif
      &                   OCEAN(ng) % tl_ubar(:,:,Tindex))
       IF (status.ne.nf90_noerr) THEN
@@ -211,7 +219,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask_full,                         &
 # endif
      &                   OCEAN(ng) % tl_vbar(:,:,Tindex))
       IF (status.ne.nf90_noerr) THEN
@@ -258,7 +266,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask,                              &
 #  endif
      &                   FORCES(ng) % tl_ustr(:,:,:,Tindex))
       IF (status.ne.nf90_noerr) THEN
@@ -278,7 +286,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask,                              &
 #  endif
      &                   FORCES(ng) % tl_vstr(:,:,:,Tindex))
       IF (status.ne.nf90_noerr) THEN
@@ -300,7 +308,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, 1, N(ng), scale,           &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask_full,                         &
 #  endif
      &                   OCEAN(ng) % tl_u(:,:,:,Tindex))
       IF (status.ne.nf90_noerr) THEN
@@ -344,7 +352,7 @@
      &                   OutRec, gtype,                                 &
      &                   LBi, UBi, LBj, UBj, 1, N(ng), scale,           &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask_full,                         &
 #  endif
      &                   OCEAN(ng) % tl_v(:,:,:,Tindex))
       IF (status.ne.nf90_noerr) THEN
@@ -389,7 +397,7 @@
      &                     OutRec, gtype,                               &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #  ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #  endif
      &                     OCEAN(ng) % tl_t(:,:,:,Tindex,itrc))
         IF (status.ne.nf90_noerr) THEN
@@ -444,7 +452,7 @@
      &                       OutRec, gtype,                             &
      &                       LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,   &
 #   ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
+     &                       GRID(ng) % rmask,                          &
 #   endif
      &                       FORCES(ng) % tl_tflux(:,:,:,Tindex,itrc))
           IF (status.ne.nf90_noerr) THEN
@@ -518,6 +526,19 @@
 # endif
 !
       IF (Master) THEN
+# ifdef RPCG
+        IF (OutRec.eq.1) THEN
+          string='inner-loop initial fields          '
+        ELSE IF (OutRec.eq.2) THEN
+          string='final outer-loop increments        '
+        ELSE IF (OutRec.eq.3) THEN
+          string='sum of final outer-loop increments '
+        ELSE IF (OutRec.eq.4) THEN
+          string='sum of adjoint solutions           '
+        ELSE IF (OutRec.eq.5) THEN
+          string='augmented correction term          '
+        END IF
+# else
         IF (OutRec.eq.1) THEN
           string='initial  fields'
         ELSE IF (OutRec.eq.2) THEN
@@ -527,6 +548,7 @@
         ELSE IF (OutRec.eq.4) THEN
           string='v-summations   '
         END IF
+# endif
 # ifdef SOLVE3D
         WRITE (stdout,20) string, Nrun, Tindex, Tindex, OutRec
 # else

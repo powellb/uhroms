@@ -8,9 +8,9 @@
      &                               IminS, ImaxS, JminS, JmaxS,        &
      &                               Zscale, Z, tl_Z, tl_swdk)
 !
-!svn $Id: rp_lmd_swfrac.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_lmd_swfrac.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -77,7 +77,7 @@
 !
       DO j=Jstr,Jend
         DO i=Istr,Iend
-          Jindex=MIXING(ng)%Jwtype(i,j)
+          Jindex=INT(MIXING(ng)%Jwtype(i,j))
           fac1(i)=Zscale/lmd_mu1(Jindex)
           fac2(i)=Zscale/lmd_mu2(Jindex)
           fac3(i)=lmd_r1(Jindex)

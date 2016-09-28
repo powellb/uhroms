@@ -2,9 +2,9 @@
       MODULE step3d_uv_mod
 #if defined NONLINEAR && defined SOLVE3D
 !
-!svn $Id: step3d_uv.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: step3d_uv.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license           Hernan G. Arango   !
 !    See License_ROMS.txt                   Alexander F. Shchepetkin   !
 !==================================================== John C. Warner ===
@@ -35,9 +35,6 @@
       USE mod_grid
       USE mod_mixing
       USE mod_ocean
-# ifdef UV_PSOURCE
-      USE mod_sources
-# endif
       USE mod_stepping
 !
 !  Imported variable declarations.
@@ -55,13 +52,6 @@
      &                     LBi, UBi, LBj, UBj,                          &
      &                     IminS, ImaxS, JminS, JmaxS,                  &
      &                     nrhs(ng), nstp(ng), nnew(ng),                &
-# ifdef UV_PSOURCE
-     &                     Msrc(ng), Nsrc(ng),                          &
-     &                     SOURCES(ng) % Isrc,                          &
-     &                     SOURCES(ng) % Jsrc,                          &
-     &                     SOURCES(ng) % Dsrc,                          &
-     &                     SOURCES(ng) % Qsrc,                          &
-# endif
 # ifdef MASKING
      &                     GRID(ng) % umask,                            &
      &                     GRID(ng) % vmask,                            &
@@ -118,10 +108,6 @@
      &                           LBi, UBi, LBj, UBj,                    &
      &                           IminS, ImaxS, JminS, JmaxS,            &
      &                           nrhs, nstp, nnew,                      &
-# ifdef UV_PSOURCE
-     &                           Msrc, Nsrc,                            &
-     &                           Isrc, Jsrc, Dsrc, Qsrc,                &
-# endif
 # ifdef MASKING
      &                           umask, vmask,                          &
 # endif
@@ -152,6 +138,7 @@
       USE mod_param
       USE mod_ncparam
       USE mod_scalars
+      USE mod_sources
 !
       USE exchange_2d_mod
       USE exchange_3d_mod
@@ -167,18 +154,8 @@
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
       integer, intent(in) :: nrhs, nstp, nnew
-# ifdef UV_PSOURCE
-      integer, intent(in) :: Msrc, Nsrc
-# endif
 !
 # ifdef ASSUMED_SHAPE
-#  ifdef UV_PSOURCE
-      integer, intent(in) :: Isrc(:)
-      integer, intent(in) :: Jsrc(:)
-
-      real(r8), intent(in) :: Dsrc(:)
-      real(r8), intent(in) :: Qsrc(:,:)
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
@@ -199,12 +176,12 @@
       real(r8), intent(in) :: DV_avg1(LBi:,LBj:)
       real(r8), intent(in) :: DU_avg2(LBi:,LBj:)
       real(r8), intent(in) :: DV_avg2(LBi:,LBj:)
-      real(r8), intent(in) :: ru(LBi:,LBj:,0:,:)
-      real(r8), intent(in) :: rv(LBi:,LBj:,0:,:)
 #  ifdef NEARSHORE_MELLOR
       real(r8), intent(in) :: ubar_stokes(LBi:,LBj:)
       real(r8), intent(in) :: vbar_stokes(LBi:,LBj:)
 #  endif
+      real(r8), intent(inout) :: ru(LBi:,LBj:,0:,:)
+      real(r8), intent(inout) :: rv(LBi:,LBj:,0:,:)
 #  ifdef DIAGNOSTICS_UV
       real(r8), intent(inout) :: DiaU2wrk(LBi:,LBj:,:)
       real(r8), intent(inout) :: DiaV2wrk(LBi:,LBj:,:)
@@ -228,13 +205,6 @@
 
 # else
 
-#  ifdef UV_PSOURCE
-      integer, intent(in) :: Isrc(Msrc)
-      integer, intent(in) :: Jsrc(Msrc)
-
-      real(r8), intent(in) :: Dsrc(Msrc)
-      real(r8), intent(in) :: Qsrc(Msrc,N(ng))
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
@@ -255,12 +225,12 @@
       real(r8), intent(in) :: DV_avg1(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: DU_avg2(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: DV_avg2(LBi:UBi,LBj:UBj)
-      real(r8), intent(in) :: ru(LBi:UBi,LBj:UBj,0:N(ng),2)
-      real(r8), intent(in) :: rv(LBi:UBi,LBj:UBj,0:N(ng),2)
 #  ifdef NEARSHORE_MELLOR
       real(r8), intent(in) :: ubar_stokes(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vbar_stokes(LBi:UBi,LBj:UBj)
 #  endif
+      real(r8), intent(inout) :: ru(LBi:UBi,LBj:UBj,0:N(ng),2)
+      real(r8), intent(inout) :: rv(LBi:UBi,LBj:UBj,0:N(ng),2)
 #  ifdef DIAGNOSTICS_UV
       real(r8), intent(inout) :: DiaU2wrk(LBi:UBi,LBj:UBj,NDM2d)
       real(r8), intent(inout) :: DiaV2wrk(LBi:UBi,LBj:UBj,NDM2d)
@@ -285,8 +255,6 @@
 !
 !  Local variable declarations.
 !
-      integer :: IminU, IminV, ImaxU, ImaxV
-      integer :: JminU, JminV, JmaxU, JmaxV
       integer :: i, idiag, is, j, k
 
       real(r8) :: cff, cff1, cff2
@@ -322,7 +290,7 @@
      &                      Akv(i  ,j,k))
             Hzk(i,k)=0.5_r8*(Hz(i-1,j,k)+                               &
      &                       Hz(i  ,j,k))
-# if defined SPLINES || defined DIAGNOSTICS_UV
+# if defined SPLINES_VVISC || defined DIAGNOSTICS_UV
             oHz(i,k)=1.0_r8/Hzk(i,k)
 # endif
           END DO
@@ -344,7 +312,7 @@
           DO i=IstrU,Iend
             u(i,j,k,nnew)=u(i,j,k,nnew)+                                &
      &                    DC(i,0)*ru(i,j,k,nrhs)
-# ifdef SPLINES
+# ifdef SPLINES_VVISC
             u(i,j,k,nnew)=u(i,j,k,nnew)*oHz(i,k)
 # endif
 # ifdef DIAGNOSTICS_UV
@@ -369,7 +337,7 @@
           END DO
         END DO
 
-# ifdef SPLINES
+# ifdef SPLINES_VVISC
 !
 !  Use conservative, parabolic spline reconstruction of vertical
 !  viscosity derivatives.  Then, time step vertical viscosity term
@@ -588,6 +556,7 @@
 # endif
 # ifdef WET_DRY
             u(i,j,k,nnew)=u(i,j,k,nnew)*umask_wet(i,j)
+            ru(i,j,k,nrhs)=ru(i,j,k,nrhs)*umask_wet(i,j)
 # endif
 # ifdef NEARSHORE_MELLOR
             u_stokes(i,j,k)=u_stokes(i,j,k)-DCs(i,0)
@@ -654,7 +623,7 @@
      &                        Akv(i,j  ,k))
               Hzk(i,k)=0.5_r8*(Hz(i,j-1,k)+                             &
      &                         Hz(i,j  ,k))
-# if defined SPLINES || defined DIAGNOSTICS_UV
+# if defined SPLINES_VVISC || defined DIAGNOSTICS_UV
               oHz(i,k)=1.0_r8/Hzk(i,k)
 # endif
             END DO
@@ -675,7 +644,7 @@
           DO k=1,N(ng)
             DO i=Istr,Iend
               v(i,j,k,nnew)=v(i,j,k,nnew)+DC(i,0)*rv(i,j,k,nrhs)
-# ifdef SPLINES
+# ifdef SPLINES_VVISC
               v(i,j,k,nnew)=v(i,j,k,nnew)*oHz(i,k)
 # endif
 # ifdef DIAGNOSTICS_UV
@@ -701,7 +670,7 @@
             END DO
           END DO
 
-# ifdef SPLINES
+# ifdef SPLINES_VVISC
 !
 !  Use conservative, parabolic spline reconstruction of vertical
 !  viscosity derivatives.  Then, time step vertical viscosity term
@@ -920,6 +889,7 @@
 # endif
 # ifdef WET_DRY
               v(i,j,k,nnew)=v(i,j,k,nnew)*vmask_wet(i,j)
+              rv(i,j,k,nrhs)=rv(i,j,k,nrhs)*vmask_wet(i,j)
 # endif
 # ifdef NEARSHORE_MELLOR
               v_stokes(i,j,k)=v_stokes(i,j,k)-DCs(i,0)
@@ -966,7 +936,9 @@
 # if defined DIAGNOSTICS_UV && defined MASKING
           DO k=1,N(ng)
             DO i=Istr,Iend
-              DiaV3wrk(i,j,k,idiag)=DiaV3wrk(i,j,k,idiag)*vmask(i,j)
+              DO idiag=1,NDM3d
+                DiaV3wrk(i,j,k,idiag)=DiaV3wrk(i,j,k,idiag)*vmask(i,j)
+              END DO
             END DO
           END DO
 # endif
@@ -987,70 +959,44 @@
      &                 IminS, ImaxS, JminS, JmaxS,                      &
      &                 nstp, nnew,                                      &
      &                 v)
-# ifdef UV_PSOURCE
 !
 !-----------------------------------------------------------------------
-!  Apply mass point sources.
+!  Apply momentum transport point sources (like river runoff), if any.
 !-----------------------------------------------------------------------
 !
-      DO is=1,Nsrc
-        i=Isrc(is)
-        j=Jsrc(is)
-        IF (((IstrR.le.i).and.(i.le.IendR)).and.                        &
-     &      ((JstrR.le.j).and.(j.le.JendR))) THEN
-          IF (INT(Dsrc(is)).eq.0) THEN
-            DO k=1,N(ng)
-              cff1=1.0_r8/(on_u(i,j)*                                   &
-     &                     0.5_r8*(z_w(i-1,j,k)-z_w(i-1,j,k-1)+         &
-     &                             z_w(i  ,j,k)-z_w(i  ,j,k-1)))
-              u(i,j,k,nnew)=Qsrc(is,k)*cff1
-            END DO
-          ELSE
-            DO k=1,N(ng)
-              cff1=1.0_r8/(om_v(i,j)*                                   &
-     &                     0.5_r8*(z_w(i,j-1,k)-z_w(i,j-1,k-1)+         &
-     &                             z_w(i,j  ,k)-z_w(i,j  ,k-1)))
-              v(i,j,k,nnew)=Qsrc(is,k)*cff1
-            END DO
+      IF (LuvSrc(ng)) THEN
+        DO is=1,Nsrc(ng)
+          i=SOURCES(ng)%Isrc(is)
+          j=SOURCES(ng)%Jsrc(is)
+          IF (((IstrR.le.i).and.(i.le.IendR)).and.                      &
+     &        ((JstrR.le.j).and.(j.le.JendR))) THEN
+            IF (INT(SOURCES(ng)%Dsrc(is)).eq.0) THEN
+              DO k=1,N(ng)
+                cff1=1.0_r8/(on_u(i,j)*                                 &
+     &                       0.5_r8*(z_w(i-1,j,k)-z_w(i-1,j,k-1)+       &
+     &                               z_w(i  ,j,k)-z_w(i  ,j,k-1)))
+                u(i,j,k,nnew)=SOURCES(ng)%Qsrc(is,k)*cff1
+              END DO
+            ELSE
+              DO k=1,N(ng)
+                cff1=1.0_r8/(om_v(i,j)*                                 &
+     &                       0.5_r8*(z_w(i,j-1,k)-z_w(i,j-1,k-1)+       &
+     &                               z_w(i,j  ,k)-z_w(i,j  ,k-1)))
+                v(i,j,k,nnew)=SOURCES(ng)%Qsrc(is,k)*cff1
+              END DO
+            END IF
           END IF
-        END IF
-      END DO
-# endif
+        END DO
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Couple 2D and 3D momentum equations.
 !-----------------------------------------------------------------------
 !
-!  Set I- and J-indices.
-!
-      IF (ComposedGrid(ng).or.EWperiodic(ng)) THEN
-        IminU=Istr
-        ImaxU=Iend
-        IminV=Istr
-        ImaxV=Iend
-      ELSE
-        IminU=Istr
-        ImaxU=IendR
-        IminV=IstrR
-        ImaxV=IendR
-      END IF
-
-      IF (ComposedGrid(ng).or.NSperiodic(ng)) THEN
-        JminU=Jstr
-        JmaxU=Jend
-        JminV=Jstr
-        JmaxV=Jend
-      ELSE
-        JminU=JstrR
-        JmaxU=JendR
-        JminV=Jstr
-        JmaxV=JendR
-      END IF
-!
 !  Couple velocity component in the XI-direction.
 !
-      DO j=JminU,JmaxU
-        DO i=IminU,ImaxU
+      DO j=JstrT,JendT
+        DO i=IstrP,IendT
           DC(i,0)=0.0_r8
           CF(i,0)=0.0_r8
 # ifdef NEARSHORE_MELLOR
@@ -1065,7 +1011,7 @@
 !  values.
 !
         DO k=1,N(ng)
-          DO i=IminU,ImaxU
+          DO i=IstrP,IendT
             cff=0.5_r8*on_u(i,j)
             DC(i,k)=cff*(Hz(i,j,k)+Hz(i-1,j,k))
             DC(i,0)=DC(i,0)+DC(i,k)
@@ -1077,7 +1023,7 @@
 # endif
           END DO
         END DO
-        DO i=IminU,ImaxU
+        DO i=IstrP,IendT
           cff1=DC(i,0)                                  ! intermediate
 # ifdef NEARSHORE_MELLOR
 !!        cff2=on_u(i,j)*DC(i,0)*ubar_stokes(i,j)
@@ -1089,6 +1035,9 @@
           CFs(i,0)=DC(i,0)*(CFs(i,0)-cff2)              ! recursive
 # endif
           ubar(i,j,1)=DC(i,0)*DU_avg1(i,j)
+# ifdef WET_DRY
+          ubar(i,j,1)=ubar(i,j,1)*umask_wet(i,j)
+# endif
           ubar(i,j,2)=ubar(i,j,1)
 # ifdef DIAGNOSTICS_UV
           DiaU2wrk(i,j,M2rate)=ubar(i,j,1)-DiaU2int(i,j,M2rate)*DC(i,0)
@@ -1101,7 +1050,7 @@
 !  diagnostic values to change in velocity (m s-1).
 !
         DO idiag=1,NDM2d-1
-          DO i=IminU,ImaxU
+          DO i=IstrP,IendT
             DiaU2wrk(i,j,idiag)=DC(i,0)*DiaU2wrk(i,j,idiag)
 #  ifdef MASKING
             DiaU2wrk(i,j,idiag)=DiaU2wrk(i,j,idiag)*umask(i,j)
@@ -1122,120 +1071,122 @@
 !         periodic. The J-loop is pipelined, so we need to do a special
 !         test for the southern and northern domain edges.
 !
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.EWperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-              DO k=1,N(ng)
-                u(Istr,j,k,nnew)=u(Istr,j,k,nnew)-CF(Istr,0)
+        IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+            DO k=1,N(ng)
+              u(Istr,j,k,nnew)=u(Istr,j,k,nnew)-CF(Istr,0)
 # ifdef MASKING
-                u(Istr,j,k,nnew)=u(Istr,j,k,nnew)*                      &
+              u(Istr,j,k,nnew)=u(Istr,j,k,nnew)*                        &
+     &                         umask(Istr,j)
+# endif
+# ifdef WET_DRY
+              u(Istr,j,k,nnew)=u(Istr,j,k,nnew)*                        &
+     &                         umask_wet(Istr,j)
+# endif
+# ifdef NEARSHORE_MELLOR
+              u_stokes(Istr,j,k)=u_stokes(Istr,j,k)-CFs(Istr,0)
+#  ifdef MASKING
+              u_stokes(Istr,j,k)=u_stokes(Istr,j,k)*                    &
      &                           umask(Istr,j)
-# endif
-# ifdef WET_DRY
-                u(Istr,j,k,nnew)=u(Istr,j,k,nnew)*                      &
+#  endif
+#  ifdef WET_DRY
+              u_stokes(Istr,j,k)=u_stokes(Istr,j,k)*                    &
      &                           umask_wet(Istr,j)
-# endif
-# ifdef NEARSHORE_MELLOR
-                u_stokes(Istr,j,k)=u_stokes(Istr,j,k)-CFs(Istr,0)
-#  ifdef MASKING
-                u_stokes(Istr,j,k)=u_stokes(Istr,j,k)*                  &
-     &                             umask(Istr,j)
-#  endif
-#  ifdef WET_DRY
-                u_stokes(Istr,j,k)=u_stokes(Istr,j,k)*                  &
-     &                             umask_wet(Istr,j)
 #  endif
 # endif
-              END DO
-            END IF
-
-            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-              DO k=1,N(ng)
-                u(Iend+1,j,k,nnew)=u(Iend+1,j,k,nnew)-CF(Iend+1,0)
-# ifdef MASKING
-                u(Iend+1,j,k,nnew)=u(Iend+1,j,k,nnew)*                  &
-     &                             umask(Iend+1,j)
-# endif
-# ifdef WET_DRY
-                u(Iend+1,j,k,nnew)=u(Iend+1,j,k,nnew)*                  &
-     &                             umask_wet(Iend+1,j)
-# endif
-# ifdef NEARSHORE_MELLOR
-                u_stokes(Iend+1,j,k)=u_stokes(Iend+1,j,k)-CFs(Iend+1,0)
-#  ifdef MASKING
-                u_stokes(Iend+1,j,k)=u_stokes(Iend+1,j,k)*              &
-     &                               umask(Iend+1,j)
-#  endif
-#  ifdef WET_DRY
-                u_stokes(Iend+1,j,k)=u_stokes(Iend+1,j,k)*              &
-     &                               umask_wet(Iend+1,j)
-#  endif
-# endif
-              END DO
-            END IF
+            END DO
           END IF
-
-          IF (.not.NSperiodic(ng)) THEN
-            IF (j.eq.0) THEN                         ! southern boundary
-              DO k=1,N(ng)                           ! J-loop pipelined
-                DO i=IstrU,Iend
-                  u(i,j,k,nnew)=u(i,j,k,nnew)-CF(i,0)
+        END IF
+!
+        IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+            DO k=1,N(ng)
+              u(Iend+1,j,k,nnew)=u(Iend+1,j,k,nnew)-CF(Iend+1,0)
 # ifdef MASKING
-                  u(i,j,k,nnew)=u(i,j,k,nnew)*                          &
-     &                          umask(i,j)
+              u(Iend+1,j,k,nnew)=u(Iend+1,j,k,nnew)*                    &
+     &                           umask(Iend+1,j)
 # endif
 # ifdef WET_DRY
-                  u(i,j,k,nnew)=u(i,j,k,nnew)*                          &
-     &                          umask_wet(i,j)
+              u(Iend+1,j,k,nnew)=u(Iend+1,j,k,nnew)*                    &
+     &                           umask_wet(Iend+1,j)
 # endif
 # ifdef NEARSHORE_MELLOR
-                  u_stokes(i,j,k)=u_stokes(i,j,k)-CFs(i,0)
+              u_stokes(Iend+1,j,k)=u_stokes(Iend+1,j,k)-CFs(Iend+1,0)
 #  ifdef MASKING
-                  u_stokes(i,j,k)=u_stokes(i,j,k)*                      &
-     &                            umask(i,j)
+              u_stokes(Iend+1,j,k)=u_stokes(Iend+1,j,k)*                &
+     &                             umask(Iend+1,j)
 #  endif
 #  ifdef WET_DRY
-                  u_stokes(i,j,k)=u_stokes(i,j,k)*                      &
-     &                            umask_wet(i,j)
+              u_stokes(Iend+1,j,k)=u_stokes(Iend+1,j,k)*                &
+     &                             umask_wet(Iend+1,j)
 #  endif
 # endif
-                END DO
-              END DO
-            END IF
-
-            IF (j.eq.Mm(ng)+1) THEN                  ! northern boundary
-              DO k=1,N(ng)                           ! J-loop pipelined
-                DO i=IstrU,Iend
-                  u(i,j,k,nnew)=u(i,j,k,nnew)-CF(i,0)
+            END DO
+          END IF
+        END IF
+!
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+          IF (j.eq.0) THEN                           ! southern boundary
+            DO k=1,N(ng)                             ! J-loop pipelined
+              DO i=IstrU,Iend
+                u(i,j,k,nnew)=u(i,j,k,nnew)-CF(i,0)
 # ifdef MASKING
-                  u(i,j,k,nnew)=u(i,j,k,nnew)*                          &
-     &                          umask(i,j)
+                u(i,j,k,nnew)=u(i,j,k,nnew)*                            &
+     &                        umask(i,j)
 # endif
 # ifdef WET_DRY
-                  u(i,j,k,nnew)=u(i,j,k,nnew)*                          &
-     &                          umask_wet(i,j)
+                u(i,j,k,nnew)=u(i,j,k,nnew)*                            &
+     &                        umask_wet(i,j)
 # endif
 # ifdef NEARSHORE_MELLOR
-                  u_stokes(i,j,k)=u_stokes(i,j,k)-CFs(i,0)
+                u_stokes(i,j,k)=u_stokes(i,j,k)-CFs(i,0)
 #  ifdef MASKING
-                  u_stokes(i,j,k)=u_stokes(i,j,k)*                      &
-     &                            umask(i,j)
+                u_stokes(i,j,k)=u_stokes(i,j,k)*                        &
+     &                          umask(i,j)
 #  endif
 #  ifdef WET_DRY
-                  u_stokes(i,j,k)=u_stokes(i,j,k)*                      &
-     &                            umask_wet(i,j)
+                u_stokes(i,j,k)=u_stokes(i,j,k)*                        &
+     &                          umask_wet(i,j)
 #  endif
 # endif
-                END DO
               END DO
-            END IF
+            END DO
+          END IF
+        END IF
+!
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+          IF (j.eq.Mm(ng)+1) THEN                    ! northern boundary
+            DO k=1,N(ng)                             ! J-loop pipelined
+              DO i=IstrU,Iend
+                u(i,j,k,nnew)=u(i,j,k,nnew)-CF(i,0)
+# ifdef MASKING
+                u(i,j,k,nnew)=u(i,j,k,nnew)*                            &
+     &                        umask(i,j)
+# endif
+# ifdef WET_DRY
+                u(i,j,k,nnew)=u(i,j,k,nnew)*                            &
+     &                        umask_wet(i,j)
+# endif
+# ifdef NEARSHORE_MELLOR
+                u_stokes(i,j,k)=u_stokes(i,j,k)-CFs(i,0)
+#  ifdef MASKING
+                u_stokes(i,j,k)=u_stokes(i,j,k)*                        &
+     &                          umask(i,j)
+#  endif
+#  ifdef WET_DRY
+                u_stokes(i,j,k)=u_stokes(i,j,k)*                        &
+     &                          umask_wet(i,j)
+#  endif
+# endif
+              END DO
+            END DO
           END IF
         END IF
 !
 !  Compute correct mass flux, Hz*u/n.
 !
         DO k=N(ng),1,-1
-          DO i=IminU,ImaxU
+          DO i=IstrP,IendT
             Huon(i,j,k)=0.5_r8*(Huon(i,j,k)+u(i,j,k,nnew)*DC(i,k))
 # ifdef NEARSHORE_MELLOR
             Huon(i,j,k)=Huon(i,j,k)+0.5_r8*u_stokes(i,j,k)*DC(i,k)
@@ -1246,11 +1197,11 @@
 # endif
           END DO
         END DO
-        DO i=IminU,ImaxU
+        DO i=IstrP,IendT
           FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg2(i,j))        ! recursive
         END DO
         DO k=1,N(ng)
-          DO i=IminU,ImaxU
+          DO i=IstrP,IendT
             Huon(i,j,k)=Huon(i,j,k)-DC(i,k)*FC(i,0)
           END DO
         END DO
@@ -1258,7 +1209,7 @@
 !  Couple velocity component in the ETA-direction.
 !
         IF (j.ge.Jstr) THEN
-          DO i=IminV,ImaxV
+          DO i=IstrT,IendT
             DC(i,0)=0.0_r8
             CF(i,0)=0.0_r8
 # ifdef NEARSHORE_MELLOR
@@ -1273,7 +1224,7 @@
 !  values.
 !
           DO k=1,N(ng)
-            DO i=IminV,ImaxV
+            DO i=IstrT,IendT
               cff=0.5_r8*om_v(i,j)
               DC(i,k)=cff*(Hz(i,j,k)+Hz(i,j-1,k))
               DC(i,0)=DC(i,0)+DC(i,k)
@@ -1285,7 +1236,7 @@
 # endif
             END DO
           END DO
-          DO i=IminV,ImaxV
+          DO i=IstrT,IendT
             cff1=DC(i,0)                                 ! Intermediate
 # ifdef NEARSHORE_MELLOR
 !!          cff2=om_v(i,j)*DC(i,0)*vbar_stokes(i,j)
@@ -1297,6 +1248,9 @@
             CFs(i,0)=DC(i,0)*(CFs(i,0)-cff2)             ! recursive
 # endif
             vbar(i,j,1)=DC(i,0)*DV_avg1(i,j)
+# ifdef WET_DRY
+            vbar(i,j,1)=vbar(i,j,1)*vmask_wet(i,j)
+# endif
             vbar(i,j,2)=vbar(i,j,1)
 # ifdef DIAGNOSTICS_UV
             DiaV2wrk(i,j,M2rate)=vbar(i,j,1)-                           &
@@ -1312,7 +1266,7 @@
 !  diagnostic values to change in velocity (m s-1).
 !
           DO idiag=1,NDM2d-1
-            DO i=IminV,ImaxV
+            DO i=IstrT,IendT
               DiaV2wrk(i,j,idiag)=DC(i,0)*DiaV2wrk(i,j,idiag)
 #  ifdef MASKING
               DiaV2wrk(i,j,idiag)=DiaV2wrk(i,j,idiag)*vmask(i,j)
@@ -1333,122 +1287,124 @@
 !         periodic. The J-loop is pipelined, so we need to do a special
 !         test for the southern and northern domain edges.
 !
-          IF (.not.ComposedGrid(ng)) THEN
-            IF (.not.EWperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-                DO k=1,N(ng)
-                  v(Istr-1,j,k,nnew)=v(Istr-1,j,k,nnew)-CF(Istr-1,0)
+          IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+              DO k=1,N(ng)
+                v(Istr-1,j,k,nnew)=v(Istr-1,j,k,nnew)-CF(Istr-1,0)
 # ifdef MASKING
-                  v(Istr-1,j,k,nnew)=v(Istr-1,j,k,nnew)*                &
+                v(Istr-1,j,k,nnew)=v(Istr-1,j,k,nnew)*                  &
+     &                             vmask(Istr-1,j)
+# endif
+# ifdef WET_DRY
+                v(Istr-1,j,k,nnew)=v(Istr-1,j,k,nnew)*                  &
+     &                             vmask_wet(Istr-1,j)
+# endif
+# ifdef NEARSHORE_MELLOR
+                v_stokes(Istr-1,j,k)=v_stokes(Istr-1,j,k)-              &
+     &                               CFs(Istr-1,0)
+#  ifdef MASKING
+                v_stokes(Istr-1,j,k)=v_stokes(Istr-1,j,k)*              &
      &                               vmask(Istr-1,j)
-# endif
-# ifdef WET_DRY
-                  v(Istr-1,j,k,nnew)=v(Istr-1,j,k,nnew)*                &
+#  endif
+#  ifdef WET_DRY
+                v_stokes(Istr-1,j,k)=v_stokes(Istr-1,j,k)*              &
      &                               vmask_wet(Istr-1,j)
-# endif
-# ifdef NEARSHORE_MELLOR
-                  v_stokes(Istr-1,j,k)=v_stokes(Istr-1,j,k)-            &
-     &                                 CFs(Istr-1,0)
-#  ifdef MASKING
-                  v_stokes(Istr-1,j,k)=v_stokes(Istr-1,j,k)*            &
-     &                                 vmask(Istr-1,j)
-#  endif
-#  ifdef WET_DRY
-                  v_stokes(Istr-1,j,k)=v_stokes(Istr-1,j,k)*            &
-     &                                 vmask_wet(Istr-1,j)
 #  endif
 # endif
-                END DO
-              END IF
-
-              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-                DO k=1,N(ng)
-                  v(Iend+1,j,k,nnew)=v(Iend+1,j,k,nnew)-CF(Iend+1,0)
-# ifdef MASKING
-                  v(Iend+1,j,k,nnew)=v(Iend+1,j,k,nnew)*                &
-     &                               vmask(Iend+1,j)
-# endif
-# ifdef WET_DRY
-                  v(Iend+1,j,k,nnew)=v(Iend+1,j,k,nnew)*                &
-     &                               vmask_wet(Iend+1,j)
-# endif
-# ifdef NEARSHORE_MELLOR
-                  v_stokes(Iend+1,j,k)=v_stokes(Iend+1,j,k)-            &
-     &                                 CFs(Iend+1,0)
-#  ifdef MASKING
-                  v_stokes(Iend+1,j,k)=v_stokes(Iend+1,j,k)*            &
-     &                                 vmask(Iend+1,j)
-#  endif
-#  ifdef WET_DRY
-                  v_stokes(Iend+1,j,k)=v_stokes(Iend+1,j,k)*            &
-     &                                 vmask_wet(Iend+1,j)
-#  endif
-# endif
-                END DO
-              END IF
+              END DO
             END IF
-
-            IF (.not.NSperiodic(ng)) THEN
-              IF (j.eq.1) THEN                       ! southern boundary
-                DO k=1,N(ng)                         ! J-loop pipelined
-                  DO i=Istr,Iend
-                    v(i,j,k,nnew)=v(i,j,k,nnew)-CF(i,0)
+          END IF
+!
+          IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+              DO k=1,N(ng)
+                v(Iend+1,j,k,nnew)=v(Iend+1,j,k,nnew)-CF(Iend+1,0)
 # ifdef MASKING
-                    v(i,j,k,nnew)=v(i,j,k,nnew)*                        &
-     &                            vmask(i,j)
+                v(Iend+1,j,k,nnew)=v(Iend+1,j,k,nnew)*                  &
+     &                             vmask(Iend+1,j)
 # endif
 # ifdef WET_DRY
-                    v(i,j,k,nnew)=v(i,j,k,nnew)*                        &
-     &                            vmask_wet(i,j)
+                v(Iend+1,j,k,nnew)=v(Iend+1,j,k,nnew)*                  &
+     &                             vmask_wet(Iend+1,j)
 # endif
 # ifdef NEARSHORE_MELLOR
-                    v_stokes(i,j,k)=v_stokes(i,j,k)-CFs(i,0)
+                v_stokes(Iend+1,j,k)=v_stokes(Iend+1,j,k)-              &
+     &                               CFs(Iend+1,0)
 #  ifdef MASKING
-                    v_stokes(i,j,k)=v_stokes(i,j,k)*                    &
-     &                              vmask(i,j)
+                v_stokes(Iend+1,j,k)=v_stokes(Iend+1,j,k)*              &
+     &                               vmask(Iend+1,j)
 #  endif
 #  ifdef WET_DRY
-                    v_stokes(i,j,k)=v_stokes(i,j,k)*                    &
-     &                              vmask_wet(i,j)
+                v_stokes(Iend+1,j,k)=v_stokes(Iend+1,j,k)*              &
+     &                               vmask_wet(Iend+1,j)
 #  endif
 # endif
-                  END DO
-                END DO
-              END IF
-
-              IF (j.eq.Mm(ng)+1) THEN                ! northern boundary
-                DO k=1,N(ng)                         ! J-loop pipelined
-                  DO i=Istr,Iend
-                    v(i,j,k,nnew)=v(i,j,k,nnew)-CF(i,0)
+              END DO
+            END IF
+          END IF
+!
+          IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+            IF (j.eq.1) THEN                         ! southern boundary
+              DO k=1,N(ng)                           ! J-loop pipelined
+                DO i=Istr,Iend
+                  v(i,j,k,nnew)=v(i,j,k,nnew)-CF(i,0)
 # ifdef MASKING
-                    v(i,j,k,nnew)=v(i,j,k,nnew)*                        &
-     &                            vmask(i,j)
+                  v(i,j,k,nnew)=v(i,j,k,nnew)*                          &
+     &                          vmask(i,j)
 # endif
 # ifdef WET_DRY
-                    v(i,j,k,nnew)=v(i,j,k,nnew)*                        &
-     &                            vmask_wet(i,j)
+                  v(i,j,k,nnew)=v(i,j,k,nnew)*                          &
+     &                          vmask_wet(i,j)
 # endif
 # ifdef NEARSHORE_MELLOR
-                    v_stokes(i,j,k)=v_stokes(i,j,k)-CFs(i,0)
+                  v_stokes(i,j,k)=v_stokes(i,j,k)-CFs(i,0)
 #  ifdef MASKING
-                    v_stokes(i,j,k)=v_stokes(i,j,k)*                    &
-     &                              vmask(i,j)
+                  v_stokes(i,j,k)=v_stokes(i,j,k)*                      &
+     &                            vmask(i,j)
 #  endif
 #  ifdef WET_DRY
-                    v_stokes(i,j,k)=v_stokes(i,j,k)*                    &
-     &                              vmask_wet(i,j)
+                  v_stokes(i,j,k)=v_stokes(i,j,k)*                      &
+     &                            vmask_wet(i,j)
 #  endif
 # endif
-                  END DO
                 END DO
-              END IF
+              END DO
+            END IF
+          END IF
+!
+          IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+            IF (j.eq.Mm(ng)+1) THEN                  ! northern boundary
+              DO k=1,N(ng)                           ! J-loop pipelined
+                DO i=Istr,Iend
+                  v(i,j,k,nnew)=v(i,j,k,nnew)-CF(i,0)
+# ifdef MASKING
+                  v(i,j,k,nnew)=v(i,j,k,nnew)*                          &
+     &                          vmask(i,j)
+# endif
+# ifdef WET_DRY
+                  v(i,j,k,nnew)=v(i,j,k,nnew)*                          &
+     &                          vmask_wet(i,j)
+# endif
+# ifdef NEARSHORE_MELLOR
+                  v_stokes(i,j,k)=v_stokes(i,j,k)-CFs(i,0)
+#  ifdef MASKING
+                  v_stokes(i,j,k)=v_stokes(i,j,k)*                      &
+     &                            vmask(i,j)
+#  endif
+#  ifdef WET_DRY
+                  v_stokes(i,j,k)=v_stokes(i,j,k)*                      &
+     &                            vmask_wet(i,j)
+#  endif
+# endif
+                END DO
+              END DO
             END IF
           END IF
 !
 !  Compute correct mass flux, Hz*v/m.
 !
           DO k=N(ng),1,-1
-            DO i=IminV,ImaxV
+            DO i=IstrT,IendT
               Hvom(i,j,k)=0.5_r8*(Hvom(i,j,k)+v(i,j,k,nnew)*DC(i,k))
 # ifdef NEARSHORE_MELLOR
               Hvom(i,j,k)=Hvom(i,j,k)+0.5_r8*v_stokes(i,j,k)*DC(i,k)
@@ -1460,11 +1416,11 @@
 # endif
             END DO
           END DO
-          DO i=IminV,ImaxV
+          DO i=IstrT,IendT
             FC(i,0)=DC(i,0)*(FC(i,0)-DV_avg2(i,j))      ! recursive
           END DO
           DO k=1,N(ng)
-            DO i=IminV,ImaxV
+            DO i=IstrT,IendT
               Hvom(i,j,k)=Hvom(i,j,k)-DC(i,k)*FC(i,0)
             END DO
           END DO

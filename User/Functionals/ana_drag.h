@@ -1,8 +1,8 @@
       SUBROUTINE ana_drag (ng, tile, model)
 !
-!! svn $Id: ana_drag.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_drag.h 795 2016-05-11 01:42:43Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -142,20 +142,20 @@
 !-----------------------------------------------------------------------
 !
 #if defined MY_APPLICATION
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           ZoBot(i,j)=???
         END DO
       END DO
 # elif defined UV_LDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           rdrag(i,j)=???
         END DO
       END DO
 # elif defined UV_QDRAG
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           rdrag2(i,j)=???
         END DO
       END DO
@@ -198,8 +198,8 @@
 !  Load bottom roughness length into bottom properties array.
 !-----------------------------------------------------------------------
 !
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           bottom(i,j,izdef)=ZoBot(i,j)
         END DO
       END DO

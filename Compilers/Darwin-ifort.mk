@@ -1,6 +1,6 @@
-# svn $Id: Darwin-ifort.mk 645 2013-01-22 23:21:54Z arango $
+# svn $Id: Darwin-ifort.mk 795 2016-05-11 01:42:43Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2013 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2016 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -24,7 +24,7 @@
 # First the defaults
 #
                FC := ifort
-           FFLAGS := -heap-arrays -fp-model precise
+           FFLAGS := -heap-arrays -fp-model source
               CPP := /usr/bin/cpp
          CPPFLAGS := -P -traditional-cpp
           LDFLAGS :=
@@ -44,8 +44,8 @@
 
 ifdef USE_NETCDF4
         NC_CONFIG ?= nc-config
-    NETCDF_INCDIR ?= $(subst -I,,$(shell $(NC_CONFIG) --fflags))
-             LIBS := $(shell $(NC_CONFIG) --flibs --libs)
+    NETCDF_INCDIR ?= $(shell $(NC_CONFIG) --prefix)/include
+             LIBS := $(shell $(NC_CONFIG) --flibs)
 else
     NETCDF_INCDIR ?= /usr/local/include
     NETCDF_LIBDIR ?= /usr/local/lib
@@ -77,8 +77,8 @@ endif
 
 ifdef USE_DEBUG
 #          FFLAGS += -g -traceback -check all -fp-stack-check
-#          FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
-           FFLAGS += -g -check bounds
+           FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
+#          FFLAGS += -g -check bounds
 else
 #          FFLAGS += -ip -O3 -Wl,-stack_size,0x10000000
            FFLAGS += -ip -O3

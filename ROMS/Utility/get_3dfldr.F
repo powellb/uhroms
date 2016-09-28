@@ -8,9 +8,9 @@
 # endif
      &                       Fout)
 !
-!svn $Id: get_3dfldr.F 652 2013-02-12 19:00:36Z arango $
+!svn $Id: get_3dfldr.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -148,7 +148,7 @@
      &    (iic(ng).eq.ntstart(ng))) THEN
         IF (Liocycle) THEN
           Trec=MOD(Trec,Nrec)-1
-          IF (Trec.le.0) Trec=Nrec-Trec
+          IF (Trec.le.0) Trec=Nrec+Trec
         ELSE
           Trec=Trec-1
         END IF

@@ -2,9 +2,9 @@
 #ifdef NONLINEAR
       SUBROUTINE output (ng)
 !
-!svn $Id: output.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: output.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -60,6 +60,14 @@
 !-----------------------------------------------------------------------
 !  If appropriate, process nonlinear history NetCDF file.
 !-----------------------------------------------------------------------
+!
+!  Set tile for local array manipulations in output routines.
+!
+#ifdef DISTRIBUTE
+      tile=MyRank
+#else
+      tile=-1
+#endif
 !
 !  Turn off checking for analytical header files.
 !
@@ -137,13 +145,98 @@
           IF ((iic(ng).gt.ntstart(ng)).and.                             &
      &        (MOD(iic(ng)-1,nHIS(ng)).eq.0)) THEN
             IF (nrrec(ng).eq.0.or.iic(ng).ne.ntstart(ng)) THEN
-              CALL wrt_his (ng)
+              CALL wrt_his (ng, tile)
             END IF
             IF (exit_flag.ne.NoError) RETURN
           END IF
         ELSE
           IF (MOD(iic(ng)-1,nHIS(ng)).eq.0) THEN
-            CALL wrt_his (ng)
+            CALL wrt_his (ng, tile)
+            IF (exit_flag.ne.NoError) RETURN
+          END IF
+        END IF
+      END IF
+!
+!-----------------------------------------------------------------------
+!  If appropriate, process nonlinear quicksave NetCDF file.
+!-----------------------------------------------------------------------
+!
+!  Create output quicksave NetCDF file or prepare existing file to
+!  append new data to it.  Also,  notice that it is possible to
+!  create several files during a single model run.
+!
+      IF (LdefQCK(ng)) THEN
+        IF (ndefQCK(ng).gt.0) THEN
+          IF (idefQCK(ng).lt.0) THEN
+            idefQCK(ng)=((ntstart(ng)-1)/ndefQCK(ng))*ndefQCK(ng)
+            IF (idefQCK(ng).lt.iic(ng)-1) THEN
+              idefQCK(ng)=idefQCK(ng)+ndefQCK(ng)
+            END IF
+          END IF
+          IF ((nrrec(ng).ne.0).and.(iic(ng).eq.ntstart(ng))) THEN
+            IF ((iic(ng)-1).eq.idefQCK(ng)) THEN
+              Ldefine=.FALSE.                 ! finished file, delay
+            ELSE                              ! creation of next file
+              Ldefine=.TRUE.
+              NewFile=.FALSE.                 ! unfinished file, inquire
+            END IF                            ! content for appending
+            idefQCK(ng)=idefQCK(ng)+nQCK(ng)  ! restart offset
+          ELSE IF ((iic(ng)-1).eq.idefQCK(ng)) THEN
+            idefQCK(ng)=idefQCK(ng)+ndefQCK(ng)
+            IF (nQCK(ng).ne.ndefQCK(ng).and.iic(ng).eq.ntstart(ng)) THEN
+              idefQCK(ng)=idefQCK(ng)+nQCK(ng)  ! multiple record offset
+            END IF
+            Ldefine=.TRUE.
+            NewFile=.TRUE.
+          ELSE
+            Ldefine=.FALSE.
+          END IF
+          IF (Ldefine) THEN                     ! create new file or
+            Fcount=QCK(ng)%Fcount               ! inquire existing file
+            QCK(ng)%Nrec(Fcount)=0
+            ifile=(iic(ng)-1)/ndefQCK(ng)+1
+            IF (Master) THEN
+              WRITE (QCK(ng)%name,10) TRIM(QCK(ng)%base), ifile
+            END IF
+# ifdef DISTRIBUTE
+            CALL mp_bcasts (ng, iNLM, QCK(ng)%name)
+# endif
+            IF (QCK(ng)%ncid.ne.-1) THEN
+              CALL netcdf_close (ng, iNLM, QCK(ng)%ncid)
+            END IF
+            CALL def_quick (ng, NewFile)
+            IF (exit_flag.ne.NoError) RETURN
+          END IF
+          IF ((iic(ng).eq.ntstart(ng)).and.(nrrec(ng).ne.0)) THEN
+            LwrtQCK(ng)=.FALSE.                 ! avoid writing initial
+          ELSE                                  ! fields during restart
+            LwrtQCK(ng)=.TRUE.
+          END IF
+        ELSE
+          IF (iic(ng).eq.ntstart(ng)) THEN
+            CALL def_quick (ng, ldefout(ng))
+            IF (exit_flag.ne.NoError) RETURN
+            LwrtQCK(ng)=.TRUE.
+            LdefQCK(ng)=.FALSE.
+          END IF
+        END IF
+      END IF
+!
+!  Write out data into quicksave NetCDF file.  Avoid writing initial
+!  conditions in perturbation mode computations.
+!
+      IF (LwrtQCK(ng)) THEN
+        IF (LwrtPER(ng)) THEN
+          IF ((iic(ng).gt.ntstart(ng)).and.                             &
+     &        (MOD(iic(ng)-1,nQCK(ng)).eq.0)) THEN
+            IF (nrrec(ng).eq.0.or.iic(ng).ne.ntstart(ng)) THEN
+              CALL wrt_quick (ng, tile)
+            END IF
+            IF (exit_flag.ne.NoError) RETURN
+          END IF
+        ELSE
+          IF (MOD(iic(ng)-1,nQCK(ng)).eq.0) THEN
+            CALL wrt_quick (ng, tile)
             IF (exit_flag.ne.NoError) RETURN
           END IF
         END IF
@@ -413,14 +506,9 @@
       IF (((time(ng)-0.5_r8*dt(ng)).le.ObsTime(ng)).and.                &
      &    (ObsTime(ng).lt.(time(ng)+0.5_r8*dt(ng)))) THEN
         ProcessObs=.TRUE.
-#   ifdef DISTRIBUTE
-        tile=MyRank
-#   else
-        tile=-1
-#   endif
         CALL obs_read (ng, iNLM, .FALSE.)
         CALL obs_write (ng, tile, iNLM)
-#   ifndef W4DVAR
+#   if !(defined VERIFICATION || defined W4DVAR)
         CALL obs_cost (ng, iNLM)
 #   endif
       ELSE

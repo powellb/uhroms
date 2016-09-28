@@ -2,9 +2,9 @@
       SUBROUTINE inquire (ng, model, job, Iout, Irec, Mrec, ifield,     &
      &                    ncid, Lmulti, nfiles, S)
 !
-!svn $Id: inquire.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: inquire.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -72,6 +72,7 @@
       real(r8) :: Clength, Tend, Tmax, Tmin, Tmono, Tscale, Tstr, Tval
       real(r8) :: scale
 
+      character (len=1  ), parameter :: blank = ' '
       character (len=3  ) :: label
       character (len=256) :: Fname
 !
@@ -93,6 +94,12 @@
       got_time=.FALSE.
       label=S(1)%label(1:3)
       Vtype=Iinfo(1,ifield,ng)
+!
+!  Clear ncfile module variable.
+!
+      DO i=1,LEN(ncfile)
+        ncfile(i:i)=blank
+      END DO
 !
 !  If multi-files, increase (decrease if backward logic) file counter
 !  and set new file names.
@@ -234,7 +241,7 @@
               DO i=1,n_dim
                 IF (TRIM(dim_name(i)).eq.Tname(ifield)(1:lstr)) THEN
                   Nrec=dim_size(i)
-                ELSE IF (TRIM(dim_name(i)).eq.                         &
+                ELSE IF (TRIM(dim_name(i)).eq.                          &
      &                   Tname(ifield)(1:lstr-1)) THEN  ! There is a C
                   Nrec=dim_size(i)                      ! language null
                   Tname(ifield)=Tname(ifield)(1:lstr-1) ! termination
@@ -317,8 +324,14 @@
             WRITE (stdout,'(15x,a)') TRIM(S(i)%name)
           END DO
         ELSE
+          lstr=LEN_TRIM(ncfile)
           WRITE (stdout,50) TRIM(Vname(1,ifield)), 'file:'
-          WRITE (stdout,'(15x,a)') TRIM(ncfile)
+          IF (lstr.gt.0) THEN
+            WRITE (stdout,'(15x,a)') TRIM(ncfile)
+          ELSE
+            WRITE (stdout,'(15x,a,a)') 'file name is blank, ',          &
+     &                                 'cannot be determined.'
+          END IF
         END IF
         exit_flag=2
         RETURN

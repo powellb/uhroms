@@ -29,7 +29,7 @@
       integer :: decode_line, load_i, load_l, load_lbc, load_r
 
       logical, dimension(Ngrids) :: Lbed
-      logical, dimension(MBOTP,Ngrids) :: Lbottom
+      logical, dimension(Ngrids) :: Lbottom
       logical, dimension(NCS,Ngrids) :: Lmud
       logical, dimension(NNS,Ngrids) :: Lsand
 
@@ -49,8 +49,8 @@
 !
       igrid=1                            ! nested grid counter
       itracer=0                          ! LBC tracer counter
-      iTrcStr=isTvar(idsed(1))           ! first LBC tracer to process
-      iTrcEnd=isTvar(idsed(NST))         ! last  LBC tracer to process
+      iTrcStr=1                          ! first LBC tracer to process
+      iTrcEnd=NST                        ! last  LBC tracer to process
       nline=0                            ! LBC multi-line counter
 !
 !-----------------------------------------------------------------------
@@ -99,19 +99,20 @@
               END IF
               ifield=isTvar(idsed(itracer))
               Npts=load_lbc(Nval, Cval, line, nline, ifield, igrid,     &
-     &                        iTrcStr, iTrcEnd, LBC)
+     &                      idsed(iTrcStr), idsed(iTrcEnd),             &
+     &                      Vname(1,idTvar(idsed(itracer))), LBC)
 #if defined ADJOINT || defined TANGENT || defined TL_IOMS
             CASE ('ad_LBC(isTvar)')
-              IF (itracer.lt.NBT) THEN
+              IF (itracer.lt.NST) THEN
                 itracer=itracer+1
               ELSE
                 itracer=1                      ! next nested grid
               END IF
-              ifield=isTvar(idbio(itracer))
+              ifield=isTvar(idsed(itracer))
               Npts=load_lbc(Nval, Cval, line, nline, ifield, igrid,     &
-     &                      iTrcStr, iTrcEnd, ad_LBC)
+     &                      idsed(iTrcStr), idsed(iTrcEnd),             &
+     &                      Vname(1,idTvar(idsed(itracer))), ad_LBC)
 #endif
-
             CASE ('MUD_SD50')
               IF (.not.allocated(Sd50)) allocate (Sd50(NST,Ngrids))
               Npts=load_r(Nval, Rval, NCS*Ngrids, Rmud)
@@ -210,6 +211,14 @@
                   nl_tnu4(i,ng)=Rmud(itrc,ng)
                 END DO
               END DO
+            CASE ('MUD_Sponge')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idsed(itrc)
+                  LtracerSponge(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
             CASE ('MUD_AKT_BAK')
               Npts=load_r(Nval, Rval, NCS*Ngrids, Rmud)
               DO ng=1,Ngrids
@@ -272,17 +281,6 @@
                 tcr_tim(ng)=Rbed(ng)
               END DO
 #endif
-#ifdef TCLIMATOLOGY
-            CASE ('MUD_Ltclm')
-              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
-              DO ng=1,Ngrids
-                DO itrc=1,NCS
-                  i=idsed(itrc)
-                  LtracerCLM(i,ng)=Lmud(itrc,ng)
-                END DO
-              END DO
-#endif
-#ifdef TS_PSOURCE
             CASE ('MUD_Ltsrc', 'MUD_Ltracer')
               Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
               DO ng=1,Ngrids
@@ -291,7 +289,22 @@
                   LtracerSrc(i,ng)=Lmud(itrc,ng)
                 END DO
               END DO
-#endif
+            CASE ('MUD_Ltclm')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idsed(itrc)
+                  LtracerCLM(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('MUD_Tnudge')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idsed(itrc)
+                  LnudgeTCLM(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
             CASE ('Hout(idmud)')
               Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
               DO ng=1,Ngrids
@@ -352,6 +365,56 @@
                 END DO
               END DO
 #endif
+            CASE ('Qout(idmud)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idTvar(idsed(itrc))
+                  Qout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iSmud)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idsurT(idsed(itrc))
+                  Qout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iMfrac)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idfrac(itrc)
+                  Qout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iMmass)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idBmas(itrc)
+                  Hout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+#ifdef BEDLOAD
+            CASE ('Qout(iMUbld)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idUbld(itrc)
+                  Qout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iMVbld)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idVbld(itrc)
+                  Qout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+#endif
 #if defined AVERAGES    || \
    (defined AD_AVERAGES && defined ADJOINT) || \
    (defined RP_AVERAGES && defined TL_IOMS) || \
@@ -361,6 +424,46 @@
               DO ng=1,Ngrids
                 DO itrc=1,NCS
                   i=idTvar(idsed(itrc))
+                  Aout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(iMTTav)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idTTav(idsed(itrc))
+                  Aout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(iMUTav)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idUTav(idsed(itrc))
+                  Aout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(iMVTav)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=idVTav(idsed(itrc))
+                  Aout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(MHUTav)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=iHUTav(idsed(itrc))
+                  Aout(i,ng)=Lmud(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(MHVTav)')
+              Npts=load_l(Nval, Cval, NCS*Ngrids, Lmud)
+              DO ng=1,Ngrids
+                DO itrc=1,NCS
+                  i=iHVTav(idsed(itrc))
                   Aout(i,ng)=Lmud(itrc,ng)
                 END DO
               END DO
@@ -575,6 +678,14 @@
                   tl_tnu4(i,ng)=Rsand(itrc,ng)
                 END DO
               END DO
+            CASE ('SAND_Sponge')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idsed(NCS+itrc)
+                  LtracerSponge(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
             CASE ('SAND_AKT_BAK')
               Npts=load_r(Nval, Rval, NNS*Ngrids, Rsand)
               DO ng=1,Ngrids
@@ -611,17 +722,6 @@
                   morph_fac(i,ng)=Rsand(itrc,ng)
                 END DO
               END DO
-#ifdef TCLIMATOLOGY
-            CASE ('SAND_Ltclm')
-              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
-              DO ng=1,Ngrids
-                DO itrc=1,NNS
-                  i=idsed(NCS+itrc)
-                  LtracerCLM(i,ng)=Lsand(itrc,ng)
-                END DO
-              END DO
-#endif
-#ifdef TS_PSOURCE
             CASE ('SAND_Ltsrc', 'SAND_Ltracer')
               Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
               DO ng=1,Ngrids
@@ -630,7 +730,22 @@
                   LtracerSrc(i,ng)=Lsand(itrc,ng)
                 END DO
               END DO
-#endif
+            CASE ('SAND_Ltclm')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idsed(NCS+itrc)
+                  LtracerCLM(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('SAND_Tnudge')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idsed(NCS+itrc)
+                  LnudgeTCLM(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
             CASE ('Hout(idsand)')
               Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
               DO ng=1,Ngrids
@@ -691,6 +806,56 @@
                 END DO
               END DO
 #endif
+            CASE ('Qout(idsand)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idTvar(idsed(NCS+itrc))
+                  Qout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iSsand)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idsurT(idsed(NCS+itrc))
+                  Qout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iSfrac)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idfrac(NCS+itrc)
+                  Qout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iSmass)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idBmas(NCS+itrc)
+                  Qout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+#ifdef BEDLOAD
+            CASE ('Qout(iSUbld)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idUbld(NCS+itrc)
+                  Qout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Qout(iSVbld)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idVbld(NCS+itrc)
+                  Qout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+#endif
 #if defined AVERAGES    || \
    (defined AD_AVERAGES && defined ADJOINT) || \
    (defined RP_AVERAGES && defined TL_IOMS) || \
@@ -700,6 +865,46 @@
               DO ng=1,Ngrids
                 DO itrc=1,NNS
                   i=idTvar(idsed(NCS+itrc))
+                  Aout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(iSTTav)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idTTav(idsed(NCS+itrc))
+                  Aout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(iSUTav)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idUTav(idsed(NCS+itrc))
+                  Aout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(iSVTav)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=idVTav(idsed(NCS+itrc))
+                  Aout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(SHUTav)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=iHUTav(idsed(NCS+itrc))
+                  Aout(i,ng)=Lsand(itrc,ng)
+                END DO
+              END DO
+            CASE ('Aout(SHVTav)')
+              Npts=load_l(Nval, Cval, NNS*Ngrids, Lsand)
+              DO ng=1,Ngrids
+                DO itrc=1,NNS
+                  i=iHVTav(idsed(NCS+itrc))
                   Aout(i,ng)=Lsand(itrc,ng)
                 END DO
               END DO
@@ -840,6 +1045,230 @@
               DO ng=1,Ngrids
                 Hout(i,ng)=Lbed(ng)
               END DO
+            CASE ('Hout(isd50)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(isd50)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(idens)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(idens)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+             END DO
+            CASE ('Hout(iwsed)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(iwsed)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(itauc)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(itauc)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(irlen)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(irlen)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(irhgt)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(irhgt)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(ibwav)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(ibwav)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izdef)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izdef)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izapp)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izapp)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izNik)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izNik)
+             DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izbio)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izbio)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izbfm)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izbfm)
+              DO ng=1,Ngrids
+               Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izbld)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izbld)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(izwbl)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izwbl)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(iactv)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(iactv)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Hout(ishgt)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(ishgt)
+              DO ng=1,Ngrids
+                Hout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(ithck)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbed)
+              i=idSbed(ithck)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbed(ng)
+              END DO
+            CASE ('Qout(iaged)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbed)
+              i=idSbed(iaged)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbed(ng)
+              END DO
+            CASE ('Qout(iporo)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbed)
+              i=idSbed(iporo)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbed(ng)
+              END DO
+#if defined COHESIVE_BED || defined SED_BIODIFF || defined MIXED_BED
+            CASE ('Qout(ibtcr)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbed)
+              i=idSbed(ibtcr)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbed(ng)
+              END DO
+#endif
+            CASE ('Qout(idiff)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbed)
+              i=idSbed(idiff)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbed(ng)
+              END DO
+            CASE ('Qout(isd50)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(isd50)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(idens)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(idens)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+             END DO
+            CASE ('Qout(iwsed)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(iwsed)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(itauc)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(itauc)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(irlen)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(irlen)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(irhgt)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(irhgt)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(ibwav)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(ibwav)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izdef)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izdef)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izapp)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izapp)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izNik)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izNik)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izbio)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izbio)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izbfm)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izbfm)
+              DO ng=1,Ngrids
+               Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izbld)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izbld)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(izwbl)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(izwbl)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(iactv)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(iactv)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
+            CASE ('Qout(ishgt)')
+              Npts=load_l(Nval, Cval, Ngrids, Lbottom)
+              i=idBott(ishgt)
+              DO ng=1,Ngrids
+                Qout(i,ng)=Lbottom(ng)
+              END DO
           END SELECT
         END IF
       END DO
@@ -880,164 +1309,300 @@
             WRITE (out,130) transC(ng)
             WRITE (out,140) transN(ng)
 #endif
-#ifdef TCLIMATOLOGY
             DO itrc=1,NST
               i=idsed(itrc)
-              WRITE (out,150) LtracerCLM(i,ng), 'LtracerCLM',           &
-     &              i, 'Processing climatology on tracer ', i,          &
+              IF (LtracerSponge(i,ng)) THEN
+                WRITE (out,150) LtracerSponge(i,ng), 'LtracerSponge',   &
+     &              i, 'Turning ON  sponge on tracer ', i,              &
      &              TRIM(Vname(1,idTvar(i)))
+              ELSE
+                WRITE (out,150) LtracerSponge(i,ng), 'LtracerSponge',   &
+     &              i, 'Turning OFF sponge on tracer ', i,              &
+     &              TRIM(Vname(1,idTvar(i)))
+              END IF
             END DO
-#endif
-#ifdef TS_PSOURCE
             DO itrc=1,NST
               i=idsed(itrc)
-              WRITE (out,150) LtracerSrc(i,ng), 'LtracerSrc',           &
-     &              i, 'Processing point sources/Sink on tracer ', i,   &
+              IF (LtracerSrc(i,ng)) THEN
+                WRITE (out,150) LtracerSrc(i,ng), 'LtracerSrc', i,      &
+     &              'Turning ON  point sources/Sink on tracer ', i,     &
      &              TRIM(Vname(1,idTvar(i)))
-            END DO
-#endif
-            DO itrc=1,NST
-              i=idTvar(idsed(itrc))
-              IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),               &
-     &            'Hout(idTvar)',                                       &
-     &            'Write out sediment', itrc, TRIM(Vname(1,i))
+              ELSE
+                WRITE (out,150) LtracerSrc(i,ng), 'LtracerSrc', i,      &
+     &              'Turning OFF point sources/Sink on tracer ', i,     &
+     &              TRIM(Vname(1,idTvar(i)))
+              END IF
             END DO
             DO itrc=1,NST
-              i=idfrac(itrc)
-              IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),               &
-     &            'Hout(idfrac)',                                       &
-     &            'Write out bed fraction, sediment ', itrc,            &
-     &            TRIM(Vname(1,i))
+              i=idsed(itrc)
+              IF (LtracerCLM(i,ng)) THEN
+                WRITE (out,150) LtracerCLM(i,ng), 'LtracerCLM', i,      &
+     &              'Turning ON  processing of climatology tracer ', i, &
+     &              TRIM(Vname(1,idTvar(i)))
+              ELSE
+                WRITE (out,150) LtracerCLM(i,ng), 'LtracerCLM', i,      &
+     &              'Turning OFF processing of climatology tracer ', i, &
+     &              TRIM(Vname(1,idTvar(i)))
+              END IF
             END DO
             DO itrc=1,NST
-              i=idBmas(itrc)
-              IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),               &
-     &            'Hout(idfrac)',                                       &
-     &            'Write out mass, sediment ', itrc,                    &
-     &            TRIM(Vname(1,i))
+              i=idsed(itrc)
+              IF (LnudgeTCLM(i,ng)) THEN
+                WRITE (out,150) LnudgeTCLM(i,ng), 'LnudgeTCLM', i,      &
+     &              'Turning ON  nudging of climatology tracer ', i,    &
+     &              TRIM(Vname(1,idTvar(i)))
+              ELSE
+                WRITE (out,150) LnudgeTCLM(i,ng), 'LnudgeTCLM', i,      &
+     &              'Turning OFF nudging of climatology tracer ', i,    &
+     &              TRIM(Vname(1,idTvar(i)))
+              END IF
             END DO
+            IF ((nHIS(ng).gt.0).and.ANY(Hout(:,ng))) THEN
+              WRITE (out,'(1x)')
+              DO itrc=1,NST
+                i=idTvar(idsed(itrc))
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &              'Hout(idTvar)',                                     &
+     &              'Write out sediment', itrc, TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,NST
+                i=idfrac(itrc)
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &              'Hout(idfrac)',                                     &
+     &              'Write out bed fraction, sediment ', itrc,          &
+     &              TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,NST
+                i=idBmas(itrc)
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &              'Hout(idfrac)',                                     &
+     &              'Write out mass, sediment ', itrc,                  &
+     &              TRIM(Vname(1,i))
+              END DO
 #ifdef BEDLOAD
-            DO itrc=1,NST
-              i=idUbld(itrc)
-              IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),               &
-     &            'Hout(idUbld)',                                       &
-     &            'Write out U-bedload, sediment ', itrc,               &
-     &            TRIM(Vname(1,i))
-              i=idVbld(itrc)
-              IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),               &
-     &            'Hout(idVbld)',                                       &
-     &            'Write out V-bedload, sediment ', itrc,               &
-     &            TRIM(Vname(1,i))
-            END DO
+              DO itrc=1,NST
+                i=idUbld(itrc)
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &              'Hout(idUbld)',                                     &
+     &              'Write out bed load at U-points, sediment ', itrc,  &
+     &              TRIM(Vname(1,i))
+                i=idVbld(itrc)
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &              'Hout(idVbld)',                                     &
+     &              'Write out bed load at V-points, sediment ', itrc,  &
+     &              TRIM(Vname(1,i))
+              END DO
 #endif
-            DO itrc=1,MBEDP
-              i=idSbed(itrc)
-              IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),               &
-     &            'Hout(idSbed)',                                       &
-     &            'Write out BED property ', itrc, TRIM(Vname(1,i))
-            END DO
+              DO itrc=1,MBEDP
+                i=idSbed(itrc)
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &              'Hout(idSbed)',                                     &
+     &              'Write out BED property ', itrc, TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,MBOTP
+                i=idBott(itrc)
+                IF (Hout(i,ng)) WRITE (out,160) Hout(i,ng),             &
+     &             'Hout(idBott)',                                      &
+     &             'Write out BOTTOM property ', itrc, TRIM(Vname(1,i))
+              END DO
+            END IF
+            IF ((nQCK(ng).gt.0).and.ANY(Qout(:,ng))) THEN
+              WRITE (out,'(1x)')
+              DO itrc=1,NST
+                i=idTvar(idsed(itrc))
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idTvar)',                                     &
+     &              'Write out sediment', itrc, TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,NST
+                i=idsurT(idsed(itrc))
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idTvar)',                                     &
+     &              'Write out surface sediment', itrc, TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,NST
+                i=idfrac(itrc)
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idfrac)',                                     &
+     &              'Write out bed fraction, sediment ', itrc,          &
+     &              TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,NST
+                i=idBmas(itrc)
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idfrac)',                                     &
+     &              'Write out mass, sediment ', itrc,                  &
+     &              TRIM(Vname(1,i))
+              END DO
+#ifdef BEDLOAD
+              DO itrc=1,NST
+                i=idUbld(itrc)
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idUbld)',                                     &
+     &              'Write out bed load at U-points, sediment ', itrc,  &
+     &              TRIM(Vname(1,i))
+                i=idVbld(itrc)
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idVbld)',                                     &
+     &              'Write out bed load at V-points, sediment ', itrc,  &
+     &              TRIM(Vname(1,i))
+              END DO
+#endif
+              DO itrc=1,MBEDP
+                i=idSbed(itrc)
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &              'Qout(idSbed)',                                     &
+     &              'Write out BED property ', itrc, TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,MBOTP
+                i=idBott(itrc)
+                IF (Qout(i,ng)) WRITE (out,160) Qout(i,ng),             &
+     &             'Qout(idBott)',                                      &
+     &             'Write out BOTTOM property ', itrc, TRIM(Vname(1,i))
+              END DO
+            END IF
 #if defined AVERAGES    || \
    (defined AD_AVERAGES && defined ADJOINT) || \
    (defined RP_AVERAGES && defined TL_IOMS) || \
    (defined TL_AVERAGES && defined TANGENT)
-            WRITE (out,'(1x)')
-            DO itrc=1,NST
-              i=idTvar(idsed(itrc))
-              IF (Aout(i,ng)) WRITE (out,160) Aout(i,ng),               &
-     &            'Aout(idTvar)',                                       &
-     &            'Write out averaged sediment', itrc, TRIM(Vname(1,i))
-            END DO
+            IF ((nAVG(ng).gt.0).and.ANY(Aout(:,ng))) THEN
+              WRITE (out,'(1x)')
+              DO itrc=1,NST
+                i=idTvar(idsed(itrc))
+                IF (Aout(i,ng)) WRITE (out,160) Aout(i,ng),             &
+     &              'Aout(idTvar)',                                     &
+     &              'Write out averaged sediment', itrc,                &
+     &              TRIM(Vname(1,i))
+              END DO
+              DO itrc=1,NST
+                i=idsed(itrc)
+                IF (Aout(idTTav(i),ng)) WRITE (out,160)                 &
+     &              Aout(idTTav(i),ng), 'Aout(idTTav)',                 &
+     &              'Write out averaged <t*t> for tracer ', i,          &
+     &              TRIM(Vname(1,idTvar(i)))
+              END DO
+              DO itrc=1,NST
+                i=idsed(itrc)
+                IF (Aout(idUTav(i),ng)) WRITE (out,160)                 &
+     &              Aout(idUTav(i),ng), 'Aout(idUTav)',                 &
+     &              'Write out averaged <u*t> for tracer ', i,          &
+     &              TRIM(Vname(1,idTvar(i)))
+              END DO
+              DO itrc=1,NST
+                i=idsed(itrc)
+                IF (Aout(idVTav(i),ng)) WRITE (out,160)                 &
+     &              Aout(idVTav(i),ng), 'Aout(idVTav)',                 &
+     &              'Write out averaged <v*t> for tracer ', i,          &
+     &              TRIM(Vname(1,idTvar(i)))
+              END DO
+              DO itrc=1,NST
+                i=idsed(itrc)
+                IF (Aout(iHUTav(i),ng)) WRITE (out,160)                 &
+     &              Aout(iHUTav(i),ng), 'Aout(iHUTav)',                 &
+     &              'Write out averaged <Huon*t> for tracer ', i,       &
+     &              TRIM(Vname(1,idTvar(i)))
+              END DO
+              DO itrc=1,NST
+                i=idsed(itrc)
+                IF (Aout(iHVTav(i),ng)) WRITE (out,160)                 &
+     &              Aout(iHVTav(i),ng), 'Aout(iHVTav)',                 &
+     &              'Write out averaged <Hvom*t> for tracer ', i,       &
+     &              TRIM(Vname(1,idTvar(i)))
+              END DO
 # ifdef BEDLOAD
-            DO itrc=1,NST
-              i=idUbld(itrc)
-              IF (Aout(i,ng)) WRITE (out,160) Aout(i,ng),               &
-     &            'Aout(idUbld)',                                       &
-     &            'Write out U-bedload, sediment ', itrc,               &
-     &            TRIM(Vname(1,i))
-              i=idVbld(itrc)
-              IF (Aout(i,ng)) WRITE (out,160) Aout(i,ng),               &
-     &            'Aout(idVbld)',                                       &
-     &            'Write out V-bedload, sediment ', itrc,               &
-     &            TRIM(Vname(1,i))
-            END DO
+              DO itrc=1,NST
+                i=idUbld(itrc)
+                IF (Aout(i,ng)) WRITE (out,160) Aout(i,ng),             &
+     &              'Aout(idUbld)',                                     &
+     &              'Write out U-bedload, sediment ', itrc,             &
+     &              TRIM(Vname(1,i))
+                i=idVbld(itrc)
+                IF (Aout(i,ng)) WRITE (out,160) Aout(i,ng),             &
+     &              'Aout(idVbld)',                                     &
+     &              'Write out V-bedload, sediment ', itrc,             &
+     &              TRIM(Vname(1,i))
+              END DO
 # endif
+            END IF
 #endif
 #ifdef DIAGNOSTICS_TS
-            WRITE (out,'(1x)')
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTrate),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTrate)',                 &
-     &            'Write out rate of change of tracer ', itrc,          &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iThadv),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iThadv)',                 &
-     &            'Write out horizontal advection, tracer ', itrc,      &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTxadv),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTxadv)',                 &
-     &            'Write out horizontal X-advection, tracer ', itrc,    &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTyadv),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTyadv)',                 &
-     &            'Write out horizontal Y-advection, tracer ', itrc,    &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTvadv),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTvadv)',                 &
-     &            'Write out vertical advection, tracer ', itrc,        &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
+            IF ((nDIA(ng).gt.0).and.ANY(Dout(:,ng))) THEN
+              WRITE (out,'(1x)')
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTrate),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTrate)',                 &
+     &              'Write out rate of change of tracer ', itrc,          &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iThadv),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iThadv)',                 &
+     &              'Write out horizontal advection, tracer ', itrc,      &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTxadv),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTxadv)',                 &
+     &              'Write out horizontal X-advection, tracer ', itrc,    &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTyadv),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTyadv)',                 &
+     &              'Write out horizontal Y-advection, tracer ', itrc,    &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTvadv),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTvadv)',                 &
+     &              'Write out vertical advection, tracer ', itrc,        &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
 # if defined TS_DIF2 || defined TS_DIF4
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iThdif),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iThdif)',                 &
-     &            'Write out horizontal diffusion, tracer ', itrc,      &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(i,iTxdif),ng))                            &
-     &          WRITE (out,160) .TRUE., 'Dout(iTxdif)',                 &
-     &            'Write out horizontal X-diffusion, tracer ', itrc,    &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTydif),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTydif)',                 &
-     &            'Write out horizontal Y-diffusion, tracer ', itrc,    &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iThdif),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iThdif)',                 &
+     &              'Write out horizontal diffusion, tracer ', itrc,      &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(i,iTxdif),ng))                            &
+     &            WRITE (out,160) .TRUE., 'Dout(iTxdif)',                 &
+     &              'Write out horizontal X-diffusion, tracer ', itrc,    &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTydif),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTydif)',                 &
+     &              'Write out horizontal Y-diffusion, tracer ', itrc,    &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
 #  if defined MIX_GEO_TS || defined MIX_ISO_TS
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTsdif),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTsdif)',                 &
-     &            'Write out horizontal S-diffusion, tracer ', itrc,    &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTsdif),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTsdif)',                 &
+     &              'Write out horizontal S-diffusion, tracer ', itrc,    &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
 #  endif
 # endif
-            DO i=1,NST
-              itrc=idsed(i)
-              IF (Dout(idDtrc(itrc,iTvdif),ng))                         &
-     &          WRITE (out,160) .TRUE., 'Dout(iTvdif)',                 &
-     &            'Write out vertical diffusion, tracer ', itrc,        &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
+              DO i=1,NST
+                itrc=idsed(i)
+                IF (Dout(idDtrc(itrc,iTvdif),ng))                         &
+     &            WRITE (out,160) .TRUE., 'Dout(iTvdif)',                 &
+     &              'Write out vertical diffusion, tracer ', itrc,        &
+     &              TRIM(Vname(1,idTvar(itrc)))
+              END DO
+            END IF
 #endif
           END IF
         END DO
@@ -1081,13 +1646,13 @@
      &        'Akt_bak',6x,'Tnudg',/,9x,'(N/m2)',6x,'(N/m2)',6x,        &
      &        '(m2/s)',6x,'(m4/s)',7x,'(m2/s)',6x,'(day)',/)
   90  FORMAT (/,9x,'morph_fac',/,9x,'(nondim)',/)
- 100  FORMAT (/,' New bed layer formed when deposition exceeds ',e11.5, &
+ 100  FORMAT (/,' New bed layer formed when deposition exceeds ',e12.5, &
      &        ' (m).')
  110  FORMAT (' Two first layers are combined when 2nd layer smaller ', &
-     &         'than ',e11.5,' (m).')
- 120  FORMAT (' Rate coefficient for bed load transport = ',e11.5,/)
- 130  FORMAT (' Transition for mixed sediment =',e11.5,/)
- 140  FORMAT (' Transition for cohesive sediment =',e11.5,/)
+     &         'than ',e12.5,' (m).')
+ 120  FORMAT (' Rate coefficient for bed load transport = ',e12.5,/)
+ 130  FORMAT (' Transition for mixed sediment =',e12.5,/)
+ 140  FORMAT (' Transition for cohesive sediment =',e12.5,/)
  150  FORMAT (10x,l1,2x,a,'(',i2.2,')',t30,a,i2.2,':',1x,a)
  160  FORMAT (10x,l1,2x,a,t29,a,i2.2,':',1x,a)
 

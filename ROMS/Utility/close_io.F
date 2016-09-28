@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE close_inp (ng, model)
 !
-!svn $Id: close_io.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: close_io.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -96,32 +96,31 @@
           IF (exit_flag.ne.NoError) RETURN
         END IF
       END IF
-
-#ifdef CLM_FILE
 !
 !  If appropriate, close boundary files.
 !
-      IF ((CLM(ng)%Nfiles.gt.1).and.(CLM(ng)%ncid.ge.0)) THEN
-        IF (model.eq.iADM) THEN
-          DO i=1,CLM(ng)%Nfiles
-            IF ((CLM(ng)%time_min(i).le.tdays(ng)).and.                 &
-     &          (tdays(ng).le.CLM(ng)%time_max(i))) THEN
-              Fcount=i
-              EXIT
-            END IF
-          END DO
-        ELSE
-          Fcount=1
+      IF (CLM_FILE(ng)) THEN
+        IF ((CLM(ng)%Nfiles.gt.1).and.(CLM(ng)%ncid.ge.0)) THEN
+          IF (model.eq.iADM) THEN
+            DO i=1,CLM(ng)%Nfiles
+              IF ((CLM(ng)%time_min(i).le.tdays(ng)).and.               &
+     &            (tdays(ng).le.CLM(ng)%time_max(i))) THEN
+                Fcount=i
+                EXIT
+              END IF
+            END DO
+          ELSE
+            Fcount=1
+          END IF
+          CLM(ng)%Fcount=Fcount
+          CLM(ng)%name=TRIM(CLM(ng)%files(Fcount))
+          lstr=LEN_TRIM(CLM(ng)%name)
+          CLM(ng)%base=CLM(ng)%name(1:lstr-3)
+          CALL netcdf_close (ng, model, CLM(ng)%ncid,                   &
+     &                       CLM(ng)%files(i),  .FALSE.)
+          IF (exit_flag.ne.NoError) RETURN
         END IF
-        CLM(ng)%Fcount=Fcount
-        CLM(ng)%name=TRIM(CLM(ng)%files(Fcount))
-        lstr=LEN_TRIM(CLM(ng)%name)
-        CLM(ng)%base=CLM(ng)%name(1:lstr-3)
-        CALL netcdf_close (ng, model, CLM(ng)%ncid,                     &
-     &                     CLM(ng)%files(i),  .FALSE.)
-        IF (exit_flag.ne.NoError) RETURN
       END IF
-#endif
 
       RETURN
       END SUBROUTINE close_inp
@@ -159,6 +158,11 @@
         IF (RST(ng)%ncid.ne.-1) THEN
           CALL netcdf_close (ng, iNLM, RST(ng)%ncid)
         END IF
+#if defined FOUR_DVAR || defined ENKF_RESTART
+        IF (DAI(ng)%ncid.ne.-1) THEN
+          CALL netcdf_close (ng, iNLM, DAI(ng)%ncid)
+        END IF
+#endif
 #if defined FORWARD_READ || defined FORWARD_WRITE
         IF ((FWD(ng)%ncid.ne.-1).and.(FWD(ng)%ncid.eq.HIS(ng)%ncid)) THEN
           FWD(ng)%ncid=-1
@@ -169,6 +173,9 @@
 #endif
         IF (HIS(ng)%ncid.ne.-1) THEN
           CALL netcdf_close (ng, iNLM, HIS(ng)%ncid)
+        END IF
+        IF (QCK(ng)%ncid.ne.-1) THEN
+          CALL netcdf_close (ng, iNLM, QCK(ng)%ncid)
         END IF
 #ifdef ADJOINT
         IF (ADM(ng)%ncid.ne.-1) THEN
@@ -231,6 +238,15 @@
             END IF
           END IF
 
+#if defined FOUR_DVAR || defined ENKF_RESTART
+          IF (associated(DAI(ng)%Nrec)) THEN
+            Fcount=DAI(ng)%Fcount
+            IF (DAI(ng)%Nrec(Fcount).gt.0) THEN
+              WRITE (stdout,20) 'DA IC  ', DAI(ng)%Nrec(Fcount)
+            END IF
+          END IF
+#endif
+
 #ifdef ADJOINT
           IF (associated(ADM(ng)%Nrec)) THEN
             Fcount=ADM(ng)%Fcount
@@ -288,7 +304,7 @@
 !
       IF (Master) THEN
         First=.TRUE.
-        DO i=1,37
+        DO i=1,39
           IF ((LEN_TRIM(ANANAME(i)).gt.0).and.(exit_flag.ne.5)) THEN
             IF (First) THEN
               First=.FALSE.

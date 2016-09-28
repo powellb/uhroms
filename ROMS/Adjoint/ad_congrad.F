@@ -1,12 +1,12 @@
 #include "cppdefs.h"
 
-#ifdef SENSITIVITY_4DVAR
+#if defined SENSITIVITY_4DVAR && !defined RPCG
       SUBROUTINE ad_congrad (ng, model, outLoop, innLoop, NinnLoop,     &
      &                       Lcgini)
 !
-!svn $Id: ad_congrad.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_congrad.F 807 2016-07-09 02:03:55Z arango $
 !=================================================== Andrew M. Moore ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

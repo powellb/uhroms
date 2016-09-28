@@ -2,9 +2,9 @@
 #ifdef TANGENT
       SUBROUTINE tl_initial (ng)
 !
-!svn $Id: tl_initial.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tl_initial.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -61,12 +61,15 @@
       USE tl_rho_eos_mod, ONLY : tl_rho_eos
       USE tl_set_massflux_mod, ONLY : tl_set_massflux
 # endif
+# ifdef MASKING
+      USE set_masks_mod, ONLY : set_masks
+# endif
       USE stiffness_mod, ONLY : stiffness
 # ifdef WAVES_OCEAN
       USE ocean_coupler_mod, ONLY : waves_coupling
 # endif
-# ifdef MASKING
-      USE set_masks_mod, ONLY : set_masks
+# ifdef WET_DRY
+      USE wetdry_mod, ONLY : wetdry
 # endif
 # if defined PROPAGATOR || \
     (defined MASKING    && (defined READ_WATER || defined WRITE_WATER))
@@ -132,7 +135,6 @@
       nfm3(ng)=2
 # endif
 !
-!$OMP MASTER
       synchro_flag(ng)=.TRUE.
       first_time(ng)=0
       IF (ANY(tl_VolCons(:,ng))) THEN
@@ -140,12 +142,14 @@
       END IF
       tdays(ng)=dstart
       time(ng)=tdays(ng)*day2sec
+!$OMP MASTER
       ntstart(ng)=INT((time(ng)-dstart*day2sec)/dt(ng))+1
       ntend(ng)=ntimes(ng)
       ntfirst(ng)=ntstart(ng)
-      CALL time_string (time(ng), time_code(ng))
 !$OMP END MASTER
 !$OMP BARRIER
+
+      CALL time_string (time(ng), time_code(ng))
 
       IniRec=nrrec(ng)
       Tindex=1
@@ -330,20 +334,53 @@
           CALL metrics (ng, tile, iTLM)
         END DO
 !$OMP BARRIER
+
+# if defined WTYPE_GRID && defined ANA_WTYPE     && \
+    (defined LMD_SKPP   || defined SOLAR_SOURCE)
 !
 !-----------------------------------------------------------------------
-!  If appropriate, set nudging coefficiests time scales.
+!  Set spatially varying Jerlov water type.
 !-----------------------------------------------------------------------
 !
         DO tile=first_tile(ng),last_tile(ng),+1
-          CALL ana_nudgcoef (ng, tile, iTLM)
+          CALL ana_wtype (ng, tile, iTLM)
         END DO
 !$OMP BARRIER
-
+# endif
+!
+!-----------------------------------------------------------------------
+!  If appropriate, set spatially varying nudging coefficients time
+!  scales.
+!-----------------------------------------------------------------------
+!
+# ifdef ANA_NUDGCOEF
+        IF (Lnudging(ng)) THEN
+          DO tile=first_tile(ng),last_tile(ng),+1
+            CALL ana_nudgcoef (ng, tile, iTLM)
+          END DO
+!$OMP BARRIER
+        END IF
+# else
+        IF (Lnudging(ng)) THEN
+!$OMP MASTER
+          CALL get_nudgcoef (ng, iTLM)
+!$OMP END MASTER
+#  ifdef DISTRIBUTE
+          CALL mp_bcasti (ng, iTLM, exit_flag)
+#  endif
+!$OMP BARRIER
+          IF (exit_flag.ne.NoError) RETURN
+        END IF
+# endif
       END IF
 !
 !-----------------------------------------------------------------------
-!  Initialize horizontal mixing coefficients.
+!  Initialize horizontal mixing coefficients. If applicable, scale
+!  mixing coefficients according to the grid size (smallest area).
+# ifndef ANA_SPONGE
+!  Also increase their values in sponge areas using the "visc_factor"
+!  and/or "diff_factor" read from input Grid NetCDF file.
+# endif
 !-----------------------------------------------------------------------
 !
       DO tile=first_tile(ng),last_tile(ng),+1
@@ -351,18 +388,19 @@
       END DO
 !$OMP BARRIER
 
-# if defined VISC_GRID || defined DIFF_GRID || defined SPONGE
+# ifdef ANA_SPONGE
 !
 !-----------------------------------------------------------------------
-!  Set horizontal mixing coefficients. Rescale according to the local
-!  grid size. If applicable, increases horizontal mixing in sponge
-!  areas.
+!  Increase horizontal mixing coefficients in sponge areas using
+!  analytical functions.
 !-----------------------------------------------------------------------
 !
-      DO tile=first_tile(ng),last_tile(ng),+1
-        CALL ana_hmixcoef (ng, tile, iTLM)
-      END DO
+      IF (Lsponge(ng)) THEN
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_sponge (ng, tile, iTLM)
+        END DO
 !$OMP BARRIER
+      END IF
 # endif
 !
 !=======================================================================
@@ -523,6 +561,7 @@
 !$OMP END MASTER
 !$OMP BARRIER
       IF (exit_flag.ne.NoError) RETURN
+      time(ng)=io_time                       ! needed for shared-memory
 #  else
       IF (nrrec(ng).ne.0) THEN
 !$OMP MASTER
@@ -530,8 +569,34 @@
 !$OMP END MASTER
 !$OMP BARRIER
         IF (exit_flag.ne.NoError) RETURN
+        time(ng)=io_time                     ! needed for shared-memory
       END IF
 #  endif
+# endif
+
+# ifdef WET_DRY
+!
+!-----------------------------------------------------------------------
+!  Process initial wet/dry masks.
+!-----------------------------------------------------------------------
+!
+!  If restart, read in wet/dry masks.
+!
+      IF (nrrec(ng).ne.0) THEN
+!$OMP MASTER
+        CALL get_wetdry (ng, iTLM, IniRec(ng))
+!$OMP END MASTER
+#  ifdef DISTRIBUTE
+        CALL mp_bcasti (ng, iTLM, exit_flag)
+#  endif
+!$OMP BARRIER
+        IF (exit_flag.ne.NoError) RETURN
+      ELSE
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL wetdry (ng, tile, Tindex(ng), .TRUE.)
+        END DO
+!$OMP BARRIER
+      END IF
 # endif
 
 # if defined ANA_PERTURB && defined SANITY_CHECK
@@ -595,8 +660,7 @@
 !!$OMP BARRIER
 # endif
 
-#if defined ANA_PSOURCE && \
-   (defined UV_PSOURCE  || defined TS_PSOURCE || defined Q_PSOURCE)
+#ifdef ANA_PSOURCE
 !
 !-----------------------------------------------------------------------
 !  Set point Sources/Sinks position, direction, special flag, and mass
@@ -605,11 +669,29 @@
 !  to process internal Land/Sea masking arrays during initialization.
 !-----------------------------------------------------------------------
 !
-      DO tile=first_tile(ng),last_tile(ng),+1
-        CALL ana_psource (ng, tile, iTLM)
-      END DO
+      IF (LuvSrc(ng).or.LwSrc(ng).or.ANY(LtracerSrc(:,ng))) THEN
+        DO tile=first_tile(ng),last_tile(ng),+1
+          CALL ana_psource (ng, tile, iTLM)
+        END DO
+      END IF
 !$OMP BARRIER
 #endif
+!
+!-----------------------------------------------------------------------
+!  If applicable, check input multi-files where the time records for
+!  a particular field are split into several NetCDF files.  Initialize
+!  several parameters in the file structure so the appropriate input
+!  file is selected during initialization/restart.
+!-----------------------------------------------------------------------
+!
+!$OMP MASTER
+      CALL check_multifile (ng, iTLM)
+!$OMP END MASTER
+# ifdef DISTRIBUTE
+      CALL mp_bcasti (ng, iTLM, exit_flag)
+# endif
+!$OMP BARRIER
+      IF (exit_flag.ne.NoError) RETURN
 !
 !-----------------------------------------------------------------------
 !  Read in initial forcing, climatology and assimilation data from
@@ -619,9 +701,7 @@
 !
 !$OMP MASTER
       CALL close_inp (ng, iTLM)
-# ifdef TIMELESS_DATA
       CALL tl_get_idata (ng)
-# endif
       CALL tl_get_data (ng)
 !$OMP END MASTER
 !$OMP BARRIER

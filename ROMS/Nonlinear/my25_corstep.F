@@ -2,9 +2,9 @@
       MODULE my25_corstep_mod
 #if defined NONLINEAR && defined MY25_MIXING && defined SOLVE3D
 !
-!svn $Id: my25_corstep.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: my25_corstep.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -212,7 +212,7 @@
 !  Compute vertical velocity shear at W-points.
 !-----------------------------------------------------------------------
 !
-# ifdef SPLINES
+# ifdef RI_SPLINES
       DO j=Jstrm1,Jendp1
         DO i=Istrm1,Iendp1
           CF(i,0)=0.0_r8
@@ -374,20 +374,20 @@
 #  endif
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.EWperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-              DO j=Jstr,Jend
-                gradK(Istr-1,j)=gradK(Istr,j)
-                gradP(Istr-1,j)=gradP(Istr,j)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-              DO j=Jstr,Jend
-                gradK(Iend+2,j)=gradK(Iend+1,j)
-                gradP(Iend+2,j)=gradP(Iend+1,j)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+            DO j=Jstr,Jend
+              gradK(Istr-1,j)=gradK(Istr,j)
+              gradP(Istr-1,j)=gradP(Istr,j)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+            DO j=Jstr,Jend
+              gradK(Iend+2,j)=gradK(Iend+1,j)
+              gradP(Iend+2,j)=gradP(Iend+1,j)
+            END DO
           END IF
         END IF
 #  ifdef K_C4ADVECTION
@@ -444,20 +444,20 @@
 #  endif
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.NSperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-              DO i=Istr,Iend
-                gradK(i,Jstr-1)=gradK(i,Jstr)
-                gradP(i,Jstr-1)=gradP(i,Jstr)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-              DO i=Istr,Iend
-                gradK(i,Jend+2)=gradK(i,Jend+1)
-                gradP(i,Jend+2)=gradP(i,Jend+1)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+            DO i=Istr,Iend
+              gradK(i,Jstr-1)=gradK(i,Jstr)
+              gradP(i,Jstr-1)=gradP(i,Jstr)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+            DO i=Istr,Iend
+              gradK(i,Jend+2)=gradK(i,Jend+1)
+              gradP(i,Jend+2)=gradP(i,Jend+1)
+            END DO
           END IF
         END IF
 #  ifdef K_C4ADVECTION

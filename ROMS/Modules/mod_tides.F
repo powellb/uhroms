@@ -2,9 +2,9 @@
       MODULE mod_tides
 #if defined SSH_TIDES || defined UV_TIDES
 !
-!svn $Id: mod_tides.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_tides.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -162,60 +162,60 @@
       IF (ng.eq.1) THEN
         MTC=0
         DO mg=1,Ngrids
+          IF (.not.(RefinedGrid(ng).and.RefineScale(ng).gt.0)) THEN
+            foundit=.FALSE.
 
-          foundit=.FALSE.
-
-          QUERY : DO ifile=1,nFfiles(mg)
-            CALL netcdf_inq_var (ng, iNLM, FRC(ifile,mg)%name,          &
-     &                           MyVarName = TRIM(Vname(1,idTper)),     &
-     &                           SearchVar = foundit,                   &
-     &                           VarID = Vid,                           &
-     &                           nVardim = nvdim,                       &
-     &                           nVarAtt = nvatt)
-            IF (exit_flag.ne.NoError) RETURN
+            QUERY : DO ifile=1,nFfiles(mg)
+              CALL netcdf_inq_var (ng, iNLM, FRC(ifile,mg)%name,        &
+     &                             MyVarName = TRIM(Vname(1,idTper)),   &
+     &                             SearchVar = foundit,                 &
+     &                             VarID = Vid,                         &
+     &                             nVardim = nvdim,                     &
+     &                             nVarAtt = nvatt)
+              IF (exit_flag.ne.NoError) RETURN
 
 # if defined AVERAGES_DETIDE && defined AVERAGES
 !
 !  Check if detiding variables are available and set definition switch.
 !
-            IF (foundit) THEN
-              DO i=1,n_var
-                IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idFsuH))) THEN
-                  LdefTIDE(ng)=.FALSE.
-                END IF
-              END DO
-            ENDIF
+              IF (foundit) THEN
+                DO i=1,n_var
+                  IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idFsuH))) THEN
+                    LdefTIDE(ng)=.FALSE.
+                  END IF
+                END DO
+              END IF
 # endif
 !
 !  Set maximum number of tidal components.  Allocate and initialize
 !  TIDE I/O structure.
 !
-            IF (foundit) THEN
-              MTC=MAX(MTC,var_Dsize(1))              ! first dimension
-              NTC(mg)=var_Dsize(1)
+              IF (foundit) THEN
+                MTC=MAX(MTC,var_Dsize(1))            ! first dimension
+                NTC(mg)=var_Dsize(1)
 !
-              Nfiles=FRC(ifile,mg)%Nfiles
-              allocate ( TIDE(ng)%Nrec(Nfiles) )
-              allocate ( TIDE(ng)%time_min(Nfiles) )
-              allocate ( TIDE(ng)%time_max(Nfiles) )
-              allocate ( TIDE(ng)%Vid(NV) )
-              allocate ( TIDE(ng)%Tid(MT) )
-              allocate ( TIDE(ng)%files(Nfiles) )
-              TIDE(ng)%Nfiles=Nfiles
-              TIDE(ng)%Fcount=1
-              TIDE(ng)%Rindex=0
-              TIDE(ng)%ncid=-1
-              TIDE(ng)%Vid=-1
-              TIDE(ng)%Tid=-1
-              TIDE(ng)%Nrec(1:Nfiles)=0
-              TIDE(ng)%time_min(1:Nfiles)=0.0_r8
-              TIDE(ng)%time_max(1:Nfiles)=0.0_r8
-              TIDE(ng)%name=TRIM(FRC(ifile,mg)%name)
-              TIDE(ng)%label='TIDE - tidal forcing'
-              EXIT QUERY
-            END IF
-          END DO QUERY
-
+                Nfiles=FRC(ifile,mg)%Nfiles
+                allocate ( TIDE(ng)%Nrec(Nfiles) )
+                allocate ( TIDE(ng)%time_min(Nfiles) )
+                allocate ( TIDE(ng)%time_max(Nfiles) )
+                allocate ( TIDE(ng)%Vid(NV) )
+                allocate ( TIDE(ng)%Tid(MT) )
+                allocate ( TIDE(ng)%files(Nfiles) )
+                TIDE(ng)%Nfiles=Nfiles
+                TIDE(ng)%Fcount=1
+                TIDE(ng)%Rindex=0
+                TIDE(ng)%ncid=-1
+                TIDE(ng)%Vid=-1
+                TIDE(ng)%Tid=-1
+                TIDE(ng)%Nrec(1:Nfiles)=0
+                TIDE(ng)%time_min(1:Nfiles)=0.0_r8
+                TIDE(ng)%time_max(1:Nfiles)=0.0_r8
+                TIDE(ng)%name=TRIM(FRC(ifile,mg)%name)
+                TIDE(ng)%label='TIDE - tidal forcing'
+                EXIT QUERY
+              END IF
+            END DO QUERY
+          END IF
         END DO
       END IF
 !

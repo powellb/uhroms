@@ -1,7 +1,7 @@
 /*
-** svn $Id: riverplume1.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: riverplume1.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -15,18 +15,17 @@
 #define UV_ADV
 #define UV_COR
 #define UV_QDRAG
-#define UV_PSOURCE
 #define DJ_GRADPS
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_A4HADVECTION
 #define TS_A4VADVECTION
 #define TS_DIF2
 #define MIX_GEO_TS
-#define TS_PSOURCE
 #define NONLIN_EOS
 #define SALINITY
 #define MASKING
 #define SOLVE3D
-#define SPLINES
 #define AVERAGES
 
 #define LMD_MIXING
@@ -36,6 +35,7 @@
 # define LMD_SKPP
 # define LMD_BKPP
 # define LMD_NONLOCAL
+# define RI_SPLINES
 #endif
 
 #define ANA_GRID

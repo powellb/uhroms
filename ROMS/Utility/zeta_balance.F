@@ -2,9 +2,9 @@
       MODULE zeta_balance_mod
 
 #if defined BALANCE_OPERATOR  && defined ZETA_ELLIPTIC
-!svn $Id: zeta_balance.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: zeta_balance.F 795 2016-05-11 01:42:43Z arango $
 !=================================================== Andrew M. Moore ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -257,7 +257,7 @@
           phi(i,N(ng))=phie(i)
         END DO
 !
-!  Compute balance, interior U-momemtum from baroclinic pressure
+!  Compute balance, interior U-momentum from baroclinic pressure
 !  gradient (differentiate and then vertically integrate).
 !
         DO k=N(ng)-1,1,-1
@@ -308,7 +308,7 @@
           phi(i,N(ng))=phix(i)
         END DO
 !
-!  Compute balance, interior V-momemtum from baroclinic pressure
+!  Compute balance, interior V-momentum from baroclinic pressure
 !  gradient (differentiate and then vertically integrate).
 !
         DO k=N(ng)-1,1,-1

@@ -2,9 +2,9 @@
       MODULE rp_step3d_t_mod
 #if !defined TS_FIXED && (defined TL_IOMS && defined SOLVE3D)
 !
-!svn $Id: rp_step3d_t.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_step3d_t.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -38,18 +38,12 @@
 !***********************************************************************
 !
       USE mod_param
-# ifdef CLIMATOLOGY
-      USE mod_clima
-# endif
 # ifdef DIAGNOSTICS_TS
 !!    USE mod_diags
 # endif
       USE mod_grid
       USE mod_mixing
       USE mod_ocean
-# ifdef TS_PSOURCE
-      USE mod_sources
-# endif
       USE mod_stepping
 !
 !  Imported variable declarations.
@@ -67,24 +61,12 @@
      &                       LBi, UBi, LBj, UBj,                        &
      &                       IminS, ImaxS, JminS, JmaxS,                &
      &                       nrhs(ng), nstp(ng), nnew(ng),              &
-# if defined TS_PSOURCE || defined Q_PSOURCE
-     &                       Msrc(ng), Nsrc(ng),                        &
-     &                       SOURCES(ng) % Isrc,                        &
-     &                       SOURCES(ng) % Jsrc,                        &
-     &                       SOURCES(ng) % Tsrc,                        &
-# endif
-# ifdef TS_PSOURCE
-     &                       SOURCES(ng) % Dsrc,                        &
-# endif
-# ifdef Q_PSOURCE
-     &                       SOURCES(ng) % Qsrc,                        &
-# endif
 # ifdef MASKING
      &                       GRID(ng) % rmask,                          &
      &                       GRID(ng) % umask,                          &
      &                       GRID(ng) % vmask,                          &
 # endif
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 #  ifdef WET_DRY
      &                       GRID(ng) % rmask_wet,                      &
      &                       GRID(ng) % umask_wet,                      &
@@ -106,10 +88,6 @@
      &                       GRID(ng) % tl_Hvom,                        &
      &                       GRID(ng) % z_r,                            &
      &                       GRID(ng) % tl_z_r,                         &
-# if defined TCLM_NUDGING && defined TCLIMATOLOGY
-     &                       CLIMA(ng) % Tnudgcof,                      &
-     &                       CLIMA(ng) % tclm,                          &
-# endif
      &                       MIXING(ng) % Akt,                          &
      &                       MIXING(ng) % tl_Akt,                       &
      &                       OCEAN(ng) % W,                             &
@@ -134,20 +112,10 @@
      &                             LBi, UBi, LBj, UBj,                  &
      &                             IminS, ImaxS, JminS, JmaxS,          &
      &                             nrhs, nstp, nnew,                    &
-# if defined TS_PSOURCE || defined Q_PSOURCE
-     &                             Msrc, Nsrc,                          &
-     &                             Isrc, Jsrc, Tsrc,                    &
-# endif
-# ifdef TS_PSOURCE
-     &                             Dsrc,                                &
-# endif
-# ifdef Q_PSOURCE
-     &                             Qsrc,                                &
-# endif
 # ifdef MASKING
      &                             rmask, umask, vmask,                 &
 # endif
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 #  ifdef WET_DRY
      &                             rmask_wet, umask_wet, vmask_wet,     &
 #  endif
@@ -158,9 +126,6 @@
      &                             Huon, tl_Huon,                       &
      &                             Hvom, tl_Hvom,                       &
      &                             z_r, tl_z_r,                         &
-# if defined TCLM_NUDGING && defined TCLIMATOLOGY
-     &                             Tnudgcof, tclm,                      &
-# endif
      &                             Akt, tl_Akt,                         &
      &                             W, tl_W,                             &
 # if defined FLOATS_NOT_YET && defined FLOAT_VWALK
@@ -173,8 +138,10 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_clima
       USE mod_ncparam
       USE mod_scalars
+      USE mod_sources
 !
       USE exchange_3d_mod, ONLY : exchange_r3d_tile
 # ifdef DISTRIBUTE
@@ -183,7 +150,7 @@
 #  endif
       USE mp_exchange_mod, ONLY : mp_exchange4d
 # endif
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 !!    USE rp_mpdata_adiff_mod
 # endif
       USE rp_t3dbc_mod, ONLY : rp_t3dbc_tile
@@ -194,29 +161,14 @@
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
       integer, intent(in) :: nrhs, nstp, nnew
-# if defined TS_PSOURCE || defined Q_PSOURCE
-      integer, intent(in) :: Msrc, Nsrc
-# endif
 !
 # ifdef ASSUMED_SHAPE
-#  if defined TS_PSOURCE || defined Q_PSOURCE
-      integer, intent(in) :: Isrc(:)
-      integer, intent(in) :: Jsrc(:)
-
-      real(r8), intent(in) :: Tsrc(:,:,:)
-#  endif
-#  ifdef TS_PSOURCE
-      real(r8), intent(in) :: Dsrc(:)
-#  endif
-#  ifdef Q_PSOURCE
-      real(r8), intent(in) :: Qsrc(:,:)
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:,LBj:)
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 #  endif
-#  ifdef TS_MPDATA
+#  ifdef TS_MPDATA_NOT_YET
 #   ifdef WET_DRY
       real(r8), intent(in) :: rmask_wet(LBi:,LBj:)
       real(r8), intent(in) :: umask_wet(LBi:,LBj:)
@@ -230,10 +182,6 @@
 #  endif
       real(r8), intent(in) :: pm(LBi:,LBj:)
       real(r8), intent(in) :: pn(LBi:,LBj:)
-#  if defined TCLM_NUDGING && defined TCLIMATOLOGY
-      real(r8), intent(in) :: Tnudgcof(LBi:,LBj:,:)
-      real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
-#  endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: Huon(LBi:,LBj:,:)
       real(r8), intent(in) :: Hvom(LBi:,LBj:,:)
@@ -271,24 +219,12 @@
 
 # else
 
-#  if defined TS_PSOURCE || defined Q_PSOURCE
-      integer, intent(in) :: Isrc(Msrc)
-      integer, intent(in) :: Jsrc(Msrc)
-
-      real(r8), intent(in) :: Tsrc(Msrc,N(ng),NT(ng))
-#  endif
-#  ifdef TS_PSOURCE
-      real(r8), intent(in) :: Dsrc(Msrc)
-#  endif
-#  ifdef Q_PSOURCE
-      real(r8), intent(in) :: Qsrc(Msrc,N(ng))
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
 #  endif
-#  ifdef TS_MPDATA
+#  ifdef TS_MPDATA_NOT_YET
 #   ifdef WET_DRY
       real(r8), intent(in) :: rmask_wet(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
@@ -302,10 +238,6 @@
 #  endif
       real(r8), intent(in) :: pm(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
-#  if defined TCLM_NUDGING && defined TCLIMATOLOGY
-      real(r8), intent(in) :: Tnudgcof(LBi:UBi,LBj:UBj,NT(ng))
-      real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NTCLM(ng))
-#  endif
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Huon(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: Hvom(LBi:UBi,LBj:UBj,N(ng))
@@ -332,7 +264,11 @@
 !
 !  Local variable declarations.
 !
+      integer :: Isrc, Jsrc
       integer :: i, ic, is, itrc, j, k, ltrc
+# if defined AGE_MEAN && defined T_PASSIVE
+      integer :: iage
+# endif
 # ifdef DIAGNOSTICS_TS
       integer :: idiag
 # endif
@@ -363,7 +299,7 @@
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: oHz
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng)) :: tl_oHz
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 #  ifdef DIAGNOSTICS_TS
 !!    real(r8), dimension(IminS:ImaxS,JminS:JmaxS,3) :: Dhadv
 !!    real(r8), dimension(IminS:ImaxS,JminS:JmaxS,N(ng),NT(ng)) :: Dvadv
@@ -390,7 +326,7 @@
 !
 !  Compute inverse thickness.
 !
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 #  define I_RANGE Istrm2,Iendp2
 #  define J_RANGE Jstrm2,Jendp2
 # else
@@ -411,7 +347,7 @@
       END DO
 # undef I_RANGE
 # undef J_RANGE
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 !
 !  The MPDATA algorithm requires a three-point footprint, so exchange
 !  boundary data on t(:,:,:,nnew,:) so other processes computed earlier
@@ -484,7 +420,7 @@
             END DO
           END DO
 
-# elif defined TS_MPDATA
+# elif defined TS_MPDATA_NOT_YET
 !
 !  First-order, upstream differences horizontal advective fluxes.
 !
@@ -545,20 +481,20 @@
 #  endif
             END DO
           END DO
-          IF (.not.ComposedGrid(ng)) THEN
-            IF (.not.EWperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-                DO j=Jstr,Jend
-                  FX(Istr-1,j)=FX(Istr,j)
-                  tl_FX(Istr-1,j)=tl_FX(Istr,j)
-                END DO
-              END IF
-              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-                DO j=Jstr,Jend
-                  FX(Iend+2,j)=FX(Iend+1,j)
-                  tl_FX(Iend+2,j)=tl_FX(Iend+1,j)
-                END DO
-              END IF
+          IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+              DO j=Jstr,Jend
+                FX(Istr-1,j)=FX(Istr,j)
+                tl_FX(Istr-1,j)=tl_FX(Istr,j)
+              END DO
+            END IF
+          END IF
+          IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+              DO j=Jstr,Jend
+                FX(Iend+2,j)=FX(Iend+1,j)
+                tl_FX(Iend+2,j)=tl_FX(Iend+1,j)
+              END DO
             END IF
           END IF
 !
@@ -658,20 +594,20 @@
 #  endif
             END DO
           END DO
-          IF (.not.ComposedGrid(ng)) THEN
-            IF (.not.NSperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-                DO i=Istr,Iend
-                  FE(i,Jstr-1)=FE(i,Jstr)
-                  tl_FE(i,Jstr-1)=tl_FE(i,Jstr)
-                END DO
-              END IF
-              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-                DO i=Istr,Iend
-                  FE(i,Jend+2)=FE(i,Jend+1)
-                  tl_FE(i,Jend+2)=tl_FE(i,Jend+1)
-                END DO
-              END IF
+          IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+              DO i=Istr,Iend
+                FE(i,Jstr-1)=FE(i,Jstr)
+                tl_FE(i,Jstr-1)=tl_FE(i,Jstr)
+              END DO
+            END IF
+          END IF
+          IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+              DO i=Istr,Iend
+                FE(i,Jend+2)=FE(i,Jend+1)
+                tl_FE(i,Jend+2)=tl_FE(i,Jend+1)
+              END DO
             END IF
           END IF
 !
@@ -759,87 +695,104 @@
             END DO
           END DO
 # endif
-# if defined TS_PSOURCE && !defined Q_PSOURCE
 !
-!  Apply tracers point sources to the horizontal advection terms.
+!  Apply tracers point sources to the horizontal advection terms,
+!  if any.
 !
-          DO is=1,Nsrc
-            i=Isrc(is)
-            j=Jsrc(is)
-            IF (INT(Dsrc(is)).eq.0) THEN
-#  ifdef TS_MPDATA
-              IF (((IstrUm2.le.i).and.(i.le.Iendp3)).and.               &
-     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
-#  else
-              IF (((Istr.le.i).and.(i.le.Iend+1)).and.                  &
-     &            ((Jstr.le.j).and.(j.le.Jend))) THEN
-#  endif
-                IF (LtracerSrc(itrc,ng)) THEN
-!>                FX(i,j)=Huon(i,j,k)*Tsrc(is,k,itrc)
-!>
-                  tl_FX(i,j)=tl_Huon(i,j,k)*Tsrc(is,k,itrc)
-#  ifdef MASKING
-                ELSE
-                  IF ((rmask(i  ,j).eq.0.0_r8).and.                     &
-     &                (rmask(i-1,j).eq.1.0_r8)) THEN
-                    FX(i,j)=Huon(i,j,k)*t(i-1,j,k,3,itrc)
-                    tl_FX(i,j)=tl_Huon(i,j,k)*t(i-1,j,k,3,itrc)+        &
-     &                         Huon(i,j,k)*tl_t(i-1,j,k,3,itrc)-        &
-#   ifdef TL_IOMS
-     &                         FX(i,j)
-#   endif
-                  ELSE IF ((rmask(i  ,j).eq.1.0_r8).and.                &
-     &                     (rmask(i-1,j).eq.0.0_r8)) THEN
-                    FX(i,j)=Huon(i,j,k)*t(i  ,j,k,3,itrc)
-                    tl_FX(i,j)=tl_Huon(i,j,k)*t(i  ,j,k,3,itrc)+        &
-     &                         Huon(i,j,k)*tl_t(i  ,j,k,3,itrc)-        &
-#   ifdef TL_IOMS
-     &                         FX(i,j)
-#   endif
-                  END IF
-#  endif
-                END IF
-              END IF
-            ELSE IF (INT(Dsrc(is)).eq.1) THEN
-#  ifdef TS_MPDATA
-              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
-     &            ((JstrVm2.le.j).and.(j.le.Jendp3))) THEN
-#  else
-              IF (((Istr.le.i).and.(i.le.Iend)).and.                    &
-     &            ((Jstr.le.j).and.(j.le.Jend+1))) THEN
-#  endif
-                IF (LtracerSrc(itrc,ng)) THEN
-!>                FE(i,j)=Hvom(i,j,k)*Tsrc(is,k,itrc)
-!>
-                  tl_FE(i,j)=tl_Hvom(i,j,k)*Tsrc(is,k,itrc)
-#  ifdef MASKING
-                ELSE
-                  IF ((rmask(i,j  ).eq.0.0_r8).and.                     &
-     &                (rmask(i,j-1).eq.1.0_r8)) THEN
-                    FE(i,j)=Hvom(i,j,k)*t(i,j-1,k,3,itrc)
-                    tl_FE(i,j)=tl_Hvom(i,j,k)*t(i,j-1,k,3,itrc)+        &
-     &                         Hvom(i,j,k)*tl_t(i,j-1,k,3,itrc)-        &
-#   ifdef TL_IOMS
-     &                         FE(i,j)
-#   endif
-                  ELSE IF ((rmask(i,j  ).eq.1.0_r8).and.                &
-     &                     (rmask(i,j-1).eq.0.0_r8)) THEN
-!>                  FE(i,j)=Hvom(i,j,k)*t(i,j  ,k,3,itrc)
-!>
-                    tl_FE(i,j)=tl_Hvom(i,j,k)*t(i,j  ,k,3,itrc)+        &
-     &                         Hvom(i,j,k)*tl_t(i,j  ,k,3,itrc)-        &
-#   ifdef TL_IOMS
-     &                         FE(i,j)
-#   endif
-                  END IF
-#  endif
-                END IF
-              END IF
-            END IF
-          END DO
+          IF (LuvSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+            DO is=1,Nsrc(ng)
+              Isrc=SOURCES(ng)%Isrc(is)
+              Jsrc=SOURCES(ng)%Jsrc(is)
+              IF (INT(SOURCES(ng)%Dsrc(is)).eq.0) THEN
+# ifdef TS_MPDATA_NOT_YET
+                IF (((IstrUm2.le.Isrc).and.(Isrc.le.Iendp3)).and.       &
+     &              ((JstrVm2.le.Jsrc).and.(Jsrc.le.Jendp2i))) THEN
+# else
+                IF (((Istr.le.Isrc).and.(Isrc.le.Iend+1)).and.          &
+     &              ((Jstr.le.Jsrc).and.(Jsrc.le.Jend))) THEN
 # endif
+                  IF (LtracerSrc(itrc,ng)) THEN
+!>                  FX(Isrc,Jsrc)=Huon(Isrc,Jsrc,k)*                    &
+!>   &                            SOURCES(ng)%Tsrc(is,k,itrc)
+!>
+                    tl_FX(Isrc,Jsrc)=tl_Huon(Isrc,Jsrc,k)*              &
+     &                               SOURCES(ng)%Tsrc(is,k,itrc)
+# ifdef MASKING
+                  ELSE
+                    IF ((rmask(Isrc  ,Jsrc).eq.0.0_r8).and.             &
+     &                  (rmask(Isrc-1,Jsrc).eq.1.0_r8)) THEN
+                      FX(Isrc,Jsrc)=Huon(Isrc,Jsrc,k)*                  &
+     &                              t(Isrc-1,Jsrc,k,3,itrc)
+                      tl_FX(Isrc,Jsrc)=tl_Huon(Isrc,Jsrc,k)*            &
+     &                                 t(Isrc-1,Jsrc,k,3,itrc)+         &
+     &                                 Huon(Isrc,Jsrc,k)*               &
+     &                                 tl_t(Isrc-1,Jsrc,k,3,itrc)-      &
+#  ifdef TL_IOMS
+     &                                 FX(Isrc,Jsrc)
+#  endif
+                    ELSE IF ((rmask(Isrc  ,Jsrc).eq.1.0_r8).and.        &
+     &                       (rmask(Isrc-1,Jsrc).eq.0.0_r8)) THEN
+                      FX(Isrc,Jsrc)=Huon(Isrc,Jsrc,k)*                  &
+     &                              t(Isrc  ,Jsrc,k,3,itrc)
+                      tl_FX(Isrc,Jsrc)=tl_Huon(Isrc,Jsrc,k)*            &
+     &                                 t(Isrc  ,Jsrc,k,3,itrc)+         &
+     &                                 Huon(Isrc,Jsrc,k)*               &
+     &                                 tl_t(Isrc  ,Jsrc,k,3,itrc)-      &
+#  ifdef TL_IOMS
+     &                                 FX(Isrc,Jsrc)
+#  endif
+                    END IF
+# endif
+                  END IF
+                END IF
+              ELSE IF (INT(SOURCES(ng)%Dsrc(is)).eq.1) THEN
+# ifdef TS_MPDATA_NOT_YET
+                IF (((IstrUm2.le.Isrc).and.(Isrc.le.Iendp2i)).and.      &
+     &              ((JstrVm2.le.Jsrc).and.(Jsrc.le.Jendp3))) THEN
+# else
+                IF (((Istr.le.Isrc).and.(Isrc.le.Iend)).and.            &
+     &              ((Jstr.le.Jsrc).and.(Jsrc.le.Jend+1))) THEN
+# endif
+                  IF (LtracerSrc(itrc,ng)) THEN
+!>                  FE(Isrc,Jsrc)=Hvom(Isrc,Jsrc,k)*                    &
+!>   &                            SOURCES(ng)%Tsrc(is,k,itrc)
+!>
+                    tl_FE(Isrc,Jsrc)=tl_Hvom(Isrc,Jsrc,k)*              &
+     &                               SOURCES(ng)%Tsrc(is,k,itrc)
+# ifdef MASKING
+                  ELSE
+                    IF ((rmask(Isrc,Jsrc  ).eq.0.0_r8).and.             &
+     &                  (rmask(Isrc,Jsrc-1).eq.1.0_r8)) THEN
+                      FE(Isrc,Jsrc)=Hvom(Isrc,Jsrc,k)*                  &
+     &                              t(Isrc,Jsrc-1,k,3,itrc)
+                      tl_FE(Isrc,Jsrc)=tl_Hvom(Isrc,Jsrc,k)*            &
+     &                                 t(Isrc,Jsrc-1,k,3,itrc)+         &
+     &                                 Hvom(Isrc,Jsrc,k)*               &
+     &                                 tl_t(Isrc,Jsrc-1,k,3,itrc)-      &
+#  ifdef TL_IOMS
+     &                                 FE(Isrc,Jsrc)
+#  endif
+                    ELSE IF ((rmask(Isrc,Jsrc  ).eq.1.0_r8).and.        &
+     &                       (rmask(Isrc,Jsrc-1).eq.0.0_r8)) THEN
+!>                    FE(Isrc,Jsrc)=Hvom(Isrc,Jsrc,k)*                  &
+!>   &                              t(Isrc,Jsrc  ,k,3,itrc)
+!>
+                      tl_FE(Isrc,Jsrc)=tl_Hvom(Isrc,Jsrc,k)*            &
+     &                                 t(Isrc,Jsrc  ,k,3,itrc)+         &
+     &                                 Hvom(Isrc,Jsrc,k)*               &
+     &                                 tl_t(Isrc,Jsrc  ,k,3,itrc)-      &
+#  ifdef TL_IOMS
+     &                                 FE(Isrc,Jsrc)
+#  endif
+                    END IF
+# endif
+                  END IF
+                END IF
+              END IF
+            END DO
+          END IF
 !
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 !  Time-step horizontal advection for intermediate diffusive tracer, Ta.
 !  Advective fluxes have units of Tunits m3/s.  The new tracer has
 !  units of m Tunits.
@@ -848,7 +801,7 @@
 !  of Tunits m3/s.  The new tracer has units of m Tunits.
 # endif
 !
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 #  define I_RANGE IstrUm2,Iendp2i
 #  define J_RANGE JstrVm2,Jendp2i
 # else
@@ -867,7 +820,7 @@
 !>            cff3=cff1+cff2
 !>
               tl_cff3=tl_cff1+tl_cff2
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
               Ta(i,j,k,itrc)=t(i,j,k,nnew,itrc)-cff3
               tl_Ta(i,j,k,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff3
 # else
@@ -876,7 +829,7 @@
               tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff3
 # endif
 # ifdef DIAGNOSTICS_TS
-#  ifdef TS_MPDATA
+#  ifdef TS_MPDATA_NOT_YET
 !!            Dhadv(i,j,iTxadv)=-cff1
 !!            Dhadv(i,j,iTyadv)=-cff2
 !!            Dhadv(i,j,iThadv)=-cff3
@@ -888,7 +841,7 @@
 # endif
             END DO
           END DO
-# if defined DIAGNOSTICS_TS && defined TS_MPDATA
+# if defined DIAGNOSTICS_TS && defined TS_MPDATA_NOT_YET
 !!        DO j=Jstr,Jend
 !!          DO i=Istr,Iend
 !!            DiaTwrk(i,j,k,itrc,iTxadv)=Dhadv(i,j,iTxadv)
@@ -1162,7 +1115,7 @@
             tl_FC(i,N(ng))=0.0_r8
           END DO
 
-# elif defined TS_MPDATA
+# elif defined TS_MPDATA_NOT_YET
 !
 !  First_order, upstream differences vertical advective flux.
 !
@@ -1280,11 +1233,11 @@
           END DO
 # endif
 !
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
 !  Time-step vertical advection for intermediate diffusive tracer, Ta
 !  (Tunits).
 # else
-#  ifdef SPLINES
+#  ifdef SPLINES_VDIFF
 !  Time-step vertical advection term (Tunits).
 !  The BASIC STATE "t" used below must be in transport units, but "t"
 !  retrived is in Tunits so we multiply by "Hz".
@@ -1296,37 +1249,37 @@
           DO i=I_RANGE
             CF(i,0)=dt(ng)*pm(i,j)*pn(i,j)
           END DO
-# ifdef Q_PSOURCE
 !
-!  Apply mass point sources - Volume influx.
+!  Apply mass point sources (volume vertical influx), if any.
 !
-          DO is=1,Nsrc
-            IF (LtracerSrc(itrc,ng)) THEN
-              i=Isrc(is)
-#  ifdef TS_MPDATA
-              IF (((IstrUm2.le.i).and.(i.le.Iendp2i)).and.              &
-     &            ((JstrVm2.le.j).and.(j.le.Jendp2i))) THEN
-#  else
-              IF (((IstrR.le.i).and.(i.le.IendR)).and.                  &
-     &            ((JstrR.le.j).and.(j.le.JendR))) THEN
-#  endif
-                IF (j.eq.Jsrc(is)) THEN
-                  DO k=1,N(ng)-1
-                    FC(i,k)=FC(i,k)+0.5_r8*                             &
-     &                      (Qsrc(is,k  )*Tsrc(is,k  ,itrc)+            &
-     &                       Qsrc(is,k+1)*Tsrc(is,k+1,itrc))
-                    tl_FC(i,k)=tl_FC(i,k)+0.0_r8
-                  END DO
-                END IF
-              END IF
-            END IF
-          END DO
+          IF (LwSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+            DO is=1,Nsrc(ng)
+              Isrc=SOURCES(ng)%Isrc(is)
+              Jsrc=SOURCES(ng)%Jsrc(is)
+              IF (LtracerSrc(itrc,ng).and.                              &
+# ifdef TS_MPDATA_NOT_YET
+     &            ((IstrUm2.le.Isrc).and.(Isrc.le.Iendp2i)).and.        &
+# else
+     &            ((IstrR.le.Isrc).and.(Isrc.le.IendR)).and.            &
 # endif
+     &            (j.eq.Jsrc)) THEN
+                DO k=1,N(ng)-1
+                  FC(Isrc,k)=FC(Isrc,k)+0.5_r8*                         &
+     &                       (SOURCES(ng)%Qsrc(is,k  )*                 &
+     &                        SOURCES(ng)%Tsrc(is,k  ,itrc)+            &
+     &                        SOURCES(ng)%Qsrc(is,k+1)*                 &
+     &                        SOURCES(ng)%Tsrc(is,k+1,itrc))
+                  tl_FC(Isrc,k)=tl_FC(Isrc,k)+0.0_r8
+                END DO
+              END IF
+            END DO
+          END IF
+!
           DO k=1,N(ng)
             DO i=I_RANGE
               cff1=CF(i,0)*(FC(i,k)-FC(i,k-1))
               tl_cff1=CF(i,0)*(tl_FC(i,k)-tl_FC(i,k-1))
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
               Ta(i,j,k,itrc)=(Ta(i,j,k,itrc)-cff1)*oHz(i,j,k)
               tl_Ta(i,j,k,itrc)=(tl_Ta(i,j,k,itrc)-tl_cff1)*            &
      &                          oHz(i,j,k)+                             &
@@ -1342,7 +1295,7 @@
 !>            t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)-cff1
 !>
               tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-tl_cff1
-#  ifdef SPLINES
+#  ifdef SPLINES_VDIFF
 !>            t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)*oHz(i,j,k)
 !>
               tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)*              &
@@ -1366,7 +1319,7 @@
         END DO
 # undef I_RANGE
 # undef J_RANGE
-# ifdef TS_MPDATA
+# ifdef TS_MPDATA_NOT_YET
       END DO
 !
 !-----------------------------------------------------------------------
@@ -1555,7 +1508,7 @@
 !  Start pipelined J-loop.
 !
       DO j=Jstr,Jend
-# endif /* TS_MPDATA */
+# endif /* TS_MPDATA_NOT_YET */
 !
 !-----------------------------------------------------------------------
 !  Time-step vertical diffusion term.
@@ -1564,7 +1517,7 @@
         DO itrc=1,NT(ng)
           ltrc=MIN(NAT,itrc)
 
-# if defined SPLINES && !defined TS_MPDATA
+# if defined SPLINES_VDIFF && !defined TS_MPDATA_NOT_YET
 !
 !  Use conservative, parabolic spline reconstruction of BASIC STATE
 !  vertical diffusion derivatives.  Solve BASIC STATE tridiagonal
@@ -1844,56 +1797,109 @@
 # endif
         END DO
       END DO
+
+# if defined AGE_MEAN && defined T_PASSIVE
+!
+!-----------------------------------------------------------------------
+!  If inert passive tracer and Mean Age, compute age concentration (even
+!  inert index) forced by the right-hand-side term that is concentration
+!  of an associated conservative passive tracer (odd inert index). Mean
+!  Age is age concentration divided by conservative passive tracer
+!  concentration. Code implements NPT/2 mean age tracer pairs.
+!
+!  Implemented and tested by W.G. Zhang and J. Wilkin. See following
+!  reference for details.
+!
+!   Zhang et al. (2010): Simulation of water age and residence time in
+!      the New York Bight, JPO, 40,965-982, doi:10.1175/2009JPO4249.1
+!-----------------------------------------------------------------------
+!
+      DO itrc=1,NPT,2
+        iage=inert(itrc+1)                     ! even inert tracer index
+        DO k=1,N(ng)
+          DO j=Jstr,Jend
+            DO i=Istr,Iend
+!>            t(i,j,k,nnew,iage)=t(i,j,k,nnew,iage)+                    &
+!>   &                           dt(ng)*                                &
+#  ifdef TS_MPDATA
+!>   &                           t(i,j,k,nnew,inert(itrc))
+#  else
+!>   &                           t(i,j,k,3,inert(itrc))
+#  endif
+!>
+              tl_t(i,j,k,nnew,iage)=tl_t(i,j,k,nnew,iage)+              &
+     &                              dt(ng)*                             &
+#  ifdef TS_MPDATA
+     &                              tl_t(i,j,k,nnew,inert(itrc))
+#  else
+     &                              tl_t(i,j,k,3,inert(itrc))
+#  endif
+            END DO
+          END DO
+        END DO
+      END DO
+# endif
 !
 !-----------------------------------------------------------------------
 !  Apply lateral boundary conditions and, if appropriate, nudge
 !  to tracer data and apply Land/Sea mask.
 !-----------------------------------------------------------------------
 !
-# if defined TCLM_NUDGING && defined TCLIMATOLOGY
+!  Initialize tracer counter index. The "tclm" array is only allocated
+!  to the NTCLM fields that need to be processed. This is done to
+!  reduce memory.
+!
       ic=0
-# endif
+!
       DO itrc=1,NT(ng)
+!
+!  Set compact reduced memory tracer index for nudging coefficients and
+!  climatology arrays.
+!
+        IF (LtracerCLM(itrc,ng).and.LnudgeTCLM(itrc,ng)) THEN
+          ic=ic+1
+        END IF
 !
 !  Set lateral boundary conditions.
 !
-!>      CALL t3dbc_tile (ng, tile, itrc,                                &
+!>      CALL t3dbc_tile (ng, tile, itrc, ic,                            &
 !>   &                   LBi, UBi, LBj, UBj, N(ng), NT(ng),             &
 !>   &                   IminS, ImaxS, JminS, JmaxS,                    &
 !>   &                   nstp, nnew,                                    &
 !>   &                   t)
 !>
-        CALL rp_t3dbc_tile (ng, tile, itrc,                             &
+        CALL rp_t3dbc_tile (ng, tile, itrc, ic,                         &
      &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nnew,                                 &
      &                      tl_t)
-
-# if defined TCLM_NUDGING && defined TCLIMATOLOGY
 !
 !  Nudge towards tracer climatology.
 !
-        IF (LtracerCLM(itrc,ng)) THEN
-          ic=ic+1
+        IF (LtracerCLM(itrc,ng).and.LnudgeTCLM(itrc,ng)) THEN
           DO k=1,N(ng)
             DO j=JstrR,JendR
               DO i=IstrR,IendR
 !>              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+                  &
-!>   &                             dt(ng)*Tnudgcof(i,j,itrc)*           &
-!>   &                             (tclm(i,j,k,ic)-t(i,j,k,nnew,itrc))
+!>   &                             dt(ng)*                              &
+!>   &                             CLIMA(ng)%Tnudgcof(i,j,k,ic)*        &
+!>   &                             (CLIMA(ng)%tclm(i,j,k,ic)-           &
+!>   &                              t(i,j,k,nnew,itrc))
 !>
                 tl_t(i,j,k,nnew,itrc)=tl_t(i,j,k,nnew,itrc)-            &
-     &                                dt(ng)*Tnudgcof(i,j,itrc)*        &
+     &                                dt(ng)*                           &
+     &                                CLIMA(ng)%Tnudgcof(i,j,k,ic)*     &
      &                                tl_t(i,j,k,nnew,itrc)+            &
-#  ifdef TL_IOMS
-     &                                dt(ng)*Tnudgcof(i,j,itrc)*        &
-     &                                tclm(i,j,k,ic)
-#  endif
+# ifdef TL_IOMS
+     &                                dt(ng)*                           &
+     &                                CLIMA(ng)%Tnudgcof(i,j,k,ic)*     &
+     &                                CLIMA(ng)%tclm(i,j,k,ic)
+# endif
               END DO
             END DO
           END DO
         END IF
-# endif
+
 # ifdef MASKING
 !
 !  Apply Land/Sea mask.

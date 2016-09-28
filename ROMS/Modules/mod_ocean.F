@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_ocean
 !
-!svn $Id: mod_ocean.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_ocean.F 807 2016-07-09 02:03:55Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -27,10 +27,19 @@
 !  u            3D U-momentum component (m/s).                         !
 !  v            3D V-momentum component (m/s).                         !
 !  W            S-coordinate (omega*Hz/mn) vertical velocity (m3/s).   !
+#ifdef BIOLOGY
 !                                                                      !
 !  Biology Variables.                                                  !
 !                                                                      !
+# if defined BIO_FENNEL && defined CARBON
 !  pH           Surface concentration of hydrogen ions.                !
+# endif
+# ifdef RED_TIDE
+!  CystIni      Red tide dinoflagellate bottom cyst initial            !
+!                 concentration (cysts/m2).                            !
+!  DIN_obs      Observed Dissolved Inorganic Nutrient (micromoles).    !
+# endif
+#endif
 !                                                                      !
 #ifdef NEARSHORE_MELLOR
 !  Nearshore radiation stresses:                                       !
@@ -85,6 +94,11 @@
 # endif
 # if defined BIO_FENNEL && defined CARBON
           real(r8), pointer :: pH(:,:)
+# endif
+# ifdef RED_TIDE
+          real(r8), pointer :: CystIni(:,:)
+          real(r8), pointer :: DIN_obs(:,:,:)
+          real(r8), pointer :: DIN_obsG(:,:,:,:)
 # endif
 #endif
 
@@ -162,7 +176,8 @@
 # endif
 #endif
 
-#if defined FOUR_DVAR || defined IMPULSE
+#if defined FOUR_DVAR  || defined IMPULSE || \
+   (defined HESSIAN_SV && defined BNORM)
 !
 !  Working arrays to store adjoint impulse forcing, error covariance,
 !  standard deviations, or descent conjugate vectors (directions).
@@ -175,7 +190,7 @@
           real(r8), pointer :: b_u(:,:,:,:)
           real(r8), pointer :: b_v(:,:,:,:)
 # endif
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
           real(r8), pointer :: d_ubar(:,:)
           real(r8), pointer :: d_vbar(:,:)
           real(r8), pointer :: d_zeta(:,:)
@@ -202,9 +217,19 @@
           real(r8), pointer :: f_u(:,:,:)
           real(r8), pointer :: f_v(:,:,:)
 #  endif
+#  ifdef TIME_CONV
+          real(r8), pointer :: f_ubarS(:,:,:)
+          real(r8), pointer :: f_vbarS(:,:,:)
+          real(r8), pointer :: f_zetaS(:,:,:)
+#   ifdef SOLVE3D
+          real(r8), pointer :: f_tS(:,:,:,:,:)
+          real(r8), pointer :: f_uS(:,:,:,:)
+          real(r8), pointer :: f_vS(:,:,:,:)
+#   endif
+#  endif
 # endif
 #endif
-#ifdef FORCING_SV
+#if defined FORCING_SV || defined HESSIAN_FSV
           real(r8), pointer :: f_ubar(:,:)
           real(r8), pointer :: f_vbar(:,:)
           real(r8), pointer :: f_zeta(:,:)
@@ -244,10 +269,9 @@
           real(r8), pointer :: f_tG(:,:,:,:,:)
           real(r8), pointer :: f_uG(:,:,:,:)
           real(r8), pointer :: f_vG(:,:,:,:)
-#  else
+#  endif
           real(r8), pointer :: f_ubarG(:,:,:)
           real(r8), pointer :: f_vbarG(:,:,:)
-#  endif
 # endif
 #endif
 
@@ -319,6 +343,11 @@
       allocate ( OCEAN(ng) % pH(LBi:UBi,LBj:UBj) )
 # endif
 
+# ifdef RED_TIDE
+      allocate ( OCEAN(ng) % CystIni(LBi:UBi,LBj:UBj) )
+      allocate ( OCEAN(ng) % DIN_obs(LBi:UBi,LBj:UBj,N(ng)) )
+      allocate ( OCEAN(ng) % DIN_obsG(LBi:UBi,LBj:UBj,N(ng),2) )
+# endif
 #endif
 
 #if defined TANGENT || defined TL_IOMS
@@ -409,7 +438,8 @@
 # endif
 #endif
 
-#if defined FOUR_DVAR || defined IMPULSE
+#if defined FOUR_DVAR  || defined IMPULSE || \
+   (defined HESSIAN_SV && defined BNORM)
 !
 !  Working arrays to store adjoint impulse forcing, background error
 !  covariance, background-error standard deviations, or descent
@@ -425,7 +455,7 @@
       allocate ( OCEAN(ng) % b_v(LBi:UBi,LBj:UBj,N(ng),NSA) )
 # endif
 
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
       allocate ( OCEAN(ng) % d_ubar(LBi:UBi,LBj:UBj) )
       allocate ( OCEAN(ng) % d_vbar(LBi:UBi,LBj:UBj) )
       allocate ( OCEAN(ng) % d_zeta(LBi:UBi,LBj:UBj) )
@@ -447,19 +477,29 @@
 #  endif
 
 #  ifdef WEAK_CONSTRAINT
-      allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
-
 #   ifdef SOLVE3D
       allocate ( OCEAN(ng) % f_t(LBi:UBi,LBj:UBj,N(ng),NT(ng)) )
       allocate ( OCEAN(ng) % f_u(LBi:UBi,LBj:UBj,N(ng)) )
       allocate ( OCEAN(ng) % f_v(LBi:UBi,LBj:UBj,N(ng)) )
 #   endif
+      allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
+      allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
+      allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
+#   ifdef TIME_CONV
+#    ifdef SOLVE3D
+      allocate ( OCEAN(ng) % f_tS(LBi:UBi,LBj:UBj,N(ng),NrecTC(ng),     &
+     &                            NT(ng)) )
+      allocate ( OCEAN(ng) % f_uS(LBi:UBi,LBj:UBj,N(ng),NrecTC(ng)) )
+      allocate ( OCEAN(ng) % f_vS(LBi:UBi,LBj:UBj,N(ng),NrecTC(ng)) )
+#    endif
+      allocate ( OCEAN(ng) % f_ubarS(LBi:UBi,LBj:UBj,NrecTC(ng)) )
+      allocate ( OCEAN(ng) % f_vbarS(LBi:UBi,LBj:UBj,NrecTC(ng)) )
+      allocate ( OCEAN(ng) % f_zetaS(LBi:UBi,LBj:UBj,NrecTC(ng)) )
+#   endif
 #  endif
 # endif
 #endif
-#ifdef FORCING_SV
+#if defined FORCING_SV || defined HESSIAN_FSV
       allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
       allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
       allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
@@ -496,15 +536,14 @@
       allocate ( OCEAN(ng) % vG(LBi:UBi,LBj:UBj,N(ng),2) )
 # endif
 # ifdef WEAK_CONSTRAINT
-      allocate ( OCEAN(ng) % f_zetaG(LBi:UBi,LBj:UBj,2) )
 #  ifdef SOLVE3D
       allocate ( OCEAN(ng) % f_tG(LBi:UBi,LBj:UBj,N(ng),2,NT(ng)) )
       allocate ( OCEAN(ng) % f_uG(LBi:UBi,LBj:UBj,N(ng),2) )
       allocate ( OCEAN(ng) % f_vG(LBi:UBi,LBj:UBj,N(ng),2) )
-#  else
+#  endif
       allocate ( OCEAN(ng) % f_ubarG(LBi:UBi,LBj:UBj,2) )
       allocate ( OCEAN(ng) % f_vbarG(LBi:UBi,LBj:UBj,2) )
-#  endif
+      allocate ( OCEAN(ng) % f_zetaG(LBi:UBi,LBj:UBj,2) )
 # endif
 #endif
 
@@ -605,6 +644,9 @@
 # if defined BIO_FENNEL && defined CARBON && defined SOLVE3D
             OCEAN(ng) % pH(i,j) = 8.0_r8
 # endif
+# ifdef RED_TIDE
+            OCEAN(ng) % CystIni(i,j) = IniVal
+# endif
           END DO
 #ifdef SOLVE3D
           DO k=1,N(ng)
@@ -621,6 +663,11 @@
               OCEAN(ng) % rvlag3d(i,j,k) = IniVal
               OCEAN(ng) % u_stokes(i,j,k) = IniVal
               OCEAN(ng) % v_stokes(i,j,k) = IniVal
+# endif
+# ifdef RED_TIDE
+              OCEAN(ng) % DIN_obs(i,j,k) = IniVal
+              OCEAN(ng) % DIN_obsG(i,j,k,1) = IniVal
+              OCEAN(ng) % DIN_obsG(i,j,k,2) = IniVal
 # endif
             END DO
           END DO
@@ -671,11 +718,12 @@
             OCEAN(ng) % tl_zeta(i,j,1) = IniVal
             OCEAN(ng) % tl_zeta(i,j,2) = IniVal
             OCEAN(ng) % tl_zeta(i,j,3) = IniVal
-# ifdef FORCING_SV
+# if defined FORCING_SV || defined HESSIAN_FSV
             OCEAN(ng) % f_ubar(i,j) = IniVal
             OCEAN(ng) % f_vbar(i,j) = IniVal
             OCEAN(ng) % f_zeta(i,j) = IniVal
 # endif
+
 # if defined NEARSHORE_MELLOR
             OCEAN(ng) % tl_rulag2d(i,j) = IniVal
             OCEAN(ng) % tl_rvlag2d(i,j) = IniVal
@@ -693,7 +741,7 @@
               OCEAN(ng) % tl_u(i,j,k,2) = IniVal
               OCEAN(ng) % tl_v(i,j,k,1) = IniVal
               OCEAN(ng) % tl_v(i,j,k,2) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
               OCEAN(ng) % f_u(i,j,k) = IniVal
               OCEAN(ng) % f_v(i,j,k) = IniVal
 #  endif
@@ -721,7 +769,7 @@
                 OCEAN(ng) % tl_t(i,j,k,1,itrc) = IniVal
                 OCEAN(ng) % tl_t(i,j,k,2,itrc) = IniVal
                 OCEAN(ng) % tl_t(i,j,k,3,itrc) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
                 OCEAN(ng) % f_t(i,j,k,itrc) = IniVal
 #  endif
               END DO
@@ -755,7 +803,7 @@
             OCEAN(ng) % ad_zeta(i,j,1) = IniVal
             OCEAN(ng) % ad_zeta(i,j,2) = IniVal
             OCEAN(ng) % ad_zeta(i,j,3) = IniVal
-# ifdef FORCING_SV
+# if defined FORCING_SV | defined HESSIAN_FSV
             OCEAN(ng) % f_ubar(i,j) = IniVal
             OCEAN(ng) % f_vbar(i,j) = IniVal
             OCEAN(ng) % f_zeta(i,j) = IniVal
@@ -783,7 +831,7 @@
               OCEAN(ng) % ad_v(i,j,k,2) = IniVal
               OCEAN(ng) % ad_u_sol(i,j,k) = IniVal
               OCEAN(ng) % ad_v_sol(i,j,k) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
               OCEAN(ng) % f_u(i,j,k) = IniVal
               OCEAN(ng) % f_v(i,j,k) = IniVal
 #  endif
@@ -812,7 +860,7 @@
                 OCEAN(ng) % ad_t(i,j,k,2,itrc) = IniVal
                 OCEAN(ng) % ad_t(i,j,k,3,itrc) = IniVal
                 OCEAN(ng) % ad_t_sol(i,j,k,itrc) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
                 OCEAN(ng) % f_t(i,j,k,itrc) = IniVal
 #  endif
               END DO
@@ -823,7 +871,8 @@
       END IF
 #endif
 
-#if defined FOUR_DVAR || defined IMPULSE
+#if defined FOUR_DVAR  || defined IMPULSE || \
+   (defined HESSIAN_SV && defined BNORM)
 !
 !  Working arrays to store adjoint impulse forcing, background error
 !  covariance, background-error standard deviations, or descent
@@ -836,7 +885,7 @@
               OCEAN(ng) % b_ubar(i,j,rec) = IniVal
               OCEAN(ng) % b_vbar(i,j,rec) = IniVal
               OCEAN(ng) % b_zeta(i,j,rec) = IniVal
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
               OCEAN(ng) % e_ubar(i,j,rec) = IniVal
               OCEAN(ng) % e_vbar(i,j,rec) = IniVal
               OCEAN(ng) % e_zeta(i,j,rec) = IniVal
@@ -906,6 +955,34 @@
 #  endif
           END DO
 # endif
+# if defined TIME_CONV && defined WEAK_CONSTRAINT
+          DO rec=1,NrecTC(ng)
+            DO i=Imin,Imax
+              OCEAN(ng) % f_ubarS(i,j,rec) = IniVal
+              OCEAN(ng) % f_zetaS(i,j,rec) = IniVal
+              OCEAN(ng) % f_vbarS(i,j,rec) = IniVal
+            END DO
+          END DO
+#  ifdef SOLVE3D
+          DO rec=1,NrecTC(ng)
+            DO k=1,N(ng)
+              DO i=Imin,Imax
+                OCEAN(ng) % f_uS(i,j,k,rec) = IniVal
+                OCEAN(ng) % f_vS(i,j,k,rec) = IniVal
+              END DO
+            END DO
+          END DO
+          DO itrc=1,NT(ng)
+            DO rec=1,NrecTC(ng)
+              DO k=1,N(ng)
+                DO i=Imin,Imax
+                  OCEAN(ng) % f_tS(i,j,k,rec,itrc) = IniVal
+                END DO
+              END DO
+            END DO
+          END DO
+#  endif
+# endif
         END DO
       END IF
 #endif
@@ -936,12 +1013,10 @@
 # ifdef WEAK_CONSTRAINT
             OCEAN(ng) % f_zetaG(i,j,1) = IniVal
             OCEAN(ng) % f_zetaG(i,j,2) = IniVal
-#  ifndef SOLVE3D
             OCEAN(ng) % f_ubarG(i,j,1) = IniVal
             OCEAN(ng) % f_ubarG(i,j,2) = IniVal
             OCEAN(ng) % f_vbarG(i,j,1) = IniVal
             OCEAN(ng) % f_vbarG(i,j,2) = IniVal
-#  endif
 # endif
           END DO
 # ifdef SOLVE3D
@@ -985,7 +1060,6 @@
         END DO
       END IF
 #endif
-
       RETURN
       END SUBROUTINE initialize_ocean
 

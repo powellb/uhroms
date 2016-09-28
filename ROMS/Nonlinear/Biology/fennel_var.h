@@ -1,7 +1,7 @@
 /*
-** svn $Id: fennel_var.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: fennel_var.h 795 2016-05-11 01:42:43Z arango $
 *************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                        **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                        **
 **   Licensed under a MIT/X style license                             **
 **   See License_ROMS.txt                                             **
 ************************************************************************
@@ -201,8 +201,6 @@
 #endif
 
 
-#ifdef TS_PSOURCE
-
 /*
 **  Biological tracers point Source/Sinks (river runoff).
 */
@@ -221,7 +219,7 @@
                 idRtrc(iSDeN)=varid
               CASE ('idRtrc(iChlo)')
                 idRtrc(iChlo)=varid
-# ifdef CARBON
+#ifdef CARBON
               CASE ('idRtrc(iTIC_)')
                 idRtrc(iTIC_)=varid
               CASE ('idRtrc(iTAlk)')
@@ -230,11 +228,10 @@
                 idRtrc(iLDeC)=varid
               CASE ('idRtrc(iSDeC)')
                 idRtrc(iSDeC)=varid
-# endif
-# ifdef OXYGEN
+#endif
+#ifdef OXYGEN
               CASE ('idRtrc(iOxyg)')
                 idRtrc(iOxyg)=varid
-# endif
 #endif
 
 

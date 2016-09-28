@@ -2,9 +2,9 @@
       MODULE rp_rho_eos_mod
 #if defined TL_IOMS && defined SOLVE3D
 !
-!svn $Id: rp_rho_eos.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_rho_eos.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -908,11 +908,11 @@
             rho(i,j,k)=den(i,k)
             tl_rho(i,j,k)=tl_den(i,k)
 #  if defined LMD_SKPP_NOT_YET || defined LMD_BKPP_NOT_YET
-!>          pden(i,j,k)=(den1(i,k)-1000.0_r8)
-!>
+!>          pden(i,j,k)=(den1(i,k)-1000.0_r8)      ! This gives a fatal
+!>                                                 ! result in 4D-Var
             tl_pden(i,j,k)=tl_den1(i,k)-                                &
 #  ifdef TL_IOMS
-     &                     1000.0_r8
+     &                     1000.0_r8               ! posterior error...
 #  endif
 #   ifdef MASKING
 !>          pden(i,j,k)=pden(i,k)*rmask(i,j)

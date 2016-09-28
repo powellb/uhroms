@@ -2,9 +2,9 @@
 #ifndef ANA_GRID
       SUBROUTINE get_grid (ng, model)
 !
-!svn $Id: get_grid.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: get_grid.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -17,13 +17,20 @@
       USE mod_parallel
       USE mod_grid
       USE mod_iounits
+      USE mod_mixing
       USE mod_ncparam
+# ifdef NESTING
+      USE mod_nesting
+# endif
       USE mod_netcdf
       USE mod_scalars
 !
       USE exchange_2d_mod
 # ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
+# endif
+# ifdef NESTING
+      USE nesting_mod, ONLY : fill_contact
 # endif
       USE nf_fread2d_mod, ONLY : nf_fread2d
       USE strings_mod, ONLY : find_string
@@ -42,7 +49,7 @@
       logical :: GotScope(6)
 # endif
       integer :: tile, LBi, UBi, LBj, UBj
-      integer :: gtype, i, status, vindex
+      integer :: cr, gtype, i, status, vindex
 # if defined UV_DRAG_GRID && !defined ANA_DRAG
       integer :: varid_dragL, varid_dragQ, varid_ZoBL
 # endif
@@ -73,6 +80,19 @@
 !
       CALL netcdf_inq_var (ng, model, ncname)
       IF (exit_flag.ne.NoError) RETURN
+
+# ifdef NESTING
+!
+!  Determine contact region index "cr" for which nested grid "ng" is
+!  the receiver grid.
+!
+      DO i=1,Ncontact
+        IF (Rcontact(i)%receiver_grid.eq.ng) THEN
+          cr=i
+          EXIT
+        END IF
+      END DO
+# endif
 !
 !-----------------------------------------------------------------------
 !  Check if required variables are available.
@@ -160,6 +180,33 @@
         exit_flag=2
         RETURN
       END IF
+# endif
+# if defined WTYPE_GRID && \
+    (defined LMD_SKPP   || defined SOLAR_SOURCE) && \
+    !defined ANA_WTYPE
+      IF (.not.find_string(var_name,n_var,'wtype_grid',vindex)) THEN
+        IF (Master) WRITE (stdout,10) 'wtype_grid', TRIM(ncname)
+        exit_flag=2
+        RETURN
+      END IF
+# endif
+# ifndef ANA_SPONGE
+      IF (LuvSponge(ng)) THEN
+        IF (.not.find_string(var_name,n_var,'visc_factor',vindex)) THEN
+          IF (Master) WRITE (stdout,10) 'visc_factor', TRIM(ncname)
+          exit_flag=2
+          RETURN
+        END IF
+      END IF
+#  ifdef SOLVE3D
+      IF (ANY(LtracerSponge(:,ng))) THEN
+        IF (.not.find_string(var_name,n_var,'diff_factor',vindex)) THEN
+          IF (Master) WRITE (stdout,10) 'diff_factor', TRIM(ncname)
+          exit_flag=2
+          RETURN
+        END IF
+      END IF
+#  endif
 # endif
 # if defined UV_DRAG_GRID && !defined ANA_DRAG
 #  ifdef UV_LOGDRAG
@@ -274,6 +321,15 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, var_name(i), spval_check,         &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % h,                   &
+     &                        GRID(ng) % h)
+            IF (exit_flag.ne.NoError) RETURN
+# endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -304,6 +360,15 @@
               ioerror=status
               EXIT
             END IF
+#  ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, 'rmask', spval_check,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % rmask,               &
+     &                        GRID(ng) % rmask)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -333,6 +398,15 @@
               ioerror=status
               EXIT
             END IF
+#  ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Ucontact(cr)%Npoints, Ucontact,       &
+     &                        u2dvar, 'umask', spval_check,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % umask,               &
+     &                        GRID(ng) % umask)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_u2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -362,6 +436,15 @@
               ioerror=status
               EXIT
             END IF
+#  ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Vcontact(cr)%Npoints, Vcontact,       &
+     &                        v2dvar, 'vmask', spval_check,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % vmask,               &
+     &                        GRID(ng) % vmask)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_v2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -437,6 +520,111 @@
      &                          GRID(ng) % zice)
 #  endif
 # endif
+# if defined WTYPE_GRID && \
+    (defined LMD_SKPP   || defined SOLAR_SOURCE) && \
+    !defined ANA_WTYPE
+!
+!  Read in Jerlov water type.
+!
+          CASE ('wtype_grid')
+            gtype=r2dvar
+            status=nf_fread2d(ng, model, ncname, GRD(ng)%ncid,          &
+     &                        var_name(i), var_id(i), 0,                &
+     &                        gtype, Vsize, LBi, UBi, LBj, UBj,         &
+     &                        Fscl, Fmin, Fmax,                         &
+#  ifdef MASKING
+     &                        GRID(ng) % rmask,                         &
+#  endif
+     &                        MIXING(ng) % Jwtype)
+            IF (status.ne.nf90_noerr) THEN
+              exit_flag=2
+              ioerror=status
+              EXIT
+            END IF
+            IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+              CALL exchange_r2d_tile (ng, tile,                         &
+     &                                LBi, UBi, LBj, UBj,               &
+     &                                MIXING(ng) % Jwtype)
+            END IF
+#  ifdef DISTRIBUTE
+            CALL mp_exchange2d (ng, tile, model, 1,                     &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          NghostPoints,                           &
+     &                          EWperiodic(ng), NSperiodic(ng),         &
+     &                          MIXING(ng) % Jwtype)
+#  endif
+# endif
+# ifndef ANA_SPONGE
+!
+!  Read in horizontal, spatially varying factor to increase/decrease
+!  viscosity (nondimensional) in specific areas of the domain.
+!
+          CASE ('visc_factor')
+            IF (LuvSponge(ng)) THEN
+              gtype=r2dvar
+              status=nf_fread2d(ng, model, ncname, GRD(ng)%ncid,        &
+     &                          var_name(i), var_id(i), 0,              &
+     &                          gtype, Vsize, LBi, UBi, LBj, UBj,       &
+     &                          Fscl, Fmin, Fmax,                       &
+#  ifdef MASKING
+     &                          GRID(ng) % rmask,                       &
+#  endif
+     &                          MIXING(ng) % visc_factor)
+              IF (status.ne.nf90_noerr) THEN
+                exit_flag=2
+                ioerror=status
+                EXIT
+              END IF
+              IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+                CALL exchange_r2d_tile (ng, tile,                       &
+     &                                  LBi, UBi, LBj, UBj,             &
+     &                                  MIXING(ng) % visc_factor)
+              END IF
+#  ifdef DISTRIBUTE
+              CALL mp_exchange2d (ng, tile, model, 1,                   &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            NghostPoints,                         &
+     &                            EWperiodic(ng), NSperiodic(ng),       &
+     &                            MIXING(ng) % visc_factor)
+#  endif
+            END IF
+
+#  ifdef SOLVE3D
+!
+!  Read in horizontal, spatially varying factor to increase/decrease
+!  diffusivity (nondimensional) in specific areas of the domain.
+!
+          CASE ('diff_factor')
+            IF (ANY(LtracerSponge(:,ng))) THEN
+              gtype=r2dvar
+              status=nf_fread2d(ng, model, ncname, GRD(ng)%ncid,        &
+     &                          var_name(i), var_id(i), 0,              &
+     &                          gtype, Vsize, LBi, UBi, LBj, UBj,       &
+     &                          Fscl, Fmin, Fmax,                       &
+#   ifdef MASKING
+     &                          GRID(ng) % rmask,                       &
+#   endif
+     &                          MIXING(ng) % diff_factor)
+              IF (status.ne.nf90_noerr) THEN
+                exit_flag=2
+                ioerror=status
+                EXIT
+              END IF
+              IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+                CALL exchange_r2d_tile (ng, tile,                       &
+     &                                  LBi, UBi, LBj, UBj,             &
+     &                                  MIXING(ng) % diff_factor)
+              END IF
+#   ifdef DISTRIBUTE
+              CALL mp_exchange2d (ng, tile, model, 1,                   &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            NghostPoints,                         &
+     &                            EWperiodic(ng), NSperiodic(ng),       &
+     &                            MIXING(ng) % diff_factor)
+#   endif
+            END IF
+#  endif
+# endif
 !
 !  Read in Coriolis parameter.
 !
@@ -456,6 +644,15 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, var_name(i), spval_check,         &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % f,                   &
+     &                        GRID(ng) % f)
+            IF (exit_flag.ne.NoError) RETURN
+# endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -488,6 +685,15 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, var_name(i), spval_check,         &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % pm,                  &
+     &                        GRID(ng) % pm)
+            IF (exit_flag.ne.NoError) RETURN
+# endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -520,6 +726,15 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, var_name(i), spval_check,         &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % pn,                  &
+     &                        GRID(ng) % pn)
+            IF (exit_flag.ne.NoError) RETURN
+# endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -543,15 +758,24 @@
      &                        0, gtype, Vsize,                          &
      &                        LBi, UBi, LBj, UBj,                       &
      &                        Fscl, Fmin, Fmax,                         &
-# ifdef MASKING
+#  ifdef MASKING
      &                        GRID(ng) % rmask,                         &
-# endif
+#  endif
      &                        GRID(ng) % dmde)
             IF (status.ne.nf90_noerr) THEN
               exit_flag=2
               ioerror=status
               EXIT
             END IF
+#  ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, var_name(i), spval_check,         &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % dmde,                &
+     &                        GRID(ng) % dmde)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -574,15 +798,24 @@
      &                        0, gtype, Vsize,                          &
      &                        LBi, UBi, LBj, UBj,                       &
      &                        Fscl, Fmin, Fmax,                         &
-# ifdef MASKING
+#  ifdef MASKING
      &                        GRID(ng) % rmask,                         &
-# endif
+#  endif
      &                        GRID(ng) % dndx)
             IF (status.ne.nf90_noerr) THEN
               exit_flag=2
               ioerror=status
               EXIT
             END IF
+#  ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, var_name(i), spval_check,         &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % dndx,                &
+     &                        GRID(ng) % dndx)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &
@@ -667,6 +900,17 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            IF (.not.spherical) THEN
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Rcontact(cr)%Npoints, Rcontact,     &
+     &                          r2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Xr,                &
+     &                          GRID(ng) % xr)
+              IF (exit_flag.ne.NoError) RETURN
+            END IF
+# endif
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, model, 1,                     &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -693,6 +937,17 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            IF (.not.spherical) THEN
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Rcontact(cr)%Npoints, Rcontact,     &
+     &                          r2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Yr,                &
+     &                          GRID(ng) % yr)
+              IF (exit_flag.ne.NoError) RETURN
+            END IF
+# endif
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, model, 1,                     &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -719,6 +974,17 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            IF (.not.spherical) THEN
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Ucontact(cr)%Npoints, Ucontact,     &
+     &                          u2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Xu,                &
+     &                          GRID(ng) % xu)
+              IF (exit_flag.ne.NoError) RETURN
+            END IF
+# endif
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, model, 1,                     &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -745,6 +1011,17 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            IF (.not.spherical) THEN
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Ucontact(cr)%Npoints, Ucontact,     &
+     &                          u2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Yu,                &
+     &                          GRID(ng) % yu)
+              IF (exit_flag.ne.NoError) RETURN
+            END IF
+# endif
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, model, 1,                     &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -766,6 +1043,17 @@
      &                        GRID(ng) % vmask,                         &
 # endif
      &                        GRID(ng) % xv)
+# ifdef NESTING
+            IF (.not.spherical) THEN
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Vcontact(cr)%Npoints, Vcontact,     &
+     &                          v2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Xv,                &
+     &                          GRID(ng) % xv)
+              IF (exit_flag.ne.NoError) RETURN
+            END IF
+# endif
             IF (status.ne.nf90_noerr) THEN
               exit_flag=2
               ioerror=status
@@ -797,6 +1085,17 @@
               ioerror=status
               EXIT
             END IF
+# ifdef NESTING
+            IF (.not.spherical) THEN
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Vcontact(cr)%Npoints, Vcontact,     &
+     &                          v2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Yv,                &
+     &                          GRID(ng) % yv)
+              IF (exit_flag.ne.NoError) RETURN
+            END IF
+# endif
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, model, 1,                     &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -880,6 +1179,15 @@
                 ioerror=status
                 EXIT
               END IF
+# ifdef NESTING
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Rcontact(cr)%Npoints, Rcontact,     &
+     &                          r2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Xr,                &
+     &                          GRID(ng) % lonr)
+              IF (exit_flag.ne.NoError) RETURN
+# endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -908,6 +1216,15 @@
                 ioerror=status
                 EXIT
               END IF
+# ifdef NESTING
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Rcontact(cr)%Npoints, Rcontact,     &
+     &                          r2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Yr,                &
+     &                          GRID(ng) % latr)
+              IF (exit_flag.ne.NoError) RETURN
+# endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -936,6 +1253,15 @@
                 ioerror=status
                 EXIT
               END IF
+# ifdef NESTING
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Ucontact(cr)%Npoints, Ucontact,     &
+     &                          u2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Xu,                &
+     &                          GRID(ng) % lonu)
+              IF (exit_flag.ne.NoError) RETURN
+# endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -964,6 +1290,15 @@
                 ioerror=status
                 EXIT
               END IF
+# ifdef NESTING
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Ucontact(cr)%Npoints, Ucontact,     &
+     &                          u2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Yu,                &
+     &                          GRID(ng) % latu)
+              IF (exit_flag.ne.NoError) RETURN
+# endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -992,6 +1327,15 @@
                 ioerror=status
                 EXIT
               END IF
+# ifdef NESTING
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Vcontact(cr)%Npoints, Vcontact,     &
+     &                          v2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Xv,                &
+     &                          GRID(ng) % lonv)
+              IF (exit_flag.ne.NoError) RETURN
+# endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -1020,6 +1364,15 @@
                 ioerror=status
                 EXIT
               END IF
+# ifdef NESTING
+              CALL fill_contact(ng, model, tile,                        &
+     &                          cr, Vcontact(cr)%Npoints, Vcontact,     &
+     &                          v2dvar, var_name(i), spval_check,       &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          CONTACT_METRIC(cr) % Yv,                &
+     &                          GRID(ng) % latv)
+              IF (exit_flag.ne.NoError) RETURN
+# endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -1047,6 +1400,15 @@
               ioerror=status
               EXIT
             END IF
+#  ifdef NESTING
+            CALL fill_contact(ng, model, tile,                          &
+     &                        cr, Rcontact(cr)%Npoints, Rcontact,       &
+     &                        r2dvar, 'angler', spval_check,            &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        CONTACT_METRIC(cr) % angler,              &
+     &                        GRID(ng) % angler)
+            IF (exit_flag.ne.NoError) RETURN
+#  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
      &                                LBi, UBi, LBj, UBj,               &

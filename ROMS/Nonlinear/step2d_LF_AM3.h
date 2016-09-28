@@ -1,7 +1,7 @@
 #ifdef NONLINEAR
       SUBROUTINE step2d (ng, tile)
 !
-!svn $Id: step2d_LF_AM3.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: step2d_LF_AM3.h 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
 !                                                                      !
 !  Nonlinear shallow-water primitive equations predictor (Leap-frog)   !
@@ -10,9 +10,6 @@
 !=======================================================================
 !
       USE mod_param
-# ifdef CLIMATOLOGY
-      USE mod_clima
-# endif
 # ifdef SOLVE3D
       USE mod_coupling
 # endif
@@ -27,9 +24,6 @@
       USE mod_ocean
 # if defined SEDIMENT && defined SED_MORPH && defined SOLVE3D
       USE mod_sedbed
-# endif
-# if defined UV_PSOURCE || defined Q_PSOURCE
-      USE mod_sources
 # endif
       USE mod_stepping
 !
@@ -51,20 +45,15 @@
 # ifdef SOLVE3D
      &                  nstp(ng), nnew(ng),                             &
 # endif
-# if defined UV_PSOURCE || defined Q_PSOURCE
-     &                  Msrc(ng), Nsrc(ng),                             &
-     &                  SOURCES(ng) % Isrc,     SOURCES(ng) % Jsrc,     &
-     &                  SOURCES(ng) % Dsrc,     SOURCES(ng) % Qbar,     &
-# endif
 # ifdef MASKING
      &                  GRID(ng) % pmask,       GRID(ng) % rmask,       &
      &                  GRID(ng) % umask,       GRID(ng) % vmask,       &
 # endif
 # ifdef WET_DRY
-     &                  GRID(ng) % pmask_wet,   GRID(ng) % pmask_io,    &
-     &                  GRID(ng) % rmask_wet,   GRID(ng) % rmask_io,    &
-     &                  GRID(ng) % umask_wet,   GRID(ng) % umask_io,    &
-     &                  GRID(ng) % vmask_wet,   GRID(ng) % vmask_io,    &
+     &                  GRID(ng) % pmask_wet,   GRID(ng) % pmask_full,  &
+     &                  GRID(ng) % rmask_wet,   GRID(ng) % rmask_full,  &
+     &                  GRID(ng) % umask_wet,   GRID(ng) % umask_full,  &
+     &                  GRID(ng) % vmask_wet,   GRID(ng) % vmask_full,  &
 #  ifdef SOLVE3D
      &                  GRID(ng) % rmask_wet_avg,                       &
 #  endif
@@ -94,12 +83,6 @@
      &                  OCEAN(ng) % rulag2d,    OCEAN(ng) % rvlag2d,    &
      &                  OCEAN(ng) % ubar_stokes,                        &
      &                  OCEAN(ng) % vbar_stokes,                        &
-# endif
-# ifdef M2CLIMATOLOGY
-     &                  CLIMA(ng) % ubarclm,    CLIMA(ng) % vbarclm,    &
-#  ifdef M2CLM_NUDGING
-     &                  CLIMA(ng) % M2nudgcof,                          &
-#  endif
 # endif
 # ifndef SOLVE3D
      &                  FORCES(ng) % sustr,     FORCES(ng) % svstr,     &
@@ -144,17 +127,14 @@
 # ifdef SOLVE3D
      &                        nstp, nnew,                               &
 # endif
-# if defined UV_PSOURCE || defined Q_PSOURCE
-     &                        Msrc, Nsrc, Isrc, Jsrc, Dsrc, Qbar,       &
-# endif
 # ifdef MASKING
      &                        pmask, rmask, umask, vmask,               &
 # endif
 # ifdef WET_DRY
-     &                        pmask_wet, pmask_io,                      &
-     &                        rmask_wet, rmask_io,                      &
-     &                        umask_wet, umask_io,                      &
-     &                        vmask_wet, vmask_io,                      &
+     &                        pmask_wet, pmask_full,                    &
+     &                        rmask_wet, rmask_full,                    &
+     &                        umask_wet, umask_full,                    &
+     &                        vmask_wet, vmask_full,                    &
 #  ifdef SOLVE3D
      &                        rmask_wet_avg,                            &
 #  endif
@@ -178,12 +158,6 @@
      &                        rustr2d, rvstr2d,                         &
      &                        rulag2d, rvlag2d,                         &
      &                        ubar_stokes, vbar_stokes,                 &
-# endif
-# ifdef M2CLIMATOLOGY
-     &                        ubarclm, vbarclm,                         &
-#  ifdef M2CLM_NUDGING
-     &                        M2nudgcof,                                &
-#  endif
 # endif
 # ifndef SOLVE3D
      &                        sustr, svstr, bustr, bvstr,               &
@@ -212,11 +186,13 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_clima
       USE mod_ncparam
       USE mod_scalars
 # if defined SEDIMENT && defined SED_MORPH
       USE mod_sediment
 # endif
+      USE mod_sources
 !
       USE exchange_2d_mod
 # ifdef DISTRIBUTE
@@ -239,18 +215,8 @@
 # ifdef SOLVE3D
       integer, intent(in) :: nstp, nnew
 # endif
-# if defined UV_PSOURCE || defined Q_PSOURCE
-      integer, intent(in) :: Msrc, Nsrc
-# endif
 !
 # ifdef ASSUMED_SHAPE
-#  if defined UV_PSOURCE || defined Q_PSOURCE
-      integer, intent(in) :: Isrc(:)
-      integer, intent(in) :: Jsrc(:)
-
-      real(r8), intent(in) :: Dsrc(:)
-      real(r8), intent(in) :: Qbar(:)
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: pmask(LBi:,LBj:)
       real(r8), intent(in) :: rmask(LBi:,LBj:)
@@ -296,13 +262,6 @@
       real(r8), intent(in) :: ubar_stokes(LBi:,LBj:)
       real(r8), intent(in) :: vbar_stokes(LBi:,LBj:)
 #  endif
-#  ifdef M2CLIMATOLOGY
-      real(r8), intent(in) :: ubarclm(LBi:,LBj:)
-      real(r8), intent(in) :: vbarclm(LBi:,LBj:)
-#   ifdef M2CLM_NUDGING
-      real(r8), intent(in) :: M2nudgcof(LBi:,LBj:)
-#   endif
-#  endif
 #  ifndef SOLVE3D
       real(r8), intent(in) :: sustr(LBi:,LBj:)
       real(r8), intent(in) :: svstr(LBi:,LBj:)
@@ -327,10 +286,10 @@
       real(r8), intent(inout) :: rv(LBi:,LBj:,0:,:)
 #  endif
 #  ifdef WET_DRY
-      real(r8), intent(inout) :: pmask_io(LBi:,LBj:)
-      real(r8), intent(inout) :: rmask_io(LBi:,LBj:)
-      real(r8), intent(inout) :: umask_io(LBi:,LBj:)
-      real(r8), intent(inout) :: vmask_io(LBi:,LBj:)
+      real(r8), intent(inout) :: pmask_full(LBi:,LBj:)
+      real(r8), intent(inout) :: rmask_full(LBi:,LBj:)
+      real(r8), intent(inout) :: umask_full(LBi:,LBj:)
+      real(r8), intent(inout) :: vmask_full(LBi:,LBj:)
 
       real(r8), intent(inout) :: pmask_wet(LBi:,LBj:)
       real(r8), intent(inout) :: rmask_wet(LBi:,LBj:)
@@ -361,13 +320,6 @@
 
 # else
 
-#  if defined UV_PSOURCE || defined Q_PSOURCE
-      integer, intent(in) :: Isrc(Msrc)
-      integer, intent(in) :: Jsrc(Msrc)
-
-      real(r8), intent(in) :: Dsrc(Msrc)
-      real(r8), intent(in) :: Qbar(Msrc)
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: pmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
@@ -413,13 +365,6 @@
       real(r8), intent(in) :: ubar_stokes(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vbar_stokes(LBi:UBi,LBj:UBj)
 #  endif
-#  ifdef M2CLIMATOLOGY
-      real(r8), intent(in) :: ubarclm(LBi:UBi,LBj:UBj)
-      real(r8), intent(in) :: vbarclm(LBi:UBi,LBj:UBj)
-#   ifdef M2CLM_NUDGING
-      real(r8), intent(in) :: M2nudgcof(LBi:UBi,LBj:UBj)
-#   endif
-#  endif
 #  ifndef SOLVE3D
       real(r8), intent(in) :: sustr(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: svstr(LBi:UBi,LBj:UBj)
@@ -444,10 +389,10 @@
       real(r8), intent(inout) :: rv(LBi:UBi,LBj:UBj,0:UBk,2)
 #  endif
 #  ifdef WET_DRY
-      real(r8), intent(inout) :: pmask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: rmask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: umask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: vmask_io(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: pmask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: rmask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: umask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: vmask_full(LBi:UBi,LBj:UBj)
 
       real(r8), intent(inout) :: pmask_wet(LBi:UBi,LBj:UBj)
       real(r8), intent(inout) :: rmask_wet(LBi:UBi,LBj:UBj)
@@ -481,10 +426,7 @@
 !
       logical :: CORRECTOR_2D_STEP
 
-      integer :: i, j, ptsk
-# if defined UV_PSOURCE || defined Q_PSOURCE
-      integer :: is
-# endif
+      integer :: i, is, j, ptsk
 # ifdef DIAGNOSTICS_UV
       integer :: idiag
 # endif
@@ -541,7 +483,7 @@
 !  Compute total depth (m) and vertically integrated mass fluxes.
 !-----------------------------------------------------------------------
 !
-# ifdef DISTRIBUTE
+# if defined DISTRIBUTE && !defined NESTING
 
 !  In distributed-memory, the I- and J-ranges are different and a
 !  special exchange is done to avoid having three ghost points for
@@ -577,20 +519,6 @@
 #  endif
         END DO
       END DO
-!
-      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
-        CALL exchange_u2d_tile (ng, tile,                               &
-     &                          IminS, ImaxS, JminS, JmaxS,             &
-     &                          DUon)
-        CALL exchange_v2d_tile (ng, tile,                               &
-     &                          IminS, ImaxS, JminS, JmaxS,             &
-     &                          DVom)
-      END IF
-      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    NghostPoints,                                 &
-     &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    DUon, DVom)
 
 # else
 
@@ -621,6 +549,22 @@
 #  endif
         END DO
       END DO
+# endif
+# ifdef DISTRIBUTE
+!
+      IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+        CALL exchange_u2d_tile (ng, tile,                               &
+     &                          IminS, ImaxS, JminS, JmaxS,             &
+     &                          DUon)
+        CALL exchange_v2d_tile (ng, tile,                               &
+     &                          IminS, ImaxS, JminS, JmaxS,             &
+     &                          DVom)
+      END IF
+      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
+     &                    IminS, ImaxS, JminS, JmaxS,                   &
+     &                    NghostPoints,                                 &
+     &                    EWperiodic(ng), NSperiodic(ng),               &
+     &                    DUon, DVom)
 # endif
 !
 !  Set vertically integrated mass fluxes DUon and DVom along the open
@@ -716,6 +660,12 @@
 !
 !  After all fast time steps are completed, apply boundary conditions
 !  to time averaged fields.
+#  ifdef NESTING
+!  In nesting applications with refinement grids, we need to exchange
+!  the DU_avg2 and DV_avg2 fluxes boundary information for the case
+!  that a contact point is at a tile partition. Notice that in such
+!  cases, we need i+1 and j+1 values for spatial/temporal interpolation.
+#  endif
 !
       IF ((iif(ng).eq.(nfast(ng)+1)).and.PREDICTOR_2D_STEP(ng)) THEN
         IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -728,6 +678,14 @@
           CALL exchange_v2d_tile (ng, tile,                             &
      &                            LBi, UBi, LBj, UBj,                   &
      &                            DV_avg1)
+#  ifdef NESTING
+          CALL exchange_u2d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            DU_avg2)
+          CALL exchange_v2d_tile (ng, tile,                             &
+     &                            LBi, UBi, LBj, UBj,                   &
+     &                            DV_avg2)
+#  endif
         END IF
 #  ifdef DISTRIBUTE
         CALL mp_exchange2d (ng, tile, iNLM, 3,                          &
@@ -735,6 +693,13 @@
      &                      NghostPoints,                               &
      &                      EWperiodic(ng), NSperiodic(ng),             &
      &                      Zt_avg1, DU_avg1, DV_avg1)
+#   ifdef NESTING
+        CALL mp_exchange2d (ng, tile, iNLM, 2,                          &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
+     &                      DU_avg2, DV_avg2)
+#   endif
 #  endif
       END IF
 # endif
@@ -747,10 +712,6 @@
       CALL wetdry_tile (ng, tile,                                       &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  IminS, ImaxS, JminS, JmaxS,                     &
-#  ifdef UV_PSOURCE
-     &                  Msrc, Nsrc,                                     &
-     &                  Isrc, Jsrc, Dsrc,                               &
-#  endif
 #  ifdef MASKING
      &                  pmask, rmask, umask, vmask,                     &
 #  endif
@@ -759,10 +720,10 @@
      &                  DU_avg1, DV_avg1,                               &
      &                  rmask_wet_avg,                                  &
 #  endif
-     &                  pmask_wet, pmask_io,                            &
-     &                  rmask_wet, rmask_io,                            &
-     &                  umask_wet, umask_io,                            &
-     &                  vmask_wet, vmask_io)
+     &                  pmask_wet, pmask_full,                          &
+     &                  rmask_wet, rmask_full,                          &
+     &                  umask_wet, umask_full,                          &
+     &                  vmask_wet, vmask_full)
 # endif
 !
 !  Do not perform the actual time stepping during the auxiliary
@@ -902,21 +863,21 @@
      &                      rzeta(:,:,krhs))
 # endif
       END IF
-
-# ifdef Q_PSOURCE
 !
-!  Apply mass point sources - Volume influx.
+!  Apply mass point sources (volume vertical influx), if any.
 !
-      DO is=1,Nsrc
-        i=Isrc(is)
-        j=Jsrc(is)
-        IF (((IstrR.le.i).and.(i.le.IendR)).and.                        &
-     &      ((JstrR.le.j).and.(j.le.JendR))) THEN
-          zeta(i,j,knew)=zeta(i,j,knew)+Qbar(is)*pm(i,j)*pn(i,j)*       &
-     &                   dtfast(ng)
-        END IF
-      END DO
-# endif
+      IF (LwSrc(ng)) THEN
+        DO is=1,Nsrc(ng)
+          i=SOURCES(ng)%Isrc(is)
+          j=SOURCES(ng)%Jsrc(is)
+          IF (((IstrR.le.i).and.(i.le.IendR)).and.                      &
+     &        ((JstrR.le.j).and.(j.le.JendR))) THEN
+            zeta(i,j,knew)=zeta(i,j,knew)+                              &
+     &                     SOURCES(ng)%Qbar(is)*                        &
+     &                     pm(i,j)*pn(i,j)*dtfast(ng)
+          END IF
+        END DO
+      END IF
 !
 !  Set free-surface lateral boundary conditions.
 !
@@ -1018,7 +979,7 @@
 !-----------------------------------------------------------------------
 !  Add in horizontal advection of momentum.
 !-----------------------------------------------------------------------
-!
+
 #  ifdef UV_C2ADVECTION
 !
 !  Second-order, centered differences advection.
@@ -1034,6 +995,7 @@
      &                      ubar(i+1,j,krhs))
         END DO
       END DO
+!
       DO j=Jstr,Jend+1
         DO i=IstrU,Iend
           UFe(i,j)=0.25_r8*(DVom(i,j)+DVom(i-1,j))*                     &
@@ -1045,6 +1007,7 @@
      &                      ubar(i,j-1,krhs))
         END DO
       END DO
+!
       DO j=JstrV,Jend
         DO i=Istr,Iend+1
           VFx(i,j)=0.25_r8*(DUon(i,j)+DUon(i,j-1))*                     &
@@ -1056,7 +1019,7 @@
      &                      vbar(i-1,j,krhs))
         END DO
       END DO
-
+!
       DO j=JstrV-1,Jend
         DO i=Istr,Iend
           VFe(i,j)=0.25_r8*(DVom(i,j)+DVom(i,j+1))*                     &
@@ -1083,20 +1046,20 @@
           Dgrad(i,j)=DUon(i-1,j)-2.0_r8*DUon(i,j)+DUon(i+1,j)
         END DO
       END DO
-      IF (.not.ComposedGrid(ng)) THEN
-        IF (.not.EWperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-            DO j=Jstr,Jend
-              grad (Istr,j)=grad (Istr+1,j)
-              Dgrad(Istr,j)=Dgrad(Istr+1,j)
-            END DO
-          END IF
-          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-            DO j=Jstr,Jend
-              grad (Iend+1,j)=grad (Iend,j)
-              Dgrad(Iend+1,j)=Dgrad(Iend,j)
-            END DO
-          END IF
+      IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+          DO j=Jstr,Jend
+            grad (Istr,j)=grad (Istr+1,j)
+            Dgrad(Istr,j)=Dgrad(Istr+1,j)
+          END DO
+        END IF
+      END IF
+      IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+          DO j=Jstr,Jend
+            grad (Iend+1,j)=grad (Iend,j)
+            Dgrad(Iend+1,j)=Dgrad(Iend,j)
+          END DO
         END IF
       END IF
 
@@ -1114,7 +1077,7 @@
      &                      cff*(Dgrad(i,j)+Dgrad(i+1,j)))
         END DO
       END DO
-
+!
       DO j=Jstrm1,Jendp1
         DO i=IstrU,Iend
           grad(i,j)=ubar(i,j-1,krhs)-2.0_r8*ubar(i,j,krhs)+             &
@@ -1125,18 +1088,18 @@
      &              ubar(i,j+1,krhs)
         END DO
       END DO
-      IF (.not.ComposedGrid(ng)) THEN
-        IF (.not.NSperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-            DO i=IstrU,Iend
-              grad(i,Jstr-1)=grad(i,Jstr)
-            END DO
-          END IF
-          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-            DO i=IstrU,Iend
-              grad(i,Jend+1)=grad(i,Jend)
-            END DO
-          END IF
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+          DO i=IstrU,Iend
+            grad(i,Jstr-1)=grad(i,Jstr)
+          END DO
+        END IF
+      END IF
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+          DO i=IstrU,Iend
+            grad(i,Jend+1)=grad(i,Jend)
+          END DO
         END IF
       END IF
       DO j=Jstr,Jend+1
@@ -1159,7 +1122,7 @@
      &                      cff*(Dgrad(i,j)+Dgrad(i-1,j)))
         END DO
       END DO
-
+!
       DO j=JstrV,Jend
         DO i=Istrm1,Iendp1
           grad(i,j)=vbar(i-1,j,krhs)-2.0_r8*vbar(i,j,krhs)+             &
@@ -1170,18 +1133,18 @@
      &              vbar(i+1,j,krhs)
         END DO
       END DO
-      IF (.not.ComposedGrid(ng)) THEN
-        IF (.not.EWperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-            DO j=JstrV,Jend
-              grad(Istr-1,j)=grad(Istr,j)
-            END DO
-          END IF
-          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-            DO j=JstrV,Jend
-              grad(Iend+1,j)=grad(Iend,j)
-            END DO
-          END IF
+      IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+          DO j=JstrV,Jend
+            grad(Istr-1,j)=grad(Istr,j)
+          END DO
+        END IF
+      END IF
+      IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+          DO j=JstrV,Jend
+            grad(Iend+1,j)=grad(Iend,j)
+          END DO
         END IF
       END IF
       DO j=JstrV-1,Jend
@@ -1204,7 +1167,7 @@
      &                      cff*(Dgrad(i,j)+Dgrad(i,j-1)))
         END DO
       END DO
-
+!
       DO j=JstrVm1,Jendp1
         DO i=Istr,Iend
           grad(i,j)=vbar(i,j-1,krhs)-2.0_r8*vbar(i,j,krhs)+             &
@@ -1216,20 +1179,20 @@
           Dgrad(i,j)=DVom(i,j-1)-2.0_r8*DVom(i,j)+DVom(i,j+1)
         END DO
       END DO
-      IF (.not.ComposedGrid(ng)) THEN
-        IF (.not.NSperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-            DO i=Istr,Iend
-              grad (i,Jstr)=grad (i,Jstr+1)
-              Dgrad(i,Jstr)=Dgrad(i,Jstr+1)
-            END DO
-          END IF
-          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-            DO i=Istr,Iend
-              grad (i,Jend+1)=grad (i,Jend)
-              Dgrad(i,Jend+1)=Dgrad(i,Jend)
-            END DO
-          END IF
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+          DO i=Istr,Iend
+            grad (i,Jstr)=grad (i,Jstr+1)
+            Dgrad(i,Jstr)=Dgrad(i,Jstr+1)
+          END DO
+        END IF
+      END IF
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+          DO i=Istr,Iend
+            grad (i,Jend+1)=grad (i,Jend)
+            Dgrad(i,Jend+1)=Dgrad(i,Jend)
+          END DO
         END IF
       END IF
 
@@ -1248,7 +1211,7 @@
         END DO
       END DO
 #  endif
-
+!
       DO j=Jstr,Jend
         DO i=IstrU,Iend
           cff1=UFx(i,j)-UFx(i-1,j)
@@ -1427,6 +1390,9 @@
 #   ifdef MASKING
           cff=cff*pmask(i,j)
 #   endif
+#   ifdef WET_DRY
+          cff=cff*pmask_wet(i,j)
+#   endif
           UFe(i,j)=om_p(i,j)*om_p(i,j)*cff
           VFx(i,j)=on_p(i,j)*on_p(i,j)*cff
         END DO
@@ -1500,6 +1466,9 @@
 #  ifdef MASKING
           cff=cff*pmask(i,j)
 #  endif
+#  ifdef WET_DRY
+          cff=cff*pmask_wet(i,j)
+#  endif
           UFe(i,j)=om_p(i,j)*om_p(i,j)*cff
           VFx(i,j)=on_p(i,j)*on_p(i,j)*cff
         END DO
@@ -1532,120 +1501,135 @@
 !  harmonic operator. These are gradient or closed (free slip or
 !  no slip) boundary conditions.
 !
-      IF (.not.ComposedGrid(ng)) THEN
-        IF (.not.EWperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-            IF (LBC(iwest,isUbar,ng)%closed) THEN
-              DO j=Jstrm1,Jendp1
-                LapU(IstrU-1,j)=0.0_r8
-              END DO
-            ELSE
-              DO j=Jstrm1,Jendp1
-                LapU(IstrU-1,j)=LapU(IstrU,j)
-              END DO
-            END IF
-            IF (LBC(iwest,isVbar,ng)%closed) THEN
-              DO j=JstrVm1,Jendp1
-                LapV(Istr-1,j)=gamma2(ng)*LapV(Istr,j)
-              END DO
-            ELSE
-              DO j=JstrVm1,Jendp1
-                LapV(Istr-1,j)=0.0_r8
-              END DO
-            END IF
+      IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+          IF (LBC(iwest,isUbar,ng)%closed) THEN
+            DO j=Jstrm1,Jendp1
+              LapU(IstrU-1,j)=0.0_r8
+            END DO
+          ELSE
+            DO j=Jstrm1,Jendp1
+              LapU(IstrU-1,j)=LapU(IstrU,j)
+            END DO
           END IF
-
-          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-            IF (LBC(ieast,isUbar,ng)%closed) THEN
-              DO j=Jstrm1,Jendp1
-                LapU(Iend+1,j)=0.0_r8
-              END DO
-            ELSE
-              DO j=Jstrm1,Jendp1
-                LapU(Iend+1,j)=LapU(Iend,j)
-              END DO
-            END IF
-            IF (LBC(ieast,isVbar,ng)%closed) THEN
-              DO j=JstrVm1,Jendp1
-                LapV(Iend+1,j)=gamma2(ng)*LapV(Iend,j)
-              END DO
-            ELSE
-              DO j=JstrVm1,Jendp1
-                LapV(Iend+1,j)=0.0_r8
-              END DO
-            END IF
+          IF (LBC(iwest,isVbar,ng)%closed) THEN
+            DO j=JstrVm1,Jendp1
+              LapV(Istr-1,j)=gamma2(ng)*LapV(Istr,j)
+            END DO
+          ELSE
+            DO j=JstrVm1,Jendp1
+              LapV(Istr-1,j)=0.0_r8
+            END DO
           END IF
         END IF
-
-        IF (.not.NSperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-            IF (LBC(isouth,isUbar,ng)%closed) THEN
-              DO i=IstrUm1,Iendp1
-                LapU(i,Jstr-1)=gamma2(ng)*LapU(i,Jstr)
-              END DO
-            ELSE
-              DO i=IstrUm1,Iendp1
-                LapU(i,Jstr-1)=0.0_r8
-              END DO
-            END IF
-            IF (LBC(isouth,isVbar,ng)%closed) THEN
-              DO i=Istrm1,Iendp1
-                LapV(i,JstrV-1)=0.0_r8
-              END DO
-            ELSE
-              DO i=Istrm1,Iendp1
-                LapV(i,JstrV-1)=LapV(i,JstrV)
-              END DO
-            END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+          IF (LBC(ieast,isUbar,ng)%closed) THEN
+            DO j=Jstrm1,Jendp1
+              LapU(Iend+1,j)=0.0_r8
+            END DO
+          ELSE
+            DO j=Jstrm1,Jendp1
+              LapU(Iend+1,j)=LapU(Iend,j)
+            END DO
           END IF
-
-          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-            IF (LBC(inorth,isUbar,ng)%closed) THEN
-              DO i=IstrUm1,Iendp1
-                LapU(i,Jend+1)=gamma2(ng)*LapU(i,Jend)
-              END DO
-            ELSE
-              DO i=IstrUm1,Iendp1
-                LapU(i,Jend+1)=0.0_r8
-              END DO
-            END IF
-            IF (LBC(inorth,isVbar,ng)%closed) THEN
-              DO i=Istrm1,Iendp1
-                LapV(i,Jend+1)=0.0_r8
-              END DO
-            ELSE
-              DO i=Istrm1,Iendp1
-                LapV(i,Jend+1)=LapV(i,Jend)
-              END DO
-            END IF
+          IF (LBC(ieast,isVbar,ng)%closed) THEN
+            DO j=JstrVm1,Jendp1
+              LapV(Iend+1,j)=gamma2(ng)*LapV(Iend,j)
+            END DO
+          ELSE
+            DO j=JstrVm1,Jendp1
+              LapV(Iend+1,j)=0.0_r8
+            END DO
           END IF
         END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+          IF (LBC(isouth,isUbar,ng)%closed) THEN
+            DO i=IstrUm1,Iendp1
+              LapU(i,Jstr-1)=gamma2(ng)*LapU(i,Jstr)
+            END DO
+          ELSE
+            DO i=IstrUm1,Iendp1
+              LapU(i,Jstr-1)=0.0_r8
+            END DO
+          END IF
+          IF (LBC(isouth,isVbar,ng)%closed) THEN
+            DO i=Istrm1,Iendp1
+              LapV(i,JstrV-1)=0.0_r8
+            END DO
+          ELSE
+            DO i=Istrm1,Iendp1
+              LapV(i,JstrV-1)=LapV(i,JstrV)
+            END DO
+          END IF
+        END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+          IF (LBC(inorth,isUbar,ng)%closed) THEN
+            DO i=IstrUm1,Iendp1
+              LapU(i,Jend+1)=gamma2(ng)*LapU(i,Jend)
+            END DO
+          ELSE
+            DO i=IstrUm1,Iendp1
+              LapU(i,Jend+1)=0.0_r8
+            END DO
+          END IF
+          IF (LBC(inorth,isVbar,ng)%closed) THEN
+            DO i=Istrm1,Iendp1
+              LapV(i,Jend+1)=0.0_r8
+            END DO
+          ELSE
+            DO i=Istrm1,Iendp1
+              LapV(i,Jend+1)=LapV(i,Jend)
+            END DO
+          END IF
+        END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(iwest ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
+          LapU(Istr  ,Jstr-1)=0.5_r8*(LapU(Istr+1,Jstr-1)+              &
+     &                                LapU(Istr  ,Jstr  ))
+          LapV(Istr-1,Jstr  )=0.5_r8*(LapV(Istr-1,Jstr+1)+              &
+     &                                LapV(Istr  ,Jstr  ))
+        END IF
+      END IF
 
-        IF (.not.(EWperiodic(ng).or.NSperiodic(ng))) THEN
-          IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
-            LapU(Istr  ,Jstr-1)=0.5_r8*(LapU(Istr+1,Jstr-1)+            &
-     &                                  LapU(Istr  ,Jstr  ))
-            LapV(Istr-1,Jstr  )=0.5_r8*(LapV(Istr-1,Jstr+1)+            &
-     &                                  LapV(Istr  ,Jstr  ))
-          END IF
-          IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
-            LapU(Iend+1,Jstr-1)=0.5_r8*(LapU(Iend  ,Jstr-1)+            &
-     &                                  LapU(Iend+1,Jstr  ))
-            LapV(Iend+1,Jstr  )=0.5_r8*(LapV(Iend  ,Jstr  )+            &
-     &                                  LapV(Iend+1,Jstr+1))
-          END IF
-          IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
-            LapU(Istr  ,Jend+1)=0.5_r8*(LapU(Istr+1,Jend+1)+            &
-     &                                  LapU(Istr  ,Jend  ))
-            LapV(Istr-1,Jend+1)=0.5_r8*(LapV(Istr  ,Jend+1)+            &
-     &                                  LapV(Istr-1,Jend  ))
-          END IF
-          IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-            LapU(Iend+1,Jend+1)=0.5_r8*(LapU(Iend  ,Jend+1)+            &
-     &                                  LapU(Iend+1,Jend  ))
-            LapV(Iend+1,Jend+1)=0.5_r8*(LapV(Iend  ,Jend+1)+            &
-     &                                  LapV(Iend+1,Jend  ))
-          END IF
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(ieast ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
+          LapU(Iend+1,Jstr-1)=0.5_r8*(LapU(Iend  ,Jstr-1)+              &
+     &                                LapU(Iend+1,Jstr  ))
+          LapV(Iend+1,Jstr  )=0.5_r8*(LapV(Iend  ,Jstr  )+              &
+     &                                LapV(Iend+1,Jstr+1))
+        END IF
+      END IF
+
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(iwest ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
+          LapU(Istr  ,Jend+1)=0.5_r8*(LapU(Istr+1,Jend+1)+              &
+     &                                LapU(Istr  ,Jend  ))
+          LapV(Istr-1,Jend+1)=0.5_r8*(LapV(Istr  ,Jend+1)+              &
+     &                                LapV(Istr-1,Jend  ))
+        END IF
+      END IF
+
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(ieast ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
+          LapU(Iend+1,Jend+1)=0.5_r8*(LapU(Iend  ,Jend+1)+              &
+     &                                LapU(Iend+1,Jend  ))
+          LapV(Iend+1,Jend+1)=0.5_r8*(LapV(Iend  ,Jend+1)+              &
+     &                                LapV(Iend+1,Jend  ))
         END IF
       END IF
 !
@@ -1676,6 +1660,9 @@
      &          (pm(i-1,j-1)+pm(i,j-1))*LapU(i,j-1)))
 #  ifdef MASKING
           cff=cff*pmask(i,j)
+#  endif
+#  ifdef WET_DRY
+          cff=cff*pmask_wet(i,j)
 #  endif
           UFe(i,j)=om_p(i,j)*om_p(i,j)*cff
           VFx(i,j)=on_p(i,j)*on_p(i,j)*cff
@@ -1784,32 +1771,55 @@
       END DO
 #  endif
 # endif
-# ifdef M2CLM_NUDGING
 !
 !-----------------------------------------------------------------------
 !  Add in nudging of 2D momentum climatology.
 !-----------------------------------------------------------------------
 !
+      IF (LnudgeM2CLM(ng)) THEN
+        DO j=Jstr,Jend
+          DO i=IstrU,Iend
+            cff=0.25_r8*(CLIMA(ng)%M2nudgcof(i-1,j)+                    &
+     &                   CLIMA(ng)%M2nudgcof(i  ,j))*                   &
+     &          om_u(i,j)*on_u(i,j)
+            rhs_ubar(i,j)=rhs_ubar(i,j)+                                &
+     &                    cff*(Drhs(i-1,j)+Drhs(i,j))*                  &
+     &                        (CLIMA(ng)%ubarclm(i,j)-                  &
+     &                         ubar(i,j,krhs))
+          END DO
+        END DO
+        DO j=JstrV,Jend
+          DO i=Istr,Iend
+            cff=0.25_r8*(CLIMA(ng)%M2nudgcof(i,j-1)+                    &
+     &                   CLIMA(ng)%M2nudgcof(i,j  ))*                   &
+     &          om_v(i,j)*on_v(i,j)
+            rhs_vbar(i,j)=rhs_vbar(i,j)+                                &
+     &                    cff*(Drhs(i,j-1)+Drhs(i,j))*                  &
+     &                        (CLIMA(ng)%vbarclm(i,j)-                  &
+     &                         vbar(i,j,krhs))
+          END DO
+        END DO
+      END IF
+
+# ifdef SOLVE3D
+#  ifdef WET_DRY_LIMIT
       DO j=Jstr,Jend
         DO i=IstrU,Iend
-          cff=0.25_r8*(M2nudgcof(i-1,j)+M2nudgcof(i,j))*                &
-     &        om_u(i,j)*on_u(i,j)
-          rhs_ubar(i,j)=rhs_ubar(i,j)+                                  &
-     &                  cff*(Drhs(i-1,j)+Drhs(i,j))*                    &
-     &                      (ubarclm(i,j)-ubar(i,j,krhs))
+          cff5=ABS(ABS(umask_wet(i,j))-1.0_r8)
+          cff6=0.5_r8+DSIGN(0.5_r8,rhs_ubar(i,j))*umask_wet(i,j)
+          cff7=0.5_r8*umask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
+          rhs_ubar(i,j)=rhs_ubar(i,j)*cff7
         END DO
       END DO
       DO j=JstrV,Jend
         DO i=Istr,Iend
-          cff=0.25_r8*(M2nudgcof(i,j-1)+M2nudgcof(i,j))*                &
-     &        om_v(i,j)*on_v(i,j)
-          rhs_vbar(i,j)=rhs_vbar(i,j)+                                  &
-     &                  cff*(Drhs(i,j-1)+Drhs(i,j))*                    &
-     &                      (vbarclm(i,j)-vbar(i,j,krhs))
+          cff5=ABS(ABS(vmask_wet(i,j))-1.0_r8)
+          cff6=0.5_r8+DSIGN(0.5_r8,rhs_vbar(i,j))*vmask_wet(i,j)
+          cff7=0.5_r8*vmask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
+          rhs_vbar(i,j)=rhs_vbar(i,j)*cff7
         END DO
       END DO
-# endif
-# ifdef SOLVE3D
+#  endif
 !
 !-----------------------------------------------------------------------
 !  Coupling between 2D and 3D equations.
@@ -2072,10 +2082,13 @@
             cff6=0.5_r8+DSIGN(0.5_r8,ubar(i,j,knew))*umask_wet(i,j)
             cff7=0.5_r8*umask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
             ubar(i,j,knew)=ubar(i,j,knew)*cff7
-            fac1=cff2/cff
-            rhs_ubar(i,j)=(ubar(i,j,knew)*(Dnew(i,j)+Dnew(i-1,j))-      &
-     &                     ubar(i,j,kstp)*(Dstp(i,j)+Dstp(i-1,j)))*     &
-     &                    fac1
+            rhs_ubar(i,j)=rhs_ubar(i,j)*cff7
+#  ifdef SOLVE3D
+            IF (PREDICTOR_2D_STEP(ng)) THEN
+              rufrc(i,j)=rufrc(i,j)*cff7
+              ru(i,j,0,nstp)=rufrc(i,j)
+            END IF
+#  endif
 # endif
           END DO
         END DO
@@ -2094,10 +2107,13 @@
             cff6=0.5_r8+DSIGN(0.5_r8,vbar(i,j,knew))*vmask_wet(i,j)
             cff7=0.5_r8*vmask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
             vbar(i,j,knew)=vbar(i,j,knew)*cff7
-            fac1=cff2/cff
-            rhs_vbar(i,j)=(vbar(i,j,knew)*(Dnew(i,j)+Dnew(i,j-1))-      &
-     &                     vbar(i,j,kstp)*(Dstp(i,j)+Dstp(i,j-1)))*     &
-     &                    fac1
+            rhs_vbar(i,j)=rhs_vbar(i,j)*cff7
+#  ifdef SOLVE3D
+            IF (PREDICTOR_2D_STEP(ng)) THEN
+              rvfrc(i,j)=rvfrc(i,j)*cff7
+              rv(i,j,0,nstp)=rvfrc(i,j)
+            END IF
+#  endif
 # endif
           END DO
         END DO
@@ -2121,10 +2137,7 @@
             cff6=0.5_r8+DSIGN(0.5_r8,ubar(i,j,knew))*umask_wet(i,j)
             cff7=0.5_r8*umask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
             ubar(i,j,knew)=ubar(i,j,knew)*cff7
-            fac1=cff2/cff
-            rhs_ubar(i,j)=(ubar(i,j,knew)*(Dnew(i,j)+Dnew(i-1,j))-      &
-     &                     ubar(i,j,kstp)*(Dstp(i,j)+Dstp(i-1,j)))*     &
-     &                    fac1
+            rhs_ubar(i,j)=rhs_ubar(i,j)*cff7
 # endif
           END DO
         END DO
@@ -2143,10 +2156,7 @@
             cff6=0.5_r8+DSIGN(0.5_r8,vbar(i,j,knew))*vmask_wet(i,j)
             cff7=0.5_r8*vmask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
             vbar(i,j,knew)=vbar(i,j,knew)*cff7
-            fac1=cff2/cff
-            rhs_vbar(i,j)=(vbar(i,j,knew)*(Dnew(i,j)+Dnew(i,j-1))-      &
-     &                     vbar(i,j,kstp)*(Dstp(i,j)+Dstp(i,j-1)))*     &
-     &                    fac1
+            rhs_vbar(i,j)=rhs_vbar(i,j)*cff7
 # endif
           END DO
         END DO
@@ -2174,12 +2184,7 @@
             cff6=0.5_r8+DSIGN(0.5_r8,ubar(i,j,knew))*umask_wet(i,j)
             cff7=0.5_r8*umask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
             ubar(i,j,knew)=ubar(i,j,knew)*cff7
-            fac1=1.0_r8/cff
-            rhs_ubar(i,j)=((ubar(i,j,knew)*(Dnew(i,j)+Dnew(i-1,j))-     &
-     &                      ubar(i,j,kstp)*(Dstp(i,j)+Dstp(i-1,j)))*    &
-     &                     fac1-                                        &
-     &                     cff2*rubar(i,j,kstp)+                        &
-     &                     cff3*rubar(i,j,ptsk))*cff4
+            rhs_ubar(i,j)=rhs_ubar(i,j)*cff7
 # endif
           END DO
         END DO
@@ -2200,12 +2205,7 @@
             cff6=0.5_r8+DSIGN(0.5_r8,vbar(i,j,knew))*vmask_wet(i,j)
             cff7=0.5_r8*vmask_wet(i,j)*cff5+cff6*(1.0_r8-cff5)
             vbar(i,j,knew)=vbar(i,j,knew)*cff7
-            fac1=1.0_r8/cff
-            rhs_vbar(i,j)=((vbar(i,j,knew)*(Dnew(i,j)+Dnew(i,j-1))-     &
-     &                      vbar(i,j,kstp)*(Dstp(i,j)+Dstp(i,j-1)))*    &
-     &                     fac1-                                        &
-     &                     cff2*rvbar(i,j,kstp)+                        &
-     &                     cff3*rvbar(i,j,ptsk))*cff4
+            rhs_vbar(i,j)=rhs_vbar(i,j)*cff7
 # endif
           END DO
         END DO
@@ -2430,31 +2430,31 @@
      &                      h, om_v, on_u,                              &
      &                      ubar, vbar, zeta)
       END IF
-# ifdef UV_PSOURCE
 !
 !-----------------------------------------------------------------------
-!  Apply mass point sources.
+!  Apply momentum transport point sources (like river runoff), if any.
 !-----------------------------------------------------------------------
 !
-      DO is=1,Nsrc
-        i=Isrc(is)
-        j=Jsrc(is)
-        IF (((IstrR.le.i).and.(i.le.IendR)).and.                        &
-     &      ((JstrR.le.j).and.(j.le.JendR))) THEN
-          IF (INT(Dsrc(is)).eq.0) THEN
-            cff=1.0_r8/(on_u(i,j)*                                      &
-     &                  0.5_r8*(zeta(i-1,j,knew)+h(i-1,j)+              &
-     &                          zeta(i  ,j,knew)+h(i  ,j)))
-            ubar(i,j,knew)=Qbar(is)*cff
-          ELSE
-            cff=1.0_r8/(om_v(i,j)*                                      &
-     &                  0.5_r8*(zeta(i,j-1,knew)+h(i,j-1)+              &
-     &                          zeta(i,j  ,knew)+h(i,j  )))
-            vbar(i,j,knew)=Qbar(is)*cff
+      IF (LuvSrc(ng)) THEN
+        DO is=1,Nsrc(ng)
+          i=SOURCES(ng)%Isrc(is)
+          j=SOURCES(ng)%Jsrc(is)
+          IF (((IstrR.le.i).and.(i.le.IendR)).and.                      &
+     &        ((JstrR.le.j).and.(j.le.JendR))) THEN
+            IF (INT(SOURCES(ng)%Dsrc(is)).eq.0) THEN
+              cff=1.0_r8/(on_u(i,j)*                                    &
+     &                    0.5_r8*(zeta(i-1,j,knew)+h(i-1,j)+            &
+     &                            zeta(i  ,j,knew)+h(i  ,j)))
+              ubar(i,j,knew)=SOURCES(ng)%Qbar(is)*cff
+            ELSE
+              cff=1.0_r8/(om_v(i,j)*                                    &
+     &                    0.5_r8*(zeta(i,j-1,knew)+h(i,j-1)+            &
+     &                            zeta(i,j  ,knew)+h(i,j  )))
+              vbar(i,j,knew)=SOURCES(ng)%Qbar(is)*cff
+            END IF
           END IF
-        END IF
-      END DO
-# endif
+        END DO
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Exchange boundary information.

@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE get_state (ng, model, msg, ncname, IniRec, Tindex)
 !
-!svn $Id: get_state.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: get_state.F 817 2016-08-22 21:40:37Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -100,7 +100,7 @@
 
       real(r8) :: Fmax, Fmin, INPtime, Tmax, scale, time_scale
 
-      real(r8), allocatable :: myTime(:)
+      real(r8), allocatable :: TimeVar(:)
 
       character (len=6 ) :: string
       character (len=14) :: t_code
@@ -156,6 +156,9 @@
       ELSE IF (model.eq.12) THEN
         string=' NLM: '                    ! tangent linear forcing and
         IDmod=iNLM                         ! obc increments
+      ELSE IF (model.eq.14) THEN
+        string=' TLM: '                    ! tangent model error forcing
+        IDmod=iTLM
       END IF
 !
 !  Set switch to process variables for nonlinear model perfect restart.
@@ -201,9 +204,9 @@
         RETURN
       END IF
 
-#ifdef NO_LBC_ATT
+#if defined DEBUGGING || defined NO_LBC_ATT
 !
-!  Lateral boundary conditions attributed not checked in restart file.
+!  Lateral boundary conditions attribute not checked in restart file.
 !
       IF (((model.eq.0).or.(model.eq.iNLM)).and.(nrrec(ng).ne.0)) THEN
         IF (Master) WRITE (stdout,20) string, 'NLM_LBC', TRIM(ncname)
@@ -234,8 +237,8 @@
 !  values.
 !
       mySize=var_Dsize(1)
-      IF (.not.allocated(myTime)) allocate (myTime(mySize))
-      CALL netcdf_get_fvar (ng, IDmod, ncname, TRIM(tvarnam), myTime)
+      IF (.not.allocated(TimeVar)) allocate (TimeVar(mySize))
+      CALL netcdf_get_fvar (ng, IDmod, ncname, TRIM(tvarnam), TimeVar)
       IF (exit_flag.ne.NoError) RETURN
 !
 !  If using the latest time record from input NetCDF file as the
@@ -244,8 +247,8 @@
       IF (LastRec(ng)) THEN
         Tmax=-1.0_r8
         DO i=1,mySize
-          IF (myTime(i).gt.Tmax) THEN
-            Tmax=myTime(i)
+          IF (TimeVar(i).gt.Tmax) THEN
+            Tmax=TimeVar(i)
             IniRec=i
           END IF
         END DO
@@ -263,9 +266,9 @@
         ELSE
           InpRec=1
         END IF
-        INPtime=myTime(InpRec)
+        INPtime=TimeVar(InpRec)
       END IF
-      IF (allocated(myTime)) deallocate ( myTime )
+      IF (allocated(TimeVar)) deallocate ( TimeVar )
 !
 !  Set input time scale by looking at the "units" attribute.
 !
@@ -328,6 +331,15 @@
         IniRec=InpRec
       END IF
 !
+!  Set current input time, io_time .  Notice that the model time,
+!  time(ng), is reset above.  This is a THREADPRIVATE variable in
+!  shared-memory and this routine is only processed by the MASTER
+!  thread since it is an I/O routine. Therefore, we need to update
+!  time(ng) somewhere else in a parallel region. This will be done
+!  with io_time variable.
+!
+      io_time=INPtime
+!
 !  Report information.
 !
       lstr=SCAN(ncname,'/',BACK=.TRUE.)+1
@@ -335,10 +347,10 @@
       IF (Master) THEN
         CALL time_string (INPtime, t_code)
         IF (ERend.gt.ERstr) THEN
-          WRITE (stdout,40) string, TRIM(StateMsg(msg)), t_code, Nrun,  &
-     &                      ncname(lstr:lend), InpRec, Tindex
+          WRITE (stdout,40) string, TRIM(StateMsg(msg)), t_code, ng,    &
+     &                      Nrun, ncname(lstr:lend), InpRec, Tindex
         ELSE
-          WRITE (stdout,50) string, TRIM(StateMsg(msg)), t_code,        &
+          WRITE (stdout,50) string, TRIM(StateMsg(msg)), t_code, ng,    &
      &                      ncname(lstr:lend), InpRec, Tindex
         END IF
       END IF
@@ -3263,7 +3275,7 @@
       END IF NRM_STATE
 #endif
 
-#if defined FOUR_DVAR
+#if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
 !
 !-----------------------------------------------------------------------
 !  Read in error covariance standard deviation factors.
@@ -4335,6 +4347,217 @@
       END IF TLM_FORCING
 #endif
 !
+#if defined TIME_CONV
+!
+!-----------------------------------------------------------------------
+!  Read in tangent linear model error forcing terms.
+!-----------------------------------------------------------------------
+!
+      TCS_STATE: IF (model.eq.14) THEN
+!
+!  Set number of records available.
+!
+        NrecFrc(ng)=Nrec
+!
+!  Read in next impulse forcing time to process.
+!
+        CALL netcdf_get_fvar (ng, IDmod, ncname, TRIM(tvarnam),         &
+     &                        ForceTime(ng:),                             &
+     &                        ncid = ncINPid,                           &
+     &                        start = (/InpRec/),                       &
+     &                        total = (/1/))
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in free-surface forcing.
+!
+        IF (get_var(idFsur)) THEN
+          foundit=find_string(var_name, n_var, TRIM(Vname(1,idFsur)),   &
+     &                        varid)
+          gtype=var_flag(varid)*r2dvar
+          status=nf_fread2d(ng, IDmod, ncname, ncINPid,                 &
+     &                      Vname(1,idFsur), varid,                     &
+     &                      InpRec, gtype, Vsize,                       &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      Fscl, Fmin, Fmax,                           &
+# ifdef MASKING
+     &                      GRID(ng) % rmask,                           &
+# endif
+     &                      OCEAN(ng) % tl_zeta(:,:,Tindex))
+          IF (status.ne.nf90_noerr) THEN
+            IF (Master) THEN
+              WRITE (stdout,60) string, TRIM(Vname(1,idFsur)), InpRec,  &
+     &                          TRIM(ncname)
+            END IF
+            exit_flag=2
+            ioerror=status
+            RETURN
+          ELSE
+            IF (Master) THEN
+              WRITE (stdout,70) TRIM(Vname(2,idFsur)), Fmin, Fmax
+            END IF
+          END IF
+        END IF
+
+# ifndef SOLVE3D
+!
+!  Read in 2D momentum forcing in the XI-direction.
+!
+        IF (get_var(idUbar)) THEN
+          foundit=find_string(var_name, n_var, TRIM(Vname(1,idUbar)),   &
+     &                        varid)
+          gtype=var_flag(varid)*u2dvar
+          status=nf_fread2d(ng, IDmod, ncname, ncINPid,                 &
+     &                      Vname(1,idUbar), varid,                     &
+     &                      InpRec, gtype, Vsize,                       &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      Fscl, Fmin, Fmax,                           &
+#  ifdef MASKING
+     &                      GRID(ng) % umask,                           &
+#  endif
+     &                      OCEAN(ng) % tl_ubar(:,:,Tindex))
+          IF (status.ne.nf90_noerr) THEN
+            IF (Master) THEN
+              WRITE (stdout,60) string, TRIM(Vname(1,idUbar)), InpRec,  &
+     &                          TRIM(ncname)
+            END IF
+            exit_flag=2
+            ioerror=status
+            RETURN
+          ELSE
+            IF (Master) THEN
+              WRITE (stdout,70) TRIM(Vname(2,idUbar)), Fmin, Fmax
+            END IF
+          END IF
+        END IF
+!
+!  Read in 2D momentum forcing in the ETA-direction.
+!
+        IF (get_var(idVbar)) THEN
+          foundit=find_string(var_name, n_var, TRIM(Vname(1,idVbar)),   &
+     &                        varid)
+          gtype=var_flag(varid)*v2dvar
+          status=nf_fread2d(ng, IDmod, ncname, ncINPid,                 &
+     &                      Vname(1,idVbar), varid,                     &
+     &                      InpRec, gtype, Vsize,                       &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      Fscl, Fmin, Fmax,                           &
+#  ifdef MASKING
+     &                      GRID(ng) % vmask,                           &
+#  endif
+     &                      OCEAN(ng) % tl_vbar(:,:,Tindex))
+          IF (status.ne.nf90_noerr) THEN
+            IF (Master) THEN
+              WRITE (stdout,60) string, TRIM(Vname(1,idVbar)), InpRec,  &
+     &                          TRIM(ncname)
+            END IF
+            exit_flag=2
+            ioerror=status
+            RETURN
+          ELSE
+            IF (Master) THEN
+              WRITE (stdout,70) TRIM(Vname(2,idVbar)), Fmin, Fmax
+            END IF
+          END IF
+        END IF
+# endif
+# ifdef SOLVE3D
+!
+!  Read in 3D momentum forcing in the XI-direction.
+!
+        IF (get_var(idUvel)) THEN
+          foundit=find_string(var_name, n_var, TRIM(Vname(1,idUvel)),   &
+     &                        varid)
+          gtype=var_flag(varid)*u3dvar
+          status=nf_fread3d(ng, IDmod, ncname, ncINPid,                 &
+     &                      Vname(1,idUvel), varid,                     &
+     &                      InpRec, gtype, Vsize,                       &
+     &                      LBi, UBi, LBj, UBj, 1, N(ng),               &
+     &                      Fscl, Fmin, Fmax,                           &
+#  ifdef MASKING
+     &                      GRID(ng) % umask,                           &
+#  endif
+     &                      OCEAN(ng) % tl_u(:,:,:,Tindex))
+          IF (status.ne.nf90_noerr) THEN
+            IF (Master) THEN
+              WRITE (stdout,60) string, TRIM(Vname(1,idUvel)), InpRec,  &
+     &                          TRIM(ncname)
+            END IF
+            exit_flag=2
+            ioerror=status
+            RETURN
+          ELSE
+            IF (Master) THEN
+              WRITE (stdout,70) TRIM(Vname(2,idUvel)), Fmin, Fmax
+            END IF
+          END IF
+        END IF
+!
+!  Read in 3D momentum norm in the ETA-direction.
+!
+        IF (get_var(idVvel)) THEN
+          foundit=find_string(var_name, n_var, TRIM(Vname(1,idVvel)),   &
+     &                        varid)
+          gtype=var_flag(varid)*v3dvar
+          status=nf_fread3d(ng, IDmod, ncname, ncINPid,                 &
+     &                      Vname(1,idVvel), varid,                     &
+     &                      InpRec, gtype, Vsize,                       &
+     &                      LBi, UBi, LBj, UBj, 1, N(ng),               &
+     &                      Fscl, Fmin, Fmax,                           &
+#  ifdef MASKING
+     &                      GRID(ng) % vmask,                           &
+#  endif
+     &                      OCEAN(ng) % tl_v(:,:,:,Tindex))
+          IF (status.ne.nf90_noerr) THEN
+            IF (Master) THEN
+              WRITE (stdout,60) string, TRIM(Vname(1,idVvel)), InpRec,  &
+     &                          TRIM(ncname)
+            END IF
+            exit_flag=2
+            ioerror=status
+            RETURN
+          ELSE
+            IF (Master) THEN
+              WRITE (stdout,70) TRIM(Vname(2,idVvel)), Fmin, Fmax
+            END IF
+          END IF
+        END IF
+!
+!  Read in tracer type variables norm.
+!
+        DO itrc=1,NT(ng)
+          IF (get_var(idTvar(itrc))) THEN
+            foundit=find_string(var_name, n_var,                        &
+     &                          TRIM(Vname(1,idTvar(itrc))), varid)
+            gtype=var_flag(varid)*r3dvar
+            status=nf_fread3d(ng, IDmod, ncname, ncINPid,               &
+     &                        Vname(1,idTvar(itrc)), varid,             &
+     &                        InpRec, gtype, Vsize,                     &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        Fscl, Fmin, Fmax,                         &
+#  ifdef MASKING
+     &                        GRID(ng) % rmask,                         &
+#  endif
+     &                        OCEAN(ng) % tl_t(:,:,:,Tindex,itrc))
+            IF (status.ne.nf90_noerr) THEN
+              IF (Master) THEN
+                WRITE (stdout,60) string, TRIM(Vname(1,idTvar(itrc))),  &
+     &                            InpRec, TRIM(ncname)
+              END IF
+              exit_flag=2
+              ioerror=status
+              RETURN
+            ELSE
+              IF (Master) THEN
+                WRITE (stdout,70) TRIM(Vname(2,idTvar(itrc))),          &
+     &                            Fmin, Fmax
+              END IF
+            END IF
+          END IF
+        END DO
+# endif
+      END IF TCS_STATE
+#endif
+!
 !-----------------------------------------------------------------------
 !  Close input NetCDF file.
 !-----------------------------------------------------------------------
@@ -4349,10 +4572,11 @@
      &        18x,'not found in input NetCDF: ',a,/,                    &
      &        18x,'number of available records = ',i3)
   40  FORMAT (/,a,'GET_STATE - ',a,t62,'t = ',a,                        &
-     &        /,19x,'(Iter=',i4.4,', File: ',a,', Rec=',i4.4,           &
-     &        ', Index=',i1,')')
+     &        /,19x,'(Grid ',i2.2,', Iter=',i4.4,', File: ',a,          &
+     &        ', Rec=',i4.4,', Index=',i1,')')
   50  FORMAT (/,a,'GET_STATE - ',a,t62,'t = ',a,                        &
-     &        /,19x,'(File: ',a,', Rec=',i4.4,', Index=',i1,')')
+     &        /,19x,'(Grid ',i2.2,', File: ',a,', Rec=',i4.4,           &
+     &        ', Index=',i1,')')
   60  FORMAT (/,a,'GET_STATE - error while reading variable: ',a,2x,    &
      &        'at time record = ',i3,/,18x,'in input NetCDF file: ',a)
   70  FORMAT (16x,'- ',a,/,19x,'(Min = ',1p,e15.8,                      &

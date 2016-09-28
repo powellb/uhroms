@@ -2,9 +2,9 @@
 #if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
       SUBROUTINE wrt_tides (ng)
 !
-!svn $Id: wrt_tides.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wrt_tides.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -130,9 +130,10 @@
      &                     TIDE(ng)%Vid(idFsuH), 0, gtype,              &
      &                     LBi, UBi, LBj, UBj, 0, 2*NTC(ng), scale,     &
 # ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 # endif
-     &                     TIDES(ng) % zeta_tide)
+     &                     TIDES(ng) % zeta_tide,                       &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idFsuH)), TRIM(TIDE(ng)%name)
@@ -152,9 +153,10 @@
      &                     TIDE(ng)%Vid(idu2dH), 0, gtype,              &
      &                     LBi, UBi, LBj, UBj, 0, 2*NTC(ng), scale,     &
 # ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask,                            &
 # endif
-     &                     TIDES(ng) % ubar_tide)
+     &                     TIDES(ng) % ubar_tide,                       &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idu2dH)), TRIM(TIDE(ng)%name)
@@ -174,9 +176,10 @@
      &                     TIDE(ng)%Vid(idv2dH), 0, gtype,              &
      &                     LBi, UBi, LBj, UBj, 0, 2*NTC(ng), scale,     &
 # ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask,                            &
 # endif
-     &                     TIDES(ng) % vbar_tide)
+     &                     TIDES(ng) % vbar_tide,                       &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idv2dH)), TRIM(TIDE(ng)%name)
@@ -199,9 +202,10 @@
      &                     LBi, UBi, LBj, UBj, 1, N(ng), 0, 2*NTC(ng),  &
      &                     scale,                                       &
 #  ifdef MASKING
-     &                     GRID(ng) % umask_io,                         &
+     &                     GRID(ng) % umask,                            &
 #  endif
-     &                     TIDES(ng) % u_tide)
+     &                     TIDES(ng) % u_tide,                          &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idu3dH)), TRIM(TIDE(ng)%name)
@@ -222,9 +226,10 @@
      &                     LBi, UBi, LBj, UBj, 1, N(ng), 0, 2*NTC(ng),  &
      &                     scale,                                       &
 #  ifdef MASKING
-     &                     GRID(ng) % vmask_io,                         &
+     &                     GRID(ng) % vmask,                            &
 #  endif
-     &                     TIDES(ng) % v_tide)
+     &                     TIDES(ng) % v_tide,                          &
+     &                     SetFillVal = .FALSE.)
         IF (status.ne.nf90_noerr) THEN
           IF (Master) THEN
             WRITE (stdout,10) TRIM(Vname(1,idv3dH)), TRIM(TIDE(ng)%name)
@@ -246,9 +251,10 @@
      &                       LBi, UBi, LBj, UBj, 1, N(ng), 0, 2*NTC(ng),&
      &                       scale,                                     &
 #  ifdef MASKING
-     &                       GRID(ng) % vmask_io,                       &
+     &                       GRID(ng) % vmask,                          &
 #  endif
-     &                       TIDES(ng) % t_tide(:,:,:,:,itrc))
+     &                       TIDES(ng) % t_tide(:,:,:,:,itrc),          &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,idTrcH(itrc))),            &
@@ -270,11 +276,12 @@
       CALL netcdf_sync (ng, iNLM, TIDE(ng)%name, TIDE(ng)%ncid)
       IF (exit_flag.ne.NoError) RETURN
 
-      IF (Master) WRITE (stdout,20)
+      IF (Master) WRITE (stdout,20) ng
 !
   10  FORMAT (/,' WRT_TIDES - error while writing variable: ',a,        &
      &        /,13x,'into tide forcing NetCDF file: ',/,13x,a)
-  20  FORMAT (6x,'WRT_TIDES - wrote time-accumulated tide harmonics ')
+  20  FORMAT (6x,'WRT_TIDES - wrote time-accumulated tide harmonics, ', &
+     &        'Grid ',i2.2)
 #else
       SUBROUTINE wrt_tides
 #endif

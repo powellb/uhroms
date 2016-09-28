@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: tlcheck_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tlcheck_ocean.h 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -237,12 +237,10 @@
 !
 !  Initialize nonlinear model with first guess initial conditions.
 !
-      DO ng=1,Ngrids
 !$OMP PARALLEL
-        CALL initial (ng)
+      CALL initial
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
-      END DO
+      IF (exit_flag.ne.NoError) RETURN
 !
 !  Run nonlinear model. Extract and store nonlinear model values at
 !  observation locations.
@@ -380,12 +378,12 @@
 !  term is a function of the steepest descent direction defined
 !  by grad(J) times the perturbation amplitude "p".
 !
-          DO ng=1,Ngrids
 !$OMP PARALLEL
-            CALL initial (ng, .FALSE.)
+          CALL initial (.FALSE.)
 !$OMP END PARALLEL
-            IF (exit_flag.ne.NoError) RETURN
+          IF (exit_flag.ne.NoError) RETURN
 
+          DO ng=1,Ngrids
             WRITE (HIS(ng)%name,70) TRIM(HIS(ng)%base), Nrun
 
             IF (ndefTLM(ng).lt.0) THEN

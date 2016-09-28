@@ -2,9 +2,9 @@
       MODULE rp_diag_mod
 #ifdef TL_IOMS
 !
-!svn $Id: rp_diag.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_diag.F 807 2016-07-09 02:03:55Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -270,15 +270,35 @@
           avgkp=avgke+avgpe
           IF (first_time(ng).eq.0) THEN
             first_time(ng)=1
-            IF (Master) WRITE (stdout,10) 'STEP', 'Day HH:MM:SS',       &
-     &                                    'KINETIC_ENRG', 'POTEN_ENRG', &
-     &                                    'TOTAL_ENRG', 'NET_VOLUME'
- 10         FORMAT (/,3x,a,3x,a,2x,a,3x,a,4x,a,4x,a,/)
+            IF (Master.and.(ng.eq.1)) THEN
+              WRITE (stdout,10) 'STEP', 'Day HH:MM:SS',                 &
+     &                          'KINETIC_ENRG', 'POTEN_ENRG',           &
+# ifdef NESTING
+     &                          'TOTAL_ENRG', 'NET_VOLUME', 'Grid'
+# else
+     &                          'TOTAL_ENRG', 'NET_VOLUME'
+# endif
+# ifdef NESTING
+ 10           FORMAT (/,3x,a,3x,a,2x,a,3x,a,4x,a,4x,a,2x,a)
+# else
+ 10           FORMAT (/,3x,a,3x,a,2x,a,3x,a,4x,a,4x,a)
+# endif
+            END IF
           END IF
-          IF (Master) WRITE (stdout,20) iic(ng)-1, time_code(ng),       &
-     &                                  avgke, avgpe, avgkp, volume
- 20       FORMAT (i7,1x,a,4(1pe14.6))
-          IF (Master) CALL my_flush (stdout)
+          IF (Master) THEN
+            WRITE (stdout,20) iic(ng)-1, time_code(ng),                 &
+# ifdef NESTING
+     &                        avgke, avgpe, avgkp, volume, ng
+# else
+     &                        avgke, avgpe, avgkp, volume
+# endif
+# ifdef NESTING
+ 20         FORMAT (i7,1x,a,4(1pe14.6),2x,i2.2)
+# else
+ 20         FORMAT (i7,1x,a,4(1pe14.6))
+# endif
+            CALL my_flush (stdout)
+          END IF
 !
 !  If blowing-up, set exit_flag to stop computations.
 !

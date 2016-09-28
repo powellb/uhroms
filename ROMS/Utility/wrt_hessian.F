@@ -1,18 +1,22 @@
 #include "cppdefs.h"
-#if defined IS4DVAR              || \
-    (defined WEAK_CONSTRAINT     && \
-     (defined POSTERIOR_EOFS     || defined POSTERIOR_ERROR_I ||\
-      defined POSTERIOR_ERROR_F))
+#if defined IS4DVAR               || \
+    (defined WEAK_CONSTRAINT      && \
+     (defined POSTERIOR_EOFS      || defined POSTERIOR_ERROR_I ||\
+      defined POSTERIOR_ERROR_F)) || defined LCZ_FINAL
       SUBROUTINE wrt_hessian (ng, kout, nout)
 !
-!svn $Id: wrt_hessian.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wrt_hessian.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
 !  This routine writes Hessian eigenvectors into output NetCDF file.   !
+!                                                                      !
+!  Notice that only momentum is affected by the full time-averaged     !
+!  masks.  If applicable, these mask contains information about        !
+!  river runoff and time-dependent wetting and drying variations.      !
 !                                                                      !
 !=======================================================================
 !
@@ -109,7 +113,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % rmask_io,                           &
+     &                   GRID(ng) % rmask,                              &
 # endif
      &                   OCEAN(ng)% ad_zeta(:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -154,7 +158,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask_full,                         &
 # endif
      &                   OCEAN(ng) % ad_ubar(:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -199,7 +203,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, scale,                     &
 # ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask_full,                         &
 # endif
      &                   OCEAN(ng) % ad_vbar(:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -246,7 +250,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, N(ng), scale,           &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask_full,                         &
 #  endif
      &                   OCEAN(ng) % ad_u(:,:,:,nout))
       IF (status.ne.nf90_noerr) THEN
@@ -291,7 +295,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, N(ng), scale,           &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask_full,                         &
 #  endif
      &                   OCEAN(ng) % ad_v(:,:,:,nout))
       IF (status.ne.nf90_noerr) THEN
@@ -337,7 +341,7 @@
      &                     HSS(ng)%Rindex, gtype,                       &
      &                     LBi, UBi, LBj, UBj, 1, N(ng), scale,         &
 #  ifdef MASKING
-     &                     GRID(ng) % rmask_io,                         &
+     &                     GRID(ng) % rmask,                            &
 #  endif
      &                     OCEAN(ng) % ad_t(:,:,:,nout,itrc))
         IF (status.ne.nf90_noerr) THEN
@@ -394,7 +398,7 @@
      &                       HSS(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,   &
 #   ifdef MASKING
-     &                       GRID(ng) % rmask_io,                       &
+     &                       GRID(ng) % rmask,                          &
 #   endif
      &                       FORCES(ng) % ad_tflux(:,:,:,kout,itrc))
           IF (status.ne.nf90_noerr) THEN
@@ -422,7 +426,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % umask_io,                           &
+     &                   GRID(ng) % umask,                              &
 #  endif
      &                   FORCES(ng) % ad_ustr(:,:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -442,7 +446,7 @@
      &                   HSS(ng)%Rindex, gtype,                         &
      &                   LBi, UBi, LBj, UBj, 1, Nfrec(ng), scale,       &
 #  ifdef MASKING
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % vmask,                              &
 #  endif
      &                   FORCES(ng) % ad_vstr(:,:,:,kout))
       IF (status.ne.nf90_noerr) THEN
@@ -464,19 +468,35 @@
       IF (exit_flag.ne.NoError) RETURN
 
 # ifdef SOLVE3D
+#  ifdef NESTING
+      IF (Master) WRITE (stdout,20) kout, nout, HSS(ng)%Rindex, ng
+#  else
       IF (Master) WRITE (stdout,20) kout, nout, HSS(ng)%Rindex
+#  endif
 # else
+#  ifdef NESTING
+      IF (Master) WRITE (stdout,20) kout, HSS(ng)%Rindex, ng
+#  else
       IF (Master) WRITE (stdout,20) kout, HSS(ng)%Rindex
+#  endif
 # endif
 !
   10  FORMAT (/,' WRT_HESSIAN - error while writing variable: ',a,/,    &
      &        15x,'into Hessian NetCDF file for time record: ',i4)
 # ifdef SOLVE3D
-  20  FORMAT (3x,'WRT_HESSIAN  - wrote Hessian  fields (Index=', i1,    &
-     &        ',',i1,') into time record = ',i7.7)
+  20  FORMAT (6x,'WRT_HESSIAN - wrote Hessian', t39,                    &
+#  ifdef NESTING
+     &        'fields (Index=',i1,',',i1,') in record = ',i7.7,2x,i2.2)
+#  else
+     &        'fields (Index=',i1,',',i1,') in record = ',i7.7)
+#  endif
 # else
-  20  FORMAT (3x,'WRT_HESSIAN  - wrote Hessian  fields (Index=', i1,    &
-     &        ') into time record = ',i7.7)
+  20  FORMAT (6x,'WRT_HESSIAN - wrote Hessian', t39,                    &
+#  ifdef NESTING
+     &        'fields (Index=',i1,')   in record = ',i7.7,2x,i2.2)
+#  else
+     &        'fields (Index=',i1,')   in record = ',i7.7)
+#  endif
 # endif
       RETURN
       END SUBROUTINE wrt_hessian

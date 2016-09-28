@@ -2,9 +2,9 @@
 #ifdef FOUR_DVAR
       SUBROUTINE def_ini (ng)
 !
-!svn $Id: def_ini.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_ini.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -300,7 +300,7 @@
 #  endif
 #  ifdef ADJUST_WSTRESS
 !
-!  Define dimension vectors for staggered u-momemtum type variables.
+!  Define dimension vectors for staggered u-momentum type variables.
 !
         u4dfrc(1)=DimIDs( 2)
         u4dfrc(2)=DimIDs( 6)
@@ -309,7 +309,7 @@
 #  endif
 #  ifdef ADJUST_WSTRESS
 !
-!  Define dimension vectors for staggered v-momemtum type variables.
+!  Define dimension vectors for staggered v-momentum type variables.
 !
         v4dfrc(1)=DimIDs( 3)
         v4dfrc(2)=DimIDs( 7)

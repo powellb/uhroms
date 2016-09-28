@@ -5,9 +5,9 @@
    (defined TL_AVERAGES && defined TANGENT)
       SUBROUTINE def_avg (ng, ldef)
 !
-!svn $Id: def_avg.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_avg.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -88,9 +88,9 @@
 !
       IF (Master) THEN
         IF (ldef) THEN
-          WRITE (stdout,10) TRIM(ncname)
+          WRITE (stdout,10) ng, TRIM(ncname)
         ELSE
-          WRITE (stdout,20) TRIM(ncname)
+          WRITE (stdout,20) ng, TRIM(ncname)
         END IF
       END IF
 # ifdef ADJOINT
@@ -285,7 +285,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered u-momemtum type variables.
+!  Define dimension vectors for staggered u-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         u2dgrd(1)=DimIDs(18)
@@ -306,7 +306,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered v-momemtum type variables.
+!  Define dimension vectors for staggered v-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         v2dgrd(1)=DimIDs(19)
@@ -349,7 +349,7 @@
 # endif
 # ifdef SOLVE3D
 !
-!  Define dimension vector for staggered w-momemtum type variables.
+!  Define dimension vector for staggered w-momentum type variables.
 !
 #  if defined WRITE_WATER && defined MASKING
         w3dgrd(1)=DimIDs(23)
@@ -562,6 +562,7 @@
 # if defined WRITE_WATER && defined MASKING
           Vinfo(20)='mask_rho'
 # endif
+          Vinfo(21)='barotropic_eastward_sea_water_velocity'
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idu2dE,ng),r8)
           status=def_var(ng, iNLM, AVG(ng)%ncid, AVG(ng)%Vid(idu2dE),   &
@@ -580,6 +581,7 @@
 # if defined WRITE_WATER && defined MASKING
           Vinfo(20)='mask_rho'
 # endif
+          Vinfo(21)='barotropic_northward_sea_water_velocity'
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idv2dN,ng),r8)
           status=def_var(ng, iNLM, AVG(ng)%ncid, AVG(ng)%Vid(idv2dN),   &
@@ -746,6 +748,7 @@
 #  if defined WRITE_WATER && defined MASKING
           Vinfo(20)='mask_rho'
 #  endif
+          Vinfo(21)='eastward_sea_water_velocity'
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idu3dE,ng),r8)
           status=def_var(ng, iNLM, AVG(ng)%ncid, AVG(ng)%Vid(idu3dE),   &
@@ -764,6 +767,7 @@
 #  if defined WRITE_WATER && defined MASKING
           Vinfo(20)='mask_rho'
 #  endif
+          Vinfo(21)='northward_sea_water_velocity'
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idv3dN,ng),r8)
           status=def_var(ng, iNLM, AVG(ng)%ncid, AVG(ng)%Vid(idv3dN),   &
@@ -800,6 +804,7 @@
 #  if defined WRITE_WATER && defined MASKING
           Vinfo(20)='mask_rho'
 #  endif
+          Vinfo(21)='upward_sea_water_velocity'
           Vinfo(22)='coordinates'
           Aval(5)=REAL(Iinfo(1,idWvel,ng),r8)
           status=def_var(ng, model, AVG(ng)%ncid, AVG(ng)%Vid(idWvel),  &
@@ -2841,8 +2846,10 @@
       END IF
 # endif
 !
-  10  FORMAT (6x,'DEF_AVG   - creating average file: ',a)
-  20  FORMAT (6x,'DEF_AVG   - inquiring average file: ',a)
+  10  FORMAT (6x,'DEF_AVG     - creating  average', t43,                &
+     &        ' file, Grid ',i2.2,': ', a)
+  20  FORMAT (6x,'DEF_AVG     - inquiring average', t43,                &
+     &        ' file, Grid ',i2.2,': ', a)
   30  FORMAT (/,' DEF_AVG - unable to create averages NetCDF file: ',a)
   40  FORMAT (1pe11.4,1x,'millimeter')
   50  FORMAT (/,' DEF_AVG - unable to open averages NetCDF file: ',a)

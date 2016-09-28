@@ -2,9 +2,9 @@
 #ifdef FOUR_DVAR
       SUBROUTINE def_norm (ng, model, ifile)
 !
-!svn $Id: def_norm.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_norm.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -261,18 +261,20 @@
 #  endif
 # endif
 # ifdef ADJUST_BOUNDARY
-        t2dobc(1)=IorJdim
-        t2dobc(2)=DimIDs(14)
-        t2dobc(3)=DimIDs(12)
+        IF (ifile.eq.3) THEN
+          t2dobc(1)=IorJdim
+          t2dobc(2)=DimIDs(14)
+          t2dobc(3)=DimIDs(12)
 #  ifdef SOLVE3D
-        t3dobc(1)=IorJdim
-        t3dobc(2)=DimIDs( 9)
-        t3dobc(3)=DimIDs(14)
-        t3dobc(4)=DimIDs(12)
+          t3dobc(1)=IorJdim
+          t3dobc(2)=DimIDs( 9)
+          t3dobc(3)=DimIDs(14)
+          t3dobc(4)=DimIDs(12)
 #  endif
+        END IF
 # endif
 !
-!  Define dimension vectors for staggered u-momemtum type variables.
+!  Define dimension vectors for staggered u-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         u2dgrd(1)=DimIDs(18)
@@ -293,7 +295,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered v-momemtum type variables.
+!  Define dimension vectors for staggered v-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         v2dgrd(1)=DimIDs(19)

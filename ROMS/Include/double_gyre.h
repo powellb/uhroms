@@ -1,7 +1,7 @@
 /*
-** svn $Id: double_gyre.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: double_gyre.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -54,6 +54,8 @@
 #  undef  MIX_GEO_UV
 #  undef  WJ_GRADP
 #  define DJ_GRADPS
+#  define SPLINES_VDIFF
+#  define SPLINES_VVISC
 #  undef  TS_C2HADVECTION
 #  undef  TS_C2VADVECTION
 #  undef  TS_A4HADVECTION
@@ -68,15 +70,13 @@
 #  define NONLIN_EOS
 #  define SALINITY
 #  define AVERAGES
-#  define SPLINES
-#  define TCLIMATOLOGY
-#  define TCLM_NUDGING
 #  define ANA_GRID
 #  undef  MY25_MIXING
 #  if defined MY25_MIXING
-#   undef KANTHA_CLAYSON
-#   undef CANUTO_A
-#   undef N2S2_HORAVG
+#   undef  KANTHA_CLAYSON
+#   undef  CANUTO_A
+#   undef  N2S2_HORAVG
+#   define RI_SPLINES
 #  endif
 #  undef  ANA_INITIAL
 #  define ANA_TCLIMA
@@ -97,10 +97,6 @@
 #  define UV_LDRAG
 #  define UV_VIS2
 #  define AVERAGES
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
 #  define ANA_GRID
 #  undef  ANA_INITIAL
 #  define ANA_SMFLUX
@@ -127,6 +123,8 @@
 #  undef  MIX_GEO_UV
 #  undef  WJ_GRADP
 #  define DJ_GRADPS
+#  define SPLINES_VDIFF
+#  define SPLINES_VVISC
 #  undef  TS_C2HADVECTION
 #  undef  TS_C2VADVECTION
 #  undef  TS_A4HADVECTION
@@ -139,13 +137,6 @@
 #  undef  MIX_GEO_TS
 #  define MIX_ISO_TS
 #  define NONLIN_EOS
-#  define SPLINES
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
-#  undef  TCLIMATOLOGY
-#  undef  TCLM_NUDGING
 #  define ANA_GRID
 #  undef  ANA_INITIAL
 #  undef  ANA_TCLIMA
@@ -166,10 +157,6 @@
 #  define UV_LDRAG
 #  define UV_VIS2
 #  undef  UV_VIS4
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
 #  define ANA_GRID
 #  undef  ANA_INITIAL
 #  define ANA_SMFLUX
@@ -201,12 +188,6 @@
 #  define DJ_GRADPS
 #  define NONLIN_EOS
 #  define ANA_GRID
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
-#  define TCLIMATOLOGY
-#  define TCLM_NUDGING
 #  define ANA_TCLIMA
 #  define ANA_GRID
 #  define ANA_INITIAL
@@ -219,10 +200,6 @@
 #  define UV_VIS2
 #  define UV_COR
 #  define UV_LDRAG
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
 #  define ANA_GRID
 #  define ANA_INITIAL
 #  define ANA_SMFLUX
@@ -251,6 +228,8 @@
 #  undef  MIX_GEO_UV
 #  undef  WJ_GRADP
 #  define DJ_GRADPS
+#  define SPLINES_VDIFF
+#  define SPLINES_VVISC
 #  undef  TS_FIXED
 #  undef  TS_C2HADVECTION
 #  undef  TS_C2VADVECTION
@@ -262,14 +241,7 @@
 #  define MIX_S_TS
 #  undef  MIX_GEO_TS
 #  undef  NONLIN_EOS
-#  define SPLINES
 #  define SALINITY
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
-#  define TCLIMATOLOGY
-#  define TCLM_NUDGING
 #  undef  ANA_INITIAL
 #  define ANA_GRID
 #  define ANA_TCLIMA
@@ -297,10 +269,6 @@
 #  undef  AVERAGES
 #  define ANA_GRID
 #  undef  ANA_INITIAL
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
 #  define ANA_SMFLUX
 #  define FORWARD_WRITE
 #  define FORWARD_READ
@@ -329,6 +297,8 @@
 #  define MIX_GEO_UV
 #  define WJ_GRADP
 #  undef  DJ_GRADPS
+#  define SPLINES_VDIFF
+#  define SPLINES_VVISC
 #  define TS_C2HADVECTION
 #  define TS_C2VADVECTION
 #  undef  TS_C4HADVECTION
@@ -344,13 +314,6 @@
 #  undef  MIX_GEO_TS
 #  undef  MIX_ISO_TS
 #  define NONLIN_EOS
-#  undef  SPLINES
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
-#  define TCLIMATOLOGY
-#  define TCLM_NUDGING
 #  define ANA_INITIAL
 #  define ANA_GRID
 #  define ANA_TCLIMA
@@ -367,10 +330,6 @@
 #  undef  UV_VIS4
 #  define UV_COR
 #  define UV_LDRAG
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
 #  define ANA_GRID
 #  define ANA_INITIAL
 #  define ANA_SMFLUX
@@ -398,6 +357,8 @@
 #  undef  MIX_GEO_UV
 #  undef  WJ_GRADP
 #  undef  DJ_GRADPS
+#  define SPLINES_VDIFF
+#  define SPLINES_VVISC
 #  define TS_U3HADVECTION
 #  define TS_C4VADVECTION
 #  undef  TS_A4HADVECTION
@@ -406,14 +367,7 @@
 #  define MIX_S_TS
 #  undef  MIX_GEO_TS
 #  define NONLIN_EOS
-#  undef  SPLINES
 #  define AVERAGES
-#  define WESTERN_WALL
-#  define EASTERN_WALL
-#  define NORTHERN_WALL
-#  define SOUTHERN_WALL
-#  define TCLIMATOLOGY
-#  define TCLM_NUDGING
 #  undef  ANA_INITIAL
 #  define ANA_GRID
 #  define ANA_TCLIMA

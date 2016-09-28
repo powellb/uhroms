@@ -2,9 +2,9 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE wrt_diags (ng)
 !
-!svn $Id: wrt_diags.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wrt_diags.F 810 2016-08-05 01:58:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -98,9 +98,10 @@
      &                       DIA(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, scale,                 &
 #  ifdef MASKING
-     &                       GRID(ng) % umask_dia,                      &
+     &                       GRID(ng) % umask,                          &
 #  endif
-     &                       DIAGS(ng) % DiaU2d(:,:,ivar))
+     &                       DIAGS(ng) % DiaU2d(:,:,ivar),              &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -120,9 +121,10 @@
      &                       DIA(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, scale,                 &
 #  ifdef MASKING
-     &                       GRID(ng) % vmask_dia,                      &
+     &                       GRID(ng) % vmask,                          &
 #  endif
-     &                       DIAGS(ng) % DiaV2d(:,:,ivar))
+     &                       DIAGS(ng) % DiaV2d(:,:,ivar),              &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -150,7 +152,8 @@
 #   ifdef MASKING
      &                       GRID(ng) % umask_dia,                      &
 #   endif
-     &                       DIAGS(ng) % DiaU3d(:,:,:,ivar))
+     &                       DIAGS(ng) % DiaU3d(:,:,:,ivar),            &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -172,7 +175,8 @@
 #   ifdef MASKING
      &                       GRID(ng) % vmask_dia,                      &
 #   endif
-     &                       DIAGS(ng) % DiaV3d(:,:,:,ivar))
+     &                       DIAGS(ng) % DiaV3d(:,:,:,ivar),            &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -200,9 +204,10 @@
      &                         DIA(ng)%Rindex, gtype,                   &
      &                         LBi, UBi, LBj, UBj, 1, N(ng), scale,     &
 #  ifdef MASKING
-     &                         GRID(ng) % rmask_dia,                    &
+     &                         GRID(ng) % rmask,                        &
 #  endif
-     &                         DIAGS(ng) % DiaTrc(:,:,:,itrc,ivar))
+     &                         DIAGS(ng) % DiaTrc(:,:,:,itrc,ivar),     &
+     &                         SetFillVal = .FALSE.)
             IF (status.ne.nf90_noerr) THEN
               IF (Master) THEN
                 WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -235,9 +240,10 @@
      &                       DIA(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, scale,                 &
 #  ifdef MASKING
-     &                       GRID(ng) % rmask_dia,                      &
+     &                       GRID(ng) % rmask,                          &
 #  endif
-     &                       DIAGS(ng) % DiaBio2d(:,:,ivar))
+     &                       DIAGS(ng) % DiaBio2d(:,:,ivar),            &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -261,9 +267,10 @@
      &                       DIA(ng)%Rindex, gtype,                     &
      &                       LBi, UBi, LBj, UBj, 1, N(ng), scale,       &
 #  ifdef MASKING
-     &                       GRID(ng) % rmask_dia,                      &
+     &                       GRID(ng) % rmask,                          &
 #  endif
-     &                       DIAGS(ng) % DiaBio3d(:,:,:,ivar))
+     &                       DIAGS(ng) % DiaBio3d(:,:,:,ivar),          &
+     &                       SetFillVal = .FALSE.)
           IF (status.ne.nf90_noerr) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,ifield)), DIA(ng)%Rindex
@@ -282,12 +289,20 @@
       CALL netcdf_sync (ng, iNLM, DIA(ng)%name, DIA(ng)%ncid)
       IF (exit_flag.ne.NoError) RETURN
 
+# ifdef NESTING
+      IF (Master) WRITE (stdout,20) DIA(ng)%Rindex, ng
+# else
       IF (Master) WRITE (stdout,20) DIA(ng)%Rindex
+# endif
 !
   10  FORMAT (/,' WRT_DIAGS - error while writing variable: ',a,/,13x,  &
      &        'into diagnostics NetCDF file for time record: ',i4)
-  20  FORMAT (6x,'WRT_DIAGS - wrote diagnostics fields into time ',     &
-     &        'record = ',t72,i7.7)
+  20  FORMAT (6x,'WRT_AVG     - wrote diagnostics fields',t58,          &
+# ifdef NESTING
+     &        'in record = ',i7.7,2x,i2.2)
+# else
+     &        'in record = ',i7.7)
+# endif
 #else
       SUBROUTINE wrt_diags
 #endif

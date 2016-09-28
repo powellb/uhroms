@@ -2,9 +2,9 @@
 #if defined PROPAGATOR && defined CHECKPOINTING
       SUBROUTINE def_gst (ng, model)
 !
-!svn $Id: def_gst.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_gst.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -58,9 +58,9 @@
 !
       IF (Master) THEN
         IF (.not.LrstGST) THEN
-          WRITE (stdout,10) TRIM(ncname)
+          WRITE (stdout,10) ng, TRIM(ncname)
         ELSE
-          WRITE (stdout,20) TRIM(ncname)
+          WRITE (stdout,20) ng, TRIM(ncname)
         END IF
       END IF
 !
@@ -377,8 +377,10 @@
 
       END IF DEFINE
 !
-  10  FORMAT (/,6x,'DEF_GST   - creating checkpointing file: ', a)
-  20  FORMAT (/,6x,'DEF_GST   - inquiring checkpointing file: ', a)
+  10  FORMAT (/,6x,'DEF_GST   - creating checkpointing file, Grid ',    &
+     &        ': ', a)
+  20  FORMAT (/,6x,'DEF_GST   - inquiring checkpointing file, Grid ',   &
+     &        ': ', a)
   30  FORMAT (/,' DEF_GST - unable to create checkpointing NetCDF',     &
      &          ' file: ', a)
 

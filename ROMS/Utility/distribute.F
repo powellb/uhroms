@@ -8,9 +8,9 @@
 # define REDUCE_ALLGATHER   /* use mpi_allgather in mp_reduce   */
 # undef  REDUCE_ALLREDUCE   /* use mpi_allreduce in mp_reduce   */
 !
-!svn $Id: distribute.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: distribute.F 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -18,12 +18,19 @@
 !  These routines are used for distrubuted-memory communications       !
 !  between parallel nodes:                                             !
 !                                                                      !
+!  mp_aggregate2d    aggregates 2D tiled data into a 2D global array   !
+!  mp_aggregate3d    aggregates 3D tiled data into a 3D global array   !
 !  mp_barrier        barrier sychronization                            !
 !  mp_bcastf         broadcasts floating point variables               !
 !  mp_bcasti         broadcasts integer variables                      !
 !  mp_bcastl         broadcasts logical variables                      !
 !  mp_bcasts         broadcasts character variables                    !
 !  mp_boundary       exchanges boundary data between tiles             !
+!  mp_assemblef_1d   assembles 1D floating point array from tiles      !
+!  mp_assemblef_2d   assembles 2D floating point array from tiles      !
+!  mp_assemblef_3d   assembles 3D floating point array from tiles      !
+!  mp_assemblei_1d   assembles 1D integer array from tiles             !
+!  mp_assemblei_2d   assembles 2D integer array from tiles             !
 !  mp_collect_f      collects 1D floating point array from tiles       !
 !  mp_collect_i      collects 1D integer array from tiles              !
 !  mp_dump           writes 2D and 3D tiles arrays for debugging       !
@@ -46,10 +53,13 @@
 !
       implicit none
 !
-      INTERFACE mp_collect
-        MODULE PROCEDURE mp_collect_f
-        MODULE PROCEDURE mp_collect_i
-      END INTERFACE mp_collect
+      INTERFACE mp_assemble
+        MODULE PROCEDURE mp_assemblef_1d
+        MODULE PROCEDURE mp_assemblef_2d
+        MODULE PROCEDURE mp_assemblef_3d
+        MODULE PROCEDURE mp_assemblei_1d
+        MODULE PROCEDURE mp_assemblei_2d
+      END INTERFACE mp_assemble
 !
       INTERFACE mp_bcastf
         MODULE PROCEDURE mp_bcastf_0d
@@ -75,6 +85,11 @@
         MODULE PROCEDURE mp_bcasts_0d
         MODULE PROCEDURE mp_bcasts_1d
       END INTERFACE mp_bcasts
+!
+      INTERFACE mp_collect
+        MODULE PROCEDURE mp_collect_f
+        MODULE PROCEDURE mp_collect_i
+      END INTERFACE mp_collect
 !
       INTERFACE mp_reduce
         MODULE PROCEDURE mp_reduce_0d
@@ -1330,6 +1345,629 @@
 
       RETURN
       END SUBROUTINE mp_boundary
+!
+      SUBROUTINE mp_assemblef_1d (ng, model, Npts, Aspv, A)
+!
+!***********************************************************************
+!                                                                      !
+!  This routine assembles a 1D floating-point array from all members   !
+!  in the group.  The collection of data from all nodes is achieved    !
+!  as a reduction sum.                                                 !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng         Nested grid number.                                   !
+!     model      Calling model identifier.                             !
+!     Npts       Number of collected data points, PROD(SIZE(A)).       !
+!     Aspv       Special value indicating that an array element is     !
+!                  not operated by the current parallel node. It must  !
+!                  be zero to collect data by a global reduction sum.  !
+!     A          1D array to collect.                                  !
+!                                                                      !
+!  On Output:                                                          !
+!                                                                      !
+!     A          Assembled 1D array.                                   !
+!                                                                      !
+!***********************************************************************
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      implicit none
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, Npts
+
+      real(r8), intent(in) :: Aspv
+
+      real(r8), intent(inout) :: A(:)
+!
+!  Local variable declarations.
+!
+      integer :: Lstr, MyError, MyNpts, Nnodes, Serror, i
+
+      integer, dimension(MPI_STATUS_SIZE) :: status
+
+      real(r8), dimension(Npts) :: Asend
+
+      character (len=MPI_MAX_ERROR_STRING) :: string
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_on (ng, model, 49)
+# endif
+!
+!-----------------------------------------------------------------------
+!  Check input parameters.
+!-----------------------------------------------------------------------
+!
+      MyNpts=UBOUND(A, DIM=1)
+      IF (Npts.ne.MyNpts) THEN
+        IF (Master) THEN
+          WRITE (stdout,10) Npts, MyNpts
+        END IF
+        exit_flag=7
+      END IF
+!
+      IF (Aspv.ne.0.0_r8) THEN
+        IF (Master) THEN
+          WRITE (stdout,20) Aspv
+        END IF
+        exit_flag=7
+      END IF
+!
+!-----------------------------------------------------------------------
+!  Collect data from all nodes.
+!-----------------------------------------------------------------------
+!
+!  Set input data to process.
+!
+      DO i=1,Npts
+        Asend(i)=A(i)
+      END DO
+!
+!  Collect data from all nodes as a reduced sum.
+!
+      CALL mpi_allreduce (Asend, A, Npts, MP_FLOAT, MPI_SUM,            &
+     &                    OCN_COMM_WORLD, MyError)
+      IF (MyError.ne.MPI_SUCCESS) THEN
+        CALL mpi_error_string (MyError, string, Lstr, Serror)
+        Lstr=LEN_TRIM(string)
+        WRITE (stdout,30) 'MPI_ALLREDUCE', MyRank, MyError,             &
+     &                    string(1:Lstr)
+        exit_flag=2
+        RETURN
+      END IF
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_off (ng, model, 49)
+# endif
+!
+ 10   FORMAT (/,' MP_ASSEMBLEF_1D - inconsistent array size, Npts = ',  &
+     &        i10,2x,i10,/,19x,'number of addressed array elements ',   &
+     &        'is incorrect.')
+ 20   FORMAT (/,' MP_ASSEMBLEF_1D - illegal special value, Aspv = ',    &
+     &        1p,e17.10,/,19x,'a zero value is needed for global ',     &
+     &        'reduction.')
+ 30   FORMAT (/,' MP_ASSEMBLEF_1D - error during ',a,' call, Node = ',  &
+     &        i3.3,' Error = ',i3,/,19x,a)
+
+      RETURN
+      END SUBROUTINE mp_assemblef_1d
+!
+      SUBROUTINE mp_assemblef_2d (ng, model, Npts, Aspv, A)
+!
+!***********************************************************************
+!                                                                      !
+!  This routine assembles a 2D floating-point array from all members   !
+!  in the group.  The collection of data from all nodes is achieved    !
+!  as a reduction sum.                                                 !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng         Nested grid number.                                   !
+!     model      Calling model identifier.                             !
+!     Npts       Number of collected data points, PROD(SIZE(A)).       !
+!     Aspv       Special value indicating that an array element is     !
+!                  not operated by the current parallel node. It must  !
+!                  be zero to collect data by a global reduction sum.  !
+!     A          2D array to collect.                                  !
+!                                                                      !
+!  On Output:                                                          !
+!                                                                      !
+!     A          Assembled 2D array.                                   !
+!                                                                      !
+!***********************************************************************
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      implicit none
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, Npts
+
+      real(r8), intent(in) :: Aspv
+
+      real(r8), intent(inout) :: A(:,:)
+!
+!  Local variable declarations.
+!
+      integer :: Lstr, MyError, MyNpts, Nnodes, Serror
+
+      integer :: Asize(2)
+
+      integer, dimension(MPI_STATUS_SIZE) :: status
+
+      real(r8), dimension(Npts) :: Asend, Arecv
+
+      character (len=MPI_MAX_ERROR_STRING) :: string
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_on (ng, model, 49)
+# endif
+!
+!-----------------------------------------------------------------------
+!  Check input parameters.
+!-----------------------------------------------------------------------
+!
+      Asize(1)=UBOUND(A, DIM=1)
+      Asize(2)=UBOUND(A, DIM=2)
+      MyNpts=Asize(1)*Asize(2)
+      IF (Npts.ne.MyNpts) THEN
+        IF (Master) THEN
+          WRITE (stdout,10) Npts, MyNpts
+        END IF
+        exit_flag=7
+      END IF
+!
+      IF (Aspv.ne.0.0_r8) THEN
+        IF (Master) THEN
+          WRITE (stdout,20) Aspv
+        END IF
+        exit_flag=7
+      END IF
+!
+!-----------------------------------------------------------------------
+!  Collect data from all nodes.
+!-----------------------------------------------------------------------
+!
+!  Set input data to process.
+!
+      Asend=RESHAPE(A, (/Npts/))
+!
+!  Collect data from all nodes as a reduced sum.
+!
+      CALL mpi_allreduce (Asend, Arecv, Npts, MP_FLOAT, MPI_SUM,        &
+     &                    OCN_COMM_WORLD, MyError)
+      IF (MyError.ne.MPI_SUCCESS) THEN
+        CALL mpi_error_string (MyError, string, Lstr, Serror)
+        Lstr=LEN_TRIM(string)
+        WRITE (stdout,30) 'MPI_ALLREDUCE', MyRank, MyError,             &
+     &                    string(1:Lstr)
+        exit_flag=2
+        RETURN
+      END IF
+!
+!  Load collected data.
+!
+      A=RESHAPE(Arecv, Asize)
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_off (ng, model, 49)
+# endif
+!
+ 10   FORMAT (/,' MP_ASSEMBLEF_2D - inconsistent array size, Npts = ',  &
+     &        i10,2x,i10,/,19x,'number of addressed array elements ',   &
+     &        'is incorrect.')
+ 20   FORMAT (/,' MP_ASSEMBLEF_2D - illegal special value, Aspv = ',    &
+     &        1p,e17.10,/,19x,'a zero value is needed for global ',     &
+     &        'reduction.')
+ 30   FORMAT (/,' MP_ASSEMBLEF_2D - error during ',a,' call, Node = ',  &
+     &        i3.3,' Error = ',i3,/,19x,a)
+
+      RETURN
+      END SUBROUTINE mp_assemblef_2d
+!
+      SUBROUTINE mp_assemblef_3d (ng, model, Npts, Aspv, A)
+!
+!***********************************************************************
+!                                                                      !
+!  This routine assembles a 3D floating-point array from all members   !
+!  in the group.  The collection of data from all nodes is achieved    !
+!  as a reduction sum.                                                 !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng         Nested grid number.                                   !
+!     model      Calling model identifier.                             !
+!     Npts       Number of collected data points, PROD(SIZE(A)).       !
+!     Aspv       Special value indicating that an array element is     !
+!                  not operated by the current parallel node. It must  !
+!                  be zero to collect data by a global reduction sum.  !
+!     A          3D array to collect.                                  !
+!                                                                      !
+!  On Output:                                                          !
+!                                                                      !
+!     A          Assembled 3D array.                                   !
+!                                                                      !
+!***********************************************************************
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      implicit none
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, Npts
+
+      real(r8), intent(in) :: Aspv
+
+      real(r8), intent(inout) :: A(:,:,:)
+!
+!  Local variable declarations.
+!
+      integer :: Lstr, MyError, MyNpts, Nnodes, Serror
+
+      integer :: Asize(3)
+
+      integer, dimension(MPI_STATUS_SIZE) :: status
+
+      real(r8), dimension(Npts) :: Asend, Arecv
+
+      character (len=MPI_MAX_ERROR_STRING) :: string
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_on (ng, model, 49)
+# endif
+!
+!-----------------------------------------------------------------------
+!  Check input parameters.
+!-----------------------------------------------------------------------
+!
+      Asize(1)=UBOUND(A, DIM=1)
+      Asize(2)=UBOUND(A, DIM=2)
+      Asize(3)=UBOUND(A, DIM=3)
+      MyNpts=Asize(1)*Asize(2)*Asize(3)
+      IF (Npts.ne.MyNpts) THEN
+        IF (Master) THEN
+          WRITE (stdout,10) Npts, MyNpts
+        END IF
+        exit_flag=7
+      END IF
+!
+      IF (Aspv.ne.0.0_r8) THEN
+        IF (Master) THEN
+          WRITE (stdout,20) Aspv
+        END IF
+        exit_flag=7
+      END IF
+!
+!-----------------------------------------------------------------------
+!  Collect data from all nodes.
+!-----------------------------------------------------------------------
+!
+!  Set input data to process.
+!
+      Asend=RESHAPE(A, (/Npts/))
+!
+!  Collect data from all nodes as a reduced sum.
+!
+      CALL mpi_allreduce (Asend, Arecv, Npts, MP_FLOAT, MPI_SUM,        &
+     &                    OCN_COMM_WORLD, MyError)
+      IF (MyError.ne.MPI_SUCCESS) THEN
+        CALL mpi_error_string (MyError, string, Lstr, Serror)
+        Lstr=LEN_TRIM(string)
+        WRITE (stdout,30) 'MPI_ALLREDUCE', MyRank, MyError,             &
+     &                    string(1:Lstr)
+        exit_flag=2
+        RETURN
+      END IF
+!
+!  Load collected data.
+!
+      A=RESHAPE(Arecv, Asize)
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_off (ng, model, 49)
+# endif
+!
+ 10   FORMAT (/,' MP_ASSEMBLEF_3D - inconsistent array size, Npts = ',  &
+     &        i10,2x,i10,/,19x,'number of addressed array elements ',   &
+     &        'is incorrect.')
+ 20   FORMAT (/,' MP_ASSEMBLEF_3D - illegal special value, Aspv = ',    &
+     &        1p,e17.10,/,19x,'a zero value is needed for global ',     &
+     &        'reduction.')
+ 30   FORMAT (/,' MP_ASSEMBLEF_3D - error during ',a,' call, Node = ',  &
+     &        i3.3,' Error = ',i3,/,19x,a)
+
+      RETURN
+      END SUBROUTINE mp_assemblef_3d
+!
+!
+      SUBROUTINE mp_assemblei_1d (ng, model, Npts, Aspv, A)
+!
+!***********************************************************************
+!                                                                      !
+!  This routine assembles a 1D integer array from all members in the   !
+!  group.  The collection of data from all nodes is achieved as a      !
+!  reduction sum.                                                      !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng         Nested grid number.                                   !
+!     model      Calling model identifier.                             !
+!     Npts       Number of collected data points, PROD(SIZE(A)).       !
+!     Aspv       Special value indicating that an array element is     !
+!                  not operated by the current parallel node. It must  !
+!                  be zero to collect data by a global reduction sum.  !
+!     A          1D array to collect.                                  !
+!                                                                      !
+!  On Output:                                                          !
+!                                                                      !
+!     A          Assembled 1D array.                                   !
+!                                                                      !
+!***********************************************************************
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      implicit none
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, Npts
+
+      integer, intent(in) :: Aspv
+
+      integer, intent(inout) :: A(:)
+!
+!  Local variable declarations.
+!
+      integer :: Lstr, MyError, MyNpts, Nnodes, Serror, i
+
+      integer, dimension(MPI_STATUS_SIZE) :: status
+
+      integer, dimension(Npts) :: Asend
+
+      character (len=MPI_MAX_ERROR_STRING) :: string
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_on (ng, model, 49)
+# endif
+!
+!-----------------------------------------------------------------------
+!  Check input parameters.
+!-----------------------------------------------------------------------
+!
+      MyNpts=UBOUND(A, DIM=1)
+      IF (Npts.ne.MyNpts) THEN
+        IF (Master) THEN
+          WRITE (stdout,10) Npts, MyNpts
+        END IF
+        exit_flag=7
+      END IF
+!
+      IF (Aspv.ne.0) THEN
+        IF (Master) THEN
+          WRITE (stdout,20) Aspv
+        END IF
+        exit_flag=7
+      END IF
+!
+!-----------------------------------------------------------------------
+!  Collect data from all nodes.
+!-----------------------------------------------------------------------
+!
+!  Set input data to process.
+!
+      DO i=1,Npts
+        Asend(i)=A(i)
+      END DO
+!
+!  Collect data from all nodes as a reduced sum.
+!
+      CALL mpi_allreduce (Asend, A, Npts, MPI_INTEGER, MPI_SUM,         &
+     &                    OCN_COMM_WORLD, MyError)
+      IF (MyError.ne.MPI_SUCCESS) THEN
+        CALL mpi_error_string (MyError, string, Lstr, Serror)
+        Lstr=LEN_TRIM(string)
+        WRITE (stdout,30) 'MPI_ALLREDUCE', MyRank, MyError,             &
+     &                    string(1:Lstr)
+        exit_flag=2
+        RETURN
+      END IF
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_off (ng, model, 49)
+# endif
+!
+ 10   FORMAT (/,' MP_ASSEMBLEI_1D - inconsistent array size, Npts = ',  &
+     &        i10,2x,i10,/,19x,'number of addressed array elements ',   &
+     &        'is incorrect.')
+ 20   FORMAT (/,' MP_ASSEMBLEI_1D - illegal special value, Aspv = ',i4, &
+     &        /,19x,'a zero value is needed for global reduction.')
+ 30   FORMAT (/,' MP_ASSEMBLEI_1D - error during ',a,' call, Node = ',  &
+     &        i3.3,' Error = ',i3,/,19x,a)
+
+      RETURN
+      END SUBROUTINE mp_assemblei_1d
+!
+      SUBROUTINE mp_assemblei_2d (ng, model, Npts, Aspv, A)
+!
+!***********************************************************************
+!                                                                      !
+!  This routine assembles a 2D integer array from all members in the   !
+!  group.  The collection of data from all nodes is achieved as a      !
+!  reduction sum.                                                      !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng         Nested grid number.                                   !
+!     model      Calling model identifier.                             !
+!     Npts       Number of collected data points, PROD(SIZE(A)).       !
+!     Aspv       Special value indicating that an array element is     !
+!                  not operated by the current parallel node. It must  !
+!                  be zero to collect data by a global reduction sum.  !
+!     A          2D array to collect.                                  !
+!                                                                      !
+!  On Output:                                                          !
+!                                                                      !
+!     A          Assembled 2D array.                                   !
+!                                                                      !
+!***********************************************************************
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      implicit none
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, Npts
+
+      integer, intent(in) :: Aspv
+
+      integer, intent(inout) :: A(:,:)
+!
+!  Local variable declarations.
+!
+      integer :: Lstr, MyError, MyNpts, Nnodes, Serror
+
+      integer :: Asize(2)
+
+      integer, dimension(MPI_STATUS_SIZE) :: status
+
+      integer, dimension(Npts) :: Asend, Arecv
+
+      character (len=MPI_MAX_ERROR_STRING) :: string
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn on time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_on (ng, model, 49)
+# endif
+!
+!-----------------------------------------------------------------------
+!  Check input parameters.
+!-----------------------------------------------------------------------
+!
+      Asize(1)=UBOUND(A, DIM=1)
+      Asize(2)=UBOUND(A, DIM=2)
+      MyNpts=Asize(1)*Asize(2)
+      IF (Npts.ne.MyNpts) THEN
+        IF (Master) THEN
+          WRITE (stdout,10) Npts, MyNpts
+        END IF
+        exit_flag=7
+      END IF
+!
+      IF (Aspv.ne.0) THEN
+        IF (Master) THEN
+          WRITE (stdout,20) Aspv
+        END IF
+        exit_flag=7
+      END IF
+!
+!-----------------------------------------------------------------------
+!  Collect data from all nodes.
+!-----------------------------------------------------------------------
+!
+!  Set input data to process.
+!
+      Asend=RESHAPE(A, (/Npts/))
+!
+!  Collect data from all nodes as a reduced sum.
+!
+      CALL mpi_allreduce (Asend, Arecv, Npts, MPI_INTEGER, MPI_SUM,     &
+     &                    OCN_COMM_WORLD, MyError)
+      IF (MyError.ne.MPI_SUCCESS) THEN
+        CALL mpi_error_string (MyError, string, Lstr, Serror)
+        Lstr=LEN_TRIM(string)
+        WRITE (stdout,30) 'MPI_ALLREDUCE', MyRank, MyError,             &
+     &                    string(1:Lstr)
+        exit_flag=2
+        RETURN
+      END IF
+!
+!  Load collected data.
+!
+      A=RESHAPE(Arecv, Asize)
+
+# ifdef PROFILE
+!
+!-----------------------------------------------------------------------
+!  Turn off time clocks.
+!-----------------------------------------------------------------------
+!
+      CALL wclock_off (ng, model, 49)
+# endif
+!
+ 10   FORMAT (/,' MP_ASSEMBLEI_2D - inconsistent array size, Npts = ',  &
+     &        i10,2x,i10,/,19x,'number of addressed array elements ',   &
+     &        'is incorrect.')
+ 20   FORMAT (/,' MP_ASSEMBLEI_2D - illegal special value, Aspv = ',i4, &
+     &        /,19x,'a zero value is needed for global reduction.')
+ 30   FORMAT (/,' MP_ASSEMBLEI_2D - error during ',a,' call, Node = ',  &
+     &        i3.3,' Error = ',i3,/,19x,a)
+
+      RETURN
+      END SUBROUTINE mp_assemblei_2d
 !
       SUBROUTINE mp_collect_f (ng, model, Npts, Aspv, A)
 !
@@ -4601,6 +5239,12 @@
       DO i=Mstr,Mend
         Awrk(i)=A(i)
       END DO
+!
+!  Deallocate receive buffer.
+!
+      IF (allocated(Arecv).and.(MyRank.eq.MyMaster)) THEN
+        deallocate (Arecv)
+      END IF
 
 # ifdef PROFILE
 !
@@ -4795,8 +5439,8 @@
       integer,  dimension(4,0:NtileI(ng)*NtileJ(ng)-1) :: my_bounds
 
       real(r8), dimension(TileSize(ng)) :: Asend
-      real(r8), dimension(TileSize(ng),                                 &
-     &                    0:NtileI(ng)*NtileJ(ng)-1) :: Arecv
+      real(r8), dimension(TileSize(ng)*                                 &
+     &                    NtileI(ng)*NtileJ(ng)) :: Arecv
 
       character (len=MPI_MAX_ERROR_STRING) :: string
 
@@ -4865,7 +5509,7 @@
         Npts=MAX(Npts, np)
       END DO
 
-      IF (Npts.lt.TileSize(ng)) THEN
+      IF (Npts.gt.TileSize(ng)) THEN
         IF (Master) THEN
           WRITE (stdout,10) ' TileSize = ', TileSize(ng), Npts
  10       FORMAT (/,' MP_AGGREGATE2D - communication buffer to small,', &
@@ -4897,12 +5541,12 @@
 !  Aggregate data from all nodes.
 !-----------------------------------------------------------------------
 !
-      CALL mpi_alltoall (Asend, Npts, MP_FLOAT, Arecv, Npts, MP_FLOAT,  &
-     &                   OCN_COMM_WORLD, MyError)
+      CALL mpi_allgather (Asend, Npts, MP_FLOAT, Arecv, Npts, MP_FLOAT, &
+     &                    OCN_COMM_WORLD, MyError)
       IF (MyError.ne.MPI_SUCCESS) THEN
         CALL mpi_error_string (MyError, string, Lstr, Serror)
         Lstr=LEN_TRIM(string)
-        WRITE (stdout,20) 'MPI_ALLTOALL', MyRank, MyError,              &
+        WRITE (stdout,20) 'MPI_ALLGATHER', MyRank, MyError,             &
      &                    string(1:Lstr)
  20     FORMAT (/,' MP_AGGREGATE2D - error during ',a,' call, Node = ', &
      &          i3.3,' Error = ',i3,/,18x,a)
@@ -4915,11 +5559,11 @@
 !-----------------------------------------------------------------------
 !
       DO rank=0,Nnodes
-        np=0
+        np=rank*Npts
         DO j=my_bounds(3,rank),my_bounds(4,rank)
           DO i=my_bounds(1,rank),my_bounds(2,rank)
             np=np+1
-            Aglobal(i,j)=Arecv(np,rank)
+            Aglobal(i,j)=Arecv(np)
           END DO
         END DO
       END DO
@@ -4993,15 +5637,15 @@
 !
 !  Local variable declarations.
 !
-      integer :: Lstr, MyError, MyType, Nnodes, Npts, Serror
+      integer :: Klen, Lstr, MyError, MyType, Nnodes, Npts, Serror
       integer :: i, j, k, np, rank
 
       integer,  dimension(4,0:NtileI(ng)*NtileJ(ng)-1) :: my_bounds
 
       real(r8), dimension(TileSize(ng)*(UBk-LBk+1)) :: Asend
 
-      real(r8), dimension(TileSize(ng)*(UBk-LBk+1),                     &
-     &                    0:NtileI(ng)*NtileJ(ng)-1) :: Arecv
+      real(r8), dimension(TileSize(ng)*(UBk-LBk+1)*                     &
+     &                    NtileI(ng)*NtileJ(ng)) :: Arecv
 
       character (len=MPI_MAX_ERROR_STRING) :: string
 
@@ -5058,6 +5702,7 @@
             my_bounds(4,rank)=BOUNDS(ng) % JendP(rank)
           END DO
       END SELECT
+      Klen=UBk-LBk+1
 !
 !  Determine the maximum number of points to process between all tiles.
 !  In collective communications, the amount of data sent must be equal
@@ -5067,13 +5712,13 @@
       DO rank=0,Nnodes
         np=(my_bounds(2,rank)-my_bounds(1,rank)+1)*                     &
      &     (my_bounds(4,rank)-my_bounds(3,rank)+1)*                     &
-     &     (UBk-LBk+1)
+     &     Klen
         Npts=MAX(Npts, np)
       END DO
 
-      IF (Npts.lt.TileSize(ng)) THEN
+      IF (Npts.gt.TileSize(ng)*Klen) THEN
         IF (Master) THEN
-          WRITE (stdout,10) ' TileSize = ', TileSize(ng), Npts
+          WRITE (stdout,10) ' TileSize = ', TileSize(ng)*Klen, Npts
  10       FORMAT (/,' MP_AGGREGATE3D - communication buffer to small,', &
      &            a, 2i8)
         END IF
@@ -5105,12 +5750,12 @@
 !  Aggregate data from all nodes.
 !-----------------------------------------------------------------------
 !
-      CALL mpi_alltoall (Asend, Npts, MP_FLOAT, Arecv, Npts, MP_FLOAT,  &
-     &                   OCN_COMM_WORLD, MyError)
+      CALL mpi_allgather (Asend, Npts, MP_FLOAT, Arecv, Npts, MP_FLOAT, &
+     &                    OCN_COMM_WORLD, MyError)
       IF (MyError.ne.MPI_SUCCESS) THEN
         CALL mpi_error_string (MyError, string, Lstr, Serror)
         Lstr=LEN_TRIM(string)
-        WRITE (stdout,20) 'MPI_ALLTOALL', MyRank, MyError,              &
+        WRITE (stdout,20) 'MPI_ALLGATHER', MyRank, MyError,             &
      &                    string(1:Lstr)
  20     FORMAT (/,' MP_AGGREGATE3D - error during ',a,' call, Node = ', &
      &          i3.3,' Error = ',i3,/,18x,a)
@@ -5123,12 +5768,12 @@
 !-----------------------------------------------------------------------
 !
       DO rank=0,Nnodes
-        np=0
+        np=rank*Npts
         DO k=LBk,UBk
           DO j=my_bounds(3,rank),my_bounds(4,rank)
             DO i=my_bounds(1,rank),my_bounds(2,rank)
               np=np+1
-              Aglobal(i,j,k)=Arecv(np,rank)
+              Aglobal(i,j,k)=Arecv(np)
             END DO
           END DO
         END DO

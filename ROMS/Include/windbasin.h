@@ -1,7 +1,7 @@
 /*
-** svn $Id: windbasin.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: windbasin.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -15,8 +15,9 @@
 #undef UV_ADV
 #define UV_COR
 #define UV_QDRAG
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define SOLVE3D
-#define SPLINES
 #define AVERAGES
 #define ANA_GRID
 #define ANA_INITIAL

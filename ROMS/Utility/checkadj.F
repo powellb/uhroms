@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE checkadj
 !
-!svn $Id: checkadj.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: checkadj.F 820 2016-08-30 20:14:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -77,14 +77,6 @@
 !  adjoint-based algorithms.
 !-----------------------------------------------------------------------
 !
-      string=uppercase('atm_press')
-      ifound=INDEX(TRIM(Coptions), TRIM(string))
-      IF (ifound.ne.0) THEN
-        ic=ic+1
-        IF (Master) WRITE(stdout,20) TRIM(string),                      &
-     &                               'not tested, FATAL ERROR'
-      END IF
-
       string=uppercase('bedload_mpm')
       ifound=INDEX(TRIM(Coptions), TRIM(string))
       IF (ifound.ne.0) THEN
@@ -132,7 +124,7 @@
       string=uppercase('clima_ts_mix')
       ifound=INDEX(TRIM(Coptions), TRIM(string))
       IF (ifound.ne.0) THEN
-        IF (Master) WRITE(stdout,20) TRIM(string),                      &
+        IF (Master) WRITE(stdout,10) TRIM(string),                      &
      &                               'not tested, WARNING'
       END IF
 
@@ -290,6 +282,14 @@
      &                               'not coded, FATAL ERROR'
       END IF
 
+      string=uppercase('geopotential_hconv')
+      ifound=INDEX(TRIM(Coptions), TRIM(string))
+      IF (ifound.ne.0) THEN
+        ic=ic+1
+        IF (Master) WRITE(stdout,10) TRIM(string),                      &
+     &                               'experimental, AVOID USAGE'
+      END IF
+
 # ifndef FORWARD_MIXING
       string=uppercase('gls_mixing')
       ifound=INDEX(TRIM(Coptions), TRIM(string))
@@ -352,6 +352,14 @@
      &                               'not coded, FATAL ERROR'
       END IF
 
+      string=uppercase('nesting')
+      ifound=INDEX(TRIM(Coptions), TRIM(string))
+      IF (ifound.ne.0) THEN
+        ic=ic+1
+        IF (Master) WRITE(stdout,20) TRIM(string),                      &
+     &                               'not coded, FATAL ERROR'
+      END IF
+
       string=uppercase('npzd_franks')
       ifound=INDEX(TRIM(Coptions), TRIM(string))
       IF (ifound.ne.0) THEN
@@ -369,6 +377,14 @@
       END IF
 
       string=uppercase('pj_gradpq4')
+      ifound=INDEX(TRIM(Coptions), TRIM(string))
+      IF (ifound.ne.0) THEN
+        ic=ic+1
+        IF (Master) WRITE(stdout,20) TRIM(string),                      &
+     &                               'not coded, FATAL ERROR'
+      END IF
+
+      string=uppercase('red_tide')
       ifound=INDEX(TRIM(Coptions), TRIM(string))
       IF (ifound.ne.0) THEN
         ic=ic+1

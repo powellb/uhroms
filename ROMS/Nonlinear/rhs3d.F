@@ -2,9 +2,9 @@
       MODULE rhs3d_mod
 #if defined NONLINEAR && defined SOLVE3D
 !
-!svn $Id: rhs3d.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rhs3d.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -26,9 +26,6 @@
 !***********************************************************************
 !
       USE mod_param
-# ifdef CLIMATOLOGY
-      USE mod_clima
-# endif
       USE mod_coupling
 # ifdef DIAGNOSTICS_UV
       USE mod_diags
@@ -126,11 +123,6 @@
      &                 FORCES(ng) % bvstr,                              &
      &                 FORCES(ng) % sustr,                              &
      &                 FORCES(ng) % svstr,                              &
-# ifdef M3CLM_NUDGING
-     &                 CLIMA(ng) % M3nudgcof,                           &
-     &                 CLIMA(ng) % uclm,                                &
-     &                 CLIMA(ng) % vclm,                                &
-# endif
      &                 OCEAN(ng) % u,                                   &
      &                 OCEAN(ng) % v,                                   &
      &                 OCEAN(ng) % W,                                   &
@@ -188,9 +180,6 @@
      &                       om_u, om_v, on_u, on_v, pm, pn,            &
      &                       bustr, bvstr,                              &
      &                       sustr, svstr,                              &
-# ifdef M3CLM_NUDGING
-     &                       M3nudgcof, uclm, vclm,                     &
-# endif
      &                       u, v, W,                                   &
 # ifdef NEARSHORE_MELLOR
      &                       u_stokes, v_stokes,                        &
@@ -206,6 +195,7 @@
 !***********************************************************************
 !
       USE mod_param
+      USE mod_clima
       USE mod_scalars
 !
 !  Imported variable declarations.
@@ -234,11 +224,6 @@
       real(r8), intent(in) :: bvstr(LBi:,LBj:)
       real(r8), intent(in) :: sustr(LBi:,LBj:)
       real(r8), intent(in) :: svstr(LBi:,LBj:)
-#  ifdef M3CLM_NUDGING
-      real(r8), intent(in) :: M3nudgcof(LBi:,LBj:)
-      real(r8), intent(in) :: uclm(LBi:,LBj:,:)
-      real(r8), intent(in) :: vclm(LBi:,LBj:,:)
-#  endif
       real(r8), intent(in) :: u(LBi:,LBj:,:,:)
       real(r8), intent(in) :: v(LBi:,LBj:,:,:)
       real(r8), intent(in) :: W(LBi:,LBj:,0:)
@@ -280,11 +265,6 @@
       real(r8), intent(in) :: bvstr(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: sustr(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: svstr(LBi:UBi,LBj:UBj)
-#  ifdef M3CLM_NUDGING
-      real(r8), intent(in) :: M3nudgcof(LBi:UBi,LBj:UBj)
-      real(r8), intent(in) :: uclm(LBi:UBi,LBj:UBj,N(ng))
-      real(r8), intent(in) :: vclm(LBi:UBi,LBj:UBj,N(ng))
-#  endif
       real(r8), intent(in) :: u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(in) :: v(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(in) :: W(LBi:UBi,LBj:UBj,0:N(ng))
@@ -580,31 +560,36 @@
           END DO
         END DO
 # endif
-# ifdef M3CLM_NUDGING
 !
 !-----------------------------------------------------------------------
 !  Add in nudging of 3D momentum climatology.
 !-----------------------------------------------------------------------
 !
-        DO j=Jstr,Jend
-          DO i=IstrU,Iend
-            cff=0.25_r8*(M3nudgcof(i-1,j)+M3nudgcof(i,j))*              &
-     &          om_u(i,j)*on_u(i,j)
-            ru(i,j,k,nrhs)=ru(i,j,k,nrhs)+                              &
-     &                     cff*(Hz(i-1,j,k)+Hz(i,j,k))*                 &
-     &                     (uclm(i,j,k)-u(i,j,k,nrhs))
+        IF (LnudgeM3CLM(ng)) THEN
+          DO j=Jstr,Jend
+            DO i=IstrU,Iend
+              cff=0.25_r8*(CLIMA(ng)%M3nudgcof(i-1,j,k)+                &
+     &                     CLIMA(ng)%M3nudgcof(i  ,j,k))*               &
+     &            om_u(i,j)*on_u(i,j)
+              ru(i,j,k,nrhs)=ru(i,j,k,nrhs)+                            &
+     &                       cff*(Hz(i-1,j,k)+Hz(i,j,k))*               &
+     &                       (CLIMA(ng)%uclm(i,j,k)-                    &
+     &                        u(i,j,k,nrhs))
+            END DO
           END DO
-        END DO
-        DO j=JstrV,Jend
-          DO i=Istr,Iend
-            cff=0.25_r8*(M3nudgcof(i,j-1)+M3nudgcof(i,j))*              &
-     &          om_v(i,j)*on_v(i,j)
-            rv(i,j,k,nrhs)=rv(i,j,k,nrhs)+                              &
-     &                     cff*(Hz(i,j-1,k)+Hz(i,j,k))*                 &
-     &                     (vclm(i,j,k)-v(i,j,k,nrhs))
-         END DO
-       END DO
-# endif
+          DO j=JstrV,Jend
+            DO i=Istr,Iend
+              cff=0.25_r8*(CLIMA(ng)%M3nudgcof(i,j-1,k)+                &
+     &                     CLIMA(ng)%M3nudgcof(i,j  ,k))*               &
+     &            om_v(i,j)*on_v(i,j)
+              rv(i,j,k,nrhs)=rv(i,j,k,nrhs)+                            &
+     &                       cff*(Hz(i,j-1,k)+Hz(i,j,k))*               &
+     &                       (CLIMA(ng)%vclm(i,j,k)-                    &
+     &                        v(i,j,k,nrhs))
+            END DO
+          END DO
+        END IF
+
 # ifdef UV_ADV
 !
 !-----------------------------------------------------------------------
@@ -678,20 +663,20 @@
             Huxx(i,j)=Huon(i-1,j,k)-2.0_r8*Huon(i,j,k)+Huon(i+1,j,k)
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.EWperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-              DO j=Jstr,Jend
-                uxx (Istr,j)=uxx (Istr+1,j)
-                Huxx(Istr,j)=Huxx(Istr+1,j)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-              DO j=Jstr,Jend
-                uxx (Iend+1,j)=uxx (Iend,j)
-                Huxx(Iend+1,j)=Huxx(Iend,j)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+            DO j=Jstr,Jend
+              uxx (Istr,j)=uxx (Istr+1,j)
+              Huxx(Istr,j)=Huxx(Istr+1,j)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+            DO j=Jstr,Jend
+              uxx (Iend+1,j)=uxx (Iend,j)
+              Huxx(Iend+1,j)=Huxx(Iend,j)
+            END DO
           END IF
         END IF
 #   ifdef UV_C4ADVECTION
@@ -751,18 +736,18 @@
      &               u(i,j+1,k,nrhs)
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.NSperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-              DO i=IstrU,Iend
-                uee(i,Jstr-1)=uee(i,Jstr)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-              DO i=IstrU,Iend
-                uee(i,Jend+1)=uee(i,Jend)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+            DO i=IstrU,Iend
+              uee(i,Jstr-1)=uee(i,Jstr)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+            DO i=IstrU,Iend
+              uee(i,Jend+1)=uee(i,Jend)
+            END DO
           END IF
         END IF
         DO j=Jstr,Jend+1
@@ -819,18 +804,18 @@
      &               v(i+1,j,k,nrhs)
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.EWperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-              DO j=JstrV,Jend
-                vxx(Istr-1,j)=vxx(Istr,j)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-              DO j=JstrV,Jend
-                vxx(Iend+1,j)=vxx(Iend,j)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+            DO j=JstrV,Jend
+              vxx(Istr-1,j)=vxx(Istr,j)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+            DO j=JstrV,Jend
+              vxx(Iend+1,j)=vxx(Iend,j)
+            END DO
           END IF
         END IF
         DO j=JstrV-1,Jend
@@ -895,20 +880,20 @@
             Hvee(i,j)=Hvom(i,j-1,k)-2.0_r8*Hvom(i,j,k)+Hvom(i,j+1,k)
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.NSperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-              DO i=Istr,Iend
-                vee (i,Jstr)=vee (i,Jstr+1)
-                Hvee(i,Jstr)=Hvee(i,Jstr+1)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-              DO i=Istr,Iend
-                vee (i,Jend+1)=vee (i,Jend)
-                Hvee(i,Jend+1)=Hvee(i,Jend)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+            DO i=Istr,Iend
+              vee (i,Jstr)=vee (i,Jstr+1)
+              Hvee(i,Jstr)=Hvee(i,Jstr+1)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+            DO i=Istr,Iend
+              vee (i,Jend+1)=vee (i,Jend)
+              Hvee(i,Jend+1)=Hvee(i,Jend)
+            END DO
           END IF
         END IF
 #   ifdef UV_C4ADVECTION

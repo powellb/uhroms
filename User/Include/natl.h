@@ -1,7 +1,7 @@
 /*
-** svn $Id: natl.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: natl.h 795 2016-05-11 01:42:43Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -16,13 +16,14 @@
 #define UV_QDRAG
 #define UV_COR
 #define DJ_GRADPS
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_U3HADVECTION
 #define TS_C4VADVECTION
 #define SOLVE3D
 #define SALINITY
 #define NONLIN_EOS
 #define CURVGRID
-#define SPLINES
 #define STATIONS
 #define MASKING
 #define WRITE_WATER
@@ -39,6 +40,5 @@
 # define LMD_CONVEC
 # define LMD_SKPP
 # define LMD_NONLOCAL
+# define RI_SPLINES
 #endif
-#define TCLIMATOLOGY
-#define TCLM_NUDGING

@@ -1,8 +1,8 @@
       SUBROUTINE ana_stflux (ng, tile, model, itrc)
 !
-!! svn $Id: ana_stflux.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_stflux.h 795 2016-05-11 01:42:43Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -103,8 +103,8 @@
 !-----------------------------------------------------------------------
 !
       IF (itrc.eq.itemp) THEN
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
+        DO j=JstrT,JendT
+          DO i=IstrT,IendT
 #ifdef BL_TEST
             stflx(i,j,itrc)=srflx(i,j)
 # ifdef TL_IOMS
@@ -125,8 +125,8 @@
 !-----------------------------------------------------------------------
 !
       ELSE IF (itrc.eq.isalt) THEN
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
+        DO j=JstrT,JendT
+          DO i=IstrT,IendT
             stflx(i,j,itrc)=0.0_r8
 #ifdef TL_IOMS
             tl_stflx(i,j,itrc)=0.0_r8
@@ -139,8 +139,8 @@
 !-----------------------------------------------------------------------
 !
       ELSE
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
+        DO j=JstrT,JendT
+          DO i=IstrT,IendT
             stflx(i,j,itrc)=0.0_r8
 #ifdef TL_IOMS
             tl_stflx(i,j,itrc)=0.0_r8

@@ -1,6 +1,6 @@
-# svn $Id: Darwin-pgi.mk 645 2013-01-22 23:21:54Z arango $
+# svn $Id: Darwin-pgi.mk 795 2016-05-11 01:42:43Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2013 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2016 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -119,7 +119,7 @@ endif
 # The user may want to uncomment this option to allow similar,
 # if not identical solutions between different of the PGI compiler.
 
-#          FFLAGS += -Kieee
+           FFLAGS += -Kieee
 
 #
 # Set free form format in source files to allow long string for

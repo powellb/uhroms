@@ -2,9 +2,9 @@
       SUBROUTINE checkvars (ng, model, ncname, string, Nrec, Nvar,      &
      &                      tvarnam, get_var, have_var)
 !
-!svn $Id: checkvars.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: checkvars.F 807 2016-07-09 02:03:55Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -101,7 +101,7 @@
 !  Higher values are used to process only boundary condition or
 !  surface forcing in the variational data assimilation algorithms.
 !
-      IF (model.lt.8) THEN
+      IF (model.lt.8.or.model.eq.14) THEN
 #ifdef ANA_INITIAL
         IF (nrrec(ng).ne.0) THEN
           get_var(idFsur)=.TRUE.
@@ -224,7 +224,7 @@
       END IF
 #ifdef ADJUST_BOUNDARY
 !
-!  Determine 4DVar surface forcing variables to adjust.
+!  Determine 4DVar boundary variables to adjust.
 !
       IF ((model.eq.iADM).or.(model.eq.iTLM).or.(model.eq.iNLM).or.     &
      &    (model.eq.iRPM).or.(model.eq.8).or.(model.eq.10).or.          &
@@ -270,6 +270,26 @@
 # ifdef ADJUST_WSTRESS
         get_var(idUsms)=.TRUE.
         get_var(idVsms)=.TRUE.
+# endif
+      END IF
+#endif
+#ifdef BNORM
+!
+!  Determine variables for Hessian singular vectors with background
+!  normalization.
+!  (HGA: This is not needed because already accounted above when
+!        model < 8).
+!
+      IF (model.eq.6) THEN
+        get_var(idFsur)=.TRUE.
+        get_var(idUbar)=.TRUE.
+        get_var(idVbar)=.TRUE.
+# ifdef SOLVE3D
+        get_var(idUvel)=.TRUE.
+        get_var(idVvel)=.TRUE.
+        DO itrc=1,NAT
+          get_var(idTvar(itrc))=.TRUE.
+        END DO
 # endif
       END IF
 #endif

@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE stiffness_mod
 !
-!svn $Id: stiffness.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: stiffness.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -296,22 +296,24 @@
 # endif
 #endif
         IF (Master) THEN
+          WRITE (stdout,10) ng
+  10      FORMAT (/,' Basin information for Grid ',i2.2,':',/)
 #ifdef SOLVE3D
-          WRITE (stdout,10) rx0, rx1
-  10      FORMAT (/,' Maximum grid stiffness ratios:  rx0 = ',1pe14.6,  &
-     &              ' (Beckmann and Haidvogel)',/,t34,'rx1 = ',1pe14.6, &
-     &              ' (Haney)',/)
+          WRITE (stdout,20) rx0, rx1
+  20      FORMAT (' Maximum grid stiffness ratios:  rx0 = ',1pe14.6,    &
+     &            ' (Beckmann and Haidvogel)',/,t34,'rx1 = ',1pe14.6,   &
+     &            ' (Haney)')
 #endif
           IF (MinVolume.ne.0.0_r8) THEN
             ratio=MaxVolume/MinVolume
           ELSE
             ratio=0.0_r8
           END IF
-          WRITE (stdout,20) TotVolume, MinVolume, MaxVolume, ratio
-  20      FORMAT (/,' Initial basin volumes: TotVolume = ',1p,e17.10,   &
+          WRITE (stdout,30) TotVolume, MinVolume, MaxVolume, ratio
+  30      FORMAT (/,' Initial basin volumes: TotVolume = ',1p,e17.10,   &
      &            0p,' m3',/,t25,'MinVolume = ',1p,e17.10,0p,' m3',     &
      &            /,t25,'MaxVolume = ',1p,e17.10,0p,' m3',              &
-     &            /,t25,'  Max/Min = ',1p,e17.10,0p,/)
+     &            /,t25,'  Max/Min = ',1p,e17.10,0p)
         END IF
       END IF
 !$OMP END CRITICAL (R_FACTOR)

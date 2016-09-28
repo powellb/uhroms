@@ -3,9 +3,9 @@
 #if defined NONLINEAR && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id: pre_step3d.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: pre_step3d.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -47,9 +47,6 @@
       USE mod_grid
       USE mod_mixing
       USE mod_ocean
-# ifdef TS_PSOURCE
-      USE mod_sources
-# endif
       USE mod_stepping
 !
 !  Imported variable declarations.
@@ -67,13 +64,6 @@
      &                      LBi, UBi, LBj, UBj,                         &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nrhs(ng), nstp(ng), nnew(ng),               &
-# ifdef TS_PSOURCE
-     &                      Msrc(ng), Nsrc(ng),                         &
-     &                      SOURCES(ng) % Isrc,                         &
-     &                      SOURCES(ng) % Jsrc,                         &
-     &                      SOURCES(ng) % Dsrc,                         &
-     &                      SOURCES(ng) % Tsrc,                         &
-# endif
 # ifdef MASKING
      &                      GRID(ng) % rmask,                           &
      &                      GRID(ng) % umask,                           &
@@ -127,11 +117,6 @@
      &                            LBi, UBi, LBj, UBj,                   &
      &                            IminS, ImaxS, JminS, JmaxS,           &
      &                            nrhs, nstp, nnew,                     &
-# ifdef TS_PSOURCE
-     &                            Msrc, Nsrc,                           &
-     &                            Isrc, Jsrc, Dsrc,                     &
-     &                            Tsrc,                                 &
-# endif
 # ifdef MASKING
      &                            rmask, umask, vmask,                  &
 # endif
@@ -161,6 +146,7 @@
 !
       USE mod_param
       USE mod_scalars
+      USE mod_sources
 !
       USE exchange_3d_mod, ONLY : exchange_r3d_tile
 # ifdef DISTRIBUTE
@@ -174,18 +160,8 @@
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
       integer, intent(in) :: nrhs, nstp, nnew
-# ifdef TS_PSOURCE
-      integer, intent(in) :: Msrc, Nsrc
-# endif
 !
 # ifdef ASSUMED_SHAPE
-#  ifdef TS_PSOURCE
-      integer, intent(in) :: Isrc(:)
-      integer, intent(in) :: Jsrc(:)
-
-      real(r8), intent(in) :: Dsrc(:)
-      real(r8), intent(in) :: Tsrc(:,:,:)
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:,LBj:)
       real(r8), intent(in) :: umask(LBi:,LBj:)
@@ -238,13 +214,6 @@
 
 # else
 
-#  ifdef TS_PSOURCE
-      integer, intent(in) :: Isrc(Msrc)
-      integer, intent(in) :: Jsrc(Msrc)
-
-      real(r8), intent(in) :: Dsrc(Msrc)
-      real(r8), intent(in) :: Tsrc(Msrc,N(ng),NT(ng))
-#  endif
 #  ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
@@ -291,7 +260,11 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, indx, is, itrc, j, k, ltrc
+      integer :: Isrc, Jsrc
+      integer :: i, ic, indx, is, itrc, j, k, ltrc
+# if defined AGE_MEAN && defined T_PASSIVE
+      integer :: iage
+# endif
 # if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
       integer :: idiag
 # endif
@@ -415,18 +388,18 @@
 #   endif
             END DO
           END DO
-          IF (.not.ComposedGrid(ng)) THEN
-            IF (.not.EWperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-                DO j=Jstr,Jend
-                  FX(Istr-1,j)=FX(Istr,j)
-                END DO
-              END IF
-              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-                DO j=Jstr,Jend
-                  FX(Iend+2,j)=FX(Iend+1,j)
-                END DO
-              END IF
+          IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+              DO j=Jstr,Jend
+                FX(Istr-1,j)=FX(Istr,j)
+              END DO
+            END IF
+          END IF
+          IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+              DO j=Jstr,Jend
+                FX(Iend+2,j)=FX(Iend+1,j)
+              END DO
             END IF
           END IF
 !
@@ -476,18 +449,18 @@
 #   endif
             END DO
           END DO
-          IF (.not.ComposedGrid(ng)) THEN
-            IF (.not.NSperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-                DO i=Istr,Iend
-                  FE(i,Jstr-1)=FE(i,Jstr)
-                END DO
-              END IF
-              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-                DO i=Istr,Iend
-                  FE(i,Jend+2)=FE(i,Jend+1)
-                END DO
-              END IF
+          IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+              DO i=Istr,Iend
+                FE(i,Jstr-1)=FE(i,Jstr)
+              END DO
+            END IF
+          END IF
+          IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+              DO i=Istr,Iend
+                FE(i,Jend+2)=FE(i,Jend+1)
+              END DO
             END IF
           END IF
 !
@@ -528,25 +501,27 @@
             END DO
           END DO
 #  endif
-
-#  if defined TS_PSOURCE && !defined Q_PSOURCE
 !
-!  Apply tracers point sources to the horizontal advection terms.
+!  Apply tracers point sources to the horizontal advection terms,
+!  if any.
 !
-          DO is=1,Nsrc
-            i=Isrc(is)
-            j=Jsrc(is)
-            IF (LtracerSrc(itrc,ng).and.                                &
-     &          ((Istr.le.i).and.(i.le.Iend+1)).and.                    &
-     &          ((Jstr.le.j).and.(j.le.Jend+1))) THEN
-              IF (INT(Dsrc(is)).eq.0) THEN
-                FX(i,j)=Huon(i,j,k)*Tsrc(is,k,itrc)
-              ELSE
-                FE(i,j)=Hvom(i,j,k)*Tsrc(is,k,itrc)
+          IF (LuvSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+            DO is=1,Nsrc(ng)
+              Isrc=SOURCES(ng)%Isrc(is)
+              Jsrc=SOURCES(ng)%Jsrc(is)
+              IF (LtracerSrc(itrc,ng).and.                              &
+     &            ((Istr.le.Isrc).and.(Isrc.le.Iend+1)).and.            &
+     &            ((Jstr.le.Jsrc).and.(Jsrc.le.Jend+1))) THEN
+                IF (INT(SOURCES(ng)%Dsrc(is)).eq.0) THEN
+                  FX(Isrc,Jsrc)=Huon(Isrc,Jsrc,k)*                      &
+     &                          SOURCES(ng)%Tsrc(is,k,itrc)
+                ELSE
+                  FE(Isrc,Jsrc)=Hvom(Isrc,Jsrc,k)*                      &
+     &                          SOURCES(ng)%Tsrc(is,k,itrc)
+                END IF
               END IF
-            END IF
-          END DO
-#  endif
+            END DO
+          END IF
 !
 !  Time-step horizontal advection (m Tunits).
 !
@@ -570,6 +545,33 @@
           END DO
         END DO K_LOOP
       END DO T_LOOP1
+
+#  if (defined AGE_MEAN && defined T_PASSIVE) && !defined TS_MPDATA
+!
+!  If inert passive tracer and Mean Age, compute age concentration (even
+!  inert index) forced by the right-hand-side term that is concentration
+!  of an associated conservative passive tracer (odd inert index).
+!  Implemented and tested by W.G. Zhang and J. Wilkin. (m Tunits)
+!
+      IF (iic(ng).eq.ntfirst(ng)) THEN
+        cff=0.5_r8*dt(ng)
+      ELSE
+        cff=(1.0_r8-Gamma)*dt(ng)
+      END IF
+!
+      DO itrc=1,NPT,2
+        iage=inert(itrc+1)                     ! even inert tracer index
+        DO k=1,N(ng)
+          DO j=Jstr,Jend
+            DO i=Istr,Iend
+              t(i,j,k,3,iage)=t(i,j,k,3,iage)+                          &
+     &                        cff*Hz(i,j,k)*                            &
+     &                        t(i,j,k,nnew,inert(itrc))
+            END DO
+          END DO
+        END DO
+      END DO
+#  endif
 !
 !  Compute artificial continuity equation (same for all tracers) and
 !  load it into private array DC (1/m). Notice pipelined J-loop.
@@ -760,6 +762,27 @@
           END DO
 #  endif
 !
+!  Apply mass point sources (volume vertical influx), if any.
+!  (Notice the j-loop is pipelined above).
+!
+          IF (LwSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+            DO is=1,Nsrc(ng)
+              Isrc=SOURCES(ng)%Isrc(is)
+              Jsrc=SOURCES(ng)%Jsrc(is)
+              IF (LtracerSrc(itrc,ng).and.                              &
+     &            ((Istr.le.Isrc).and.(Isrc.le.Iend+1)).and.            &
+     &            (j.eq.Jsrc)) THEN
+                DO k=1,N(ng)-1
+                  FC(Isrc,k)=FC(Isrc,k)+0.5_r8*                         &
+     &                       (SOURCES(ng)%Qsrc(is,k  )*                 &
+     &                        SOURCES(ng)%Tsrc(is,k  ,itrc)+            &
+     &                        SOURCES(ng)%Qsrc(is,k+1)*                 &
+     &                        SOURCES(ng)%Tsrc(is,k+1,itrc))
+                END DO
+              END IF
+            END DO
+          END IF
+!
 ! Time-step vertical advection of tracers (Tunits).
 !
           IF (iic(ng).eq.ntfirst(ng)) THEN
@@ -819,7 +842,7 @@
 #  ifdef SOLAR_SOURCE
 !
 !  Add in incoming solar radiation at interior W-points using decay
-!  decay penetration function based on Jerlow water type.
+!  decay penetration function based on Jerlov water type.
 !
           IF (itrc.eq.itemp) THEN
             DO k=1,N(ng)-1
@@ -1071,8 +1094,12 @@
 !  Apply intermediate tracers lateral boundary conditions.
 !=======================================================================
 !
+      ic=0
       DO itrc=1,NT(ng)
-        CALL t3dbc_tile (ng, tile, itrc,                                &
+        IF (LtracerCLM(itrc,ng).and.LnudgeTCLM(itrc,ng)) THEN
+          ic=ic+1
+        END IF
+        CALL t3dbc_tile (ng, tile, itrc, ic,                            &
      &                   LBi, UBi, LBj, UBj, N(ng), NT(ng),             &
      &                   IminS, ImaxS, JminS, JmaxS,                    &
      &                   nstp, 3,                                       &

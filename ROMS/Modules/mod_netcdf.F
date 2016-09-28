@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_netcdf
 !
-!svn $Id: mod_netcdf.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_netcdf.F 814 2016-08-18 01:30:40Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -73,7 +73,7 @@
 !  Local dimension parameters.
 !
       integer, parameter :: Mdims = 50  ! maximum number of dimensions
-      integer, parameter :: Mvars = 800 ! maximum number of variables
+      integer, parameter :: Mvars = 900 ! maximum number of variables
       integer, parameter :: NvarD = 5   ! number of variable dimensions
       integer, parameter :: NvarA = 50  ! number of variable attributes
 !
@@ -108,9 +108,9 @@
       integer :: var_Aint(NvarA)        ! attribute integer values
       real(r8) :: var_Afloat(NvarA)     ! attribute float values
 !
-      character (len=40) :: var_Aname(NvarA)     ! Attribute names
-      character (len=40) :: var_Dname(NvarD)     ! dimension names
-      character (len=80) :: var_Achar(NvarA)     ! Attribute char values
+      character (len=40)   :: var_Aname(NvarA)   ! Attribute names
+      character (len=40)   :: var_Dname(NvarD)   ! dimension names
+      character (len=1024) :: var_Achar(NvarA)   ! Attribute char values
 !
 !  External data representation for floating-point variables.
 !
@@ -200,7 +200,7 @@
 !  On Ouput:                                                           !
 !                                                                      !
 !     DimSize      Size of requested dimension (integer, OPTIONAL)     !
-!     DimID        ID od requested dimension (integer, OPTIONAL)       !
+!     DimID        ID of requested dimension (integer, OPTIONAL)       !
 !                                                                      !
 !  Other information stored in this module:                            !
 !                                                                      !
@@ -1162,7 +1162,7 @@
       integer, dimension(4) :: ibuffer
 #endif
 
-      character (len=80) :: text
+      character (len=1024) :: text
 !
 !-----------------------------------------------------------------------
 !  Inquire about the NetCDF dimensions (names and values).
@@ -1566,14 +1566,14 @@
 !
 !=======================================================================
 !                                                                      !
-!  This routine gets requested floating-point variable attribute(s).   !
+!  This routine gets requested variable floating-point attribute(s).   !
 !                                                                      !
 !  On Input:                                                           !
 !                                                                      !
 !     ng           Nested grid number (integer)                        !
 !     model        Calling model identifier (integer)                  !
 !     ncname       NetCDF file name (string)                           !
-!     varid        Variabke ID of the attribute's variable, or         !
+!     varid        Variable ID for variable attribute or               !
 !                    NF90_GLOBAL for a global attribute (integer)      !
 !     AttName      Attribute name to read (string array)               !
 !     ncid         NetCDF file ID (integer, OPTIONAL)                  !
@@ -1645,9 +1645,14 @@
       END DO
 
       IF (InpThread) THEN
-        status=nf90_inquire_variable(my_ncid, varid,                    &
-     &                               name = my_Vname,                   &
-     &                               nAtts = my_natts)
+        IF (varid.eq.nf90_global) THEN
+          status=nf90_inquire(my_ncid,                                  &
+     &                        nAttributes = my_natts)
+        ELSE
+          status=nf90_inquire_variable(my_ncid, varid,                  &
+     &                                 name = my_Vname,                 &
+     &                                 nAtts = my_natts)
+        END IF
         IF (status.eq.nf90_noerr) THEN
           DO j=1,my_natts
             status=nf90_inq_attname(my_ncid, varid, j, my_Aname)
@@ -1734,6 +1739,184 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fatt
+
+      SUBROUTINE netcdf_get_satt (ng, model, ncname, varid, AttName,    &
+     &                            AttValue, foundit, ncid)
+!
+!=======================================================================
+!                                                                      !
+!  This routine gets requested variable string attribute(s).           !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     varid        Variable ID for variable attribute or               !
+!                    NF90_GLOBAL for a global attribute (integer)      !
+!     AttName      Attribute name to read (string array)               !
+!     ncid         NetCDF file ID (integer, OPTIONAL)                  !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     AttValue     Attribute value (string array)                      !
+!     foundit      Switch (T/F) activated when the requested           !
+!                    attribute is found (logical array)                !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+      USE distribute_mod, ONLY : mp_bcasti, mp_bcasts
+#endif
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model, varid
+
+      integer, intent(in), optional :: ncid
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: AttName(:)
+
+      logical, intent(out) :: foundit(:)
+
+      character (len=*), intent(out) :: AttValue(:)
+!
+!  Local variable declarations.
+!
+      integer :: i, j, my_natts, my_ncid, nvatts, status
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(20) :: ibuffer
+#endif
+
+      character (len=40) :: my_Aname
+      character (len=40) :: my_Vname
+!
+!-----------------------------------------------------------------------
+!  Inquire ID of requested variable.
+!-----------------------------------------------------------------------
+!
+!  If appropriate, open file for reading.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
+        IF (exit_flag.ne.NoError) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  Get number of variable attributes to process.
+!
+      nvatts=UBOUND(AttValue, DIM=1)
+!
+!  Inquire about requested attribute value.
+!
+      DO i=1,nvatts
+        foundit(i)=.FALSE.
+        AttValue(i)=' '
+      END DO
+
+      IF (InpThread) THEN
+        IF (varid.eq.nf90_global) THEN
+          status=nf90_inquire(my_ncid,                                  &
+     &                        nAttributes = my_natts)
+        ELSE
+          status=nf90_inquire_variable(my_ncid, varid,                  &
+     &                                 name = my_Vname,                 &
+     &                                 nAtts = my_natts)
+        END IF
+        IF (status.eq.nf90_noerr) THEN
+          DO j=1,my_natts
+            status=nf90_inq_attname(my_ncid, varid, j, my_Aname)
+            IF (status.eq.nf90_noerr) THEN
+              DO i=1,nvatts
+                IF (TRIM(my_Aname).eq.TRIM(AttName(i))) THEN
+                  status=nf90_get_att(my_ncid, varid, TRIM(AttName(i)), &
+     &                                AttValue(i))
+                  IF (status.ne.nf90_noerr) THEN
+                    IF (Master) WRITE (stdout,10) TRIM(AttName(i)),     &
+     &                                            TRIM(my_Vname),       &
+     &                                            TRIM(ncname),         &
+     &                                            TRIM(SourceFile)
+                    exit_flag=2
+                    ioerror=status
+                  END IF
+                  foundit(i)=.TRUE.
+                  EXIT
+                END IF
+              END DO
+            ELSE
+              IF (Master) WRITE (stdout,20) j,                          &
+     &                                      TRIM(my_Vname),             &
+     &                                      TRIM(ncname),               &
+     &                                      TRIM(SourceFile)
+              exit_flag=2
+              ioerror=status
+              EXIT
+            END IF
+          END DO
+        ELSE
+          IF (Master) WRITE (stdout,30) TRIM(my_Vname),                 &
+     &                                  TRIM(ncname),                   &
+     &                                  TRIM(SourceFile)
+          exit_flag=2
+          ioerror=status
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast information to all processors in the group. Pack all
+!  data into a real array for efficient communications.
+!
+      ibuffer=0
+      j=0
+      DO i=1,nvatts
+        IF (foundit(i)) THEN
+          ibuffer(i)=1
+        END IF
+        j=j+1
+      END DO
+      ibuffer(j+1)=exit_flag
+      ibuffer(j+2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      CALL mp_bcasts (ng, model, AttValue)
+      j=0
+      DO i=1,nvatts
+        IF (ibuffer(i).gt.0) THEN
+          foundit(i)=.TRUE.
+        END IF
+        j=j+1
+      END DO
+      exit_flag=ibuffer(j+1)
+      ioerror=ibuffer(j+2)
+#endif
+!
+!  If applicable, close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_GET_SATT - error while reading attribute:',    &
+     &        1x,a,'for variable',1x,a,/,19x,'in input file:',2x,a,/,   &
+     &        19x,'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_GET_SATT - error while inquiring attribute:',  &
+     &        1x,i2.2,'for variable',1x,a,/,19x,'in input file:',2x,a,  &
+     &        /,19x,'call from:',2x,a)
+  30  FORMAT (/,' NETCDF_GET_SATT - error while inquiring number of ',  &
+     &        'attributes for variable:',1x,a,/,19x,'in input file:',   &
+     &        2x,a,/,19x,'call from:',2x,a)
+
+      RETURN
+      END SUBROUTINE netcdf_get_satt
 
       SUBROUTINE netcdf_get_fvar_0d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total,                &
@@ -1957,6 +2140,8 @@
 #endif
       real(r8) :: Afactor, Aoffset, Aspval
 
+      real(r8), parameter :: Aepsilon = 1.0E-8_r8
+
       real(r8), dimension(3) :: AttValue
 
       character (len=12), dimension(3) :: AttName
@@ -2061,13 +2246,24 @@
           Aspval=AttValue(3)
         END IF
 
-        DO i=1,Asize(1)
-          IF (ABS(A(i)).ge.ABS(Aspval)) THEN
+        DO i=1,Asize(1)                       ! zero out missing values
+          IF ((foundit(3).and.(ABS(A(i)-Aspval).lt.Aepsilon)).or.       &
+     &        (.not.foundit(3).and.(ABS(A(i)).ge.ABS(Aspval)))) THEN
             A(i)=0.0_r8
-          ELSE
-            A(i)=Afactor*A(i)+Aoffset
           END IF
         END DO
+
+        IF (foundit(1)) THEN                  ! scale data
+          DO i=1,Asize(1)
+            A(i)=Afactor*A(i)
+          END DO
+        END IF
+
+        IF (foundit(2)) THEN                  ! add data offset
+          DO i=1,Asize(1)
+            A(i)=A(i)+Aoffset
+          END DO
+        END IF
       END IF
 !
 !  Compute minimum and maximum values of read variable.
@@ -2169,6 +2365,8 @@
       integer, dimension(2) :: ibuffer
 #endif
       real(r8) :: Afactor, Aoffset, Aspval
+
+      real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
 
@@ -2272,15 +2470,30 @@
           Aspval=AttValue(3)
         END IF
 
-        DO j=1,Asize(2)
+        DO j=1,Asize(2)                       ! zero out missing values
           DO i=1,Asize(1)
-            IF (ABS(A(i,j)).ge.ABS(Aspval)) THEN
+            IF ((foundit(3).and.(ABS(A(i,j)-Aspval).lt.Aepsilon)).or.   &
+     &          (.not.foundit(3).and.(ABS(A(i,j)).ge.ABS(Aspval)))) THEN
               A(i,j)=0.0_r8
-            ELSE
-              A(i,j)=Afactor*A(i,j)+Aoffset
             END IF
           END DO
         END DO
+
+        IF (foundit(1)) THEN                  ! scale data
+          DO j=1,Asize(2)
+            DO i=1,Asize(1)
+              A(i,j)=Afactor*A(i,j)
+            END DO
+          END DO
+        END IF
+
+        IF (foundit(2)) THEN                  ! add data offset
+          DO j=1,Asize(2)
+            DO i=1,Asize(1)
+              A(i,j)=A(i,j)+Aoffset
+            END DO
+          END DO
+        END IF
       END IF
 !
 !  Compute minimum and maximum values of read variable.
@@ -2379,6 +2592,8 @@
       integer, dimension(2) :: ibuffer
 #endif
       real(r8) :: Afactor, Aoffset, Aspval
+
+      real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
 
@@ -2485,17 +2700,38 @@
           Aspval=AttValue(3)
         END IF
 
-        DO k=1,Asize(3)
+        DO k=1,Asize(3)                       ! zero out missing values
           DO j=1,Asize(2)
             DO i=1,Asize(1)
-              IF (ABS(A(i,j,k)).ge.ABS(Aspval)) THEN
+              IF ((foundit(3).and.                                      &
+     &             (ABS(A(i,j,k)-Aspval).lt.Aepsilon)).or.              &
+     &            (.not.foundit(3).and.                                 &
+     &             (ABS(A(i,j,k)).ge.ABS(Aspval)))) THEN
                 A(i,j,k)=0.0_r8
-              ELSE
-                A(i,j,k)=Afactor*A(i,j,k)+Aoffset
               END IF
             END DO
           END DO
         END DO
+
+        IF (foundit(1)) THEN                  ! scale data
+          DO k=1,Asize(3)
+            DO j=1,Asize(2)
+              DO i=1,Asize(1)
+                A(i,j,k)=Afactor*A(i,j,k)
+              END DO
+            END DO
+          END DO
+        END IF
+
+        IF (foundit(2)) THEN                  ! add data offset
+          DO k=1,Asize(3)
+            DO j=1,Asize(2)
+              DO i=1,Asize(1)
+                A(i,j,k)=A(i,j,k)+Aoffset
+              END DO
+            END DO
+          END DO
+        END IF
       END IF
 !
 !  Compute minimum and maximum values of read variable.
@@ -2594,6 +2830,8 @@
       integer, dimension(2) :: ibuffer
 #endif
       real(r8) :: Afactor, Aoffset, Aspval
+
+      real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
 
@@ -2702,19 +2940,44 @@
           Aspval=AttValue(3)
         END IF
 
-        DO l=1,Asize(4)
+        DO l=1,Asize(4)                       ! zero out missing values
           DO k=1,Asize(3)
             DO j=1,Asize(2)
               DO i=1,Asize(1)
-                IF (ABS(A(i,j,k,l)).ge.ABS(Aspval)) THEN
+                IF ((foundit(3).and.                                    &
+     &               (ABS(A(i,j,k,l)-Aspval).lt.Aepsilon)).or.          &
+     &              (.not.foundit(3).and.                               &
+     &               (ABS(A(i,j,k,l)).ge.ABS(Aspval)))) THEN
                   A(i,j,k,l)=0.0_r8
-                ELSE
-                  A(i,j,k,l)=Afactor*A(i,j,k,l)+Aoffset
                 END IF
               END DO
             END DO
           END DO
         END DO
+
+        IF (foundit(1)) THEN                  ! scale data
+          DO l=1,Asize(4)
+            DO k=1,Asize(3)
+              DO j=1,Asize(2)
+                DO i=1,Asize(1)
+                  A(i,j,k,l)=Afactor*A(i,j,k,l)
+                END DO
+              END DO
+            END DO
+          END DO
+        END IF
+
+        IF (foundit(2)) THEN                  ! add data offset
+          DO l=1,Asize(4)
+            DO k=1,Asize(3)
+              DO j=1,Asize(2)
+                DO i=1,Asize(1)
+                  A(i,j,k,l)=A(i,j,k,l)+Aoffset
+                END DO
+              END DO
+            END DO
+          END DO
+        END IF
       END IF
 !
 !  Compute minimum and maximum values of read variable.

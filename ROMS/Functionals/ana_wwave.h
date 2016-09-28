@@ -1,8 +1,8 @@
       SUBROUTINE ana_wwave (ng, tile, model)
 !
-!! svn $Id: ana_wwave.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_wwave.h 795 2016-05-11 01:42:43Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -174,8 +174,8 @@
 !
 #if defined BL_TEST
       wdir=210.0_r8*deg2rad
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Hwave(i,j)=0.5_r8
           Dwave(i,j)=wdir
           Pwave_bot(i,j)=8.0_r8
@@ -186,8 +186,8 @@
       ramp_u=15.0_r8       ! start ramp UP at RAMP_UP (hours)
       ramp_time=10.0_r8    ! ramp from 0 to 1 over RAMP_TIME (hours)
       ramp_d=50.0_r8       ! start ramp DOWN at RAMP_DOWN (hours)
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Dwave(i,j)=270.0_r8*deg2rad
           Pwave_bot(i,j)=5.0_r8    ! wave period (seconds)
            cff1=MIN((0.5_r8*(TANH((time(ng)/3600.0_r8-ramp_u)/          &
@@ -206,16 +206,16 @@
       ELSE
         cff=1.0_r8
       END IF
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Hwave(i,j)=0.12_r8
           Dwave(i,j)=wdir-angler(i,j)
           Pwave_bot(i,j)=10.0_r8
         END DO
       END DO
 #elif defined SED_TOY
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Hwave(i,j)=2.0_r8
           Dwave(i,j)=90.0_r8*deg2rad
           Pwave_bot(i,j)=8.0_r8

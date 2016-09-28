@@ -2,9 +2,9 @@
 #ifdef SOLVE3D
       SUBROUTINE set_scoord (ng)
 !
-!svn $Id: set_scoord.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: set_scoord.F 795 2016-05-11 01:42:43Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -478,7 +478,7 @@
 !-----------------------------------------------------------------------
 !
       IF (Master.and.LwrtInfo(ng)) THEN
-        WRITE (stdout,10)
+        WRITE (stdout,10) ng
         cff=0.5_r8*(hmax(ng)+hmin(ng))
         DO k=N(ng),0,-1
           IF (Vtransform(ng).eq.1) THEN
@@ -505,7 +505,7 @@
         END DO
       END IF
 
-  10  FORMAT (/,' Vertical S-coordinate System: ',/,/,                  &
+  10  FORMAT (/,' Vertical S-coordinate System, Grid ',i2.2,':'/,/,     &
      &          ' level   S-coord     Cs-curve   Z',3x,                 &
      &          'at hmin       at hc    half way     at hmax',/)
   20  FORMAT (i6,2f12.7,1x,4f12.3)

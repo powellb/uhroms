@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: symmetry.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: symmetry.h 795 2016-05-11 01:42:43Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -267,11 +267,12 @@
         wrtNLmod(ng)=.FALSE.
         wrtRPmod(ng)=.FALSE.
         wrtTLmod(ng)=.FALSE.
-!$OMP PARALLEL
-        CALL initial (ng)
-!$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
       END DO
+
+!$OMP PARALLEL
+      CALL initial
+!$OMP END PARALLEL
+      IF (exit_flag.ne.NoError) RETURN
 !
 !  Run nonlinear model and compute basic state trajectory.
 !

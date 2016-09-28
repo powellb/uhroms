@@ -1,9 +1,9 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: cppdefs.h 807 2016-07-09 02:03:55Z arango $
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -28,7 +28,7 @@
 **   "hmixing.F".                                                            **
 **                                                                           **
 **   WARNING:  Use the splines vertical advection option (UV_SADVECTION)     **
-**             only in shallow, high vertical resolution applications.       **
+**             only in idealized, high vertical resolution applications.     **
 **                                                                           **
 ** UV_ADV              use to turn ON or OFF advection terms                 **
 ** UV_COR              use to turn ON or OFF Coriolis term                   **
@@ -43,8 +43,7 @@
 ** UV_LOGDRAG          use to turn ON or OFF logarithmic bottom friction     **
 ** UV_LDRAG            use to turn ON or OFF linear bottom friction          **
 ** UV_QDRAG            use to turn ON or OFF quadratic bottom friction       **
-** UV_PSOURCE          use to turn ON or OFF point Sources/Sinks             **
-** Q_PSOURCE           use to turn ON or OFF mass point Sources              **
+** SPLINES_VVISC       use if splines reconstruction of vertical viscosity   **
 **                                                                           **
 ** OPTION to not allow the bottom stress components to change the direction  **
 ** of bottom momentum (change sign of velocity components.                   **
@@ -67,7 +66,7 @@
 **   tensor along geopotentials (MIX_GEO_TS) for the biharmonic operator.    **
 **                                                                           **
 **   WARNING:  Use the splines vertical advection option (TS_SVADVECTION)    **
-**             only in shallow, high vertical resolution applications.       **
+**             only in idealized, high vertical resolution applications.     **
 **                                                                           **
 ** TS_U3ADV_SPLIT      use if 3rd-order upstream split tracer advection      **
 ** TS_A4HADVECTION     use if 4th-order Akima horizontal advection           **
@@ -84,13 +83,24 @@
 ** TS_SMAGORINSKY      use to turn ON or OFF Smagorinsky-like diffusion      **
 ** TS_FIXED            use if diagnostic run, no evolution of tracers        **
 ** T_PASSIVE           use if inert passive tracers (dyes, etc)              **
-** SALINITY            use if having salinity                                **
+** AGE_MEAN            use if computing Mean Age of inert passive tracers    **
 ** NONLIN_EOS          use if using nonlinear equation of state              **
 ** QCORRECTION         use if net heat flux correction                       **
+** SALINITY            use if having salinity                                **
 ** SCORRECTION         use if freshwater flux correction                     **
 ** SOLAR_SOURCE        use if solar radiation source term                    **
+** SPLINES_VDIFF       use if splines reconstruction of vertical diffusion   **
 ** SRELAXATION         use if salinity relaxation as a freshwater flux       **
-** TS_PSOURCE          use to turn ON or OFF point Sources/Sinks             **
+** WTYPE_GRID          use to turn ON spatially varying Jerlov water type    **
+**                                                                           **
+** OPTION to suppress further surface cooling if the SST is at freezing      **
+** point or below and the net surface heat flux is cooling:                  **
+**                                                                           **
+** LIMIT_STFLX_COOLING use to suppress SST cooling below freezing point      **
+**                                                                           **
+** OPTIONS for MPDATA 3D Advection:                                          **
+**                                                                           **
+** TS_MPDATA_LIMIT     use to limit upwind corrector fluxes for stability    **
 **                                                                           **
 ** Tracer advection OPTIONS for adjoint-based algorithms:                    **
 **                                                                           **
@@ -199,12 +209,6 @@
 ** FLOAT_VWALK         use if vertical random walk                           **
 ** VWALK_FORWARD       use if forward time stepping vertical random walk     **
 **                                                                           **
-** OPTION to activate conservative, parabolic spline reconstruction of       **
-** vertical derivatives. Notice that there also options (see above) for      **
-** vertical advection of momentum and tracers using splines.                 **
-**                                                                           **
-** SPLINES             use to activate parabolic splines reconstruction      **
-**                                                                           **
 ** OPTIONS for analytical fields configuration:                              **
 **                                                                           **
 **    Any of the analytical expressions are coded in "analytical.F".         **
@@ -215,6 +219,7 @@
 ** ANA_BTFLUX          use if analytical bottom temperature flux             **
 ** ANA_CLOUD           use if analytical cloud fraction                      **
 ** ANA_DIAG            use if customized diagnostics                         **
+** ANA_DQDSST          use if analytical surface heat flux sensitivity to SST**
 ** ANA_DRAG            use if analytical spatially varying drag parameters   **
 ** ANA_FSOBC           use if analytical free-surface boundary conditions    **
 ** ANA_GRID            use if analytical model grid set-up                   **
@@ -225,6 +230,7 @@
 ** ANA_M3CLIMA         use if analytical 3D momentum climatology             **
 ** ANA_M3OBC           use if analytical 3D momentum boundary conditions     **
 ** ANA_MASK            use if analytical Land/Sea masking                    **
+** ANA_NUDGCOEF        use if analytical climatology nudging coefficients    **
 ** ANA_PAIR            use if analytical surface air pressure                **
 ** ANA_PASSIVE         use if analytical inert tracers initial conditions    **
 ** ANA_PERTURB         use if analytical perturbation of initial conditions  **
@@ -234,11 +240,12 @@
 ** ANA_SMFLUX          use if analytical surface momentum stress             **
 ** ANA_SPFLUX          use if analytical surface passive tracers fluxes      **
 ** ANA_SPINNING        use if analytical time-varying rotation force         **
+** ANA_SPONGE          use if analytical enhanced viscosity/diffusion sponge **
 ** ANA_SRFLUX          use if analytical surface shortwave radiation flux    **
 ** ANA_SSFLUX          use if analytical surface salinity flux               **
 ** ANA_SSH             use if analytical sea surface height                  **
 ** ANA_SSS             use if analytical sea surface salinity                **
-** ANA_SST             use if analytical SST and dQdSST                      **
+** ANA_SST             use if analytical sea surface temperature, SST        **
 ** ANA_STFLUX          use if analytical surface net heat flux               **
 ** ANA_TAIR            use if analytical surface air temperature             **
 ** ANA_TCLIMA          use if analytical tracers climatology                 **
@@ -255,11 +262,14 @@
 **                                                                           **
 ** OPTIONS for horizontal mixing of tracers:                                 **
 **                                                                           **
-** CLIMA_TS_MIX        use if diffusion of tracer perturbation (t-tclm)      **
 ** DIFF_GRID           use to scale diffusion coefficients by grid size      **
 ** MIX_S_TS            use if mixing along constant S-surfaces               **
 ** MIX_GEO_TS          use if mixing on geopotential (constant Z) surfaces   **
 ** MIX_ISO_TS          use if mixing on epineutral (constant RHO) surfaces   **
+** TS_MIX_CLIMA        use if diffusion of tracer perturbation (t-tclm)      **
+** TS_MIX_MAX_SLOPE    use if maximum slope in epineutral diffusion          **
+** TS_MIX_MIN_STRAT    use if minimum stratification in epineutral diffusion **
+** TS_MIX_STABILITY    use if weighting diffusion between two time levels    **
 **                                                                           **
 ** OPTIONS for vertical turbulent mixing scheme of momentum and tracers      **
 ** (activate only one closure):                                              **
@@ -282,6 +292,7 @@
 ** K_C2ADVECTION       use if 2nd-order centered advection                   **
 ** K_C4ADVECTION       use if 4th-order centered advection                   **
 ** N2S2_HORAVG         use if horizontal smoothing of buoyancy/shear         **
+** RI_SPLINES          use if splines reconstruction for vertical sheer      **
 ** ZOS_HSIG            use if surface roughness from wave amplitude          **
 ** TKE_WAVEDISS        use if wave breaking surface flux from wave amplitude **
 **                                                                           **
@@ -294,6 +305,7 @@
 ** KANTHA_CLAYSON      use if Kantha and Clayson stability function          **
 ** K_C2ADVECTION       use if 2nd-order centered advection                   **
 ** K_C4ADVECTION       use if 4th-order centered advection                   **
+** RI_SPLINES          use if splines reconstruction for vertical sheer      **
 **                                                                           **
 ** OPTIONS for the Large et al. (1994) K-profile parameterization mixing:    **
 ** mixing:                                                                   **
@@ -305,9 +317,10 @@
 ** LMD_RIMIX           use to add diffusivity due to shear instability       **
 ** LMD_SHAPIRO         use if Shapiro filtering boundary layer depth         **
 ** LMD_SKPP            use if surface boundary layer KPP mixing              **
+** RI_SPLINES          use if splines reconstruction for Richardson Number   **
 **                                                                           **
-** OPTIONS to activate smoothing of Richardson number, if SPLINES is not     **
-** activated:                                                                **
+** OPTIONS in the K-profile parameterization to activate smoothing of        **
+** Richardson number, if RI_SPLINES is not activated:                        **
 **                                                                           **
 ** RI_HORAVG           use if horizontal Richardson number smoothing         **
 ** RI_VERAVG           use if vertical   Richardson number smoothing         **
@@ -345,10 +358,6 @@
 **                                                                           **
 ** RADIATION_2D        use if tangential phase speed in radiation conditions **
 **                                                                           **
-** OPTION to impose a sponge layer near the lateral boundary:                **
-**                                                                           **
-** SPONGE              use if enhanced viscosity/diffusion areas             **
-**                                                                           **
 ** OPTIONS for tidal forcing at open boundaries:                             **
 **                                                                           **
 **   The tidal data is processed in terms of tidal components, classified by **
@@ -372,46 +381,41 @@
 ** ADD_FSOBC           use to add tidal elevation to processed OBC data      **
 ** ADD_M2OBC           use to add tidal currents  to processed OBC data      **
 **                                                                           **
-** OPTIONS for reading and processing of climatological fields:              **
-**                                                                           **
-** M2CLIMATOLOGY       use if processing 2D momentum climatology             **
-** M3CLIMATOLOGY       use if processing 3D momentum climatology             **
-** TCLIMATOLOGY        use if processing tracers climatology                 **
-** ZCLIMATOLOGY        use if processing SSH climatology                     **
-**                                                                           **
-** OPTIONS to nudge climatology data (primarily in sponge areas):            **
-**                                                                           **
-** M2CLM_NUDGING       use if nudging 2D momentum climatology                **
-** M3CLM_NUDGING       use if nudging 3D momentum climatology                **
-** TCLM_NUDGING        use if nudging tracers climatology                    **
-**                                                                           **
 ** ROMS/TOMS driver OPTIONS:                                                 **
 **                                                                           **
 ** ADM_DRIVER          use if generic adjoint model driver                   **
 ** AD_SENSITIVITY      use if adjoint sensitivity driver                     **
 ** AFT_EIGENMODES      use if adjoint finite time eingenmodes driver         **
 ** ARRAY_MODES         use if W4DVAR representer matrix array modes          **
+** BEOFS_ONLY          use to compute EOFs of background error covariance    **
+** BGQC                use if background quality control of observations     **
+** BNORM               use if Background norm for Hessian singular vectors   **
 ** CLIPPING            use if W4DVAR representer matrix clipping analysis    **
 ** CORRELATION         use if background-error correlation model driver      **
 ** ENSEMBLE            use if ensemble prediction driver                     **
+** EVOLVED_LCZ         use to Compute 4DVar evolved Hessian singular vectors **
 ** FORCING_SV          use if forcing singular vectors driver                **
 ** FT_EIGENMODES       use if finite time eingenmodes driver: normal modes   **
-** INNER_PRODUCT       use if tangent linear and adjoint inner product check **
-** IS4DVAR             use if incremental 4DVar data assimilation            **
-** IS4DVAR_SENSITIVITY use if I4DVar observations sensitivity driver         **
+** GEOPOTENTIAL_HCONV  use if horizontal convolutions along geopotentials    **
 ** HESSIAN_FSV         use if Hessian forcing singular vectors               **
 ** HESSIAN_SO          use if Hessian stochastic optimals                    **
 ** HESSIAN_SV          use if Hessian singular vectors                       **
+** INNER_PRODUCT       use if tangent linear and adjoint inner product check **
+** IS4DVAR             use if incremental 4DVar data assimilation            **
+** IS4DVAR_SENSITIVITY use if I4DVar observations sensitivity driver         **
+** LCZ_FINAL           use to compute 4DVar Hessian singular vectors         **
 ** OPT_OBSERVATIONS    use if optimal observations driver                    **
 ** OPT_PERTURBATION    use if optimal perturbations driver, singular vectors **
 ** PICARD_TEST         use if representer tangent linear model test          **
 ** PSEUDOSPECTRA       use if pseudospectra of tangent linear resolvant      **
 ** R_SYMMETRY          use if representer matrix symmetry test               **
+** RPCG                use if Restricted B-preconditioned Lanczos solver     **
 ** RPM_DRIVER          use if generic representers model driver              **
 ** SANITY_CHECK        use if tangent linear and adjoint codes sanity check  **
 ** SO_SEMI             use if stochastic optimals driver, semi-norm          **
 ** SO_TRACE            use if stochastic optimals, randomized trace          **
 ** STOCHASTIC_OPT      use if stochastic optimals                            **
+** TIME_CONV           use if weak-constraint 4DVar time convolutions        **
 ** TLM_CHECK           use if tangent linear model linearization check       **
 ** TLM_DRIVER          use if generic tangent linear model driver            **
 ** W4DPSAS             use if weak constraint 4DPSAS data assimilation       **
@@ -422,6 +426,7 @@
 ** OPTIONS associated with tangent linear, representer and adjoint models:   **
 **                                                                           **
 ** AD_IMPULSE          use to force adjoint model with intermittent impulses **
+** ADJUST_BOUNDARY     use if including boundary conditions in 4DVar state   **
 ** ADJUST_STFLUX       use if including surface tracer flux in 4DVar state   **
 ** ADJUST_WSTRESS      use if including wind-stress in 4DVar state           **
 ** ARRAY_MODES_SPLIT   use to separate analysis due to IC, forcing, and OBC  **
@@ -429,6 +434,7 @@
 ** CELERITY_WRITE      use if writing radiation celerity in forward file     **
 ** CLIPPING_SPLIT      use to separate analysis due to IC, forcing, and OBC  **
 ** DATALESS_LOOPS      use if testing convergence of Picard iterations       **
+** ENKF_RESTART        use if writting restart fields for EnKF               **
 ** FORWARD_MIXING      use if processing forward vertical mixing coefficient **
 ** FORWARD_WRITE       use if writing out forward solution, basic state      **
 ** FORWARD_READ        use if reading in  forward solution, basic state      **
@@ -491,6 +497,10 @@
 ** HOLLING_GRAZING     use Holling-type s-shaped curve grazing (implicit)    **
 ** IVLEV_EXPLICIT      use Ivlev explicit grazing algorithm                  **
 **                                                                           **
+** Red tide biological model OPTIONS:                                        **
+**                                                                           **
+** RED_TIDE            use if red tide biological model.                     **
+**                                                                           **
 ** Sediment transport model OPTIONS:                                         **
 **                                                                           **
 ** SEDIMENT            use to activate sediment transport model              **
@@ -499,6 +509,13 @@
 ** SED_DENS            use to activate sediment to affect equation of state  **
 ** SED_MORPH           use to allow bottom model elevation to evolve         **
 ** SUSPLOAD            use to activate suspended load transport              **
+**                                                                           **
+** OPTIONS for grid nesting:                                                 **
+**                                                                           **
+** NESTING             use to activate grid nesting: composite/refinement    **
+** NO_CORRECT_TRACER   use to avoid two-way correction of boundary tracer    **
+** ONE_WAY             use if one-way nesting in refinement grids            **
+** TIME_INTERP_FLUX    time interpolate coarse mass flux instead of persist  **
 **                                                                           **
 ** OPTIONS for two-way coupling to other models:                             **
 **                                                                           **
@@ -561,6 +578,7 @@
 ** CANYON              Coastal form stress Canyon Test                       **
 ** CHANNEL_NECK        Channel with a Constriction                           **
 ** COUPLING_TEST       Two-way Atmosphere-Ocean Coupling Test                **
+** DOGBONE             Idealize nesting grids (Composite and Refinement) Test**
 ** DOUBLE_GYRE         Idealized Double-gyre Example                         **
 ** ESTUARY_TEST        Test Estuary for Sediment                             **
 ** FLT_TEST            Float Tracking Example                                **
@@ -568,6 +586,7 @@
 ** INLET_TEST          Test Inlet Application                                **
 ** KELVIN              Kelvin wave test                                      **
 ** LAB_CANYON          Lab Canyon, Polar Coordinates Example                 **
+** LAKE_JERSEY         Lake Jersey Nesting Test Case                         **
 ** LAKE_SIGNELL        Lake Signell Sediment Test Case                       **
 ** LMD_TEST            Test for LMD and KPP                                  **
 ** OVERFLOW            Gravitational/Overflow Example                        **

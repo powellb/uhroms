@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_iounits
 !
-!svn $Id: mod_iounits.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_iounits.F 813 2016-08-08 20:07:37Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -17,6 +17,8 @@
 !    BLK       Input bulk fluxes data in adjoint-based applications    !
 !    BRY       Input open boundary conditions data                     !
 !    CLM       Input climatology data                                  !
+!    DAI       Output data assimilation next cycle initial conditions  !
+!                (4D-Var analysis) or restart (Ensemble Kalman Filter) !
 !    DAV       Output 4D-Var data assimilation variables               !
 !    DIA       Output diagnostics fields                               !
 !    ERR       Output 4DVar posterior error estimate                   !
@@ -32,16 +34,20 @@
 !    IPR       Input representer model initial conditions              !
 !    ITL       Input tangent linear model initial conditions           !
 !    LCZ       Input/output Lanczos vectors                            !
+!    LZE       Input/output time-evolved Lanczos vectors               !
 !    NRM       Input/output error covariance normalization data        !
 !                NRM(1,ng)  initial conditions                         !
 !                NRM(2,ng)  model error                                !
 !                NRM(3,ng)  lateral open boundary conditions           !
 !                NRM(4,ng)  surface forcing                            !
+!    NUD       Input climatology nudging coefficients                  !
 !    OBS       Input/output 4D-Var observations                        !
+!    QCK       Output nonlinear model brief snpashots data             !
 !    RST       Output restart data                                     !
 !    TIDE      Input tide forcing                                      !
 !    TLF       Input/output tangent linear model impulse forcing       !
 !    TLM       Output tangent linear model history                     !
+!    SSF       Input Sources/Sinks forcing (river runoff)              !
 !    STA       Output station data                                     !
 !    STD       Input error covariance standard deviations              !
 !                STD(1,ng)  initial conditions                         !
@@ -52,6 +58,7 @@
 !  Standard input files:                                               !
 !                                                                      !
 !  Iname       Physical parameters standard input script file name.    !
+!  NGCname     Nested grids contact point information file name.       !
 !  USRname     USER input/output generic file name.                    !
 !  Wname       Wave model stadard input file name.                     !
 !  aparnam     Input assimilation parameters file name.                !
@@ -96,6 +103,7 @@
       TYPE(T_IO), allocatable :: BLK(:)     ! bulk fluxes fields
       TYPE(T_IO), allocatable :: BRY(:)     ! open boundary data
       TYPE(T_IO), allocatable :: CLM(:)     ! climatology fields
+      TYPE(T_IO), allocatable :: DAI(:)     ! Data assilation IC/restart
       TYPE(T_IO), allocatable :: DAV(:)     ! 4D-Var variables
       TYPE(T_IO), allocatable :: DIA(:)     ! diagnostics fields
       TYPE(T_IO), allocatable :: ERR(:)     ! 4D-Var posterior error
@@ -110,14 +118,18 @@
       TYPE(T_IO), allocatable :: IRP(:)     ! RPM initial conditions
       TYPE(T_IO), allocatable :: ITL(:)     ! TLM initial conditions
       TYPE(T_IO), allocatable :: LCZ(:)     ! Lanczos vectors
+      TYPE(T_IO), allocatable :: LZE(:)     ! evolved Lanczos vectors
+      TYPE(T_IO), allocatable :: NRM(:,:)   ! normalization
+      TYPE(T_IO), allocatable :: NUD(:)     ! nudging coefficients
       TYPE(T_IO), allocatable :: OBS(:)     ! observations
+      TYPE(T_IO), allocatable :: QCK(:)     ! quicksave fields
+      TYPE(T_IO), allocatable :: RST(:)     ! restart fields
+      TYPE(T_IO), allocatable :: SSF(:)     ! Sources/Sinks forcing
+      TYPE(T_IO), allocatable :: STA(:)     ! stations data
+      TYPE(T_IO), allocatable :: STD(:,:)   ! standard deviation
       TYPE(T_IO), allocatable :: TIDE(:)    ! tidal forcing
       TYPE(T_IO), allocatable :: TLF(:)     ! TLM impulse fields
       TYPE(T_IO), allocatable :: TLM(:)     ! TLM history fields
-      TYPE(T_IO), allocatable :: RST(:)     ! restart fields
-      TYPE(T_IO), allocatable :: STA(:)     ! stations data
-      TYPE(T_IO), allocatable :: NRM(:,:)   ! normalization
-      TYPE(T_IO), allocatable :: STD(:,:)   ! standard deviation
 !
 !  Input forcing data.
 !
@@ -142,6 +154,7 @@
 !
       character (len=256) :: Iname          ! ROMS physical parameters
       character (len=256) :: Wname          ! wave model standard input
+      character (len=256) :: NGCname        ! contact points file name
       character (len=256) :: USRname        ! use generic file name
       character (len=256) :: aparnam        ! assimilation parameters
       character (len=256) :: bparnam        ! biology model parameters
@@ -170,6 +183,12 @@
 !                                                                      !
 !=======================================================================
 !
+!  Local variable declarations.
+!
+      integer :: i, ng
+
+      character (len=1), parameter :: blank = ' '
+!
 !-----------------------------------------------------------------------
 !  Allocate I/O files management, derived type structures.
 !-----------------------------------------------------------------------
@@ -180,6 +199,7 @@
       allocate ( BLK(Ngrids) )
       allocate ( BRY(Ngrids) )
       allocate ( CLM(Ngrids) )
+      allocate ( DAI(Ngrids) )
       allocate ( DAV(Ngrids) )
       allocate ( DIA(Ngrids) )
       allocate ( ERR(Ngrids) )
@@ -194,12 +214,17 @@
       allocate ( IRP(Ngrids) )
       allocate ( ITL(Ngrids) )
       allocate ( LCZ(Ngrids) )
+      allocate ( LZE(Ngrids) )
+      allocate ( NUD(Ngrids) )
       allocate ( OBS(Ngrids) )
+      allocate ( QCK(Ngrids) )
+      allocate ( RST(Ngrids) )
+      allocate ( SSF(Ngrids) )
+      allocate ( STA(Ngrids) )
       allocate ( TIDE(Ngrids) )
       allocate ( TLF(Ngrids) )
       allocate ( TLM(Ngrids) )
-      allocate ( RST(Ngrids) )
-      allocate ( STA(Ngrids) )
+
       allocate ( NRM(4,Ngrids) )
       allocate ( STD(4,Ngrids) )
 !
@@ -208,6 +233,65 @@
 !-----------------------------------------------------------------------
 !
       allocate ( nFfiles(Ngrids) )
+!
+!-----------------------------------------------------------------------
+!  Initialize I/O NetCDF files ID to close state.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        ADM(ng)%ncid=-1
+        ADS(ng)%ncid=-1
+        AVG(ng)%ncid=-1
+        BLK(ng)%ncid=-1
+        BRY(ng)%ncid=-1
+        CLM(ng)%ncid=-1
+        DAI(ng)%ncid=-1
+        DAV(ng)%ncid=-1
+        DIA(ng)%ncid=-1
+        ERR(ng)%ncid=-1
+        FLT(ng)%ncid=-1
+        FWD(ng)%ncid=-1
+        GRD(ng)%ncid=-1
+        GST(ng)%ncid=-1
+        HIS(ng)%ncid=-1
+        HSS(ng)%ncid=-1
+        IAD(ng)%ncid=-1
+        INI(ng)%ncid=-1
+        IRP(ng)%ncid=-1
+        ITL(ng)%ncid=-1
+        LCZ(ng)%ncid=-1
+        LZE(ng)%ncid=-1
+        NUD(ng)%ncid=-1
+        OBS(ng)%ncid=-1
+        QCK(ng)%ncid=-1
+        RST(ng)%ncid=-1
+        SSF(ng)%ncid=-1
+        STA(ng)%ncid=-1
+        TLF(ng)%ncid=-1
+        TLM(ng)%ncid=-1
+
+        TIDE(ng)%ncid=-1
+
+        NRM(1:4,ng)%ncid=-1
+        STD(1:4,ng)%ncid=-1
+      END DO
+!
+!-----------------------------------------------------------------------
+!  Initialize file names to blanks.
+!-----------------------------------------------------------------------
+!
+      DO i=1,LEN(Iname)
+        Iname(i:i)=blank
+        Wname(i:i)=blank
+        NGCname(i:i)=blank
+        USRname(i:i)=blank
+        aparnam(i:i)=blank
+        bparnam(i:i)=blank
+        fbionam(i:i)=blank
+        fposnam(i:i)=blank
+        sparnam(i:i)=blank
+        sposnam(i:i)=blank
+      END DO
 
       RETURN
       END SUBROUTINE allocate_iounits
