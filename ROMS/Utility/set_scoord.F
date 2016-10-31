@@ -471,6 +471,60 @@
             SCALARS(ng)%Cs_r(k)=Csur
           END IF
         END DO
+!
+!----------------------------------------------------------------------
+! Stretching 5 case using a quadratic aproach for the s-coordinate to
+! enhance the surface exchange layer. 
+!
+! Added by Joao Marcos Souza - SOEST - 05/07/2012,
+!     J. Souza, B. S. Powell, A. C. Castillo-Trujillo, and P. Flament.
+!         ``The Vorticity Balance of the Ocean Surface in Hawaii from a
+!         Regional Reanalysis.'' J. Phys. Oceanogr., 45:424–440, 2014.
+!         
+!-----------------------------------------------------------------------
+     ELSE IF (Vstretching(ng).eq.5) THEN
+        SCALARS(ng)%sc_w(N(ng))=0.0_r8
+        SCALARS(ng)%Cs_w(N(ng))=0.0_r8
+        DO k=N(ng)-1,1,-1
+          sc_w=-(k**2-k*2.0_r8*N(ng)+k+N(ng)**2-N(ng))/(N(ng)**2-N(ng)) &
+               -0.01_r8*(k**2-k*N(ng))/(1-N(ng))
+          SCALARS(ng)%sc_w(k)=sc_w
+          IF (theta_s(ng).gt.0.0_r8) THEN
+            Csur=(1.0_r8-COSH(theta_s(ng)*sc_w))/                       &
+     &           (COSH(theta_s(ng))-1.0_r8)
+          ELSE
+            Csur=-sc_w**2
+          END IF
+          IF (theta_b(ng).gt.0.0_r8) THEN
+            Cbot=(EXP(theta_b(ng)*Csur)-1.0_r8)/                        &
+     &           (1.0_r8-EXP(-theta_b(ng)))
+            SCALARS(ng)%Cs_w(k)=Cbot
+          ELSE
+            SCALARS(ng)%Cs_w(k)=Csur
+          END IF
+        END DO
+        SCALARS(ng)%sc_w(0)=-1.0_r8
+        SCALARS(ng)%Cs_w(0)=-1.0_r8
+!
+        DO k=1,N(ng)
+          sc_r=-((k-0.5_r8)**2-2*(k-0.5_r8)*N(ng)+(k-0.5_r8)+N(ng)**2   &
+               -N(ng))/(N(ng)**2-N(ng))-0.01_r8*((k-0.5_r8)**2          &
+               -(k-0.5_r8)*N(ng))/(1-N(ng))
+          SCALARS(ng)%sc_r(k)=sc_r
+          IF (theta_s(ng).gt.0.0_r8) THEN
+            Csur=(1.0_r8-COSH(theta_s(ng)*sc_r))/                       &
+     &           (COSH(theta_s(ng))-1.0_r8)
+          ELSE
+            Csur=-sc_r**2
+          END IF
+          IF (theta_b(ng).gt.0.0_r8) THEN
+            Cbot=(EXP(theta_b(ng)*Csur)-1.0_r8)/                        &
+     &           (1.0_r8-EXP(-theta_b(ng)))
+            SCALARS(ng)%Cs_r(k)=Cbot
+          ELSE
+            SCALARS(ng)%Cs_r(k)=Csur
+          END IF
+        END DO
       END IF
 !
 !-----------------------------------------------------------------------

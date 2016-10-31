@@ -218,6 +218,7 @@
         integer  :: idOpro        ! observations provenance
         integer  :: idOtyp        ! observations type
         integer  :: idOval        ! observations value
+        integer  :: idOmeta       ! observations meta value
         integer  :: idOvar        ! observations global variance
         integer  :: idOvel        ! omega vertical velocity
         integer  :: idQair        ! surface air humidity
@@ -423,6 +424,10 @@
         integer  :: isVbar = 3                ! 2D V-velocity
         integer  :: isUvel = 4                ! 3D U-velocity
         integer  :: isVvel = 5                ! 3D V-velocity
+        integer  :: isTTime  = 17             ! Tomography Travel-Time
+        integer  :: isPTime  = 18             ! PIE Travel-Time
+        integer  :: isPress  = 19             ! Pressure
+        integer  :: isRadial = 20             ! Radial velocity
         integer  :: isUstr                    ! surface u-stress
         integer  :: isVstr                    ! surface v-stress
         integer  :: isMtke                    ! turbulent kinetic energy
@@ -1571,6 +1576,8 @@
               idOtyp=varid
             CASE ('idOval')
               idOval=varid
+            CASE ('idOmeta')
+              idOmeta=varid
             CASE ('idOvar')
               idOvar=varid
             CASE ('idKhor')

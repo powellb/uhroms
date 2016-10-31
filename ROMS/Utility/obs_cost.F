@@ -72,10 +72,10 @@
 
       real(r8) ::  cff, cff1
 
-      real(r8), dimension(0:NstateVar(ng)) :: my_ObsCost
+      real(r8), dimension(0:NobsVar(ng)) :: my_ObsCost
 # if defined DATALESS_LOOPS && \
     (defined TL_W4DVAR || defined W4DVAR || defined W4DVAR_SENSITIVITY)
-      real(r8), dimension(0:NstateVar(ng)) :: my_ObsCost1
+      real(r8), dimension(0:NobsVar(ng)) :: my_ObsCost1
 # endif
 !
 !-----------------------------------------------------------------------
@@ -87,7 +87,7 @@
 !  Compute data penalty function.
 !
       IF (model.eq.iRPM) THEN
-        DO ivar=0,NstateVar(ng)
+        DO ivar=0,NobsVar(ng)
           my_ObsCost(ivar)=0.0_r8
 #  ifdef DATALESS_LOOPS
           my_ObsCost1(ivar)=0.0_r8
@@ -118,7 +118,7 @@
 !  Compute nonlinear model data penalty function.
 !
       IF (model.eq.iNLM) THEN
-        DO ivar=0,NstateVar(ng)
+        DO ivar=0,NobsVar(ng)
           my_ObsCost(ivar)=0.0_r8
         END DO
         DO iobs=NstrObs(ng),NendObs(ng)
@@ -136,7 +136,7 @@
 !  Compute tangent linear model cost function.
 !
       IF (model.eq.iTLM) THEN
-        DO ivar=0,NstateVar(ng)
+        DO ivar=0,NobsVar(ng)
           my_ObsCost(ivar)=0.0_r8
         END DO
         DO iobs=1,Nobs(ng)
@@ -150,7 +150,7 @@
 !  Compute nonlinear model cost function.
 !
       ELSE IF (model.eq.iNLM) THEN
-        DO ivar=0,NstateVar(ng)
+        DO ivar=0,NobsVar(ng)
           my_ObsCost(ivar)=0.0_r8
         END DO
         DO iobs=1,Nobs(ng)
@@ -180,7 +180,7 @@
         tile_count=0
 # if defined TL_W4DVAR || defined W4DVAR || defined W4DVAR_SENSITIVITY
         IF (model.eq.iRPM) THEN
-          DO ivar=0,NstateVar(ng)
+          DO ivar=0,NobsVar(ng)
             FOURDVAR(ng)%DataPenalty(ivar)=my_ObsCost(ivar)+            &
      &                                    FOURDVAR(ng)%DataPenalty(ivar)
 #  ifdef DATALESS_LOOPS
@@ -192,19 +192,19 @@
 # elif defined TL_W4DPSAS          || defined W4DPSAS || \
        defined W4DPSAS_SENSITIVITY
         IF (model.eq.iNLM) THEN
-          DO ivar=0,NstateVar(ng)
+          DO ivar=0,NobsVar(ng)
             FOURDVAR(ng)%NLPenalty(ivar)=my_ObsCost(ivar)+              &
      &                                   FOURDVAR(ng)%NLPenalty(ivar)
           END DO
         END IF
 # else
         IF (model.eq.iTLM) THEN
-          DO ivar=0,NstateVar(ng)
+          DO ivar=0,NobsVar(ng)
             FOURDVAR(ng)%ObsCost(ivar)=FOURDVAR(ng)%ObsCost(ivar)+      &
      &                                 my_ObsCost(ivar)
           END DO
         ELSE IF (model.eq.iNLM) THEN
-          DO ivar=0,NstateVar(ng)
+          DO ivar=0,NobsVar(ng)
             FOURDVAR(ng)%NLobsCost(ivar)=FOURDVAR(ng)%NLobsCost(ivar)+  &
      &                                   my_ObsCost(ivar)
           END DO
@@ -219,7 +219,7 @@
 !  normalized values.
 !
       IF ((Nrun.eq.1).and.(model.eq.iTLM)) THEN
-        DO ivar=0,NstateVar(ng)
+        DO ivar=0,NobsVar(ng)
           FOURDVAR(ng)%CostNorm(ivar)=FOURDVAR(ng)%ObsCost(ivar)
         END DO
       END IF

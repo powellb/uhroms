@@ -13,6 +13,7 @@
 !  This routine computes the model minus observations adjoint misfit   !
 !  forcing for each state variable.                                    !
 !                                                                      !
+!  Radials, Tomography, and PIEs added by            Brian S. Powell   !
 !=======================================================================
 !
       implicit none
@@ -145,6 +146,7 @@
 # ifdef SOLVE3D
       integer :: itrc, j, k, nfrc
 # endif
+      real(r8) :: ad_uradial(Mobs), ad_vradial(Mobs)
       real(r8), parameter :: IniVal = 0.0_r8
 
 # include "set_bounds.h"
@@ -160,7 +162,7 @@
 !-----------------------------------------------------------------------
 !
       IF (ProcessObs(ng)) THEN
-# ifndef BGQC
+# if !defined BGQC
 !
 !  Set observation scale (ObsScale). The scale factor is used for
 !  screenning  or normalization of the observations. If only screening,
@@ -179,10 +181,11 @@
           ADmodVal(iobs)=ObsErr(iobs)*                                  &
      &                   (NLmodVal(iobs)+TLmodVal(iobs)-ObsVal(iobs))
         END DO
-
 # ifdef BGQC
 !
-!  Reject observations that fail background quality control check.
+!-----------------------------------------------------------------------
+!  Reject obs that fail background QC check.
+!-----------------------------------------------------------------------
 !
         DO iobs=1,Nobs(ng)
           ADmodVal(iobs)=ObsScale(iobs)*ADmodVal(iobs)
@@ -331,6 +334,76 @@
      &                             ADmodVal)
           END IF
         END DO
+!
+!  Radial Velocity
+!
+! The forward problem for CURVGRID is:
+!         r = u*cos(meta-angler) + v*sin(meta-angler)
+! (if not CURVGRID, angler=0)
+! 
+! We need to do the u and v separately, given by:
+!      f_v = f_v + ADmodVal*sin(meta-angler)
+!      f_u = f_u + ADmodVal*cos(meta-angler)
+!
+        IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
+          DO iobs=1,Nobs(ng)
+            IF (ObsType(iobs).eq.isRadial) THEN
+#  ifdef CURVGRID
+              ad_uradial(iobs)=ADmodVal(iobs)*                          &
+     &                         COS(ObsMeta(iobs)-ObsAngler(iobs))
+              ad_vradial(iobs)=ADmodVal(iobs)*                          &
+     &                         SIN(ObsMeta(iobs)-ObsAngler(iobs))
+#  else
+              ad_uradial(iobs)=ADmodVal(iobs)*COS(ObsMeta(iobs))
+              ad_vradial(iobs)=ADmodVal(iobs)*SIN(ObsMeta(iobs))
+#  endif
+            END IF
+          END DO
+          DO k=1,N(ng)
+            DO j=JstrV-1,Jend+1
+              DO i=Istr-1,Iend+1
+                z_v(i,j,k)=0.5_r8*(z_r(i,j-1,k)+                        &
+     &                             z_r(i,j  ,k))
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           isRadial,                              &
+     &                           Mobs, 1, Nobs(ng),                     &
+     &                           vXmin(ng), vXmax(ng),                  &
+     &                           vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,    &
+     &                           time(ng), dt(ng),                      &
+     &                           ObsType, ObsScale,                     &
+     &                           Tobs, Xobs, Yobs+0.5_r8, Zobs,         &
+     &                           ad_v(:,:,:,nfrc), z_v,                 &
+#  ifdef MASKING
+     &                           vmask,                                 &
+#  endif
+     &                           ad_vradial)
+          DO k=1,N(ng)
+            DO j=Jstr-1,Jend+1
+              DO i=IstrU-1,Iend+1
+                z_v(i,j,k)=0.5_r8*(z_r(i-1,j,k)+                        &
+     &                             z_r(i  ,j,k))
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           isRadial,                              &
+     &                           Mobs, 1, Nobs(ng),                     &
+     &                           uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,    &
+     &                           uYmin(ng), uYmax(ng),                  &
+     &                           time(ng), dt(ng),                      &
+     &                           ObsType, ObsScale,                     &
+     &                           Tobs, Xobs+0.5_r8, Yobs, Zobs,         &
+     &                           ad_u(:,:,:,nfrc), z_v,                 &
+#  ifdef MASKING
+     &                           umask,                                 &
+#  endif
+     &                           ad_uradial)
+        END IF
 # endif
 # if defined DISTRIBUTE && !defined BGQC
 !
@@ -364,6 +437,9 @@
             ELSE IF (ObsType(iobs).eq.isVvel) THEN
               FOURDVAR(ng)%ObsReject(isVvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVvel)+1
+            ELSE IF (ObsType(iobs).eq.isRadial) THEN
+              FOURDVAR(ng)%ObsReject(isRadial)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.isTvar(itrc)) THEN
@@ -379,7 +455,7 @@
 !  Load total available and rejected observations into structure
 !  array.
 !
-        DO i=1,NstateVar(ng)
+        DO i=1,NobsVar(ng)
           FOURDVAR(ng)%ObsCount(0)=FOURDVAR(ng)%ObsCount(0)+            &
      &                             FOURDVAR(ng)%ObsCount(i)
           FOURDVAR(ng)%ObsReject(0)=FOURDVAR(ng)%ObsReject(0)+          &
@@ -393,10 +469,10 @@
             ObsSum=0
             ObsVoid=0
             is=NstrObs(ng)
-            DO i=1,NstateVar(ng)
+            DO i=1,NobsVar(ng)
               IF (FOURDVAR(ng)%ObsCount(i).gt.0) THEN
                 ie=is+FOURDVAR(ng)%ObsCount(i)-1
-                WRITE (stdout,10) TRIM(Vname(1,idSvar(i))), is, ie,     &
+                WRITE (stdout,10) TRIM(Oname(i)), is, ie,               &
      &                            ie-is+1, FOURDVAR(ng)%ObsReject(i)
                 is=ie+1
                 ObsSum=ObsSum+FOURDVAR(ng)%ObsCount(i)
