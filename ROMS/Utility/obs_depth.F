@@ -83,13 +83,9 @@
               Zobs(iobs)=IniVal
             END IF
           ELSE
-            DO itrc=1,NT(ng)
-              IF (ObsType(iobs).eq.isTvar(itrc)) THEN
-                IF (.not.r_bound) THEN
-                  Zobs(iobs)=IniVal
-                END IF
-              END IF
-            END DO
+            IF (.not.r_bound) THEN
+              Zobs(iobs)=IniVal
+            END IF
           END IF
         END IF
       END DO

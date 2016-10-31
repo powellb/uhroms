@@ -80,6 +80,13 @@
 !  Xobs         Observations X-locations (grid coordinates).           !
 !  Yobs         Observations Y-locations (grid coordinates).           !
 !  Zobs         Observations Z-locations (grid coordinates).           !
+!  Nray         Number of ray points                                   !
+!  RayID        Acoustic Ray ID                                        !
+!  RayX         Ray point x-location (grid coordinate).                !
+!  RayY         Ray point y-location (grid coordinate).                !
+!  RayZ         Ray point z-location (grid coordinate).                !
+!  RayDepth     Ray point depth (meters, positive down).               !
+!  RayLength    Ray point length                                       !
 !  cg_Gnorm     Initial gradient vector normalization factor.          !
 !  cg_Greduc    Reduction in the gradient norm; excess cost function.  !
 !  cg_QG        Lanczos vector normalization factor.                   !
@@ -201,6 +208,12 @@
 #  ifdef SOLVE3D
         real(r8), allocatable :: Zobs(:)
 #  endif
+        integer,  allocatable :: RayID(:)
+        real(r8), allocatable :: RayX(:)
+        real(r8), allocatable :: RayY(:)
+        real(r8), allocatable :: RayZ(:)
+        real(r8), allocatable :: RayDepth(:)
+        real(r8), allocatable :: RayLength(:)
         real(r8), allocatable :: ADmodVal(:)
         real(r8), allocatable :: NLmodVal(:)
 #  ifdef TLM_OBS
@@ -264,9 +277,9 @@
         logical, allocatable :: Load_Zobs(:)
         logical, allocatable :: wrote_Zobs(:)
 !
-!  Maximum number of observations to process.
+!  Maximum number of observations and rays to process.
 !
-        integer :: Mobs
+        integer :: Mobs, Mrays
 !
 !  Number of model state variables to process.
 !
@@ -304,6 +317,9 @@
 !  Size of observation NetCDF file unlimited dimension.
 !
         integer, allocatable :: Ndatum(:)
+!  Size of ray observation NetCDF file unlimited dimension.
+!
+        integer, allocatable :: Nray(:)
 !
 !  Number of observations surveys available.
 !
@@ -780,6 +796,7 @@
       allocate ( NstateVar(Ngrids) )
       allocate ( NobsVar(Ngrids) )
       allocate ( Ndatum(Ngrids) )
+      allocate ( Nray(Ngrids) )
       allocate ( Nsurvey(Ngrids) )
       allocate ( ObsSurvey(Ngrids) )
       allocate ( Nobs(Ngrids) )
@@ -881,10 +898,13 @@
         IF (exit_flag.ne.NoError) RETURN
 !
         Ndatum(ng)=0
+        Nray(ng)=0
         Nsurvey(ng)=0
         DO i=1,n_dim
           IF (TRIM(dim_name(i)).eq.'datum') then
             Ndatum(ng)=dim_size(i)
+          ELSE IF (TRIM(dim_name(i)).eq.'ray_datum') THEN
+            Nray(ng)=dim_size(i)
           ELSE IF (TRIM(dim_name(i)).eq.'survey') THEN
             Nsurvey(ng)=dim_size(i)
           ELSE IF (TRIM(dim_name(i)).eq.'state_variable') THEN
@@ -1063,6 +1083,7 @@
 !  Read in number of observations available per survey at their times.
 !-----------------------------------------------------------------------
 !
+      Mrays=0
       DO ng=1,Ngrids
 !
 !  Read in number of observations available per survey.
@@ -1087,11 +1108,13 @@
 !
 #  ifdef WEAK_CONSTRAINT
         Mobs=MAXVAL(Ndatum)
+        Mrays=MAXVAL(Nray)
 #  else
         Mobs=0
         DO i=1,Nsurvey(ng)
           Mobs=MAX(Mobs, FOURDVAR(ng)%NobsSurvey(i))
         END DO
+        Mrays=Mrays+Nray(ng)
 #  endif
       END DO
 !
@@ -1136,6 +1159,26 @@
       Zobs = IniVal
 #  endif
 
+      IF (Mrays.gt.0) THEN
+        allocate ( RayID(Mrays) )
+        RayID = 0
+        
+        allocate ( RayX(Mrays) )
+        RayX = 0
+        
+        allocate ( RayY(Mrays) )
+        RayY = 0
+        
+        allocate ( RayZ(Mrays) )
+        RayZ = 0
+        
+        allocate ( RayDepth(Mrays) )
+        RayDepth = 0
+        
+        allocate ( RayLength(Mrays) )
+        RayLength = 0
+      END IF
+      
       allocate ( ADmodVal(Mobs) )
       ADmodVal = IniVal
 

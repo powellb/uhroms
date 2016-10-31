@@ -32,6 +32,10 @@
       USE extract_obs_mod, ONLY : extract_obs2d
 # ifdef SOLVE3D
       USE extract_obs_mod, ONLY : extract_obs3d
+      USE extract_tomography_mod, ONLY : extract_tomography
+#  ifdef TANGENT
+      USE tl_extract_tomography_mod, ONLY : tl_extract_tomography
+#  endif      
 # endif
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
@@ -731,6 +735,38 @@
         END IF
 #  endif
         END DO
+!
+!-----------------------------------------------------------------------
+!   Acoustic Tomography: If we encounter a travel time, then we need
+!   to call the appropriate function to sort through the ray paths and
+!   compute the sound speed.
+!-----------------------------------------------------------------------
+!
+#  ifndef IS4DVAR_SENSITIVITY
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0)) THEN
+          CALL extract_tomography (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,        &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, NLmodVal)
+        END IF
+#  endif
+#  ifdef TLM_OBS
+        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
+     &      (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0)) THEN
+          CALL tl_extract_tomography (ng, 0,                            &
+     &                        Lm(ng)+1, 1, Mm(ng)+1,                    &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, TLmodVal)
+        END IF
+#  endif
 # endif
 
 # ifdef BGQC

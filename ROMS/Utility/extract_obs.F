@@ -377,6 +377,7 @@
           w12=p1*q2
           IF (Zobs(iobs).gt.0.0_r8) THEN
             k1=MAX(1,INT(Zobs(iobs)))          ! Positions in fractional
+            k1=MIN(k1,N(ng))
             k2=MIN(INT(Zobs(iobs))+1,N(ng))    ! levels
             r2=REAL(k2-k1,r8)*(Zobs(iobs)-REAL(k1,r8))
             r1=1.0_r8-r2
@@ -384,8 +385,11 @@
             Ztop=Adepth(i1,j1,N(ng))
             Zbot=Adepth(i1,j1,1    )
             IF (Zobs(iobs).ge.Ztop) THEN
-              r1=0.0_r8                        ! If shallower, ignore.
+              k1=N(ng)
+              k2=N(ng)
+              r1=1.0_r8                        ! If shallower, set to surface.
               r2=0.0_r8
+              Zobs(iobs)=REAL(N(ng),r8)
 # ifdef BGQC
 #  ifdef IS4DVAR
               IF ((inner.eq.0).and.wrtNLmod(ng)) ObsScale(iobs)=0.0_r8
@@ -477,9 +481,9 @@
 !
 !  Reject observations that lie in the lower most grid box (AMM).
 !
-            IF ((Zobs(iobs).gt.0.0_r8).and.(Zobs(iobs).le.1.0_r8)) THEN
-              ObsScale(iobs)=0.0_r8
-            END IF
+!             IF ((Zobs(iobs).gt.0.0_r8).and.(Zobs(iobs).le.1.0_r8)) THEN
+!               ObsScale(iobs)=0.0_r8
+!             END IF
           END IF
         END IF
       END DO

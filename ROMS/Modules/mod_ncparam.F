@@ -224,6 +224,12 @@
         integer  :: idQair        ! surface air humidity
         integer  :: idPair        ! surface air pressure
         integer  :: idPbar        ! streamfunction
+        integer  :: idRayID       ! tomography ray id
+        integer  :: idRayX        ! tomography ray X-grid location
+        integer  :: idRayY        ! tomography ray Y-grid location
+        integer  :: idRayZ        ! tomography ray Z-grid location
+        integer  :: idRayD        ! tomography ray depth
+        integer  :: idRayL        ! tomography ray arc length
         integer  :: idPwet        ! wet/dry mask on PSI-points
         integer  :: idpthR        ! depths of RHO-points
         integer  :: idpthU        ! depths of U-points
@@ -1590,6 +1596,18 @@
               idMOMi=varid
             CASE ('idMOMf')
               idMOMf=varid
+            CASE ('idRayID')
+              idRayID=varid
+            CASE ('idRayX')
+              idRayX=varid
+            CASE ('idRayY')
+              idRayY=varid
+            CASE ('idRayZ')
+              idRayZ=varid
+            CASE ('idRayD')
+              idRayD=varid
+            CASE ('idRayL')
+              idRayL=varid
 #endif
 
 #ifdef BIOLOGY

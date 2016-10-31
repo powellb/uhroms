@@ -93,6 +93,7 @@
       USE ad_extract_obs_mod, ONLY : ad_extract_obs2d
 # ifdef SOLVE3D
       USE ad_extract_obs_mod, ONLY : ad_extract_obs3d
+      USE ad_extract_tomography_mod, ONLY : ad_extract_tomography
 # endif
 !
 !  Imported variable declarations.
@@ -404,6 +405,24 @@
 #  endif
      &                           ad_uradial)
         END IF
+
+!
+!-----------------------------------------------------------------------
+!  For tomographic measurements, we need only use the adjoint
+!  of the extract_tomography
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTravelTime).gt.0) THEN
+          CALL ad_extract_tomography (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,     &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        Mobs, 1, Nobs(ng),                        &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsScale, ad_t(:,:,:,nfrc,:), ADmodVal)
+        END IF
+        
+        
 # endif
 # if defined DISTRIBUTE && !defined BGQC
 !
