@@ -257,12 +257,12 @@
       integer :: itrc
 # endif
 
-      real(r8), dimension(0:NobsVar(ng)) :: my_BackCost
+      real(r8), dimension(0:NstateVar(ng)) :: my_BackCost
 
       real(r8) :: cff1, cff2
 
 # ifdef DISTRIBUTE
-      character (len=3), dimension(0:NobsVar(ng)) :: op_handle
+      character (len=3), dimension(0:NstateVar(ng)) :: op_handle
 # endif
 
 # include "set_bounds.h"
@@ -277,7 +277,7 @@
 !  assimilation algorithm iterates, Jb becomes greater than zero.
 !----------------------------------------------------------------------
 !
-      DO i=0,NobsVar(ng)
+      DO i=0,NstateVar(ng)
         my_BackCost(i)=0.0_r8
       END DO
 !
@@ -853,11 +853,11 @@
 # endif
 !$OMP CRITICAL (BACKCOST)
       IF (tile_count.eq.0) THEN
-        DO i=0,NobsVar(ng)
+        DO i=0,NstateVar(ng)
           FOURDVAR(ng)%BackCost(i)=my_BackCost(i)
         END DO
       ELSE
-        DO i=0,NobsVar(ng)
+        DO i=0,NstateVar(ng)
           FOURDVAR(ng)%BackCost(i)=FOURDVAR(ng)%BackCost(i)+            &
      &                             my_BackCost(i)
         END DO
@@ -866,10 +866,10 @@
       IF (tile_count.eq.NSUB) THEN
         tile_count=0
 # ifdef DISTRIBUTE
-        DO i=0,NobsVar(ng)
+        DO i=0,NstateVar(ng)
           op_handle(i)='SUM'
         END DO
-        CALL mp_reduce (ng, iNLM, NobsVar(ng)+1,                        &
+        CALL mp_reduce (ng, iNLM, NstateVar(ng)+1,                      &
      &                  FOURDVAR(ng)%BackCost(0:),  op_handle(0:))
 # endif
       END IF

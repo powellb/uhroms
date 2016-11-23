@@ -967,7 +967,7 @@
         FOURDVAR(ng) % SurveyTime = IniVal
 
 #  ifdef FOUR_DVAR
-        allocate ( FOURDVAR(ng) % BackCost(0:NobsVar(ng)) )
+        allocate ( FOURDVAR(ng) % BackCost(0:NstateVar(ng)) )
         FOURDVAR(ng) % BackCost = IniVal
 
         allocate ( FOURDVAR(ng) % Cost0(Nouter) )
