@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_write (ng, tile, model)
 !
-!svn $Id: obs_write.F 807 2016-07-09 02:03:55Z arango $
+!svn $Id: obs_write.F 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -95,6 +95,13 @@
         Mstr=1
         Mend=Nobs(ng)
 # endif
+!
+!  Initialize observation reject/accept processing flag.
+!
+        DO iobs=Mstr,Mend
+          ObsVetting(iobs)=IniVal
+        END DO
+
 # ifndef IS4DVAR_SENSITIVITY
 !
 !  Some entries are not computed in the extraction routine.  Set values
@@ -147,27 +154,6 @@
         END IF
 #  endif
 # endif
-# ifndef WEAK_CONSTRAINT
-!
-!  Set observation scale (ObsScale). The scale factor is used
-!  for screenning of the observations. This scale is one for good
-!  observations and zero for bad observations.
-!
-#  ifdef BGQC
-#   ifdef IS4DVAR
-        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
-#   else
-        IF (inner.eq.0.and.outer.eq.0) THEN
-#   endif
-        DO iobs=Mstr,Mend
-          ObsScale(iobs)=IniVal
-        END DO
-#  else
-        DO iobs=Mstr,Mend
-          ObsScale(iobs)=IniVal
-        END DO
-#  endif
-# endif
 !
 !  Free-surface observations.
 !
@@ -181,7 +167,7 @@
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%zeta(:,:,KOUT),                 &
 #  ifdef MASKING
@@ -196,7 +182,7 @@
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%e_zeta(:,:,1),                  &
 #   ifdef MASKING
@@ -216,7 +202,7 @@
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%tl_zeta(:,:,KOUT),              &
 #  ifdef MASKING
@@ -238,7 +224,7 @@
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%ubar(:,:,KOUT),                 &
 #  ifdef MASKING
@@ -253,7 +239,7 @@
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%e_ubar(:,:,1),                  &
 #   ifdef MASKING
@@ -273,7 +259,7 @@
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%tl_ubar(:,:,KOUT),              &
 #  ifdef MASKING
@@ -295,7 +281,7 @@
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%vbar(:,:,KOUT),                 &
 #  ifdef MASKING
@@ -310,7 +296,7 @@
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%e_vbar(:,:,1),                  &
 #   ifdef MASKING
@@ -330,7 +316,7 @@
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs,                         &
      &                        OCEAN(ng)%tl_vbar(:,:,KOUT),              &
 #  ifdef MASKING
@@ -343,7 +329,7 @@
 # ifdef SOLVE3D
 !
 !  3D u-velocity observations.
-!pwd
+!
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isUvel).gt.0)) THEN
@@ -362,7 +348,7 @@
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType,  ObsScale,                       &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs, Zobs,                   &
      &                        OCEAN(ng)%u(:,:,:,NOUT),                  &
      &                        GRID(ng)%z_v,                             &
@@ -378,7 +364,7 @@
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType,  ObsScale,                       &
+     &                        ObsType,  ObsVetting,                     &
      &                        Tobs, Xobs, Yobs, Zobs,                   &
      &                        OCEAN(ng)%e_u(:,:,:,1),                   &
      &                        GRID(ng)%z_v,                             &
@@ -407,7 +393,7 @@
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs, Zobs,                   &
      &                        OCEAN(ng)%tl_u(:,:,:,NOUT),               &
      &                        GRID(ng)%z_v,                             &
@@ -438,7 +424,7 @@
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs, Zobs,                   &
      &                        OCEAN(ng)%v(:,:,:,NOUT),                  &
      &                        GRID(ng)%z_v,                             &
@@ -454,7 +440,7 @@
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs, Zobs,                   &
      &                        OCEAN(ng)%e_v(:,:,:,1),                   &
      &                        GRID(ng)%z_v,                             &
@@ -483,7 +469,7 @@
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
      &                        time(ng), dt(ng),                         &
-     &                        ObsType, ObsScale,                        &
+     &                        ObsType, ObsVetting,                      &
      &                        Tobs, Xobs, Yobs, Zobs,                   &
      &                        OCEAN(ng)%tl_v(:,:,:,NOUT),               &
      &                        GRID(ng)%z_v,                             &
@@ -507,7 +493,7 @@
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
      &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsScale,                      &
+     &                          ObsType, ObsVetting,                    &
      &                          Tobs, Xobs, Yobs, Zobs,                 &
      &                          OCEAN(ng)%t(:,:,:,NOUT,itrc),           &
      &                          GRID(ng)%z_r,                           &
@@ -523,7 +509,7 @@
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
      &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsScale,                      &
+     &                          ObsType, ObsVetting,                    &
      &                          Tobs, Xobs, Yobs, Zobs,                 &
      &                          OCEAN(ng)%e_t(:,:,:,1,itrc),            &
      &                          GRID(ng)%z_r,                           &
@@ -544,7 +530,7 @@
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
      &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsScale,                      &
+     &                          ObsType, ObsVetting,                    &
      &                          Tobs, Xobs, Yobs, Zobs,                 &
      &                          OCEAN(ng)%tl_t(:,:,:,NOUT,itrc),        &
      &                          GRID(ng)%z_r,                           &
@@ -768,54 +754,66 @@
         END IF
 #  endif
 # endif
-
-# ifdef BGQC
 !
 !-----------------------------------------------------------------------
-!  Perform the background quality control check and reject observations
-!  that fail.
+!  If processing nonlinear trajectory, load observation reject/accept
+!  flag into screening variable.  This needs to be done once and
+!  controlled by the main driver. Notice that in routine "extract_obs"
+!  the observations are only accepted if they are at the appropriate
+!  time window and grid bounded at water points.
 !-----------------------------------------------------------------------
 !
-#  ifdef IS4DVAR
-        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
-#  else
-        IF (inner.eq.0.and.outer.eq.0) THEN
-#  endif
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
           DO iobs=Mstr,Mend
+            ObsScale(iobs)=ObsVetting(iobs)
+          END DO
+        END IF
+
+# if defined BGQC && !defined IS4DVAR_SENSITIVITY
+!
+!-----------------------------------------------------------------------
+!  Perform the background quality control: check and reject observations
+!  that fail. Only observations that are bounded in time and space
+!  (ObsScale .ne. 0) are considered.
+!-----------------------------------------------------------------------
+!
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
+          DO iobs=Mstr,Mend
+            IF (ObsScale(iobs).ne.IniVal) THEN
 #  if defined IS4DVAR
-            df1=(ObsVal(iobs)-NLmodVal(iobs))/BgErr(iobs)
-            df2=(1.0_r8/ObsErr(iobs))/(BgErr(iobs)*BgErr(iobs))
+              df1=(ObsVal(iobs)-NLmodVal(iobs))/BgErr(iobs)
+              df2=(1.0_r8/ObsErr(iobs))/(BgErr(iobs)*BgErr(iobs))
 #  elif defined WEAK_CONSTRAINT
 #    ifdef W4DVAR
-            df1=(ObsVal(iobs)-TLmodVal(iobs))/BgErr(iobs)
-            df2=ObsErr(iobs)/(BgErr(iobs)*BgErr(iobs))
+              df1=(ObsVal(iobs)-TLmodVal(iobs))/BgErr(iobs)
+              df2=ObsErr(iobs)/(BgErr(iobs)*BgErr(iobs))
 #    else
-            df1=(ObsVal(iobs)-NLmodVal(iobs))/BgErr(iobs)
-            df2=ObsErr(iobs)/(BgErr(iobs)*BgErr(iobs))
+              df1=(ObsVal(iobs)-NLmodVal(iobs))/BgErr(iobs)
+              df2=ObsErr(iobs)/(BgErr(iobs)*BgErr(iobs))
 #    endif
 #  endif
-            thresh=BgThresh(iobs)*(1.0_r8+df2)
-            IF (df1*df1.gt.thresh) THEN
-              ObsScale(iobs)=0.0_r8
+              thresh=BgThresh(iobs)*(1.0_r8+df2)
+              IF (df1*df1.gt.thresh) THEN
+                ObsScale(iobs)=0.0_r8
+              END IF
             END IF
           END DO
         END IF
-        DO iobs=Mstr,Mend
-          TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)
-        END DO
 # endif
-
+!
+!-----------------------------------------------------------------------
+!  Scale extracted tangent linear data at observations location.
+!-----------------------------------------------------------------------
+!
+        IF (wrtTLmod(ng).or.wrtRPmod(ng)) THEN
+          DO iobs=Mstr,Mend
 # ifdef IS4DVAR_SENSITIVITY
-!
-!-----------------------------------------------------------------------
-!  Scaled extracted data at observations location by the observation
-!  error (observation error covariance).
-!-----------------------------------------------------------------------
-!
-        DO iobs=Mstr,Mend
-          TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)*ObsErr(iobs)
-        END DO
+            TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)*ObsErr(iobs)
+# else
+            TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)
 # endif
+          END DO
+        END IF
 
 # ifdef DISTRIBUTE
 !
@@ -837,22 +835,27 @@
 #   else
      &                     NLmodVal)
 #   endif
+        END IF
+
 #   ifdef BGQC
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
+
           CALL mp_collect (ng, model, Ncollect, IniVal,                 &
 #    if defined WEAK_CONSTRAINT
      &                     BgErr(Mstr:))
 #    else
      &                     BgErr)
 #    endif
-!!AMM     CALL mp_collect (ng, model, Ncollect, IniVal,                 &
-!!#  if defined WEAK_CONSTRAINT
-!!   &                     BgThresh(Mstr:))
-!!#  else
-!!   &                     BgThresh)
-!!#  endif
-#   endif
+          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
+#    if defined WEAK_CONSTRAINT
+     &                     BgThresh(Mstr:))
+#    else
+     &                     BgThresh)
+#    endif
         END IF
+#   endif
 #  endif
+
 #  ifdef TLM_OBS
         IF (wrtTLmod(ng).or.wrtRPmod(ng)) THEN
           CALL mp_collect (ng, model, Ncollect, IniVal,                 &
@@ -863,6 +866,7 @@
 #   endif
         END IF
 #  endif
+
 #  ifdef SOLVE3D
         IF (Load_Zobs(ng)) THEN
           CALL mp_collect (ng, model, Ncollect, IniVal,                 &
@@ -873,28 +877,17 @@
 #   endif
         END IF
 #  endif
-#  ifdef BGQC
-#   ifdef IS4DVAR
-        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
-#   else
-        IF (inner.eq.0.and.outer.eq.0) THEN
-#   endif
+
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
           CALL mp_collect (ng, model, Ncollect, IniVal,                 &
-#   ifdef WEAK_CONSTRAINT
+#  ifdef WEAK_CONSTRAINT
      &                     ObsScale(Mstr:))
-#     else
-     &                     ObsScale)
-#   endif
-        END IF
 #  else
-        CALL mp_collect (ng, model, Ncollect, IniVal,                   &
-#   ifdef WEAK_CONSTRAINT
-     &                   ObsScale(Mstr:))
-#   else
-     &                   ObsScale)
-#   endif
+     &                     ObsScale)
 #  endif
+        END IF
 # endif
+
 # if defined FOUR_DVAR && !defined IS4DVAR_SENSITIVITY
 !
 !-----------------------------------------------------------------------
@@ -942,11 +935,7 @@
           END IF
         END IF
 #  ifdef BGQC
-#   ifdef IS4DVAR
-        IF (inner.eq.0.and.wrtNLmod(ng)) THEN
-#   else
-        IF (inner.eq.0.and.outer.eq.0) THEN
-#   endif
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
           CALL netcdf_put_fvar (ng, model, DAV(ng)%name,                &
      &                          Vname(1,idBgEr), BgErr(Mstr:),          &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
@@ -983,10 +972,9 @@
         END IF
 #endif
 !
-!  Observation screening/normalization scale.
+!  Observation screening flag: accept or reject.
 !
-        IF ((Nrun.eq.1).and.                                            &
-     &      (wrtNLmod(ng).or.wrtTLmod(ng).or.wrtRPmod(ng))) THEN
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
           CALL netcdf_put_fvar (ng, model, DAV(ng)%name,                &
      &                          Vname(1,idObsS), ObsScale(Mstr:),       &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
@@ -1014,7 +1002,7 @@
         IF (wrtNLmod(ng).and.outer.gt.0) THEN
           CALL netcdf_put_fvar (ng, model, DAV(ng)%name,                &
      &                          Vname(1,idNLmo), NLmodVal(Mstr:),       &
-     &                       (/NstrObs(ng),outer/), (/Nobs(ng),1/),     &
+     &                          (/NstrObs(ng),outer/), (/Nobs(ng),1/),  &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idNLmo))
           IF (exit_flag.ne.NoError) RETURN
@@ -1177,7 +1165,7 @@
         END IF
 !
 !-----------------------------------------------------------------------
-!  Set counters for number of rejected observations for each state
+!  Set counters for the number of rejected observations for each state
 !  variable.
 !-----------------------------------------------------------------------
 !

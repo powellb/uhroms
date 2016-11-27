@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_info (ng, model, ncid, ncname)
 !
-!svn $Id: wrt_info.F 806 2016-06-10 01:01:57Z arango $
+!svn $Id: wrt_info.F 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -871,6 +871,12 @@
 # if defined POSTERIOR_EOFS && defined WEAK_CONSTRAINT
         CALL netcdf_put_ivar (ng, model, ncname, 'NpostI',              &
      &                        NpostI, (/0/), (/0/),                     &
+     &                        ncid = ncid)
+# endif
+# if defined IS4DVAR_SENSITIVITY || defined W4DPSAS_SENSITIVITY || \
+     defined W4DVAR_SENSITIVITY
+        CALL netcdf_put_ivar (ng, model, ncname, 'Nimpact',             &
+     &                        Nimpact, (/0/), (/0/),                    &
      &                        ncid = ncid)
 # endif
 # ifndef IS4DVAR_SENSITIVITY

@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: w4dpsas_ocean.h 807 2016-07-09 02:03:55Z arango $
+!svn $Id: w4dpsas_ocean.h 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -569,7 +569,9 @@
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !  Run nonlinear model and compute background state trajectory, X_n-1(t)
-!  and the background values at the observation points and times.
+!  and the background values at the observation points and times. It
+!  processes and writes the observations accept/reject flag (ObsScale)
+!  once to allow background quality control, if any.
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
       DO ng=1,Ngrids
@@ -584,6 +586,7 @@
         WRITE (DIA(ng)%name,10) TRIM(DIA(ng)%base), outer
 #endif
         wrtMisfit(ng)=.TRUE.
+        wrtObsScale(ng)=.TRUE.
         SporadicImpulse(ng)=.FALSE.
         FrequentImpulse(ng)=.FALSE.
         IF (Master) THEN
@@ -610,6 +613,7 @@
         LwrtDIA(ng)=.FALSE.
 #endif
         wrtNLmod(ng)=.FALSE.
+        wrtObsScale(ng)=.FALSE.
       END DO
 !
 !  Report data penalty function.

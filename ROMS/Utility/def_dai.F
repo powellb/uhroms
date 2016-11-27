@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined ENKF_RESTART
       SUBROUTINE def_dai (ng)
 !
-!svn $Id: def_dai.F 813 2016-08-08 20:07:37Z arango $
+!svn $Id: def_dai.F 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -575,9 +575,9 @@
         DAI(ng)%Rindex=rec_size
       END IF QUERY
 !
-  10  FORMAT (6x,'DEF_AVG     - creating  DA INI/RST', t43,             &
+  10  FORMAT (6x,'DEF_DAI     - creating  DA INI/RST', t43,             &
      &        ' file, Grid ',i2.2,': ', a)
-  20  FORMAT (6x,'DEF_AVG     - inquiring DA INI/RST', t43,             &
+  20  FORMAT (6x,'DEF_DAI     - inquiring DA INI/RST', t43,             &
      &        ' file, Grid ',i2.2,': ', a)
   30  FORMAT (/,' DEF_DAI - unable to create DA initial/restart',       &
      &        ' NetCDF file: ',a)

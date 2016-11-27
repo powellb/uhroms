@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_initial (ng, model, backward)
 !
-!svn $Id: obs_initial.F 807 2016-07-09 02:03:55Z arango $
+!svn $Id: obs_initial.F 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -297,13 +297,7 @@
       DO i=1,Mobs
         NLmodVal(i)=IniVal
         TLmodVal(i)=IniVal
-# ifdef BGQC
-        IF ((inner.eq.0).and.(outer.eq.0)) THEN
-          ObsScale(i)=IniVal
-        END IF
-# else
-        ObsScale(i)=IniVal
-# endif
+        ObsVetting(i)=IniVal
       END DO
 # endif
 !

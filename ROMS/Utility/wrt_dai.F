@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined ENKF_RESTART
       SUBROUTINE wrt_dai (ng, tile)
 !
-!svn $Id: wrt_dai.F 817 2016-08-22 21:40:37Z arango $
+!svn $Id: wrt_dai.F 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -340,14 +340,14 @@
   20  FORMAT (/,' WRT_DAI - error while writing variable: ',a,/,11x,    &
      &        'into DA initial/rstart NetCDF file for time record: ',i4)
 # ifdef SOLVE3D
-  30  FORMAT (6x,'WRT_DAI     - wrote DA IC', t39,                      &
+  30  FORMAT (6x,'WRT_DAI     - wrote DA INI/RST', t39,                 &
 #  ifdef NESTING
      &        'fields (Index=',i1,',',i1,') in record = ',i7.7,2x,i2.2)
 #  else
      &        'fields (Index=',i1,',',i1,') in record = ',i7.7)
 #  endif
 # else
-  30  FORMAT (6x,'WRT_DAI     - wrote DA IC', t39,                      &
+  30  FORMAT (6x,'WRT_DAI     - wrote DA INI/RST', t39,                 &
 #  ifdef NESTING
      &        'fields (Index=',i1,')   in record = ',i7.7,2x,i2.2)
 #  else

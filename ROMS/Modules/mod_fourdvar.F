@@ -3,7 +3,7 @@
 
 #if defined FOUR_DVAR || defined VERIFICATION
 !
-!svn $Id: mod_fourdvar.F 807 2016-07-09 02:03:55Z arango $
+!svn $Id: mod_fourdvar.F 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -47,6 +47,8 @@
 !               terms in the routine "error_covariance".               !
 #endif
 !  nConvRitz    Number of converged Ritz eigenvalues.                  !
+!  Nimpact      Outer loop to consider for observations impact and     !
+!                 observations sensitivity.                            !
 !  NLmodVal     Nonlinear model values at observation locations.       !
 !  NHsteps      Full number of horizontal diffusion steps for spatial  !
 !                 convolutions.                                        !
@@ -63,14 +65,16 @@
 !  ObsErr       Observation error.                                     !
 !  ObsProv      Observation provenance flags.                          !
 !  ObsReject    Current rejected observation counts per state variable.!
-!  ObsScale     Observation scale used during screenning and/or        !
-!                 normalization of the observations.                   !
+!  ObsScale     Observation screening and quality control scale,      !
+!                 0: reject 1: accept.                                 !
 !  ObsType      Observation type identifier.                           !
 !  ObsVal       Observation values.                                    !
 !  ObsVar       Global observation variance for each state variable.   !
 !  ObsMeta      Observation meta values.                               !
 !  ObsAngler    Grid angle at observation locations                    !
 !  Oname        Array of strings describing the observation types      !
+!  ObsVetting   Processing flag used to reject (zero) or accept (unity)!
+!                 observations.                                        !
 !  Optimality   normalized, optimal cost function minimum.             !
 !  Ritz         Ritz eigenvalues to compute approximated Hessian.      !
 !  RitzMaxErr   Ritz values maximum error limit.                       !
@@ -197,6 +201,7 @@
 
         real(r8), allocatable :: ObsErr(:)
         real(r8), allocatable :: ObsScale(:)
+        real(r8), allocatable :: ObsVetting(:)
         real(r8), allocatable :: ObsVal(:)
         real(r8), allocatable :: ObsMeta(:)  
 #  ifdef CURVGRID                            
@@ -224,9 +229,8 @@
        defined CLIPPING
         real(r8), allocatable :: TLmodVal_S(:,:,:)
 #   endif
-#   if defined TL_W4DPSAS           || defined W4DPSAS    || \
-       defined W4DPSAS_SENSITIVITY
-
+#   if defined ARRAY_MODES || defined TL_W4DPSAS          || \
+       defined W4DPSAS     || defined W4DPSAS_SENSITIVITY
         real(r8), allocatable :: BCKmodVal(:)
         real(r8), allocatable :: Hbk(:,:)
 #   endif
@@ -364,6 +368,15 @@
 !
         integer :: NpostI
 !
+!  Outer loop to consider in the computatio of the observations
+!  impact or observations sensitivity, Nimpact =< Nouter.  This
+!  facilitates the computations with multiple outer loop 4D-Var
+!  applications.  The observation analysis needs to be computed
+!  separately for each outer loop.  The full analysis for all
+!  outer loops are combined offline.
+!
+        integer :: Nimpact
+!
 !  Parameter to either process the eigenvector of the stabilized
 !  representer matrix to whe computing array modes (Nvct=1 less
 !  important eigenvector, Nvct=Ninner most important eigenvector)
@@ -390,6 +403,11 @@
 !  observations locations into observations NetCDF file.
 !
         logical, allocatable :: wrtNLmod(:)
+!
+!  Sitch to process and write out observation accept/reject flag used
+!  for screening and quality control.
+!
+        logical, allocatable :: wrtObsScale(:)
 !
 !  Switch to activate writting of representer model values at
 !  observations locations into observations NetCDF file.
@@ -811,6 +829,7 @@
       allocate ( ProcessObs(Ngrids) )
 
       allocate ( wrtNLmod(Ngrids) )
+      allocate ( wrtObsScale(Ngrids) )
       allocate ( wrtRPmod(Ngrids) )
       allocate ( wrtTLmod(Ngrids) )
       allocate ( wrtMisfit(Ngrids) )
@@ -1133,6 +1152,9 @@
 
       allocate ( ObsScale(Mobs) )
       ObsScale = IniVal
+
+      allocate ( ObsVetting(Mobs) )
+      ObsVetting = IniVal
 
       allocate ( ObsVal(Mobs) )
       ObsVal = IniVal
@@ -1559,6 +1581,7 @@
         wrote_Zobs(ng)=.FALSE.
         wrtMisfit(ng)=.FALSE.
         wrtNLmod(ng)=.FALSE.
+        wrtObsScale(ng)=.FALSE.
         wrtRPmod(ng)=.FALSE.
         wrtTLmod(ng)=.FALSE.
 # ifdef BALANCE_OPERATOR
