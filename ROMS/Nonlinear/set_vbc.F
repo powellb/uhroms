@@ -305,11 +305,23 @@
         DO i=IstrR,IendR
 #   if defined SCORRECTION
           stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N(ng),nrhs,isalt)-    &
-     &                     Tnudg(isalt,ng)*Hz(i,j,N(ng))*               &
+     &                     Tnudg_SSS(isalt,ng)*Hz(i,j,N(ng))*           &
+#       if defined SSSC_THRESHOLD
+! limit mismatch to avoid too strong relaxation fluxes
+     &                     MIN(sss_mismatch_threshold(ng),              &
+     &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j)))
+#       else
      &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
+#       endif
 #   elif defined SRELAXATION
-          stflx(i,j,isalt)=-Tnudg(isalt,ng)*Hz(i,j,N(ng))*              &
+          stflx(i,j,isalt)=-Tnudg_SSS(isalt,ng)*Hz(i,j,N(ng))*          &
+#       if defined SSSC_THRESHOLD
+! limit mismatch to avoid too strong relaxation fluxes
+     &                     MIN(sss_mismatch_threshold(ng),              &
+     &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j)))
+#       else
      &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
+#       endif
 #   else
           stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N(ng),nrhs,isalt)
 #   endif

@@ -372,7 +372,7 @@
         DO i=IstrR,IendR
 #  if defined SCORRECTION
 !>        stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N(ng),nrhs,isalt)-    &
-!>   &                     Tnudg(isalt,ng)*Hz(i,j,N(ng))*               &
+!>   &                     Tnudg_SSS(isalt,ng)*Hz(i,j,N(ng))*           &
 !>   &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
 !>
 #   ifdef TL_IOMS
@@ -380,7 +380,7 @@
      &                        tl_t(i,j,N(ng),nrhs,isalt)+               &
      &                        tl_stflx(i,j,isalt)*                      &
      &                        t(i,j,N(ng),nrhs,isalt)-                  &
-     &                        Tnudg(isalt,ng)*                          &
+     &                        Tnudg_SSS(isalt,ng)*                      &
      &                        (tl_Hz(i,j,N(ng))*                        &
      &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
      &                         Hz(i,j,N(ng))*                           &
@@ -390,25 +390,25 @@
 #   else
           tl_stflx(i,j,isalt)=stflx(i,j,isalt)*                         &
      &                        tl_t(i,j,N(ng),nrhs,isalt)-               &
-     &                        Tnudg(isalt,ng)*                          &
+     &                        Tnudg_SSS(isalt,ng)*                      &
      &                        (tl_Hz(i,j,N(ng))*                        &
      &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
      &                         Hz(i,j,N(ng))*                           &
      &                         tl_t(i,j,N(ng),nrhs,isalt))
 #   endif
 #  elif defined SRELAXATION
-!>        stflx(i,j,isalt)=-Tnudg(isalt,ng)*Hz(i,j,N(ng))*              &
+!>        stflx(i,j,isalt)=-Tnudg_SSS(isalt,ng)*Hz(i,j,N(ng))*          &
 !>   &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
 !>
 #   ifdef TL_IOMS
-          tl_stflx(i,j,isalt)=-Tnudg(isalt,ng)*                         &
+          tl_stflx(i,j,isalt)=-Tnudg_SSS(isalt,ng)*                     &
      &                        (tl_Hz(i,j,N(ng))*                        &
      &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
      &                          Hz(i,j,N(ng))*                          &
      &                          (tl_t(i,j,N(ng),nrhs,isalt)-            &
      &                           t(i,j,N(ng),nrhs,isalt)))
 #   else
-          tl_stflx(i,j,isalt)=-Tnudg(isalt,ng)*                         &
+          tl_stflx(i,j,isalt)=-Tnudg_SSS(isalt,ng)*                     &
      &                        (tl_Hz(i,j,N(ng))*                        &
      &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
      &                         Hz(i,j,N(ng))*                           &

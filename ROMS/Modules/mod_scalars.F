@@ -1200,6 +1200,8 @@
         real(r8), allocatable :: M2nudg(:)         ! 2D momentum
         real(r8), allocatable :: M3nudg(:)         ! 3D momentum
         real(r8), allocatable :: Tnudg(:,:)        ! Tracers
+        real(r8), allocatable :: Tnudg_SSS(:)      ! Sea surface salinity
+        real(r8), allocatable :: sss_mismatch_threshold(:)! Sea surface salinity
 !
 !  Variables used to impose mass flux conservation in open boundary
 !  configurations.
@@ -2066,6 +2068,8 @@
       allocate ( M2nudg(Ngrids) )
       allocate ( M3nudg(Ngrids) )
       allocate ( Tnudg(MT,Ngrids) )
+      allocate ( Tnudg_SSS(Ngrids) )
+      allocate ( sss_mismatch_threshold(Ngrids) )
 
 #ifdef BULK_FLUXES
       allocate ( blk_ZQ(Ngrids) )

@@ -91,6 +91,7 @@
 ** SOLAR_SOURCE        use if solar radiation source term                    **
 ** SPLINES_VDIFF       use if splines reconstruction of vertical diffusion   **
 ** SRELAXATION         use if salinity relaxation as a freshwater flux       **
+** SSSC_THRESHOLD      limit on freshwater flux correction                   **
 ** WTYPE_GRID          use to turn ON spatially varying Jerlov water type    **
 **                                                                           **
 ** OPTION to suppress further surface cooling if the SST is at freezing      **

@@ -1706,6 +1706,23 @@
      &               1, (/trcdim/), Aval, Vinfo, ncname,                &
      &               SetParAccess = .FALSE.)
       IF (exit_flag.ne.NoError) RETURN
+
+      Vinfo( 1)='Tnudg_SSS'
+      Vinfo( 2)='SSS nudging/relaxation inverse time scale'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+# ifdef SSSC_THRESHOLD
+      Vinfo( 1)='sss_mismatch_threshold'
+      Vinfo( 2)='difference in SSS that triggers SSS correction'
+      Vinfo( 3)='PSU'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (exit_flag.ne.NoError) RETURN
+# endif
 #endif
 
 #ifndef DEBUGGING
