@@ -1,7 +1,7 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 807 2016-07-09 02:03:55Z arango $
+** svn $Id: cppdefs.h 821 2016-11-26 23:33:02Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2016 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -451,6 +451,7 @@
 ** POSTERIOR_ERROR_I   use if initial posterior analysis error covariance    **
 ** RECOMPUTE_4DVAR     use if recomputing 4DVar in analysis algorithms       **
 ** RPM_RELAXATION      use if Picard iterations, Diffusive Relaxation of RPM **
+** SKIP_NLM            use to skip running NLM, reading NLM trajectory       **
 ** SO_SEMI_WHITE       use to activate SO semi norm white/red noise processes**
 ** STOCH_OPT_WHITE     use to activate SO white/red noise processes          **
 ** SPLINES_VCONV       use to activate implicit splines vertical convolution **

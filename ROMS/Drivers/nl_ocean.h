@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: nl_ocean.h 798 2016-05-21 17:04:58Z arango $
+!svn $Id: nl_ocean.h 821 2016-11-26 23:33:02Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -197,6 +197,7 @@
         DO ng=1,Ngrids
           LdefMOD(ng)=.TRUE.
           wrtNLmod(ng)=.TRUE.
+          wrtObsScale(ng)=.TRUE.
           CALL def_mod (ng)
           IF (exit_flag.ne.NoError) RETURN
         END DO
