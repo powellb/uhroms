@@ -318,6 +318,25 @@
 #   endif
 #  endif
 
+#  if !defined ANA_SPFLUX && defined BULK_FLUXES && defined ISOTOPE_FLUXES
+!
+!-----------------------------------------------------------------------
+!  Isotope mass fraction for O18 and O16
+!-----------------------------------------------------------------------
+!
+      CALL set_2dfld_tile (ng, tile, iNLM, ido16frac,                   &
+     &                     LBi, UBi, LBj, UBj,                          &
+     &                     FORCES(ng)%o16fracG,                         &
+     &                     FORCES(ng)%o16frac,                          &
+     &                     update)
+
+      CALL set_2dfld_tile (ng, tile, iNLM, ido18frac,                   &
+     &                     LBi, UBi, LBj, UBj,                          &
+     &                     FORCES(ng)%o18fracG,                         &
+     &                     FORCES(ng)%o18frac,                          &
+     &                     update)
+#  endif
+
 #  ifndef BULK_FLUXES
 !
 !-----------------------------------------------------------------------
@@ -481,14 +500,15 @@
 #   endif
 #  endif
 
-#  if defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE
+#  if (defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE) && \
+      ! defined ISOTOPE_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Set kinematic surface and bottom pasive tracer fluxes (T m/s).
 !-----------------------------------------------------------------------
 !
       DO itrc=NAT+1,NT(ng)
-#   ifdef ANA_SPFLUX
+#   if defined ANA_SPFLUX
         CALL ana_stflux (ng, tile, iNLM, itrc)
 #   else
         CALL set_2dfld_tile (ng, tile, iNLM, idTsur(itrc),              &

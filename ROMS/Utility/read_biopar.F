@@ -27,6 +27,8 @@
 #  include <npzd_Powell_inp.h>
 # elif defined RED_TIDE
 #  include <red_tide_inp.h>
+# elif defined ISOTOPE
+#  include <isotope_inp.h>
 # endif
 #else
       SUBROUTINE read_BioPar

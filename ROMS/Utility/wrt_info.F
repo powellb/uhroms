@@ -1266,6 +1266,8 @@
 #  include <npzd_Powell_wrt.h>
 # elif defined RED_TIDE
 #  include <red_tide_wrt.h>
+# elif defined ISOTOPE
+#  include <isotope_wrt.h>
 # endif
 #endif
 

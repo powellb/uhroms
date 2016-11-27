@@ -503,6 +503,11 @@
 **                                                                           **
 ** RED_TIDE            use if red tide biological model.                     **
 **                                                                           **
+** Isotope model OPTIONS:                                                    **
+**                                                                           **
+** ISOTOPE             use if isotope model                                  **
+** ISOTOPE_FLUXES      use if calculating atmospheric isotope flux           **
+**                                                                           **
 ** Sediment transport model OPTIONS:                                         **
 **                                                                           **
 ** SEDIMENT            use to activate sediment transport model              **

@@ -103,6 +103,9 @@
 # if defined SSH_TIDES || defined UV_TIDES
       USE set_tides_mod, ONLY : set_tides
 # endif
+# if defined ISOTOPE && defined ISOTOPE_FLUXES
+      USE isotope_stflux_mod, ONLY : isotope_stflux
+# endif
       USE set_vbc_mod, ONLY : set_vbc
       USE set_zeta_mod, ONLY : set_zeta
       USE step2d_mod, ONLY : step2d
@@ -356,8 +359,14 @@
 # ifdef BULK_FLUXES
 #  if defined FOUR_DVAR && defined NL_BULK_FLUXES
                 IF (Nrun.eq.1) CALL bulk_flux (ng, tile)
+#   if defined ISOTOPE && defined ISOTOPE_FLUXES
+                IF (Nrun.eq.1.) CALL isotope_stflux(ng, tile, iNLM)
+#   endif
 #  else
                 CALL bulk_flux (ng, tile)
+#   if defined ISOTOPE && defined ISOTOPE_FLUXES
+                CALL isotope_stflux(ng, tile, iNLM)
+#   endif
 #  endif
 # endif
 # ifdef BBL_MODEL

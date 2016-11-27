@@ -1410,7 +1410,11 @@
 !
 !  Define surface active tracer fluxes.
 !
+# ifdef ISOTOPE
+        DO itrc=1,NT(ng)
+# else
         DO itrc=1,NAT
+# endif
           IF (Hout(idTsur(itrc),ng)) THEN
             Vinfo( 1)=Vname(1,idTsur(itrc))
             Vinfo( 2)=Vname(2,idTsur(itrc))

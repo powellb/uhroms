@@ -31,6 +31,8 @@
 #  include <tl_npzd_iron.h>
 # elif defined NPZD_POWELL
 #  include <tl_npzd_Powell.h>
+# elif defined ISOTOPE
+#  include <tl_isotope.h>
 # endif
 
 #endif

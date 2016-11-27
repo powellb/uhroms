@@ -1339,7 +1339,11 @@
 !
 !  Write out surface active traces fluxes.
 !
+# ifdef ISOTOPE
+      DO itrc=1,NT(ng)
+# else
       DO itrc=1,NAT
+# endif
         IF (Hout(idTsur(itrc),ng)) THEN
           IF (itrc.eq.itemp) THEN
 # ifdef SO_SEMI

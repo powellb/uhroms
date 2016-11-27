@@ -120,6 +120,8 @@
 #  include <npzd_Powell.h>
 # elif defined RED_TIDE
 #  include <red_tide.h>
+# elif defined ISOTOPE
+#  include <isotope.h>
 # endif
 
 #endif

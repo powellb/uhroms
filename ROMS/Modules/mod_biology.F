@@ -25,6 +25,7 @@
 **         npzd_iron.h        NPZD_IRON                               **
 **         npzd_Powell.h      NPZD_POWELL                             **
 **         red_tide.h         RED_TIDE                                **
+**         isotope.h          ISOTOPE                                 **
 **                                                                    **
 **   (2) Internal model parameters declaration:                       **
 **                                                                    **
@@ -35,6 +36,7 @@
 **         npzd_iron_mod.h                                            **
 **         npzd_Powell_mod.h                                          **
 **         red_tide_mod.h                                             **
+**         isotope_mod.h                                              **
 **                                                                    **
 **   (3) Model parameters standard input script:                      **
 **                                                                    **
@@ -45,6 +47,7 @@
 **         npzd_iron.in                                               **
 **         npzd_Powell.in                                             **
 **         red_tide.in                                                **
+**         isotope.in                                                 **
 **                                                                    **
 **   (4) Code to read input model parameters:                         **
 **                                                                    **
@@ -55,6 +58,7 @@
 **         npzd_iron_inp.h                                            **
 **         npzd_Powell_inp.h                                          **
 **         red_tide_inp.h                                             **
+**         isotope_inp.h                                              **
 **                                                                    **
 **   (5) Code to assign indices to model variables during the         **
 **       reading of metadata information from "varinfo.dat":          **
@@ -66,6 +70,7 @@
 **         npzd_iron_var.h                                            **
 **         npzd_Powell_var.h                                          **
 **         red_tide_var.h                                             **
+**         isotope_var.h                                              **
 **                                                                    **
 **   (6) Code to define input model parameters in all output          **
 **       NetCDF files:                                                **
@@ -77,6 +82,7 @@
 **         npzd_iron_def.h                                            **
 **         npzd_Powell_def.h                                          **
 **         red_tide_def.h                                             **
+**         isotope_def.h                                              **
 **                                                                    **
 **   (7) Code to write out input model parameters in all output       **
 **       NetCDF files:                                                **
@@ -88,6 +94,7 @@
 **         npzd_iron_wrt.h                                            **
 **         npzd_Powell_wrt.h                                          **
 **         red_tide_wrt.h                                             **
+**         isotope_wrt.h                                              **
 **                                                                    **
 **                                                                    **
 ** Note that all the *.h files are located in ROMS/Nonlinear/Biology  **
@@ -113,6 +120,8 @@
 #  include <npzd_Powell_mod.h>
 # elif defined RED_TIDE
 #  include <red_tide_mod.h>
+# elif defined ISOTOPE
+#  include <isotope.h>
 # endif
 #endif
 

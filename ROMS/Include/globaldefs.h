@@ -533,7 +533,7 @@
 #if defined BIO_FENNEL  || defined ECOSIM      || \
     defined NEMURO      || defined NPZD_FRANKS || \
     defined NPZD_IRON   || defined NPZD_POWELL || \
-    defined RED_TIDE
+    defined ISOTOPE     || defined RED_TIDE
 # define BIOLOGY
 #endif
 
