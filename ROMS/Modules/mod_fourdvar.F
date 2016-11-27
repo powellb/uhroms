@@ -969,14 +969,12 @@
         NstateVar(ng)=5+NT(ng)
 #   ifdef ADJUST_STFLUX
         NstateVar(ng)=NstateVar(ng)+NT(ng)
-        NobsVar(ng)=NobsVar(ng)+NT(ng)
 #   endif
 #  else
         NstateVar(ng)=3
 #  endif
 #  ifdef ADJUST_WSTRESS
         NstateVar(ng)=NstateVar(ng)+2
-        NobsVar(ng)=NobsVar(ng)+2
 #  endif
 
         allocate ( FOURDVAR(ng) % NobsSurvey(Nsurvey(ng)) )
