@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_write (ng, tile, model)
 !
-!svn $Id: obs_write.F 821 2016-11-26 23:33:02Z arango $
+!svn $Id: obs_write.F 823 2016-11-29 02:28:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -585,18 +585,26 @@
 # endif
 !
 !-----------------------------------------------------------------------
-!  Scale extracted tangent linear data at observations location.
+!  Scale extracted data at observations location.
 !-----------------------------------------------------------------------
 !
-        IF (wrtTLmod(ng).or.wrtRPmod(ng)) THEN
+        IF (wrtNLmod(ng)) THEN
           DO iobs=Mstr,Mend
-# ifdef IS4DVAR_SENSITIVITY
-            TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)*ObsErr(iobs)
-# else
-            TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)
-# endif
+            NLmodVal(iobs)=ObsScale(iobs)*NLmodVal(iobs)
           END DO
         END IF
+
+# ifdef TLM_OBS
+        IF (wrtTLmod(ng).or.wrtRPmod(ng)) THEN
+          DO iobs=Mstr,Mend
+#  ifdef IS4DVAR_SENSITIVITY
+            TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)*ObsErr(iobs)
+#  else
+            TLmodVal(iobs)=ObsScale(iobs)*TLmodVal(iobs)
+#  endif
+          END DO
+        END IF
+# endif
 
 # ifdef DISTRIBUTE
 !
