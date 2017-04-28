@@ -2,9 +2,9 @@
 #if defined TL_IOMS && defined SOLVE3D
       SUBROUTINE rp_main3d (RunInterval)
 !
-!svn $Id: rp_main3d.F 795 2016-05-11 01:42:43Z arango $
+!svn $Id: rp_main3d.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -29,6 +29,7 @@
 # ifdef ANA_VMIX
       USE analytical_mod, ONLY : ana_vmix
 # endif
+      USE dateclock_mod, ONLY : time_string
 # ifdef AIR_OCEAN_NOT_YET
       USE ocean_coupler_mod, ONLY : atmos_coupling
 # endif

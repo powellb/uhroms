@@ -5,9 +5,9 @@
       defined POSTERIOR_ERROR_F)) || defined LCZ_FINAL
       SUBROUTINE wrt_hessian (ng, kout, nout)
 !
-!svn $Id: wrt_hessian.F 810 2016-08-05 01:58:16Z arango $
+!svn $Id: wrt_hessian.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -486,14 +486,14 @@
 # ifdef SOLVE3D
   20  FORMAT (6x,'WRT_HESSIAN - wrote Hessian', t39,                    &
 #  ifdef NESTING
-     &        'fields (Index=',i1,',',i1,') in record = ',i7.7,2x,i2.2)
+     &        'fields (Index=',i1,',',i1,') in record = ',i7.7,t92,i2.2)
 #  else
      &        'fields (Index=',i1,',',i1,') in record = ',i7.7)
 #  endif
 # else
   20  FORMAT (6x,'WRT_HESSIAN - wrote Hessian', t39,                    &
 #  ifdef NESTING
-     &        'fields (Index=',i1,')   in record = ',i7.7,2x,i2.2)
+     &        'fields (Index=',i1,')   in record = ',i7.7,t92,i2.2)
 #  else
      &        'fields (Index=',i1,')   in record = ',i7.7)
 #  endif

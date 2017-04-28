@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE def_info (ng, model, ncid, ncname, DimIDs)
 !
-!svn $Id: def_info.F 821 2016-11-26 23:33:02Z arango $
+!svn $Id: def_info.F 842 2017-04-26 19:58:15Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -120,7 +120,7 @@
 #ifdef BIOLOGY
       character (len=512) :: bio_file
 #endif
-      character (len=1024) :: string
+      character (len=4096) :: string
 !
 !-----------------------------------------------------------------------
 !  Set dimension variables.
@@ -981,18 +981,8 @@
 
       Vinfo( 1)='dstart'
       Vinfo( 2)='time stamp assigned to model initilization'
-      IF (INT(time_ref).eq.-2) THEN
-        Vinfo( 3)='days since 1968-05-23 00:00:00 GMT'
-        Vinfo( 4)='gregorian'
-      ELSE IF (INT(time_ref).eq.-1) THEN
-        Vinfo( 3)='days since 0001-01-01 00:00:00'
-        Vinfo( 4)='360_day'
-      ELSE IF (INT(time_ref).eq.0) THEN
-        Vinfo( 3)='days since 0001-01-01 00:00:00'
-        Vinfo( 4)='julian'
-      ELSE IF (time_ref.gt.0.0_r8) THEN
-        WRITE (Vinfo( 3),'(a,1x,a)') 'days since', TRIM(r_text)
-      END IF
+      WRITE (Vinfo( 3),'(a,a)') 'days since ', TRIM(Rclock%string)
+      Vinfo( 4)=TRIM(Rclock%calendar)
       status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
      &               1, (/0/), Aval, Vinfo, ncname,                     &
      &               SetParAccess = .FALSE.)

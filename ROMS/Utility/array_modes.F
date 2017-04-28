@@ -2,9 +2,9 @@
       MODULE array_modes_mod
 #if defined WEAK_CONSTRAINT && (defined ARRAY_MODES || defined CLIPPING)
 !
-!svn $Id: array_modes.F 821 2016-11-26 23:33:02Z arango $
+!svn $Id: array_modes.F 830 2017-01-24 21:21:11Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

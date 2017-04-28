@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE close_inp (ng, model)
 !
-!svn $Id: close_io.F 810 2016-08-05 01:58:16Z arango $
+!svn $Id: close_io.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -139,6 +139,8 @@
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
+!
+      USE dateclock_mod, ONLY : get_date
 !
       implicit none
 !

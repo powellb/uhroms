@@ -2,9 +2,9 @@
 #ifdef TANGENT
       SUBROUTINE tl_initial (ng)
 !
-!svn $Id: tl_initial.F 795 2016-05-11 01:42:43Z arango $
+!svn $Id: tl_initial.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -32,6 +32,7 @@
       USE mod_stepping
 !
       USE analytical_mod
+      USE dateclock_mod, ONLY : time_string
 # ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcasti
 # endif
@@ -258,15 +259,6 @@
       FWD(ng)%ncid=HIS(ng)%ncid
 #    endif
 #   endif
-#  endif
-#  ifdef OBSERVATIONS
-!
-!  Open observations NetCDF file and initialize various variables
-!  needed for processing the nonlinear state solution at observation
-!  locations.
-!
-      CALL obs_initial (ng, iTLM, .FALSE.)
-      IF (exit_flag.ne.NoError) RETURN
 #  endif
 !$OMP END MASTER
 !$OMP BARRIER
@@ -597,6 +589,23 @@
         END DO
 !$OMP BARRIER
       END IF
+# endif
+
+# ifdef OBSERVATIONS
+!
+!-----------------------------------------------------------------------
+!  Open observations NetCDF file and initialize various variables
+!  needed for processing the tangent linear state solution at
+!  observation locations. Need to be done after processing initial
+!  conditions since the correct initial time is needed to determine
+!  the first "ObsTime" to process.
+!-----------------------------------------------------------------------
+!
+!$OMP MASTER
+      CALL obs_initial (ng, iTLM, .FALSE.)
+!$OMP MASTER
+!$OMP BARRIER
+      IF (exit_flag.ne.NoError) RETURN
 # endif
 
 # if defined ANA_PERTURB && defined SANITY_CHECK

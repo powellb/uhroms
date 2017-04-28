@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE diag_mod
 !
-!svn $Id: diag.F 795 2016-05-11 01:42:43Z arango $
+!svn $Id: diag.F 843 2017-04-27 20:26:57Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -420,7 +420,7 @@
           IF (first_time(ng).eq.0) THEN
             first_time(ng)=1
             IF (Master.and.(ng.eq.1)) THEN
-              WRITE (stdout,10) 'STEP', 'Day HH:MM:SS',                 &
+              WRITE (stdout,10) 'TIME-STEP', 'YYYY-MM-DD hh:mm:ss.ss',  &
      &                          'KINETIC_ENRG', 'POTEN_ENRG',           &
 #ifdef NESTING
      &                          'TOTAL_ENRG', 'NET_VOLUME', 'Grid'
@@ -435,22 +435,23 @@
      &                          ' C Max', 'Max Speed'
 #endif
 #ifdef NESTING
- 10           FORMAT (/,3x,a,3x,a,2x,a,3x,a,4x,a,4x,a,2x,a)
+ 10           FORMAT (/,1x,a,1x,a,2x,a,3x,a,4x,a,4x,a,2x,a)
 #else
- 10           FORMAT (/,3x,a,3x,a,2x,a,3x,a,4x,a,4x,a)
+ 10           FORMAT (/,1x,a,1x,a,2x,a,3x,a,4x,a,4x,a)
 #endif
- 20           FORMAT (10x,a,7x,a,12x,a,10x,a,7x,a,/)
+ 20           FORMAT (21x,a,7x,a,12x,a,10x,a,7x,a,/)
             END IF
           END IF
-          IF (Master) THEN
-            WRITE (stdout,30) iic(ng)-1, time_code(ng),                 &
+          IF (Master) THEN    ! restart counter after 10 billion steps
+            WRITE (stdout,30) INT(MOD(REAL(iic(ng)-1,r8),1.0E+10_r8)),  &
+                              time_code(ng),                            &
 #ifdef NESTING
      &                        avgke, avgpe, avgkp, volume, ng
 #else
      &                        avgke, avgpe, avgkp, volume
 #endif
 #ifdef SOLVE3D
-            ispace=24-(6+Idigits(ng)+Jdigits(ng)+Kdigits(ng))
+            ispace=35-(6+Idigits(ng)+Jdigits(ng)+Kdigits(ng))
             WRITE (frmt,40) ispace,                                     &
      &                      '"("', Idigits(ng), Idigits(ng),            &
      &                      '","', Jdigits(ng), Jdigits(ng),            &
@@ -459,7 +460,7 @@
      &                          max_Ck, max_Cu, max_Cv, max_Cw,         &
      &                          maxspeed(ng)
 #else
-            ispace=24-(5+Idigits(ng)+Jdigits(ng))
+            ispace=35-(5+Idigits(ng)+Jdigits(ng))
             WRITE (frmt,40) ispace,                                     &
      &                      '"("', Idigits(ng), Idigits(ng),            &
      &                      '","', Jdigits(ng), Jdigits(ng), '")"'
@@ -469,16 +470,16 @@
 #endif
             CALL my_flush (stdout)
 #ifdef NESTING
- 30         FORMAT (i7,1x,a,4(1pe14.6),2x,i2.2)
+ 30         FORMAT (i10,1x,a,4(1pe14.6),2x,i2.2)
 #else
- 30         FORMAT (i7,1x,a,4(1pe14.6))
+ 30         FORMAT (i10,1x,a,4(1pe14.6))
 #endif
  40         FORMAT ('(',i2.2,'x,',a,',i',i1,'.',i1,',',                 &
      &                            a,',i',i1,'.',i1,',',                 &
 #ifdef SOLVE3D
      &                            a,',i',i1,'.',i1,',',                 &
 #endif
-     &                            a,',t24,4(1pe13.6,1x))')
+     &                            a,',t35,4(1pe13.6,1x))')
           END IF
 !
 !  If blowing-up, set exit_flag to stop computations.

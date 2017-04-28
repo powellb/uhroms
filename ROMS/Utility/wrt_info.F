@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_info (ng, model, ncid, ncname)
 !
-!svn $Id: wrt_info.F 821 2016-11-26 23:33:02Z arango $
+!svn $Id: wrt_info.F 830 2017-01-24 21:21:11Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

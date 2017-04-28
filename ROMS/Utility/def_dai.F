@@ -2,9 +2,9 @@
 #if defined FOUR_DVAR || defined ENKF_RESTART
       SUBROUTINE def_dai (ng)
 !
-!svn $Id: def_dai.F 821 2016-11-26 23:33:02Z arango $
+!svn $Id: def_dai.F 842 2017-04-26 19:58:15Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -322,19 +322,8 @@
 !
         Vinfo( 1)=Vname(1,idtime)
         Vinfo( 2)=Vname(2,idtime)
-        IF (INT(time_ref).eq.-2) THEN
-          Vinfo( 3)='seconds since 1968-05-23 00:00:00 GMT'
-          Vinfo( 4)='gregorian'
-        ELSE IF (INT(time_ref).eq.-1) THEN
-          Vinfo( 3)='seconds since 0001-01-01 00:00:00'
-          Vinfo( 4)='360_day'
-        ELSE IF (INT(time_ref).eq.0) THEN
-          Vinfo( 3)='seconds since 0001-01-01 00:00:00'
-          Vinfo( 4)='julian'
-        ELSE IF (time_ref.gt.0.0_r8) THEN
-          WRITE (Vinfo( 3),'(a,1x,a)') 'seconds since', TRIM(r_text)
-          Vinfo( 4)='gregorian'
-        END IF
+        WRITE (Vinfo( 3),'(a,a)') 'seconds since ', TRIM(Rclock%string)
+        Vinfo( 4)=TRIM(Rclock%calendar)
         Vinfo(14)=Vname(4,idtime)
         status=def_var(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idtime),     &
      &                 NF_TYPE, 1, (/recdim/), Aval, Vinfo, ncname,     &
@@ -435,6 +424,50 @@
      &                   NF_FRST, nvd4, t3dgrd, Aval, Vinfo, ncname)
           IF (exit_flag.ne.NoError) RETURN
         END DO
+!
+!  Define vertical viscosity coefficient.
+!
+        Vinfo( 1)=Vname(1,idVvis)
+        Vinfo( 2)=Vname(2,idVvis)
+        Vinfo( 3)=Vname(3,idVvis)
+        Vinfo(14)=Vname(4,idVvis)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVvis,ng),r8)
+        status=def_var(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idVvis),     &
+     &                   NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname,    &
+     &                   SetFillVal = .FALSE.)
+        IF (exit_flag.ne.NoError) RETURN
+!
+!  Define vertical diffusion coefficient for potential temperature.
+!
+        Vinfo( 1)=Vname(1,idTdif)
+        Vinfo( 2)=Vname(2,idTdif)
+        Vinfo( 3)=Vname(3,idTdif)
+        Vinfo(14)=Vname(4,idTdif)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idTdif,ng),r8)
+        status=def_var(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idTdif),     &
+     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
+        IF (exit_flag.ne.NoError) RETURN
+#  ifdef SALINITY
+!
+!  Define vertical diffusion coefficient for salinity.
+!
+        Vinfo( 1)=Vname(1,idSdif)
+        Vinfo( 2)=Vname(2,idSdif)
+        Vinfo( 3)=Vname(3,idSdif)
+        Vinfo(14)=Vname(4,idSdif)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idSdif,ng),r8)
+        status=def_var(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idSdif),     &
+     &                 NF_FRST, nvd4, w3dgrd, Aval, Vinfo, ncname,      &
+     &                 SetFillVal = .FALSE.)
+        IF (exit_flag.ne.NoError) RETURN
+#  endif
 # endif
 !
 !-----------------------------------------------------------------------
@@ -508,6 +541,15 @@
           ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idVvel))) THEN
             got_var(idVvel)=.TRUE.
             DAI(ng)%Vid(idVvel)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idVvis))) THEN
+            got_var(idVvis)=.TRUE.
+            DAI(ng)%Vid(idVvis)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idTdif))) THEN
+            got_var(idTdif)=.TRUE.
+            DAI(ng)%Vid(idTdif)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idSdif))) THEN
+            got_var(idSdif)=.TRUE.
+            DAI(ng)%Vid(idSdif)=var_id(i)
 # endif
           END IF
 # ifdef SOLVE3D
@@ -568,6 +610,26 @@
             RETURN
           END IF
         END DO
+        IF (.not.got_var(idVvis)) THEN
+          IF (Master) WRITE (stdout,70) TRIM(Vname(1,idVvis)),          &
+     &                                  TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+        IF (.not.got_var(idTdif)) THEN
+          IF (Master) WRITE (stdout,70) TRIM(Vname(1,idTdif)),          &
+     &                                  TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+#  ifdef SALINITY
+        IF (.not.got_var(idSdif)) THEN
+          IF (Master) WRITE (stdout,70) TRIM(Vname(1,idSdif)),          &
+     &                                  TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+#  endif
 # endif
 !
 !  Set unlimited time record dimension to current value.

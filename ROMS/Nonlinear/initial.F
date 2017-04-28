@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE initial
 !
-!svn $Id: initial.F 798 2016-05-21 17:04:58Z arango $
+!svn $Id: initial.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -31,6 +31,7 @@
       USE mod_stepping
 !
       USE analytical_mod
+      USE dateclock_mod, ONLY : time_string
 # ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcasti
 # endif
@@ -233,22 +234,6 @@
       END DO
 # endif
 !$OMP END MASTER
-!$OMP BARRIER
-#endif
-#ifdef OBSERVATIONS
-!
-!-----------------------------------------------------------------------
-!  Open observations NetCDF file and initialize various variables
-!  needed for processing the nonlinear state solution at observation
-!  locations.
-!-----------------------------------------------------------------------
-!
-      DO ng=1,Ngrids
-!$OMP MASTER
-        CALL obs_initial (ng, iNLM, .FALSE.)
-        IF (exit_flag.ne.NoError) RETURN
-!$OMP END MASTER
-      END DO
 !$OMP BARRIER
 #endif
 !
@@ -572,6 +557,25 @@
 !$OMP BARRIER
         END IF
       END DO
+#endif
+
+#ifdef OBSERVATIONS
+!
+!-----------------------------------------------------------------------
+!  Open observations NetCDF file and initialize various variables
+!  needed for processing the nonlinear state solution at observation
+!  locations. Need to be done after processing initial conditions since
+!  the correct initial time is needed to determine the first "ObsTime"
+!  to process.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+!$OMP MASTER
+        CALL obs_initial (ng, iNLM, .FALSE.)
+!$OMP END MASTER
+        IF (exit_flag.ne.NoError) RETURN
+      END DO
+!$OMP BARRIER
 #endif
 
 #if (defined W4DPSAS || defined TL_W4DPSAS || \

@@ -2,9 +2,9 @@
 #if defined TANGENT && !defined SOLVE3D
       SUBROUTINE tl_main2d (RunInterval)
 !
-!svn $Id: tl_main2d.F 795 2016-05-11 01:42:43Z arango $
+!svn $Id: tl_main2d.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -25,6 +25,7 @@
       USE mod_scalars
       USE mod_stepping
 !
+      USE dateclock_mod, ONLY : time_string
 # ifdef TLM_CHECK
       USE dotproduct_mod, ONLY : tl_dotproduct
 # endif

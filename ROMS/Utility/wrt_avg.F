@@ -5,9 +5,9 @@
    (defined TL_AVERAGES && defined TANGENT)
       SUBROUTINE wrt_avg (ng)
 !
-!svn $Id: wrt_avg.F 810 2016-08-05 01:58:16Z arango $
+!svn $Id: wrt_avg.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -1955,7 +1955,7 @@
      &        'into averages NetCDF file for time record: ',i4)
   20  FORMAT (6x,'WRT_AVG     - wrote averaged',t39,'fields',t58,       &
 # ifdef NESTING
-     &        'in record = ',i7.7,2x,i2.2)
+     &        'in record = ',i7.7,t92,i2.2)
 # else
      &        'in record = ',i7.7)
 # endif

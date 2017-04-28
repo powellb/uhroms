@@ -3,9 +3,9 @@
 #if defined TL_IOMS && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id: rp_pre_step3d.F 795 2016-05-11 01:42:43Z arango $
+!svn $Id: rp_pre_step3d.F 840 2017-04-18 22:00:03Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -72,6 +72,9 @@
      &                         GRID(ng) % rmask,                        &
      &                         GRID(ng) % umask,                        &
      &                         GRID(ng) % vmask,                        &
+#  if defined SOLAR_SOURCE && defined WET_DRY
+     &                         GRID(ng) % rmask_wet,                    &
+#  endif
 # endif
      &                         GRID(ng) % pm,                           &
      &                         GRID(ng) % pn,                           &
@@ -144,6 +147,9 @@
      &                               nrhs, nstp, nnew,                  &
 # ifdef MASKING
      &                               rmask, umask, vmask,               &
+#  if defined SOLAR_SOURCE && defined WET_DRY
+     &                               rmask_wet,                         &
+#  endif
 # endif
      &                               pm, pn,                            &
      &                               Hz, tl_Hz,                         &
@@ -203,6 +209,9 @@
       real(r8), intent(in) :: rmask(LBi:,LBj:)
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
+#   if defined SOLAR_SOURCE && defined WET_DRY
+      real(r8), intent(in) :: rmask_wet(LBi:,LBj:)
+#   endif
 #  endif
       real(r8), intent(in) :: pm(LBi:,LBj:)
       real(r8), intent(in) :: pn(LBi:,LBj:)
@@ -284,6 +293,9 @@
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
+#   if defined SOLAR_SOURCE && defined WET_DRY
+      real(r8), intent(in) :: rmask_wet(LBi:UBi,LBj:UBj)
+#   endif
 #  endif
       real(r8), intent(in) :: pm(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
@@ -1409,9 +1421,18 @@
           IF (itrc.eq.itemp) THEN
             DO k=1,N(ng)-1
               DO i=Istr,Iend
-!>              FC(i,k)=FC(i,k)+dt(ng)*srflx(i,j)*swdk(i,j,k)
+!>              FC(i,k)=FC(i,k)+                                        &
+!>   &                  dt(ng)*srflx(i,j)*                              &
+#   ifdef WET_DRY
+!>   &                  rmask_wet(i,j)*                                 &
+#   endif
 !>
-                tl_FC(i,k)=tl_FC(i,k)+dt(ng)*srflx(i,j)*tl_swdk(i,j,k)
+                tl_FC(i,k)=tl_FC(i,k)+                                  &
+     &                     dt(ng)*srflx(i,j)*                           &
+#   ifdef WET_DRY_NOT_YET
+     &                     rmask_wet(i,j)*                              &
+#   endif
+     &                     tl_swdk(i,j,k)
               END DO
             END DO
           END IF

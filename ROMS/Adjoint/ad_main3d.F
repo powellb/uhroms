@@ -2,9 +2,9 @@
 #if defined ADJOINT && defined SOLVE3D
       SUBROUTINE ad_main3d (RunInterval)
 !
-!svn $Id: ad_main3d.F 807 2016-07-09 02:03:55Z arango $
+!svn $Id: ad_main3d.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -120,6 +120,7 @@
 # if defined BULK_FLUXES && !defined NL_BULK_FLUXES
       USE bulk_flux_mod, ONLY : bulk_flux
 # endif
+      USE dateclock_mod, ONLY : time_string
 # ifdef AIR_OCEAN_NOT_YET
       USE ocean_coupler_mod, ONLY : atmos_coupling
 # endif

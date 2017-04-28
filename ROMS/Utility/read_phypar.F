@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_phypar.F 819 2016-08-26 17:33:44Z arango $
+!svn $Id: read_phypar.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -38,6 +38,8 @@
       USE mod_storage
 #endif
       USE mod_strings
+!
+      USE dateclock_mod, ONLY : ref_clock
 !
       implicit none
 !
@@ -88,7 +90,6 @@
       real(r8), dimension(100) :: Rval
 
       character (len=1  ), parameter :: blank = ' '
-      character (len=19 ) :: ref_att
       character (len=40 ) :: KeyWord, text
       character (len=50 ) :: label
       character (len=256) :: fname, line
@@ -858,7 +859,7 @@
             CASE ('TIME_REF')
               Npts=load_r(Nval, Rval, 1, Rvalue)
               time_ref=Rvalue(1)
-              r_text=ref_att(time_ref,r_date)
+              CALL ref_clock (time_ref)
             CASE ('TNUDG')
               Npts=load_r(Nval, Rval, (NAT+NPT)*Ngrids, Rtracer)
               DO ng=1,Ngrids

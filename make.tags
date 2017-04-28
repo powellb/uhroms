@@ -1,4 +1,8 @@
-.PHONY: etags
+.PHONY: gtags
 etags:
 	rm -f TAGS
 	find ROMS -name "*\.F" | xargs etags -a --language=fortran
+
+gtags:
+	gtags -i --gtagslabel=pygments --statistics
+

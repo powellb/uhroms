@@ -2,9 +2,9 @@
 #if defined ADJOINT && !defined SOLVE3D
       SUBROUTINE ad_main2d (RunInterval)
 !
-!svn $Id: ad_main2d.F 795 2016-05-11 01:42:43Z arango $
+!svn $Id: ad_main2d.F 841 2017-04-19 21:42:22Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2016 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -70,6 +70,7 @@
 # ifdef FLOATS_NOT_YET
 !!    USE ad_step_floats_mod, ONLY : tl_step_floats
 # endif
+      USE dateclock_mod, ONLY : time_string
 # ifdef WEAK_CONSTRAINT
       USE frc_weak_mod, ONLY : frc_ADgather, frc_clear
 # endif
