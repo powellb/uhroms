@@ -16,7 +16,7 @@
 #if defined PROPAGATOR || \
    (defined MASKING && (defined READ_WATER || defined WRITE_WATER))
 !
-!svn $Id: wpoints.F 836 2017-01-25 23:10:16Z arango $
+!svn $Id: wpoints.F 1712 2017-01-25 23:10:07Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

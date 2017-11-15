@@ -2,7 +2,7 @@
       MODULE sum_grad_mod
 #if defined IS4DVAR || defined RPCG
 !
-!svn $Id: sum_grad.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: sum_grad.F 1710 2017-01-24 21:17:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

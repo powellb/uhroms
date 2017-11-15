@@ -4,7 +4,7 @@
       MODULE mpdata_adiff_mod
 #if defined NONLINEAR && defined TS_MPDATA && defined SOLVE3D
 !
-!svn $Id: mpdata_adiff.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: mpdata_adiff.F 1737 2017-11-03 01:09:17Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group        John C. Warner   !
 !    Licensed under a MIT/X style license                              !
@@ -122,7 +122,6 @@
 !
       integer :: i, is, j, k
 
-      real(r8), parameter :: Large = 1.0E+20_r8
       real(r8), parameter :: eps  = 1.0E-18_r8
       real(r8), parameter :: eps2 = 1.0E-10_r8
 

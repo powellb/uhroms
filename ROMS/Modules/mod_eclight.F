@@ -2,7 +2,7 @@
       MODULE mod_eclight
 #if defined BIOLOGY && defined ECOSIM
 !
-!svn $Id: mod_eclight.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: mod_eclight.F 1710 2017-01-24 21:17:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group       W. Paul Bissett   !
 !    Licensed under a MIT/X style license                              !

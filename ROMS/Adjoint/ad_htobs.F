@@ -2,7 +2,7 @@
       MODULE ad_htobs_mod
 #if defined ADJOINT && defined OBSERVATIONS && defined WEAK_CONSTRAINT
 !
-!svn $Id: ad_htobs.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: ad_htobs.F 1740 2017-11-15 19:01:32Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -146,7 +146,11 @@
 # ifdef SOLVE3D
       integer :: itrc, k
 # endif
+      real(r8) :: angle
+
       real(r8), parameter :: IniVal = 0.0_r8
+
+      real(r8) :: ad_uradial(Mobs), ad_vradial(Mobs)
 
 # include "set_bounds.h"
 !
@@ -209,7 +213,7 @@
         IF (FOURDVAR(ng)%ObsCount(isFsur).gt.0) THEN
           CALL ad_extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj,                    &
-     &                           isFsur,                                &
+     &                           ObsState2Type(isFsur),                 &
      &                           Mobs, Mstr, Mend,                      &
      &                           rXmin(ng), rXmax(ng),                  &
      &                           rYmin(ng), rYmax(ng),                  &
@@ -240,7 +244,7 @@
         IF (FOURDVAR(ng)%ObsCount(isUbar).gt.0) THEN
           CALL ad_extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj,                    &
-     &                           isUbar,                                &
+     &                           ObsState2Type(isUbar),                 &
      &                           Mobs, Mstr, Mend,                      &
      &                           uXmin(ng), uXmax(ng),                  &
      &                           uYmin(ng), uYmax(ng),                  &
@@ -271,7 +275,7 @@
         IF (FOURDVAR(ng)%ObsCount(isVbar).gt.0) THEN
           CALL ad_extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj,                    &
-     &                           isVbar,                                &
+     &                           ObsState2Type(isVbar),                 &
      &                           Mobs, Mstr, Mend,                      &
      &                           vXmin(ng), vXmax(ng),                  &
      &                           vYmin(ng), vYmax(ng),                  &
@@ -291,6 +295,7 @@
      &                           f_vbar)
 # endif
         END IF
+
 # ifdef SOLVE3D
 !
 !  3D u-momentum component.
@@ -313,7 +318,7 @@
           END DO
           CALL ad_extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
-     &                           isUvel,                                &
+     &                           ObsState2Type(isUvel),                 &
      &                           Mobs, Mstr, Mend,                      &
      &                           uXmin(ng), uXmax(ng),                  &
      &                           uYmin(ng), uYmax(ng),                  &
@@ -354,7 +359,7 @@
           END DO
           CALL ad_extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
-     &                           isVvel,                                &
+     &                           ObsState2Type(isVvel),                 &
      &                           Mobs, Mstr, Mend,                      &
      &                           vXmin(ng), vXmax(ng),                  &
      &                           vYmin(ng), vYmax(ng),                  &
@@ -375,6 +380,102 @@
 #  endif
         END IF
 !
+!  Radial Velocity.  The observations are in terms of radial speed and
+!  angle (stored in obs_meta).  The observation angle converts the
+!  velocity components to geographical EAST and North components.
+!
+!  In curvilinear coordinates, the radial forward problem is:
+!
+!     radial = u * COS(obs_meta - angler) + v * SIN(obs_meta - angler)
+! 
+!  In the adjoint, u and v are given by:
+!
+!        f_v = f_v + ADmodVal * SIN(obs_meta - angler)
+!        f_u = f_u + ADmodVal * COS(obs_meta - angler)
+!
+        IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
+          DO iobs=Mstr,Mend
+            ad_uradial(iobs)=IniVal
+            ad_vradial(iobs)=IniVal
+          END DO
+          DO iobs=Mstr,Mend
+            IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
+#  ifdef CURVGRID
+              angle=ObsMeta(iobs)-ObsAngler(iobs)
+              ad_uradial(iobs)=ad_uradial(iobs)+                        &
+     &                         ADmodVal(iobs)*COS(angle)
+              ad_vradial(iobs)=ad_vradial(iobs)+                        &
+     &                         ADmodVal(iobs)*SIN(angle)
+#  else
+              ad_uradial(iobs)=ad_uradial(iobs)+                        &
+     &                         ADmodVal(iobs)*COS(ObsMeta(iobs))
+              ad_vradial(iobs)=ad_vradial(iobs)+                        &
+     &                         ADmodVal(iobs)*SIN(ObsMeta(iobs))
+#  endif
+              ADmodVal(iobs)=0.0_r8
+            END IF
+          END DO
+          DO k=1,N(ng)
+            DO j=JstrV-1,Jend+1
+              DO i=Istr-1,Iend+1
+                z_v(i,j,k)=0.5_r8*(z_r(i,j-1,k)+                        &
+     &                             z_r(i,j  ,k))
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           ObsState2Type(isRadial),               &
+     &                           Mobs, Mstr, Mend,                      &
+     &                           vXmin(ng), vXmax(ng),                  &
+     &                           vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,    &
+     &                           time(ng), dt(ng),                      &
+     &                           ObsType, ObsVetting,                   &
+     &                           Tobs, Xobs, Yobs+0.5_r8, Zobs,         &
+     &                           f_v, z_v,                              &
+#  ifdef MASKING
+     &                           vmask,                                 &
+#  endif
+     &                           ad_vradial)
+          DO k=1,N(ng)
+            DO j=Jstr-1,Jend+1
+              DO i=IstrU-1,Iend+1
+                z_v(i,j,k)=0.5_r8*(z_r(i-1,j,k)+                        &
+     &                             z_r(i  ,j,k))
+              END DO
+            END DO
+          END DO
+          CALL ad_extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           ObsState2Type(isRadial),               &
+     &                           Mobs, Mstr, Mend,                      &
+     &                           uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,    &
+     &                           uYmin(ng), uYmax(ng),                  &
+     &                           time(ng), dt(ng),                      &
+     &                           ObsType, ObsVetting,                   &
+     &                           Tobs, Xobs+0.5_r8, Yobs, Zobs,         &
+     &                           f_u, z_v,                              &
+#  ifdef MASKING
+     &                           umask,                                 &
+#  endif
+     &                           ad_uradial)
+        END IF
+
+#  ifdef DISTRIBUTE
+!
+!  Exchange adjoint velocites forcing terms, after all the 3D velocity
+!  observations are processed.
+!
+        IF ((FOURDVAR(ng)%ObsCount(isUvel).gt.0).or.                    &
+     &      (FOURDVAR(ng)%ObsCount(isVvel).gt.0).or.                    &
+     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
+          CALL ad_mp_exchange3d (ng, tile, iADM, 2,                     &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           NghostPoints, EWperiodic(ng),          &
+     &                           NSperiodic(ng), f_u, f_v)
+        END IF
+#  endif
+!
 !  Tracer type variables.
 !
         DO itrc=1,NT(ng)
@@ -388,7 +489,7 @@
           IF (FOURDVAR(ng)%ObsCount(isTvar(itrc)).gt.0) THEN
             CALL ad_extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,        &
      &                             LBi, UBi, LBj, UBj, 1, N(ng),        &
-     &                             isTvar(itrc),                        &
+     &                             ObsState2Type(isTvar(itrc)),         &
      &                             Mobs, Mstr, Mend,                    &
      &                             rXmin(ng), rXmax(ng),                &
      &                             rYmin(ng), rYmax(ng),                &
@@ -431,25 +532,28 @@
 !
         DO iobs=Mstr,Mend
           IF (ObsScale(iobs).lt.1.0) THEN
-            IF  (ObsType(iobs).eq.isFsur) THEN
+            IF  (ObsType(iobs).eq.ObsState2Type(isFsur)) THEN
               FOURDVAR(ng)%ObsReject(isFsur)=                           &
      &                              FOURDVAR(ng)%ObsReject(isFsur)+1
-            ELSE IF (ObsType(iobs).eq.isUbar) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isUbar)) THEN
               FOURDVAR(ng)%ObsReject(isUbar)=                           &
      &                              FOURDVAR(ng)%ObsReject(isUbar)+1
-            ELSE IF (ObsType(iobs).eq.isVbar) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isVbar)) THEN
               FOURDVAR(ng)%ObsReject(isVbar)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVbar)+1
 # ifdef SOLVE3D
-            ELSE IF (ObsType(iobs).eq.isUvel) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
               FOURDVAR(ng)%ObsReject(isUvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isUvel)+1
-            ELSE IF (ObsType(iobs).eq.isVvel) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isVvel)) THEN
               FOURDVAR(ng)%ObsReject(isVvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVvel)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
+              FOURDVAR(ng)%ObsReject(isRadial)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE
               DO itrc=1,NT(ng)
-                IF (ObsType(iobs).eq.isTvar(itrc)) THEN
+                IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN
                   i=isTvar(itrc)
                   FOURDVAR(ng)%ObsReject(i)=FOURDVAR(ng)%ObsReject(i)+1
                 END IF
@@ -462,7 +566,7 @@
 !  Load total available and rejected observations into structure
 !  array.
 !
-        DO i=1,NstateVar(ng)
+        DO i=1,NobsVar(ng)
           FOURDVAR(ng)%ObsCount(0)=FOURDVAR(ng)%ObsCount(0)+            &
      &                             FOURDVAR(ng)%ObsCount(i)
           FOURDVAR(ng)%ObsReject(0)=FOURDVAR(ng)%ObsReject(0)+          &
@@ -476,10 +580,10 @@
             ObsSum=0
             ObsVoid=0
             is=NstrObs(ng)
-            DO i=1,NstateVar(ng)
+            DO i=1,NobsVar(ng)
               IF (FOURDVAR(ng)%ObsCount(i).gt.0) THEN
                 ie=is+FOURDVAR(ng)%ObsCount(i)-1
-                WRITE (stdout,10) TRIM(Vname(1,idSvar(i))), is, ie,     &
+                WRITE (stdout,10) TRIM(ObsName(i)), is, ie,             &
      &                            ie-is+1, FOURDVAR(ng)%ObsReject(i)
                 is=ie+1
                 ObsSum=ObsSum+FOURDVAR(ng)%ObsCount(i)
@@ -495,7 +599,7 @@
   20        FORMAT (/,10x,'Total',t47,2(1x,i10),                        &
      &              /,10x,'Obs Tally',t47,2(1x,i10),/)
   30        FORMAT (3x,' AD_HTOBS    - Computed adjoint observations ', &
-     &              'forcing,',t62,'t = ',a,/,19x,'(Observation ',      &
+     &              'forcing,',t68,a,/,19x,'(Observation ',      &
      &              'records = ',i7.7,' - ',i7.7,', iic = ',i7.7,')')
           END IF
         END IF

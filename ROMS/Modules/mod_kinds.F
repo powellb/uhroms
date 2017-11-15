@@ -1,6 +1,6 @@
       MODULE mod_kinds
 !
-!svn $Id: mod_kinds.F 843 2017-04-27 20:26:57Z arango $
+!svn $Id: mod_kinds.F 1729 2017-07-31 22:52:09Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -8,14 +8,16 @@
 !=======================================================================
 !
 #ifdef ESMF_LIB
-        USE ESMF_mod
+        USE ESMF
 !
 #endif
         implicit none
 !
 #ifdef ESMF_LIB
-        integer, parameter :: i1b= ESMF_KIND_I1                !  8-bit
-        integer, parameter :: i2b= ESMF_KIND_I2                !  8-bit
+!!      integer, parameter :: i1b= ESMF_KIND_I1                !  8-bit
+        integer, parameter :: i1b= SELECTED_INT_KIND(1)        !  8-bit
+!!      integer, parameter :: i2b= ESMF_KIND_I2                !  8-bit
+        integer, parameter :: i2b= SELECTED_INT_KIND(2)        !  8-bit
         integer, parameter :: i4b= ESMF_KIND_I4                ! 16-bit
         integer, parameter :: i8b= ESMF_KIND_I8                ! 32-bit
         integer, parameter :: c8 = SELECTED_REAL_KIND(6,30)    ! 32-bit

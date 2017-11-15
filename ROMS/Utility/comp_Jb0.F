@@ -279,7 +279,6 @@
 !
 !  Local variable declarations.
 !
-
       real(r8), dimension(0:NstateVar(ng)) :: dot
 
 # include "set_bounds.h"

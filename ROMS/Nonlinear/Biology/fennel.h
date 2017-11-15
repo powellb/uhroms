@@ -1,6 +1,6 @@
       SUBROUTINE biology (ng,tile)
 !
-!svn $Id: fennel.h 841 2017-04-19 21:42:22Z arango $
+!svn $Id: fennel.h 1734 2017-08-10 04:10:44Z arango $
 !***********************************************************************
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license           Hernan G. Arango   !
@@ -52,11 +52,11 @@
 !  used, in addition to "OXYGEN",  the Schmidt number of oxygen in     !
 !  seawater will be  computed  using the  formulation  proposed by     !
 !  Keeling et al. (1998, Global Biogeochem. Cycles,  12, 141-163).     !
-!  Otherwise, the Wanninkhof's (1992) formula will be used.            !
+!  Otherwise, the Wanninkhof^s (1992) formula will be used.            !
 !                                                                      !
 !  References:                                                         !
 !                                                                      !
-!    Fennel, K., Wilkin, J., Levin, J., Moisan, J., O'Reilly, J.,      !
+!    Fennel, K., Wilkin, J., Levin, J., Moisan, J., O^Reilly, J.,      !
 !      Haidvogel, D., 2006: Nitrogen cycling in the Mid Atlantic       !
 !      Bight and implications for the North Atlantic nitrogen          !
 !      budget: Results from a three-dimensional model.  Global         !
@@ -101,7 +101,7 @@
       END IF
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 15)
+      CALL wclock_on (ng, iNLM, 15, __LINE__, __FILE__)
 #endif
       CALL biology_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj, N(ng), NT(ng),             &
@@ -136,7 +136,7 @@
      &                   OCEAN(ng) % t)
 
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 15)
+      CALL wclock_off (ng, iNLM, 15, __LINE__, __FILE__)
 #endif
 
       RETURN

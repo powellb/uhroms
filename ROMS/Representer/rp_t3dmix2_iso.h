@@ -1,6 +1,6 @@
       SUBROUTINE rp_t3dmix2 (ng, tile)
 !
-!svn $Id: rp_t3dmix2_iso.h 840 2017-04-18 22:00:03Z arango $
+!svn $Id: rp_t3dmix2_iso.h 1726 2017-07-18 23:27:08Z arango $
 !************************************************** Hernan G. Arango ***
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -35,7 +35,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 26)
+      CALL wclock_on (ng, iRPM, 26, __LINE__, __FILE__)
 #endif
       CALL rp_t3dmix2_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -73,7 +73,7 @@
      &                      OCEAN(ng) % t,                              &
      &                      OCEAN(ng) % tl_t)
 #ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 26)
+      CALL wclock_off (ng, iRPM, 26, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE rp_t3dmix2

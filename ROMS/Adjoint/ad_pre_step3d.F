@@ -4,7 +4,7 @@
 #if defined ADJOINT && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id: ad_pre_step3d.F 840 2017-04-18 22:00:03Z arango $
+!svn $Id: ad_pre_step3d.F 1726 2017-07-18 23:27:08Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -63,7 +63,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 22)
+      CALL wclock_on (ng, iADM, 22, __LINE__, __FILE__)
 # endif
       CALL ad_pre_step3d_tile (ng, tile,                                &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -136,7 +136,7 @@
      &                         OCEAN(ng) % v,                           &
      &                         OCEAN(ng) % ad_v)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 22)
+      CALL wclock_off (ng, iADM, 22, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE ad_pre_step3d

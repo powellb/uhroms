@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE nf_fread2d_mod
 !
-!svn $Id: nf_fread2d.F 841 2017-04-19 21:42:22Z arango $
+!svn $Id: nf_fread2d.F 1735 2017-10-05 20:26:30Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -67,6 +67,7 @@
       USE mod_scalars
 !
       USE distribute_mod, ONLY : mp_bcasti, mp_collect, mp_reduce
+      USE strings_mod,    ONLY : FoundError
 !
       implicit none
 !
@@ -224,7 +225,8 @@
       CALL netcdf_get_fatt (ng, model, ncname, ncvarid, AttName,        &
      &                      AttValue, foundit,                          &
      &                      ncid = ncid)
-      IF (exit_flag.ne.NoError) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) THEN
         nf_fread2d=ioerror
         RETURN
       END IF
@@ -286,7 +288,7 @@
           END IF
           IF (.not.allocated(wrk)) THEN
             allocate ( wrk(Npts) )
-            wrk=0.0_r8
+            wrk=IniVal
           END IF
         ELSE
           IF (.not.allocated(wrk)) THEN
@@ -347,6 +349,7 @@
 !  model array.
 !
           IF (interpolate) THEN
+            CALL mp_collect (ng, model, Npts, IniVal, wrk)
             ic=0
             DO j=Jstr,Jend
               DO i=Istr,Iend
@@ -354,7 +357,6 @@
                 Awrk(i,j)=wrk(ic)
               END DO
             END DO
-            CALL mp_collect (ng, model, Npts, IniVal, Awrk)
           ELSE
             ic=0
             DO j=Jmin,Jmax
@@ -582,11 +584,11 @@
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
-
-# ifdef DISTRIBUTE
 !
+# ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcastf, mp_bcasti, mp_scatter2d
 # endif
+      USE strings_mod,    ONLY : FoundError
 !
       implicit none
 !
@@ -737,7 +739,8 @@
       CALL netcdf_get_fatt (ng, model, ncname, ncvarid, AttName,        &
      &                      AttValue, foundit,                          &
      &                      ncid = ncid)
-      IF (exit_flag.ne.NoError) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) THEN
         nf_fread2d=ioerror
         RETURN
       END IF
@@ -843,7 +846,8 @@
 # ifdef DISTRIBUTE
       CALL mp_bcasti (ng, model, status)
 # endif
-      IF (status.ne.nf90_noerr) THEN
+      IF (FoundError(status, nf90_noerr, __LINE__,                      &
+     &               __FILE__)) THEN
         exit_flag=2
         ioerror=status
         nf_fread2d=status

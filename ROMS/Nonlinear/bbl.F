@@ -2,7 +2,7 @@
       MODULE bbl_mod
 #if defined NONLINEAR && defined BBL_MODEL
 !
-!svn $Id: bbl.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: bbl.F 1710 2017-01-24 21:17:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

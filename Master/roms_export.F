@@ -3,7 +3,7 @@
 
 #ifdef MODEL_COUPLING
 !
-!svn $Id: roms_export.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: roms_export.F 69 2011-01-05 03:45:32Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

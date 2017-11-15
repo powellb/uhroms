@@ -1,5 +1,5 @@
 /*
-** svn $Id: coupling_test.h 830 2017-01-24 21:21:11Z arango $
+** svn $Id: coupling_test.h 1729 2017-07-31 22:52:09Z arango $
 *******************************************************************************
 ** Copyright (c) 2002-2017 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -26,7 +26,6 @@
 #define SALINITY
 #define SOLVE3D
 #define AVERAGES
-#define AIR_OCEAN
 #define ANA_GRID
 #define ANA_INITIAL
 #define ANA_STFLUX

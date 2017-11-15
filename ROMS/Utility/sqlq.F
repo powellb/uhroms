@@ -3,7 +3,7 @@
 #if defined WEAK_CONSTRAINT && defined MINRES
         SUBROUTINE sqlq (innLoop, a, tau, y)
 !
-!svn $Id: sqlq.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: sqlq.F 1710 2017-01-24 21:17:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !

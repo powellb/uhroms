@@ -1,10 +1,10 @@
 #include "cppdefs.h"
       SUBROUTINE get_cycle (ng, model, ifield, job, Lmulti,             &
-     &                      ncname, TvarName, ntime, smday,             &
+     &                      ncname, ncid, TvarName, ntime, smday,       &
      &                      Tid, Lcycle, clength, Tindex,               &
      &                      Tstr, Tend, Tmin, Tmax, Tscale)
 !
-!svn $Id: get_cycle.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: get_cycle.F 1735 2017-10-05 20:26:30Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -25,6 +25,7 @@
 !     Lmulti     Switch to process a multi-file field. That is, the    !
 !                  time records are split in several NetCDF files.     !
 !     ncname     NetCDF file name (string)                             !
+!     ncid       NetCDF file ID (integer)
 !     TvarName   Requested time variable name (string)                 !
 !     ntime      Size of time dimension (integer)                      !
 !     smday      Starting model day (real)                             !
@@ -50,6 +51,8 @@
       USE mod_netcdf
       USE mod_scalars
 !
+      USE strings_mod, ONLY : FoundError
+!
       implicit none
 !
 !  Imported variable declarations.
@@ -57,7 +60,7 @@
       logical, intent(in) :: Lmulti
       logical, intent(out) :: Lcycle
 
-      integer, intent(in) :: ng, model, ifield, job, ntime
+      integer, intent(in) :: ng, model, ifield, job, ncid, ntime
 
       integer, intent(out) :: Tindex, Tid
 
@@ -79,7 +82,7 @@
 
       character (len=40) :: tunits
 !
-      SourceFile='get_cycle.F'
+      SourceFile=__FILE__
 !
 !-----------------------------------------------------------------------
 !  Find time cycling parameters, if any.
@@ -106,11 +109,13 @@
 !
       IF (ntime.ge.1) THEN
         CALL netcdf_inq_var (ng, model, ncname,                         &
+     &                       ncid = ncid,                               &
      &                       MyVarName = TRIM(TvarName),                &
      &                       VarID = Tid,                               &
      &                       nVarDim = nvdim,                           &
      &                       nVarAtt = nvatt)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Check if time cycling attribute is present and then read in time
 !  cycle length.  Check time coordinate units and determine time
@@ -143,10 +148,13 @@
 !
       CALL netcdf_get_fvar (ng, model, ncname, TvarName,                &
      &                      Tval,                                       &
+     &                      ncid = ncid,                                &
      &                      start = (/1/),                              &
      &                      total = (/ntime/),                          &
      &                      min_val = Tmin,                             &
      &                      max_val = Tmax)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !  Scale time variable to days.  Determine the minimum and maximum time
 !  values available

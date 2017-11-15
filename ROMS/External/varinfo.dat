@@ -1,7 +1,7 @@
 !
 !  ROMS/TOMS IO NetCDF variables.
 !
-!svn $Id: varinfo.dat 830 2017-01-24 21:21:11Z arango $
+!svn $Id: varinfo.dat 1740 2017-11-15 19:01:32Z arango $
 !========================================================= Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
@@ -62,7 +62,7 @@
 !------------------------------------------------------------------------------
 !
 
-'$URL: https://www.myroms.org/svn/src/trunk/ROMS/External/varinfo.dat $'
+'$URL: https://www.myroms.org/svn/omlab/branches/arango/ROMS/External/varinfo.dat $'
 
 !
 !------------------------------------------------------------------------------
@@ -1422,18 +1422,18 @@
   'r2dvar'
   1.0d0
 
-'latent'                                           ! Input/Output
+'latent'                                           ! Output
   'net latent heat flux'
-  'watt meter-2'                                   ! Input:  [Watt/m2]
+  'watt meter-2'
   'latent heat flux, scalar, series'               ! [Celsius m/s]
   'lhf_time'                                       ! Output: [Watt/m2]
   'idLhea'
   'r2dvar'
   1.0d0
 
-'sensible'                                         ! Input/Output
+'sensible'                                         ! Output
   'net sensible heat flux'
-  'watt meter-2'                                   ! Input:  [Watt/m2]
+  'watt meter-2'
   'sensible heat flux, scalar, series'             ! [Celsius m/s]
   'shf_time'                                       ! Output: [Watt/m2]
   'idShea'
@@ -2852,7 +2852,7 @@
 !
 !---------------------------------------------------------------------
 !  Define names of variables associated with Fennel et al (2006),
-!  NEMURO or NPZD ecosystem models.
+!  NEMURO, NPZD or Hypoxia ecosystem models.
 !---------------------------------------------------------------------
 !
 
@@ -3204,6 +3204,15 @@
   'Oxygen, scalar, series'
   'ocean_time'
   'idTads(iOxyg)'
+  'r3dvar'
+  1.0d0
+
+'respiration'                                      ! Input
+  'total respiration rate'
+  'millimole_oxygen meter-3 day-1'                 ! [millimoe/m3/day]
+  'respiration, scalar, series'
+  'respiration_time'
+  'idResR'
   'r3dvar'
   1.0d0
 
@@ -5380,6 +5389,15 @@
   'nulvar'
   'datum'
   'idOval'
+  'nulvar'
+  1.0d0
+
+'obs_meta'                                         ! Input
+  'observation meta value'
+  'nondimensional'                                 ! [Meta units]
+  'nulvar'
+  'datum'
+  'idOmet'
   'nulvar'
   1.0d0
 

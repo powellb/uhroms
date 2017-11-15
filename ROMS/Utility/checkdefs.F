@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE checkdefs
 !
-!svn $Id: checkdefs.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: checkdefs.F 1735 2017-10-05 20:26:30Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -25,6 +25,7 @@
 !
 !  Local variable declarations.
 !
+      integer :: iatms = 0
       integer :: ibbl = 0
       integer :: ibiology = 0
       integer :: idriver = 0
@@ -332,6 +333,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' ANA_RAIN,'
 #endif
+#if defined ANA_RESPIRATION && defined HYPOXIA_SRM
+!
+      IF (Master) WRITE (stdout,20) 'ANA_RESPIRATION',                  &
+     &   'Analytical respiration rate.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' ANA_RESPIRATION,'
+#endif
 #if defined ANA_SCOPE        && \
    (defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
@@ -482,6 +490,27 @@
       Coptions(is:is+19)=' ARRAY_MODES_SPLIT,'
 # endif
 #endif
+#if defined DISTRIBUTE && defined NESTING
+# if defined ASSEMBLE_ALLGATHER
+!
+      IF (Master) WRITE (stdout,20) 'ASSEMBLE_ALLGATHER',               &
+     &   'Using mpi_allgather in mp_assemble routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+20)=' ASSEMBLE_ALLGATHER,'
+# elif defined ASSEMBLE_ALLREDUCE
+!
+      IF (Master) WRITE (stdout,20) 'ASSEMBLE_ALLREDUCE',               &
+     &   'Using mpi_allreduce in mp_assemble routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+20)=' ASSEMBLE_ALLGATHER,'
+# else
+!
+      IF (Master) WRITE (stdout,20) '!ASSEMBLE_ALL...',                 &
+     &   'Using mpi_isend/mpi_recv in mp_assemble routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' !ASSEMBLE_ALL...,'
+# endif
+#endif
 #ifdef ASSUMED_SHAPE
 !
       IF (Master) WRITE (stdout,20) 'ASSUMED_SHAPE',                    &
@@ -582,6 +611,20 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' BODYFORCE,'
 #endif
+#ifdef DISTRIBUTE
+# if defined BOUNDARY_ALLGATHER
+!
+      IF (Master) WRITE (stdout,20) 'BOUNDARY_ALLGATHER',               &
+     &   'Using mpi_allgather in mp_boundary routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+20)=' BOUNDARY_ALLGATHER,'
+# else
+      IF (Master) WRITE (stdout,20) '!BOUNDARY_ALLGATHER',               &
+     &   'Using mpi_allreduce in mp_boundary routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+11)=' !BOUNDARY_ALLGATHER,'
+# endif
+#endif
 #ifdef BULK_FLUXES
 !
       IF (Master) WRITE (stdout,20) 'BULK_FLUXES',                      &
@@ -647,6 +690,35 @@
       Coptions(is:is+16)=' CLIPPING_SPLIT,'
 # endif
 #endif
+#ifdef COAMPS_COUPLING
+!
+      IF (Master) WRITE (stdout,20) 'COAMPS_COUPLING',                   &
+     &   'Atmosphere coupling with COAMPS.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' COAMPS_COUPLING,'
+      iatms=iatms+1
+#endif
+#if defined DISTRIBUTE
+# if defined COLLECT_ALLGATHER
+!
+      IF (Master) WRITE (stdout,20) 'COLLECT_ALLGATHER',                &
+     &   'Using mpi_allgather in mp_collect routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+19)=' COLLECT_ALLGATHER,'
+# elif defined COLLECT_ALLREDUCE
+!
+      IF (Master) WRITE (stdout,20) 'COLLECT_ALLREDUCE',                &
+     &   'Using mpi_allreduce in mp_collect routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+19)=' COLLECT_ALLGATHER,'
+# else
+!
+      IF (Master) WRITE (stdout,20) '!COLLECT_ALL...',                  &
+     &   'Using mpi_isend/mpi_recv in mp_collect routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' !COLLECT_ALL...,'
+# endif
+#endif
 #ifdef CORRELATION
 !
       IF (Master) WRITE (stdout,20) 'CORRELATION',                      &
@@ -654,6 +726,14 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' CORRELATION,'
       idriver=idriver+1
+#endif
+#if defined COUPLING_INTERP && defined MODEL_COUPLING
+!
+      IF (Master) WRITE (stdout,20) 'COUPLING_INTERP',                  &
+     &   'Time interpolation from coupling snapshots arrays.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' COUPLING_INTERP,'
+      iatms=iatms+1
 #endif
 #if defined DATALESS_LOOPS && defined W4DVAR
 !
@@ -1013,6 +1093,14 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' HOLLING_GRAZING,'
 #endif
+#ifdef HYPOXIA_SRM
+!
+      IF (Master) WRITE (stdout,20) 'HYPOXIA_SRM',                      &
+     &   'Hypoxia Simple Respiration Model.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' HYPOXIA_SRM,'
+      ibiology=ibiology+1
+#endif
 #ifdef ICESHELF
 !
       IF (Master) WRITE (stdout,20) 'ICESHELF',                         &
@@ -1113,6 +1201,22 @@
      &   'Compute 4D-Var Hessian singular vectors.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' LCZ_FINAL,'
+#endif
+#if defined LIMIT_VDIFF && \
+   (defined GLS_MIXING  || defined LMD_MIXING || defined MY25_MIXING)
+!
+      IF (Master) WRITE (stdout,20) 'LIMIT_VDIFF',                      &
+     &   'Impose an upper limit on vertical diffusion coefficient.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' LIMIT_VDIFF,'
+#endif
+#if defined LIMIT_VVISC && \
+   (defined GLS_MIXING  || defined LMD_MIXING || defined MY25_MIXING)
+!
+      IF (Master) WRITE (stdout,20) 'LIMIT_VVISC',                      &
+     &   'Impose an upper limit on vertical viscosity coefficient.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' LIMIT_VVISC,'
 #endif
 #ifdef LMD_BKPP
 !
@@ -1521,6 +1625,20 @@
      &   'Add oxygen dynamics.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+8)=' OXYGEN,'
+#elif !defined SURFACE_DO_SATURATION && defined HYPOXIA_SRM
+# ifdef OCMIP_OXYGEN_SC
+!
+      IF (Master) WRITE (stdout,20) 'OCMIP_OXYGEN_SC',                  &
+     &   'Schmidt number from Keeling et al. (1998).'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' OCMIP_OXYGEN_SC,'
+# else
+!
+      IF (Master) WRITE (stdout,20) '!OCMIP_OXYGEN_SC',                 &
+     &   'Schmidt number from Wanninkhof (1992).'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' !OCMIP_OXYGEN_SC,'
+# endif
 #endif
 #if defined PARALLEL_IO && defined DISTRIBUTE
 !
@@ -1691,6 +1809,35 @@
      &   'Recomputing 4DVar during data assimilation analysis.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' RECOMPUTE_4DVAR,'
+#endif
+#if defined DISTRIBUTE
+# if defined REDUCE_ALLGATHER
+!
+      IF (Master) WRITE (stdout,20) 'REDUCE_ALLGATHER',                 &
+     &   'Using mpi_allgather in mp_reduce routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' REDUCE_ALLGATHER,'
+# elif defined REDUCE_ALLREDUCE
+!
+      IF (Master) WRITE (stdout,20) 'REDUCE_ALLREDUCE',                 &
+     &   'Using mpi_allreduce in mp_reduce routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' REDUCE_ALLREDUCE,'
+# else
+!
+      IF (Master) WRITE (stdout,20) '!REDUCE_ALL...',                   &
+     &   'Using mpi_isend/mpi_recv in mp_reduce routine.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' !REDUCE_ALL...,'
+# endif
+#endif
+#ifdef REGCM_COUPLING
+!
+      IF (Master) WRITE (stdout,20) 'COAMPS_COUPLING',                  &
+     &   'Atmosphere coupling with RegCM.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' REGCM_COUPLING,'
+      iatms=iatms+1
 #endif
 #ifdef RED_TIDE
 !
@@ -2048,6 +2195,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+18)=' !STOCH_OPT_WHITE,'
 # endif
+#endif
+#if defined SURFACE_DO_SATURATION && defined HYPOXIA_SRM
+!
+      IF (Master) WRITE (stdout,20) 'SURFACE_DO_SATURATION',            &
+     &   'Use surface dissolved oxygen saturation.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+23)=' SURFACE_DO_SATURATION,'
 #endif
 #ifdef SWAN_COUPLING
 !
@@ -2593,12 +2747,12 @@
       Coptions(is:is+20)=' W4DVAR_SENSITIVITY,'
       idriver=idriver+1
 #endif
-#ifdef WAVES_OCEAN
+#ifdef WAV_COUPLING
 !
-      IF (Master) WRITE (stdout,20) 'WAVES_OCEAN',                      &
+      IF (Master) WRITE (stdout,20) 'WAV_COUPLING',                      &
      &   'Two-way wave-ocean models coupling.'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+13)=' WAVES_OCEAN,'
+      Coptions(is:is+13)=' WAV_COUPLING,'
 #endif
 #ifdef WEAK_CONSTRAINT
 !
@@ -2639,9 +2793,10 @@
 #ifdef WRF_COUPLING
 !
       IF (Master) WRITE (stdout,20) 'WRF_COUPLING',                     &
-     &   'Two-way WRF/ROMS coupling.'
+     &   'Atmosphere coupling with WRF.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+14)=' WRF_COUPLING,'
+      iatms=iatms+1
 #endif
 #if defined WTYPE_GRID && \
    (defined LMD_SKPP   || defined SOLAR_SOURCE) && \
@@ -2994,6 +3149,17 @@
      &          /,13x,'in serial with partitions or shared-memory...', &
      &          /,13x,'There bugs in shared-memory that need fixing.', &
      &          /,13x,'Use distributed-memory (MPI) in parallel runs.')
+      END IF
+#endif
+#ifdef ATM_COUPLING
+!
+!  Stop if more than one vertical closure scheme is selected.
+!
+      IF (Master.and.(iatms.gt.1)) THEN
+        WRITE (stdout,270)
+ 270    FORMAT (/,' CHECKDEFS - only one atmosphere model coupling',   &
+     &            ' is allowed.')
+        exit_flag=5
       END IF
 #endif
 

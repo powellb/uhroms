@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: mod_ncparam.F 1740 2017-11-15 19:01:32Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -215,6 +215,7 @@
         integer  :: idOerr        ! observations error
         integer  :: idOlat        ! observations latitude
         integer  :: idOlon        ! observations longitude
+        integer  :: idOmet        ! observations meta value
         integer  :: idOpro        ! observations provenance
         integer  :: idOtyp        ! observations type
         integer  :: idOval        ! observations value
@@ -416,13 +417,16 @@
         integer, allocatable :: idDv3d(:)     ! 3D v-momentum terms
 #endif
 !
-!  State variables indices (order is important).
+!  State variables indices (order is important). Notice that current 
+!  extra-observations index (isRadial) needs to be initialized to zero
+!  here and reset elsewhere to the value provided by the user.
 !
         integer  :: isFsur = 1                ! free-surface
         integer  :: isUbar = 2                ! 2D U-velocity
         integer  :: isVbar = 3                ! 2D V-velocity
         integer  :: isUvel = 4                ! 3D U-velocity
         integer  :: isVvel = 5                ! 3D V-velocity
+        integer  :: isRadial = 0              ! HF radial-velocity
         integer  :: isUstr                    ! surface u-stress
         integer  :: isVstr                    ! surface v-stress
         integer  :: isMtke                    ! turbulent kinetic energy
@@ -807,7 +811,7 @@
           Iinfo(5,i,ng)=0
           Iinfo(6,i,ng)=0
           Iinfo(7,i,ng)=0
-          Iinfo(8,i,ng)=0
+          Iinfo(8,i,ng)=2
           Iinfo(9,i,ng)=0
           Iinfo(10,i,ng)=0
           Finfo(1,i,ng)=0.0_r8
@@ -1565,6 +1569,8 @@
               idOlat=varid
             CASE ('idOlon')
               idOlon=varid
+            CASE ('idOmet')
+              idOmet=varid
             CASE ('idOpro')
               idOpro=varid
             CASE ('idOtyp')
@@ -1590,6 +1596,8 @@
 #  include <fennel_var.h>
 # elif defined ECOSIM
 #  include <ecosim_var.h>
+# elif defined HYPOXIA_SRM
+#  include <hypoxia_srm_var.h>
 # elif defined NEMURO
 #  include <nemuro_var.h>
 # elif defined NPZD_FRANKS

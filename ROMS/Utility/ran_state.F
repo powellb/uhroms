@@ -1,6 +1,6 @@
         MODULE ran_state
 !
-!svn $Id: ran_state.F 843 2017-04-27 20:26:57Z arango $
+!svn $Id: ran_state.F 1719 2017-04-27 20:26:39Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

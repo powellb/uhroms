@@ -1,7 +1,7 @@
 #undef GEO_ROTATION
       SUBROUTINE radiation_stress (ng, tile)
 !
-!svn $Id: nearshore_mellor05.h 830 2017-01-24 21:21:11Z arango $
+!svn $Id: nearshore_mellor05.h 1726 2017-07-18 23:27:08Z arango $
 !***********************************************************************
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -37,7 +37,7 @@
 #include "tile.h"
 
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 21)
+      CALL wclock_on (ng, iNLM, 21, __LINE__, __FILE__)
 #endif
       CALL radiation_stress_tile (ng, tile,                             &
      &                            LBi, UBi, LBj, UBj, N(ng),            &
@@ -106,7 +106,7 @@
      &                            OCEAN(ng) % ubar_stokes,              &
      &                            OCEAN(ng) % vbar_stokes)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 21)
+      CALL wclock_off (ng, iNLM, 21, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE radiation_stress

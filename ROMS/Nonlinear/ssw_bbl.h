@@ -4,7 +4,7 @@
 
       SUBROUTINE bblm (ng, tile)
 !
-!svn $Id: ssw_bbl.h 830 2017-01-24 21:21:11Z arango $
+!svn $Id: ssw_bbl.h 1726 2017-07-18 23:27:08Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group        Chris Sherwood   !
 !    Licensed under a MIT/X style license               Rich Signell   !
@@ -41,7 +41,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 37)
+      CALL wclock_on (ng, iNLM, 37, __LINE__, __FILE__)
 #endif
       CALL bblm_tile (ng, tile,                                         &
      &                LBi, UBi, LBj, UBj,                               &
@@ -84,7 +84,7 @@
      &                FORCES(ng) % bustr,                               &
      &                FORCES(ng) % bvstr)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 37)
+      CALL wclock_off (ng, iNLM, 37, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE bblm

@@ -1,6 +1,6 @@
       SUBROUTINE ana_cloud (ng, tile, model)
 !
-!! svn $Id: ana_cloud.h 841 2017-04-19 21:42:22Z arango $
+!! svn $Id: ana_cloud.h 1721 2017-05-25 22:41:44Z arango $
 !!======================================================================
 !! Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -123,9 +123,7 @@
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                  real(r8), dimension(8), intent(in) :: r_date
-      real(r8), dimension(8), intent(in) :: r_date
-              cloud)
+     &                          cloud)
       END IF
 
 #ifdef DISTRIBUTE

@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_write (ng, tile, model)
 !
-!svn $Id: obs_write.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: obs_write.F 1740 2017-11-15 19:01:32Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -27,7 +27,7 @@
       USE mod_stepping
 !
 # ifdef DISTRIBUTE
-      USE distribute_mod, ONLY :  mp_collect
+      USE distribute_mod,  ONLY :  mp_collect
 # endif
       USE extract_obs_mod, ONLY : extract_obs2d
 # ifdef SOLVE3D
@@ -36,6 +36,7 @@
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
 # endif
+      USE strings_mod,     ONLY : FoundError
 !
 !  Imported variable declarations.
 !
@@ -46,7 +47,7 @@
       logical :: Lwrote
       integer :: LBi, UBi, LBj, UBj
       integer :: Mstr, Mend, ObsSum, ObsVoid
-      integer :: i, ie, is, iobs, itrc, iweight, status, varid
+      integer :: i, ic, ie, is, iobs, itrc, iweight, status, varid
 # ifdef SOLVE3D
       integer :: j, k
 # endif
@@ -55,38 +56,48 @@
 # endif
       real(r8), parameter :: IniVal = 0.0_r8
 
+      real(r8) :: angle
 # ifdef BGQC
       real(r8) :: df1, df2, Thresh
 # endif
-      real(r8) :: misfit(Mobs)
+      real(r8) :: misfit(Mobs), uradial(Mobs), vradial(Mobs)
+# ifdef BGQC
+      real(r8) :: uBgErr(Mobs), vBgErr(Mobs)
+# endif
 
       character (len=50) :: string
 
 # include "set_bounds.h"
 !
-      SourceFile='obs_write.F'
+      SourceFile=__FILE__
 !
       LBi=LBOUND(GRID(ng)%h,DIM=1)
       UBi=UBOUND(GRID(ng)%h,DIM=1)
       LBj=LBOUND(GRID(ng)%h,DIM=2)
       UBj=UBOUND(GRID(ng)%h,DIM=2)
 !
-!-----------------------------------------------------------------------
+!=======================================================================
 !  Interpolate model state at observation locations.
-!-----------------------------------------------------------------------
+!=======================================================================
 !
       IF (ProcessObs(ng)) THEN
+
+# ifdef WEAK_CONSTRAINT
 !
 !  Set starting and ending indices of observations to process for the
-!  current time survey. In weak constraint, the entire observation
-!  vector for the assimilation window is maintained. Otherwise, only
-!  the observations for the current survey time are maintained
-!  (starting index is always one).
+!  current time survey. In the dual formulation, the entire observation
+!  vector for the assimilation window is maintained and the data array
+!  indexes are global.
 !
-# ifdef WEAK_CONSTRAINT
         Mstr=NstrObs(ng)
         Mend=NendObs(ng)
 # else
+!
+!  Set starting and ending indices of observations to process for the
+!  current time survey. In the primal formulation, only the observations
+!  for the current assimilation window are maintained and the data array
+!  indexes are local (1:Nobs; starting index is always one).
+!
         Mstr=1
         Mend=Nobs(ng)
 # endif
@@ -111,6 +122,8 @@
             NLmodVal(iobs)=IniVal
 #  ifdef BGQC
             BgErr(iobs)=IniVal
+            uBgErr(iobs)=IniVal
+            vBgErr(iobs)=IniVal
 #  endif
           END DO
 #  ifdef BGQC
@@ -122,7 +135,7 @@
           IF (bgqc_type(ng).eq.1) THEN        ! state variable index QC
             DO iobs=Mstr,Mend
               DO i=1,MstateVar
-                IF (ObsType(iobs).eq.i) THEN
+                IF (ObsType(iobs).eq.ObsState2Type(i)) THEN
                   BgThresh(iobs)=S_bgqc(i,ng)
                   EXIT
                 END IF
@@ -150,14 +163,16 @@
 #  endif
 # endif
 !
+!-----------------------------------------------------------------------
 !  Free-surface observations.
+!-----------------------------------------------------------------------
 !
 # ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isFsur).gt.0)) THEN
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isFsur,                                   &
+     &                        ObsState2Type(isFsur),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
@@ -172,7 +187,7 @@
 #  ifdef BGQC
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isFsur,                                   &
+     &                        ObsState2Type(isFsur),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
@@ -192,7 +207,7 @@
      &      (FOURDVAR(ng)%ObsCount(isFsur).gt.0)) THEN
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isFsur,                                   &
+     &                        ObsState2Type(isFsur),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        rXmin(ng), rXmax(ng),                     &
      &                        rYmin(ng), rYmax(ng),                     &
@@ -207,14 +222,16 @@
         END IF
 # endif
 !
+!-----------------------------------------------------------------------
 !  Vertically integrated u-velocity observations.
+!-----------------------------------------------------------------------
 !
 # ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isUbar).gt.0)) THEN
           CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isUbar,                                   &
+     &                        ObsState2Type(isUbar),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -229,7 +246,7 @@
 #  ifdef BGQC
           CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isUbar,                                   &
+     &                        ObsState2Type(isUbar),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -249,7 +266,7 @@
      &      (FOURDVAR(ng)%ObsCount(isUbar).gt.0)) THEN
           CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isUbar,                                   &
+     &                        ObsState2Type(isUbar),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -264,14 +281,16 @@
         END IF
 # endif
 !
+!-----------------------------------------------------------------------
 !  Vertically integrated v-velocity observations.
+!-----------------------------------------------------------------------
 !
 # ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isVbar).gt.0)) THEN
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isVbar,                                   &
+     &                        ObsState2Type(isVbar),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
@@ -286,7 +305,7 @@
 #  ifdef BGQC
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isVbar,                                   &
+     &                        ObsState2Type(isVbar),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
@@ -306,7 +325,7 @@
      &      (FOURDVAR(ng)%ObsCount(isVbar).gt.0)) THEN
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        isVbar,                                   &
+     &                        ObsState2Type(isVbar),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
@@ -323,7 +342,9 @@
 
 # ifdef SOLVE3D
 !
+!-----------------------------------------------------------------------
 !  3D u-velocity observations.
+!-----------------------------------------------------------------------
 !
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
@@ -338,7 +359,7 @@
           END DO
           CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        isUvel,                                   &
+     &                        ObsState2Type(isUvel),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -354,7 +375,7 @@
 #   ifdef BGQC
           CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        isUvel,                                   &
+     &                        ObsState2Type(isUvel),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -383,7 +404,7 @@
           END DO
           CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        isUvel,                                   &
+     &                        ObsState2Type(isUvel),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -399,7 +420,9 @@
         END IF
 #  endif
 !
+!-----------------------------------------------------------------------
 !  3D v-velocity observations.
+!-----------------------------------------------------------------------
 !
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
@@ -414,7 +437,7 @@
           END DO
           CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        isVvel,                                   &
+     &                        ObsState2Type(isVvel),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
@@ -430,7 +453,7 @@
 #   ifdef BGQC
           CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        isVvel,                                   &
+     &                        ObsState2Type(isVvel),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
@@ -459,7 +482,7 @@
           END DO
           CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        isVvel,                                   &
+     &                        ObsState2Type(isVvel),                    &
      &                        Mobs, Mstr, Mend,                         &
      &                        vXmin(ng), vXmax(ng),                     &
      &                        vYmin(ng), vYmax(ng),                     &
@@ -475,7 +498,254 @@
         END IF
 #  endif
 !
+!-----------------------------------------------------------------------
+!  Radial Velocity. The observations are in terms of radial speed and
+!  angle (stored in obs_meta).  The observation angle converts the
+!  velocity components to geographical EAST and North components.
+!
+!  In curvilinear coordinates, the radial forward problem is:
+!
+!     radial = u * COS(obs_meta - angler) + v * SIN(obs_meta - angler)
+!-----------------------------------------------------------------------
+!
+#  ifndef IS4DVAR_SENSITIVITY
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
+          DO iobs=Mstr,Mend
+            uradial(iobs)=IniVal
+            vradial(iobs)=IniVal
+          END DO
+
+#   ifdef CURVGRID
+!
+!  If curvilinear coordinates, interpolate grid rotation angle (radians)
+!  for each observation location.
+!
+          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsVetting,                      &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        GRID(ng)%angler,                          &
+#    ifdef MASKING
+     &                        GRID(ng)%rmask,                           &
+#    endif
+     &                        ObsAngler)
+#   endif
+!
+!  Radial NLM u-component.
+!
+          DO k=1,N(ng)
+            DO j=Jstr-1,Jend+1
+              DO i=IstrU-1,Iend+1
+                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i-1,j,k)+      &
+     &                                      GRID(ng)%z_r(i  ,j,k))
+              END DO
+            END DO
+          END DO
+          CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,       &
+     &                        uYmin(ng), uYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType,  ObsVetting,                     &
+     &                        Tobs, Xobs+0.5_r8, Yobs, Zobs,            &
+     &                        OCEAN(ng)%u(:,:,:,NOUT),                  &
+     &                        GRID(ng)%z_v,                             &
+#   ifdef MASKING
+     &                        GRID(ng)%umask,                           &
+#   endif
+     &                        uradial)
+#   ifdef BGQC
+            CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,           &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          ObsState2Type(isRadial),                &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          uXmin(ng)+0.5_r8, rXmax(ng)+0.5_r8,     &
+     &                          uYmin(ng), uYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          ObsType, ObsVetting,                    &
+     &                          Tobs, Xobs+0.5_r8, Yobs, Zobs,          &
+     &                          OCEAN(ng)%e_u(:,:,:,1),                 &
+     &                          GRID(ng)%z_v,                           &
+#    ifdef MASKING
+     &                          GRID(ng)%umask,                         &
+#    endif
+     &                          uBgErr)
+#   endif
+!
+!  Radial NLM v-component.
+!
+          DO k=1,N(ng)
+            DO j=JstrV-1,Jend+1
+              DO i=Istr-1,Iend+1
+                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i,j-1,k)+      &
+     &                                      GRID(ng)%z_r(i,j  ,k))
+              END DO
+            END DO
+          END DO
+          CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        vXmin(ng), vXmax(ng),                     &
+     &                        vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,       &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsVetting,                      &
+     &                        Tobs, Xobs, Yobs+0.5_r8, Zobs,            &
+     &                        OCEAN(ng)%v(:,:,:,NOUT),                  &
+     &                        GRID(ng)%z_v,                             &
+#   ifdef MASKING
+     &                        GRID(ng)%vmask,                           &
+#   endif
+     &                        vradial)
+#   ifdef BGQC
+          CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        vXmin(ng), vXmax(ng),                     &
+     &                        vYmin(ng), vYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsVetting,                      &
+     &                        Tobs, Xobs, Yobs+0.5_r8, Zobs,            &
+     &                        OCEAN(ng)%e_v(:,:,:,1),                   &
+     &                        GRID(ng)%z_v,                             &
+#    ifdef MASKING
+     &                        GRID(ng)%vmask,                           &
+#    endif
+     &                        vBgErr)
+#   endif
+!
+!  Compute NLM radial velocity.
+!
+          DO iobs=Mstr,Mend
+            IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
+#   ifdef CURVGRID
+              angle=ObsMeta(iobs)-ObsAngler(iobs)
+              NLmodVal(iobs)=uradial(iobs)*COS(angle)+                  &
+     &                       vradial(iobs)*SIN(angle)         
+#   else
+              NLmodVal(iobs)=uradial(iobs)*COS(ObsMeta(iobs))+          &
+     &                       vradial(iobs)*SIN(ObsMeta(iobs))         
+#   endif
+#   ifdef BGQC
+              BgErr(iobs)=MAX(uBgErr(iobs), vBgErr(iobs))
+#   endif
+            END IF
+          END DO
+        END IF
+#  endif
+#  ifdef TLM_OBS
+!
+!  TLM or RPM radial velocities.
+!
+        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
+     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
+          DO iobs=Mstr,Mend
+            uradial(iobs)=IniVal
+            vradial(iobs)=IniVal
+          END DO
+
+#   ifdef CURVGRID
+!
+!  If curvilinear coordinates, interpolate grid rotation angle (radians)
+!  for each observation location.
+!
+          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        rXmin(ng), rXmax(ng),                     &
+     &                        rYmin(ng), rYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsVetting,                      &
+     &                        Tobs, Xobs, Yobs,                         &
+     &                        GRID(ng)%angler,                          &
+#    ifdef MASKING
+     &                        GRID(ng)%rmask,                           &
+#    endif
+     &                        ObsAngler)
+#   endif
+!
+!  TLM or RPM radial u-component.
+!
+          DO k=1,N(ng)
+            DO j=Jstr-1,Jend+1
+              DO i=IstrU-1,Iend+1
+                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i-1,j,k)+      &
+     &                                      GRID(ng)%z_r(i  ,j,k))
+              END DO
+            END DO
+          END DO
+          CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        uXmin(ng)+0.5_r8, uXmax(ng)+0.5_r8,       &
+     &                        uYmin(ng), uYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType,  ObsVetting,                     &
+     &                        Tobs, Xobs+0.5_r8, Yobs, Zobs,            &
+     &                        OCEAN(ng)%tl_u(:,:,:,NOUT),               &
+     &                        GRID(ng)%z_v,                             &
+#   ifdef MASKING
+     &                        GRID(ng)%umask,                           &
+#   endif
+     &                        uradial)
+!
+!  TLM or RPM radial v-component.
+!
+          DO k=1,N(ng)
+            DO j=JstrV-1,Jend+1
+              DO i=Istr-1,Iend+1
+                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i,j-1,k)+      &
+     &                                      GRID(ng)%z_r(i,j  ,k))
+              END DO
+            END DO
+          END DO
+          CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        ObsState2Type(isRadial),                  &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        vXmin(ng), vXmax(ng),                     &
+     &                        vYmin(ng)+0.5_r8, vYmax(ng)+0.5_r8,       &
+     &                        time(ng), dt(ng),                         &
+     &                        ObsType, ObsVetting,                      &
+     &                        Tobs, Xobs, Yobs+0.5_r8, Zobs,            &
+     &                        OCEAN(ng)%tl_v(:,:,:,NOUT),               &
+     &                        GRID(ng)%z_v,                             &
+#   ifdef MASKING
+     &                        GRID(ng)%vmask,                           &
+#   endif
+     &                        vradial)
+!
+!  Compute TLM or RPM radial velocity.
+!
+          DO iobs=Mstr,Mend
+            IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
+#   ifdef CURVGRID
+              angle=ObsMeta(iobs)-ObsAngler(iobs)
+              TLmodVal(iobs)=uradial(iobs)*COS(angle)+                  &
+     &                       vradial(iobs)*SIN(angle)         
+#   else
+              TLmodVal(iobs)=uradial(iobs)*COS(ObsMeta(iobs))+          &
+     &                       vradial(iobs)*SIN(ObsMeta(iobs))         
+#   endif
+            END IF
+          END DO
+        END IF
+#  endif
+!
+!-----------------------------------------------------------------------
 !  Tracer type observations.
+!-----------------------------------------------------------------------
 !
         DO itrc=1,NT(ng)
 #  ifndef IS4DVAR_SENSITIVITY
@@ -483,7 +753,7 @@
      &        (FOURDVAR(ng)%ObsCount(isTvar(itrc)).gt.0)) THEN
             CALL extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,           &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          isTvar(itrc),                           &
+     &                          ObsState2Type(isTvar(itrc)),            &
      &                          Mobs, Mstr, Mend,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
@@ -499,7 +769,7 @@
 #   ifdef BGQC
             CALL extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,           &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          isTvar(itrc),                           &
+     &                          ObsState2Type(isTvar(itrc)),            &
      &                          Mobs, Mstr, Mend,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
@@ -520,7 +790,7 @@
      &        (FOURDVAR(ng)%ObsCount(isTvar(itrc)).gt.0)) THEN
             CALL extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,           &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          isTvar(itrc),                           &
+     &                          ObsState2Type(isTvar(itrc)),            &
      &                          Mobs, Mstr, Mend,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
@@ -540,7 +810,7 @@
 !
 !-----------------------------------------------------------------------
 !  If processing nonlinear trajectory, load observation reject/accept
-!  flag into screening variable.  This needs to be done once and
+!  flag into screening variable.  This needs to be done once and it is
 !  controlled by the main driver. Notice that in routine "extract_obs"
 !  the observations are only accepted if they are at the appropriate
 !  time window and grid bounded at water points.
@@ -583,6 +853,55 @@
           END DO
         END IF
 # endif
+# ifdef DISTRIBUTE
+!
+!-----------------------------------------------------------------------
+!  Collect all extracted data.
+!-----------------------------------------------------------------------
+!
+#  ifdef WEAK_CONSTRAINT
+        Ncollect=Mend-Mstr+1
+#  else
+        Ncollect=Mobs
+#  endif
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
+          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
+#  ifdef WEAK_CONSTRAINT
+     &                     ObsScale(Mstr:))
+#  else
+     &                     ObsScale)
+#  endif
+        END IF
+# endif
+# ifndef WEAK_CONSTRAINT
+!
+!-----------------------------------------------------------------------
+!  Save observation reject/accept flag into GLOBAL screening variable.
+!-----------------------------------------------------------------------
+!
+!  In the primal formulation, the current time window (or survey) 
+!  observations are loaded to the working arrays using local indexes
+!  (array elements 1:Nobs) as opposed to global indexes in the dual
+!  formulation. Recall that the screening variable ObsScale is computed
+!  only once to facilitate Background Quality Control on the first pass
+!  of the NLM (WrtObsScale=T and wrtNLmod=T). Therefore, we need to
+!  load and save values into global array ObsScaleGlobal so it can be
+!  used correctly by the TLM, RPM, and ADM.
+!
+        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
+          ic=0
+          DO iobs=NstrObs(ng),NendObs(ng)
+            ic=ic+1
+            ObsScaleGlobal(iobs)=ObsScale(ic)
+          END DO
+        ELSE
+          ic=0
+          DO iobs=NstrObs(ng),NendObs(ng)
+            ic=ic+1
+            ObsScale(ic)=ObsScaleGlobal(iobs)
+          END DO
+        END IF
+# endif
 !
 !-----------------------------------------------------------------------
 !  Scale extracted data at observations location.
@@ -605,18 +924,12 @@
           END DO
         END IF
 # endif
-
 # ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-!  Collect all extracted data.
+!  Collect extracted data.
 !-----------------------------------------------------------------------
 !
-#  ifdef WEAK_CONSTRAINT
-        Ncollect=Mend-Mstr+1
-#  else
-        Ncollect=Mobs
-#  endif
 #  ifndef IS4DVAR_SENSITIVITY
 
         IF (wrtNLmod(ng)) THEN
@@ -630,18 +943,11 @@
 
 #   ifdef BGQC
         IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
-
           CALL mp_collect (ng, model, Ncollect, IniVal,                 &
 #    if defined WEAK_CONSTRAINT
      &                     BgErr(Mstr:))
 #    else
      &                     BgErr)
-#    endif
-          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
-#    if defined WEAK_CONSTRAINT
-     &                     BgThresh(Mstr:))
-#    else
-     &                     BgThresh)
 #    endif
         END IF
 #   endif
@@ -668,15 +974,6 @@
 #   endif
         END IF
 #  endif
-
-        IF (wrtObsScale(ng).and.wrtNLmod(ng)) THEN
-          CALL mp_collect (ng, model, Ncollect, IniVal,                 &
-#  ifdef WEAK_CONSTRAINT
-     &                     ObsScale(Mstr:))
-#  else
-     &                     ObsScale)
-#  endif
-        END IF
 # endif
 
 # if defined FOUR_DVAR && !defined IS4DVAR_SENSITIVITY
@@ -708,21 +1005,24 @@
      &                            (/NstrObs(ng)/), (/Nobs(ng)/),        &
      &                            ncid = DAV(ng)%ncid,                  &
      &                            varid = DAV(ng)%Vid(idNLmi))
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
 
             CALL netcdf_put_fvar (ng, model, DAV(ng)%name,              &
      &                            Vname(1,idMOMi), misfit(Mstr:),       &
      &                            (/NstrObs(ng)/), (/Nobs(ng)/),        &
      &                            ncid = DAV(ng)%ncid,                  &
      &                            varid = DAV(ng)%Vid(idMOMi))
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           ELSE
             CALL netcdf_put_fvar (ng, model, DAV(ng)%name,              &
      &                            Vname(1,idMOMf), misfit(Mstr:),       &
      &                            (/NstrObs(ng)/), (/Nobs(ng)/),        &
      &                            ncid = DAV(ng)%ncid,                  &
      &                            varid = DAV(ng)%Vid(idMOMf))
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         END IF
 #  ifdef BGQC
@@ -732,13 +1032,15 @@
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idBgEr))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
           CALL netcdf_put_fvar (ng, model, DAV(ng)%name,                &
      &                          Vname(1,idBgTh), BgThresh(Mstr:),       &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idBgTh))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 #  endif
 # endif
@@ -754,12 +1056,14 @@
           CALL netcdf_put_ivar (ng, model, DAV(ng)%name, 'outer',       &
      &                          outer, (/0/), (/0/),                    &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
           CALL netcdf_put_ivar (ng, model, DAV(ng)%name, 'inner',       &
      &                          inner, (/0/), (/0/),                    &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 #endif
 !
@@ -771,7 +1075,8 @@
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idObsS))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 
 # ifndef IS4DVAR_SENSITIVITY
@@ -786,7 +1091,8 @@
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idNLmo))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
           haveNLmod(ng)=.TRUE.
         END IF
 #  else
@@ -796,7 +1102,8 @@
      &                          (/NstrObs(ng),outer/), (/Nobs(ng),1/),  &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idNLmo))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
           haveNLmod(ng)=.TRUE.
         END IF
 #  endif
@@ -811,7 +1118,8 @@
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idTLmo))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
           haveTLmod(ng)=.TRUE.
         END IF
 #  ifdef IS4DVAR_SENSITIVITY
@@ -824,7 +1132,8 @@
      &                          'ObsImpact_total', TLmodVal(Mstr:),     &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 #   endif
 #   ifdef OBS_IMPACT_SPLIT
@@ -836,7 +1145,8 @@
      &                          'ObsImpact_IC', TLmodVal(Mstr:),        &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 #    if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
 !
@@ -847,7 +1157,8 @@
      &                          'ObsImpact_FC', TLmodVal(Mstr:),        &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 #    endif
 #    if defined ADJUST_BOUNDARY
@@ -859,7 +1170,8 @@
      &                          'ObsImpact_BC', TLmodVal(Mstr:),        &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 #    endif
 #   endif
@@ -875,7 +1187,8 @@
      &                          'RPmodel_initial', TLmodVal(Mstr:),     &
      &                          (/NstrObs(ng)/), (/Nobs(ng)/) ,         &
      &                          ncid = DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 # endif
 # ifdef SOLVE3D
@@ -890,7 +1203,8 @@
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          varid = DAV(ng)%Vid(idObsZ))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 !
 !  Write Z-location of observation in grid coordinates, if applicable.
@@ -912,7 +1226,8 @@
      &                          (/NstrObs(ng)/), (/Nobs(ng)/),          &
      &                          ncid = OBS(ng)%ncid,                    &
      &                          varid = OBS(ng)%Vid(idObsZ))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
           IF (model.eq.iADM) THEN
             Lwrote=ObsSurvey(ng).eq.1
@@ -934,7 +1249,8 @@
      &                       GRID(ng) % rmask,                          &
 #  endif
      &                       FOURDVAR(ng) % zeta_ref)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
           wrtZetaRef(ng)=.FALSE.
         END IF
 # endif
@@ -945,12 +1261,14 @@
 !
         IF (wrtNLmod(ng).or.wrtTLmod(ng).or.wrtRPmod(ng)) THEN
           CALL netcdf_sync (ng, model, DAV(ng)%name, DAV(ng)%ncid)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
 # ifdef SOLVE3D
           IF (Load_Zobs(ng)) THEN
             CALL netcdf_sync (ng, model, OBS(ng)%name, OBS(ng)%ncid)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
 # endif
         END IF
@@ -962,25 +1280,28 @@
 !
         DO iobs=Mstr,Mend
           IF (ObsScale(iobs).lt.1.0) THEN
-            IF  (ObsType(iobs).eq.isFsur) THEN
+            IF  (ObsType(iobs).eq.ObsState2Type(isFsur)) THEN
               FOURDVAR(ng)%ObsReject(isFsur)=                           &
      &                              FOURDVAR(ng)%ObsReject(isFsur)+1
-            ELSE IF (ObsType(iobs).eq.isUbar) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isUbar)) THEN
               FOURDVAR(ng)%ObsReject(isUbar)=                           &
      &                              FOURDVAR(ng)%ObsReject(isUbar)+1
-            ELSE IF (ObsType(iobs).eq.isVbar) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isVbar)) THEN
               FOURDVAR(ng)%ObsReject(isVbar)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVbar)+1
 # ifdef SOLVE3D
-            ELSE IF (ObsType(iobs).eq.isUvel) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
               FOURDVAR(ng)%ObsReject(isUvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isUvel)+1
-            ELSE IF (ObsType(iobs).eq.isVvel) THEN
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isVvel)) THEN
               FOURDVAR(ng)%ObsReject(isVvel)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVvel)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
+              FOURDVAR(ng)%ObsReject(isRadial)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE
               DO itrc=1,NT(ng)
-                IF (ObsType(iobs).eq.isTvar(itrc)) THEN
+                IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN
                   i=isTvar(itrc)
                   FOURDVAR(ng)%ObsReject(i)=FOURDVAR(ng)%ObsReject(i)+1
                 END IF
@@ -993,7 +1314,7 @@
 !  Load total available and rejected observations into structure
 !  array.
 !
-        DO i=1,NstateVar(ng)
+        DO i=1,NobsVar(ng)
           FOURDVAR(ng)%ObsCount(0)=FOURDVAR(ng)%ObsCount(0)+            &
      &                             FOURDVAR(ng)%ObsCount(i)
           FOURDVAR(ng)%ObsReject(0)=FOURDVAR(ng)%ObsReject(0)+          &
@@ -1008,10 +1329,10 @@
           ObsSum=0
           ObsVoid=0
           is=NstrObs(ng)
-          DO i=1,NstateVar(ng)
+          DO i=1,NobsVar(ng)
             IF (FOURDVAR(ng)%ObsCount(i).gt.0) THEN
               ie=is+FOURDVAR(ng)%ObsCount(i)-1
-              WRITE (stdout,10) TRIM(Vname(1,idSvar(i))), is, ie,       &
+              WRITE (stdout,10) TRIM(ObsName(i)), is, ie,               &
      &                          ie-is+1, FOURDVAR(ng)%ObsReject(i)
               is=ie+1
               ObsSum=ObsSum+FOURDVAR(ng)%ObsCount(i)

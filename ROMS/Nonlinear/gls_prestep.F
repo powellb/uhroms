@@ -2,7 +2,7 @@
       MODULE gls_prestep_mod
 #if defined NONLINEAR && defined GLS_MIXING && defined SOLVE3D
 !
-!svn $Id: gls_prestep.F 830 2017-01-24 21:21:11Z arango $
+!svn $Id: gls_prestep.F 1726 2017-07-18 23:27:08Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license           Hernan G. Arango   !
@@ -44,7 +44,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 19)
+      CALL wclock_on (ng, iNLM, 19, __LINE__, __FILE__)
 # endif
       CALL gls_prestep_tile (ng, tile,                                  &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -63,7 +63,7 @@
      &                       MIXING(ng) % gls,                          &
      &                       MIXING(ng) % tke)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 19)
+      CALL wclock_off (ng, iNLM, 19, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE gls_prestep
