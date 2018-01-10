@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE close_inp (ng, model)
 !
-!svn $Id: close_io.F 1728 2017-07-29 03:53:50Z arango $
+!svn $Id: close_io.F 1741 2017-11-23 05:40:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -68,7 +68,7 @@
           lstr=LEN_TRIM(FRC(i,ng)%name)
           FRC(i,ng)%base=FRC(i,ng)%name(1:lstr-3)
           CALL netcdf_close (ng, model, FRC(i,ng)%ncid,                 &
-     &                       FRC(i,ng)%files(i), .FALSE.)
+     &                       FRC(i,ng)%name, .FALSE.)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN
         END IF
@@ -95,7 +95,7 @@
           lstr=LEN_TRIM(BRY(ng)%name)
           BRY(ng)%base=BRY(ng)%name(1:lstr-3)
           CALL netcdf_close (ng, model, BRY(ng)%ncid,                   &
-     &                       BRY(ng)%files(i),  .FALSE.)
+     &                       BRY(ng)%name, .FALSE.)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN
         END IF
@@ -121,7 +121,7 @@
           lstr=LEN_TRIM(CLM(ng)%name)
           CLM(ng)%base=CLM(ng)%name(1:lstr-3)
           CALL netcdf_close (ng, model, CLM(ng)%ncid,                   &
-     &                       CLM(ng)%files(i),  .FALSE.)
+     &                       CLM(ng)%name, .FALSE.)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN
         END IF

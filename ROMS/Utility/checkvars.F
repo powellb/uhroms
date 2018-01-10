@@ -2,7 +2,7 @@
       SUBROUTINE checkvars (ng, model, ncname, ncid, string, Nrec,      &
      &                      Nvar,tvarnam, get_var, have_var)
 !
-!svn $Id: checkvars.F 1735 2017-10-05 20:26:30Z arango $
+!svn $Id: checkvars.F 1742 2017-12-05 22:24:19Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -50,7 +50,7 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, model, Nvar
+      integer, intent(in) :: ng, model, ncid, Nvar
       integer, intent(inout) :: Nrec
 
       character (len=*), intent(in) :: ncname

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE inp_par (model)
 !
-!svn $Id: inp_par.F 1737 2017-11-03 01:09:17Z arango $
+!svn $Id: inp_par.F 1744 2017-12-27 23:17:05Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1129,7 +1129,16 @@
 !
 !=======================================================================
 !                                                                      !
-!  This function decodes lines of text from input script files.        !
+!  This function decodes lines of text from input script files. It is  !
+!  to evaluate ROMS unique namelist parameters.                        !
+!                                                                      !
+!  Arguments:                                                          !
+!                                                                      !
+!    line_text      Input scripts lines as text (string)               !
+!    KeyWord        Input parameter keyword (string)                   !
+!    Nval           Number of values processed (integer)               !
+!    Cval           Input values as characters (string array)          !
+!    Rval           Input values as mumbers (real array)               !
 !                                                                      !
 !=======================================================================
 !

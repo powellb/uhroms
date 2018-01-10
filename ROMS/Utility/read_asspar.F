@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined VERIFICATION
       SUBROUTINE read_AssPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_asspar.F 1740 2017-11-15 19:01:32Z arango $
+!svn $Id: read_asspar.F 1744 2017-12-27 23:17:05Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -57,7 +57,7 @@
 #   ifdef SOLVE3D
       logical, dimension(4,MT,Ngrids) :: Lbry_trc
       logical, dimension(MT,4) :: Lboundary
-      real(r8), dimension(MT,4,Ngrids) :: Rboundary
+      real(r8), dimension(4,MT,Ngrids) :: Rboundary
 #   endif
 #  endif
       real(r8), dimension(MT,Ngrids) :: Rtracer
@@ -423,9 +423,9 @@
             CASE ('HdecayB(isTvar)')
               Npts=load_r(Nval, Rval, 4*MT*Ngrids, Rboundary)
               DO ng=1,Ngrids
-                DO ib=1,4
-                  DO itrc=1,NT(ng)
-                    HdecayB(isTvar(itrc),ib,ng)=Rboundary(itrc,ib,ng)
+                DO itrc=1,NT(ng)
+                  DO ib=1,4
+                    HdecayB(isTvar(itrc),ib,ng)=Rboundary(ib,itrc,ng)
                   END DO
                 END DO
               END DO
@@ -436,9 +436,9 @@
             CASE ('VdecayB(isTvar)')
               Npts=load_r(Nval, Rval, 4*MT*Ngrids, Rboundary)
               DO ng=1,Ngrids
-                DO ib=1,4
-                  DO itrc=1,NT(ng)
-                    VdecayB(isTvar(itrc),ib,ng)=Rboundary(itrc,ib,ng)
+                DO itrc=1,NT(ng)
+                  DO ib=1,4
+                    VdecayB(isTvar(itrc),ib,ng)=Rboundary(ib,itrc,ng)
                   END DO
                 END DO
               END DO

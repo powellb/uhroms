@@ -2,7 +2,7 @@
 #ifndef ANA_GRID
       SUBROUTINE get_grid (ng, model)
 !
-!svn $Id: get_grid.F 1737 2017-11-03 01:09:17Z arango $
+!svn $Id: get_grid.F 1743 2017-12-06 01:58:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1996,7 +1996,7 @@
             ELSE
               IF (Master) THEN
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
-     &                            'scope on RHO-points: scope_rho,      &
+     &                            'scope on RHO-points: scope_rho',     &
      &                            ng, TRIM(ncname), Fmin, Fmax
               END IF
             END IF
@@ -2034,7 +2034,7 @@
             ELSE
               IF (Master) THEN
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
-     &                            'scope on U-points: scope_u,          &
+     &                            'scope on U-points: scope_u',         &
      &                            ng, TRIM(ncname), Fmin, Fmax
               END IF
             END IF
@@ -2072,7 +2072,7 @@
             ELSE
               IF (Master) THEN
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
-     &                            'scope on V-points: scope_v,          &
+     &                            'scope on V-points: scope_v',         &
      &                            ng, TRIM(ncname), Fmin, Fmax
               END IF
             END IF

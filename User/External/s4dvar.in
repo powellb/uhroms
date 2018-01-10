@@ -1,6 +1,6 @@
 !  4DVar assimilation input parameters.
 !
-!svn $Id: s4dvar.in 1740 2017-11-15 19:01:32Z arango $
+!svn $Id: s4dvar.in 1744 2017-12-27 23:17:05Z arango $
 !========================================================= Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
@@ -293,7 +293,7 @@ HdecayB(isUbar) == 100.0d+3 100.0d+3 100.0d+3 100.0d+3    ! 2D U-momentum
 HdecayB(isVbar) == 100.0d+3 100.0d+3 100.0d+3 100.0d+3    ! 2D V-momentum
 HdecayB(isUvel) == 100.0d+3 100.0d+3 100.0d+3 100.0d+3    ! 3D U-momentum
 HdecayB(isVvel) == 100.0d+3 100.0d+3 100.0d+3 100.0d+3    ! 3D V-momentum
-HdecayB(isTvar) == 4*100.0d+3  4*100.0d+3                 ! 1:NT tracers
+HdecayB(isTvar) == 4*100.0d+3  4*100.0d+3                 ! (4,1:NT) tracers
 
 ! Boundary conditions error covariance: vertical, isotropic decorrelation
 ! scales (m). A value is expected for each boundary edge in the following
@@ -302,7 +302,7 @@ HdecayB(isTvar) == 4*100.0d+3  4*100.0d+3                 ! 1:NT tracers
 
 VdecayB(isUvel) == 100.0d0  100.0d0  100.0d0  100.0d0     ! 3D U-momentum
 VdecayB(isVvel) == 100.0d0  100.0d0  100.0d0  100.0d0     ! 3D V-momentum
-VdecayB(isTvar) == 4*100.d0  4*100.d0                     ! 1:NT tracers
+VdecayB(isTvar) == 4*100.d0  4*100.d0                     ! (4,1:NT) tracers
 
 ! Surface forcing error covariance: horizontal, isotropic decorrelation
 ! scales (m).

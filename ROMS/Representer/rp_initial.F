@@ -2,7 +2,7 @@
 #ifdef TL_IOMS
       SUBROUTINE rp_initial (ng)
 !
-!svn $Id: rp_initial.F 1734 2017-08-10 04:10:44Z arango $
+!svn $Id: rp_initial.F 1741 2017-11-23 05:40:54Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -571,13 +571,16 @@
 #endif
 !
 !-----------------------------------------------------------------------
-!  If applicable, check input multi-files where the time records for
-!  a particular field are split into several NetCDF files.  Initialize
-!  several parameters in the file structure so the appropriate input
-!  file is selected during initialization/restart.
+!  If applicable, close all input boundary, climatology, and forcing
+!  NetCDF files and set associated parameters to the closed state. This
+!  step is essential in iterative algorithms that run the full TLM
+!  repetitively. Then, Initialize several parameters in their file
+!  structure, so the appropriate input single or multi-file is selected
+!  during initialization/restart.
 !-----------------------------------------------------------------------
 !
 !$OMP MASTER
+      CALL close_inp (ng, iRPM)
       CALL check_multifile (ng, iRPM)
 !$OMP END MASTER
 # ifdef DISTRIBUTE
@@ -594,7 +597,6 @@
 !-----------------------------------------------------------------------
 !
 !$OMP MASTER
-      CALL close_inp (ng, iRPM)
       CALL rp_get_idata (ng)
       CALL rp_get_data (ng)
 !$OMP END MASTER

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE get_state (ng, model, msg, ncname, IniRec, Tindex)
 !
-!svn $Id: get_state.F 1735 2017-10-05 20:26:30Z arango $
+!svn $Id: get_state.F 1744 2017-12-27 23:17:05Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -206,7 +206,7 @@
       CALL netcdf_open (ng, IDmod, ncname, 0, ncINPid)
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) THEN
-        IF (Master) WRITE (stdout,10) TRIM(ncname)
+        IF (Master) WRITE (stdout,10) string, TRIM(ncname)
         RETURN
       END IF
 !
