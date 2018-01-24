@@ -373,7 +373,7 @@
           w22=p2*q2
           w12=p1*q2
           IF (Zobs(iobs).gt.0.0_r8) THEN
-            k1=MIN(INT(Zobs(iobs)),N(ng))      ! Positions in fractional
+            k1=INT(Zobs(iobs))                 ! Positions in fractional
             k2=MIN(k1+1,N(ng))                 ! levels
             r2=REAL(k2-k1,r8)*(Zobs(iobs)-REAL(k1,r8))
             r1=1.0_r8-r2
@@ -381,11 +381,17 @@
             Ztop=Adepth(i1,j1,N(ng))
             Zbot=Adepth(i1,j1,1    )
             IF (Zobs(iobs).ge.Ztop) THEN
-              k1=N(ng)
-              k2=N(ng)
-              r1=1.0_r8                        ! If shallower, set to surface
+              r1=0.0_r8                        ! If shallower, ignore.
               r2=0.0_r8
-              Zobs(iobs)=REAL(N(ng),r8)
+# ifdef BGQC
+#  ifdef IS4DVAR
+              IF (inner.eq.0.and.wrtNLmod(ng)) ObsScale(iobs)=0.0_r8
+#  else
+              IF (inner.eq.0.and.outer.eq.0) ObsScale(iobs)=0.0_r8
+#  endif
+# else
+              ObsScale(iobs)=0.0_r8
+# endif
             ELSE IF (Zbot.ge.Zobs(iobs)) THEN
               r1=0.0_r8                        ! If deeper, ignore.
               r2=0.0_r8

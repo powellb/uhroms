@@ -250,7 +250,8 @@
 !     
 !     Compute vapor deficit
 !     
-               delq=MAX(1.0E-5_r8,ABS(qsea-qatm))
+!               delq=MAX(1.0E-5_r8,ABS(qsea-qatm))
+               delq=MAX(1.0E-3_r8,ABS(qsea-qatm))
                delq=SIGN(delq, qsea-qatm)
 # ifdef EMINUSP
                pevap=evap(i,j)
@@ -271,7 +272,7 @@
 !     
                precip=rain(i,j) * o16frac(i,j)
 !     
-!     Set the fluxes for O16
+!     Set the fluxes for O17
 !     
                stflx(i,j,i16O)=precip - (pevap*cff3)
 # ifdef TL_IOMS
