@@ -2,9 +2,9 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE wrt_diags (ng)
 !
-!svn $Id: wrt_diags.F 1734 2017-08-10 04:10:44Z arango $
+!svn $Id: wrt_diags.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

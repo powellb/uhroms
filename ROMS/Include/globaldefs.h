@@ -1,9 +1,9 @@
 /*
 ** Include file "globaldef.h"
 **
-** svn $Id: globaldefs.h 1738 2017-11-13 23:23:49Z arango $
+** svn $Id: globaldefs.h 1753 2018-02-14 18:00:35Z arango $
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2017 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
+** Copyright (c) 2002-2018 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -421,6 +421,12 @@
       defined OBS_IMPACT
 # undef OBS_IMPACT
 #endif
+#if !(defined OBS_IMPACT             && \
+      (defined W4DVAR_SENSITIVITY    || defined W4DPSAS_SENSITIVITY || \
+       defined IS4DVAR_SENSITIVITY))
+# undef IMPACT_INNER
+#endif
+
 
 /*
 ** Activate internal switch to process 4DVAR observations.
@@ -567,7 +573,7 @@
 #endif
 
 #if defined CICE_COUPLING
-  define ICE_COUPLING
+# define ICE_COUPLING
 #endif
 
 #if defined REFDIF_COUPLING || defined SWAN_COUPLING || \
@@ -575,7 +581,7 @@
 # define WAV_COUPLING
 #endif
 
-#if defined ATM_COUPLING || ICE_COUPLING || WAV_COUPLING
+#if defined ATM_COUPLING || defined ICE_COUPLING || defined WAV_COUPLING
 # define MODEL_COUPLING
 #endif
 

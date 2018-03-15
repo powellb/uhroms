@@ -2,9 +2,9 @@
       MODULE gls_corstep_mod
 #if defined NONLINEAR && defined GLS_MIXING && defined SOLVE3D
 !
-!svn $Id: gls_corstep.F 1727 2017-07-29 03:09:50Z arango $
+!svn $Id: gls_corstep.F 1748 2018-02-10 03:25:17Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license           Hernan G. Arango   !
 !    See License_ROMS.txt                   Alexander F. Shchepetkin   !
 !==================================================== John C. Warner ===

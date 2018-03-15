@@ -1,9 +1,9 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 1735 2017-10-05 20:26:30Z arango $
+** svn $Id: cppdefs.h 1748 2018-02-10 03:25:17Z arango $
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2017 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -163,6 +163,7 @@
 ** LONGWAVE            use if computing net longwave radiation               **
 ** LONGWAVE_OUT        use if computing outgoing longwave radiation          **
 ** EMINUSP             use if computing E-P                                  **
+** WIND_MINUS_CURRENT  use if compute effective wind by removing current     **
 **                                                                           **
 ** OPTIONS for wave roughness formulation in bulk fluxes:                    **
 **                                                                           **
@@ -442,6 +443,7 @@
 ** FORWARD_WRITE       use if writing out forward solution, basic state      **
 ** FORWARD_READ        use if reading in  forward solution, basic state      **
 ** FORWARD_RHS         use if processing forward right-hand-side terms       **
+** IMPACT_INNER        use to write observations impacts for each inner loop **
 ** IMPLICIT_VCONV      use if implicit vertical convolution algorithm        **
 ** IMPULSE             use if processing adjoint impulse forcing             **
 ** MINRES              use if Minimal Residual Method for 4DVar minimization **

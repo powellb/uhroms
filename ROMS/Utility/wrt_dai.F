@@ -2,9 +2,9 @@
 #if defined FOUR_DVAR || defined ENKF_RESTART
       SUBROUTINE wrt_dai (ng, tile)
 !
-!svn $Id: wrt_dai.F 1728 2017-07-29 03:53:50Z arango $
+!svn $Id: wrt_dai.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

@@ -3,9 +3,9 @@
 
 #if defined FOUR_DVAR || defined VERIFICATION
 !
-!svn $Id: mod_fourdvar.F 1740 2017-11-15 19:01:32Z arango $
+!svn $Id: mod_fourdvar.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -200,11 +200,11 @@
         integer,  allocatable :: ObsType2State(:)
         integer,  allocatable :: ObsProv(:)
 
-#  ifdef CURVGRID                            
+#  ifdef CURVGRID
         real(r8), allocatable :: ObsAngler(:)
-#  endif                                     
+#  endif
         real(r8), allocatable :: ObsErr(:)
-        real(r8), allocatable :: ObsMeta(:)  
+        real(r8), allocatable :: ObsMeta(:)
         real(r8), allocatable :: ObsScale(:)
 #  ifndef WEAK_CONSTRAINT
         real(r8), allocatable :: ObsScaleGlobal(:)
@@ -257,7 +257,11 @@
         real(r8), allocatable :: ad_zgrad0(:)
         real(r8), allocatable :: ad_cg_innov(:)
         real(r8), allocatable :: ad_cg_pxsave(:)
+#    ifdef IMPACT_INNER
+        real(r8), allocatable :: ad_ObsVal(:,:)
+#    else
         real(r8), allocatable :: ad_ObsVal(:)
+#    endif
 
         real(r8), allocatable :: tl_zcglwk(:,:)
         real(r8), allocatable :: tl_zgrad0(:)
@@ -287,11 +291,11 @@
 !
         integer, allocatable :: NstateVar(:)
 !
-!  Number of observation types and names to process. If the observation 
+!  Number of observation types and names to process. If the observation
 !  operators for a specific application have a 1-to-1 association with
 !  the model state variables,  NobsVar = NstateVar.  However, if more
 !  that one state variable is needed to evaluate a particular type of
-!  observation (HF radials, travel time, pressure, etc.), a new class 
+!  observation (HF radials, travel time, pressure, etc.), a new class
 !  name is added to the state variable list to assess and differentiate
 !  its impact.  Then, NobsVar = NstateVar + NextraObs.
 !
@@ -1149,9 +1153,9 @@
 !  Allocate and initialize model and observation variables.
 !-----------------------------------------------------------------------
 !
-#  ifdef CURVGRID                 
+#  ifdef CURVGRID
       allocate ( ObsAngler(Mobs) )
-      ObsAngler = IniVal          
+      ObsAngler = IniVal
 #  endif
 
       allocate ( ObsType(Mobs) )
@@ -1166,8 +1170,8 @@
       allocate ( ObsErr(Mobs) )
       ObsErr = IniVal
 
-      allocate ( ObsMeta(Mobs) )  
-      ObsMeta = IniVal            
+      allocate ( ObsMeta(Mobs) )
+      ObsMeta = IniVal
 
       allocate ( ObsScale(Mobs) )
       ObsScale = IniVal
@@ -1240,7 +1244,7 @@
 !  nonsequential type enumeration.
 !
 !  Both mapping arrays ObsState2Type and ObsType2State have a zero
-!  array element to allow applications with no extra-observations 
+!  array element to allow applications with no extra-observations
 !  to work with their zero associated state index (as initialized
 !  in mod_ncparam.F).  For example, if the index "isRadial" is not
 !  redefined below, the following assignment
@@ -1324,9 +1328,14 @@
       allocate ( tl_ObsVal(Mobs) )
       tl_ObsVal = IniVal
 
+#    ifdef IMPACT_INNER
+      allocate ( ad_ObsVal(Mobs,Ninner) )
+#    else
       allocate ( ad_ObsVal(Mobs) )
+#    endif
       ad_ObsVal = IniVal
 #   endif
+
       allocate ( cg_dla(Ninner,Nouter) )
       cg_dla = IniVal
 

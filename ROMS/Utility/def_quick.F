@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE def_quick (ng, ldef)
 !
-!svn $Id: def_quick.F 1735 2017-10-05 20:26:30Z arango $
+!svn $Id: def_quick.F 1753 2018-02-14 18:00:35Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -1574,7 +1574,7 @@
           status=def_var(ng, iNLM, QCK(ng)%ncid, QCK(ng)%Vid(idVbcs),   &
      &                   NF_FOUT, nvd3, t2dgrd, Aval, Vinfo, ncname)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &   cccc            __FILE__)) RETURN
+     &                   __FILE__)) RETURN
         END IF
 !
 !  Define wind-induced, bed wave orbital U-velocity.

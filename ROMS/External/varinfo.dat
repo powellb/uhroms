@@ -1,9 +1,9 @@
 !
 !  ROMS/TOMS IO NetCDF variables.
 !
-!svn $Id: varinfo.dat 1740 2017-11-15 19:01:32Z arango $
+!svn $Id: varinfo.dat 1748 2018-02-10 03:25:17Z arango $
 !========================================================= Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                                !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
 !    See License_ROMS.txt                                                     !
 !==============================================================================
@@ -2146,6 +2146,15 @@
   'v3d_time'
   'idVads'
   'v3dvar'
+  1.0d0
+
+'w'                                                ! Input
+  'w-momentum component functional'
+  'meter second-1'                                 ! [m/s]
+  'w-velocity, scalar, series'
+  'v3d_time'
+  'idWads'
+  'w3dvar'
   1.0d0
 
 'temp'                                             ! Input

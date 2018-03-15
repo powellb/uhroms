@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 1737 2017-11-03 01:09:17Z arango $
+!svn $Id: mod_scalars.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -1708,10 +1708,10 @@
       DO ng=1,Ngrids
 
 #ifdef SOLVE3D
-        allocate ( SCALARS(ng) % Fstate(7+2*MT) )
+        allocate ( SCALARS(ng) % Fstate(8+2*MT) )
         SCALARS(ng) % Fstate(1:7+2*MT) = .FALSE.
 
-        allocate ( SCALARS(ng) % Lstate(5+MT) )
+        allocate ( SCALARS(ng) % Lstate(8+2*MT) )
         SCALARS(ng) % Lstate(1:5+MT) = .FALSE.
 #else
         allocate ( SCALARS(ng) % Fstate(5) )

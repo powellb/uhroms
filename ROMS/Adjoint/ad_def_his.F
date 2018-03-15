@@ -2,9 +2,9 @@
 #ifdef ADJOINT
       SUBROUTINE ad_def_his (ng, ldef)
 !
-!svn $Id: ad_def_his.F 1735 2017-10-05 20:26:30Z arango $
+!svn $Id: ad_def_his.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

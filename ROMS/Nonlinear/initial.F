@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE initial
 !
-!svn $Id: initial.F 1741 2017-11-23 05:40:54Z arango $
+!svn $Id: initial.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -590,7 +590,7 @@
      defined ADJUST_STFLUX)
 !
 !-----------------------------------------------------------------------
-!  Read in the surface forcing and/or open boundary conditions
+!  Read in the surface forcing and or open boundary conditions
 !  increments for PSAS from record IniRec of the NLM initial NetCDF
 !  file.
 !-----------------------------------------------------------------------
@@ -598,7 +598,7 @@
       IF (Nrun.gt.1) THEN
         DO ng=1,Ngrids
 !$OMP MASTER
-          CALL get_state (ng, 12, 12, INI(ng)%name,                     &
+          CALL get_state (ng, 5, 5, INI(ng)%name,                       &
      &                    IniRec(ng), Tindex(ng))
 !$OMP END MASTER
 # ifdef DISTRIBUTE

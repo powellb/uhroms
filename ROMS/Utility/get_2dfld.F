@@ -6,9 +6,9 @@
 #endif
      &                      Fout)
 !
-!svn $Id: get_2dfld.F 1743 2017-12-06 01:58:58Z arango $
+!svn $Id: get_2dfld.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

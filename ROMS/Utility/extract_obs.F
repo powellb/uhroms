@@ -1,10 +1,10 @@
 #include "cppdefs.h"
       MODULE extract_obs_mod
-#if defined FOUR_DVAR || defined VERIFICATION
+#if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
 !
-!svn $Id: extract_obs.F 1740 2017-11-15 19:01:32Z arango $
+!svn $Id: extract_obs.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

@@ -2,9 +2,9 @@
       MODULE biology_mod
 #if defined NONLINEAR && defined BIOLOGY
 !
-!svn $Id: biology.F 1724 2017-06-23 23:22:09Z arango $
+!svn $Id: biology.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

@@ -2,9 +2,9 @@
 #ifdef ADJOINT
       SUBROUTINE ad_set_data (ng, tile)
 !
-!svn $Id: ad_set_data.F 1729 2017-07-31 22:52:09Z arango $
+!svn $Id: ad_set_data.F 1748 2018-02-10 03:25:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -1586,6 +1586,16 @@
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          CLIMA(ng)%v_adsG,                       &
      &                          CLIMA(ng)%v_ads,                        &
+     &                          update)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
+!
+        IF (SCALARS(ng)%Lstate(isWvel)) THEN
+          CALL set_3dfldr_tile (ng, tile, iADM, idWads,                 &
+     &                          LBi, UBi, LBj, UBj, 0, N(ng),           &
+     &                          CLIMA(ng)%wvel_adsG,                    &
+     &                          CLIMA(ng)%wvel_ads,                     &
      &                          update)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN

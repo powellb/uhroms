@@ -1,10 +1,10 @@
 #include "cppdefs.h"
-#ifdef MODEL_COUPLING
+#if defined MODEL_COUPLING && defined MCT_LIB
       SUBROUTINE read_CouplePar (model)
 !
-!svn $Id: read_couplepar.F 1710 2017-01-24 21:17:37Z arango $
+!svn $Id: read_couplepar.F 1750 2018-02-11 00:35:26Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2017 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
