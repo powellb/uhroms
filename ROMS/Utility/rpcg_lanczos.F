@@ -4,7 +4,7 @@
       SUBROUTINE rpcg_lanczos (ng, model, outLoop, innLoop, NinnLoop,   &
      &                         Lcgini)
 !
-!svn $Id: rpcg_lanczos.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: rpcg_lanczos.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Selime Gurol      !
 !    Licensed under a MIT/X style license            Andrew M. Moore   !
@@ -944,7 +944,8 @@
             CALL DSTEQR ('I', innLoop-1, cg_Ritz(1,outLoop), zwork(1,1),&
      &                   zgv, Ninner, work, info)
             IF (info.ne.0) THEN
-              PRINT *,' RPCG_LANCZOS - Error in DSTEQR: info = ',info
+              WRITE (stdout,*) ' RPCG_LANCZOS - Error in DSTEQR:',      &
+     &                         ' info = ',info
               exit_flag=8
               GO TO 10
             END IF
@@ -958,7 +959,7 @@
 !  Estimate the Ritz value error bounds.
 !
             DO ivec=1,innLoop-1
-              cg_RitzErr(ivec,outLoop)=ABS(cg_beta(innLoop,outLoop)*  &
+              cg_RitzErr(ivec,outLoop)=ABS(cg_beta(innLoop,outLoop)*    &
      &                                 cg_zv(innLoop-1,ivec,outLoop))
             END DO
 !
@@ -966,7 +967,8 @@
 !
             DO ivec=1,innLoop-1
               IF (cg_RitzErr(ivec,outLoop).lt.0.0_r8) THEN
-                PRINT *,'RPCG_LANCZOS - negative Ritz value found.'
+                WRITE (stdout,*) ' RPCG_LANCZOS - negative Ritz value', &
+     &                           ' found.'
                 exit_flag=8
                 GO TO 10
               END IF

@@ -6,7 +6,7 @@
    (defined POSTERIOR_ERROR_I || defined POSTERIOR_ERROR_F)
 
 !
-!svn $Id: posterior_var.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: posterior_var.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -637,7 +637,7 @@
       CALL mp_bcasti (ng, model, info)
 # endif
       IF (info.ne.0) THEN
-        IF (Master) PRINT *,' Error in DPOTRF: info = ', info
+        IF (Master) WRITE (stdout,*) ' Error in DPOTRF: info = ', info
         exit_flag=8
         RETURN
       END IF
@@ -650,7 +650,7 @@
       CALL mp_bcastf (ng, model, zLanczos_inv)
 # endif
       IF (info.ne.0) THEN
-        IF (Master) PRINT *,' Error in DPOTRI: info =', info
+        IF (Master) WRITE (stdout,*) ' Error in DPOTRI: info = ', info
         exit_flag=8
         RETURN
       END IF

@@ -2,7 +2,7 @@
 #if defined NONLINEAR && !defined SOLVE3D
       SUBROUTINE main2d (RunInterval)
 !
-!svn $Id: main2d.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: main2d.F 1754 2018-03-21 03:22:15Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -118,8 +118,8 @@
 !  based on the specified time interval (seconds), RunInterval. Non
 !  nesting applications have NestLayers=1. Notice that RunInterval is
 !  set in the calling driver. Its value may span the full period of the
-!  simulation, or a multi-model coupling interval, or just a single
-!  step.
+!  simulation, a multi-model coupling interval (RunInterval > ifac*dt),
+!  or just a single step (RunInterval=0).
 !
           CALL ntimesteps (iNLM, RunInterval, nl, Nsteps, Rsteps)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &

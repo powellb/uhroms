@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_netcdf
 !
-!svn $Id: mod_netcdf.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: mod_netcdf.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1275,7 +1275,7 @@
 !                                                                      !
 !  This routine inquires a NetCDF file dimensions names and values.    !
 !  All the dimension information is stored in the module variables     !
-!  declared above.  In addition, if a particular dimension name is     !
+!  declared above.  In addition,  if a particular variable name is     !
 !  provided, this routine returns the requested information in the     !
 !  optional arguments.                                                 !
 !                                                                      !

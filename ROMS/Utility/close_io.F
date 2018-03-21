@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE close_inp (ng, model)
 !
-!svn $Id: close_io.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: close_io.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -371,6 +371,16 @@
       ELSE IF (exit_flag.eq.8) THEN
         IF (Master) WRITE (stdout,130)
       END IF
+
+#ifdef ROMS_STDOUT
+!
+!-----------------------------------------------------------------------
+!  Close ROMS standard outpu file.
+!-----------------------------------------------------------------------
+!
+      CALL my_flush (stdout)
+      CLOSE (stdout)
+#endif
 !
  10   FORMAT (/,' ROMS/TOMS - Output NetCDF summary for Grid ',         &
      &        i2.2,':')

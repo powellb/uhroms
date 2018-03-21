@@ -2,7 +2,7 @@
 #ifdef ADJOINT
       SUBROUTINE ad_set_data (ng, tile)
 !
-!svn $Id: ad_set_data.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: ad_set_data.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -487,7 +487,7 @@
 #  endif
 # endif
 
-# ifndef ATM_COUPLING
+# ifndef FRC_COUPLING
 #  if !defined BULK_FLUXES || defined NL_BULK_FLUXES
 !
 !-----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE check_multifile (ng, model)
 !
-!svn $Id: check_multifile.F 1751 2018-02-13 03:26:43Z arango $
+!svn $Id: check_multifile.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -590,7 +590,7 @@
       CALL netcdf_open (ng, model, ncname, 0, ncid)
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) THEN
-        WRITE (stdout,10) TRIM(ncname)
+        IF (Master) WRITE (stdout,10) TRIM(ncname)
         RETURN
       END IF
 !

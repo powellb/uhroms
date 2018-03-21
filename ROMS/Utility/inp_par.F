@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE inp_par (model)
 !
-!svn $Id: inp_par.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: inp_par.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -55,6 +55,18 @@
 !-----------------------------------------------------------------------
 !  Read in and report input model parameters.
 !-----------------------------------------------------------------------
+
+#ifdef ROMS_STDOUT
+!
+!  Change default Fortran standard out unit, so ROMS run information is
+!  directed to a file. This is advantageous in coupling applications to
+!  ROMS information separated from other models.
+!
+       stdout=20                      ! overwite Fortran default unit 6
+!
+       OPEN (stdout, FILE='log.roms', FORM='formatted',                 &
+     &       STATUS='replace')
+#endif
 !
 !  Set input units.
 !

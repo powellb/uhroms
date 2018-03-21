@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: mod_scalars.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -455,6 +455,7 @@
 !    exit_flag = 6   Partition error
 !    exit_flag = 7   Illegal input parameter
 !    exit_flag = 8   Fatal algorithm result
+!    exit_flag = 9   coupling error
 !
         integer :: exit_flag = 0
         integer :: blowup = 0

@@ -4,7 +4,7 @@
       SUBROUTINE congrad (ng, model, outLoop, innLoop, NinnLoop,        &
      &                    Lcgini)
 !
-!svn $Id: congrad.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: congrad.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -1068,7 +1068,8 @@
             CALL DSTEQR ('I', innLoop, cg_Ritz(1,outLoop), zwork(1,1),  &
      &                   zgv, Ninner, work, info)
             IF (info.ne.0) THEN
-              PRINT *,' CONGRAD - Error in DSTEQR: info = ',info
+              WRITE (stdout,*) ' CONGRAD - Error in DSTEQR: info = ',   &
+     &                         info
               exit_flag=8
               GO TO 10
             END IF
@@ -1090,7 +1091,7 @@
 !
             DO ivec=1,innLoop
               IF (cg_RitzErr(ivec,outLoop).lt.0.0_r8) THEN
-                PRINT *,'CONGRAD - negative Ritz value found.'
+                WRITE (stdout,*) ' CONGRAD - negative Ritz value found.'
                 exit_flag=8
                 GO TO 10
               END IF

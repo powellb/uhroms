@@ -2,7 +2,7 @@
       MODULE set_3dfld_mod
 #ifdef SOLVE3D
 !
-!svn $Id: set_3dfld.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: set_3dfld.F 1754 2018-03-21 03:22:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -83,7 +83,8 @@
       Tindex =Iinfo(8,ifield,ng)
       update=.TRUE.
 !
-!  Set linear-interpolation factors.
+!  Set linear, time interpolation factors. Fractional seconds are
+!  rounded to the nearest integer towards zero in the weights.
 !
       it1=3-Tindex
       it2=Tindex
