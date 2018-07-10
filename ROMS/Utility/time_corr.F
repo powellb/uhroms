@@ -4,7 +4,7 @@
 
       SUBROUTINE time_corr (ng, tile, model, INPncname)
 !
-!svn $Id: time_corr.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: time_corr.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -331,8 +331,8 @@
 !  Write out time variable.
 !
         IF (find_string(var_name, n_var, Vname(1,idtime), INPvid)) THEN
-          CALL netcdf_get_fvar (ng, model, INPncname, Vname(1,idtime),  &
-     &                          inp_time,                               &
+          CALL netcdf_get_time (ng, model, INPncname, Vname(1,idtime),  &
+     &                          Rclock%DateNumber, inp_time,            &
      &                          ncid = INPncid,                         &
      &                          start = (/Irec/), total = (/1/))
           IF (FoundError(exit_flag, NoError, __LINE__,                  &

@@ -5,7 +5,7 @@
      &                       Istr, Iend, Jrec,                          &
      &                       Fout)
 !
-!svn $Id: get_ngfldr.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: get_ngfldr.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -180,8 +180,8 @@
 !  Read in time coordinate.
 !
           IF ((Tid.ge.0).and.(Tid.ne.Vid)) THEN
-            CALL netcdf_get_fvar (ng, model, ncfile, Tname(ifield),     &
-     &                            Tval,                                 &
+            CALL netcdf_get_time (ng, model, ncfile, Tname(ifield),     &
+     &                            Rclock%DateNumber, Tval,              &
      &                            ncid = ncid,                          &
      &                            start = (/Trec/),                     &
      &                            total = (/1/))

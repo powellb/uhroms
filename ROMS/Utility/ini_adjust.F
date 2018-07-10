@@ -6,7 +6,7 @@
     defined HESSIAN_SV || defined HESSIAN_SO || defined HESSIAN_FSV || \
     (defined ADJOINT   && defined TANGENT)
 !
-!svn $Id: ini_adjust.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: ini_adjust.F 1755 2018-03-29 03:32:07Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -954,7 +954,8 @@
 !
       USE mod_param
       USE mod_ncparam
-#  if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
+#  if defined ADJUST_BOUNDARY || defined ADJUST_STFLUX || \
+      defined ADJUST_WSTRESS
       USE mod_scalars
 #  endif
 !
@@ -1766,7 +1767,8 @@
 !
       USE mod_param
       USE mod_ncparam
-#  if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
+#  if defined ADJUST_BOUNDARY || defined ADJUST_STFLUX || \
+      defined ADJUST_WSTRESS
       USE mod_scalars
 #  endif
 !

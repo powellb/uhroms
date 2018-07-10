@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: mod_ncparam.F 1765 2018-07-07 20:57:22Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -495,14 +495,6 @@
 
         character (len=256), allocatable :: Cinfo(:,:)
 !
-!  Source code root directory, cpp header file and directory, and
-!  analytical expression directory.
-!
-        character (len=256) :: Rdir
-        character (len=256) :: Hdir
-        character (len=256) :: Hfile
-        character (len=256) :: Adir
-!
 !  Analyical header file logical and names.
 !
         logical :: Lanafile
@@ -840,22 +832,6 @@
           ncFRCid(i,ng)=-1
         END DO
       END DO
-!
-!  Set source code root directory, cpp header file and directory, and
-!  analytical expression directory.
-!
-#ifdef ROOT_DIR
-      Rdir=ROOT_DIR
-#endif
-#ifdef HEADER_DIR
-      Hdir=HEADER_DIR
-#endif
-#ifdef ROMS_HEADER
-      Hfile=HEADER
-#endif
-#ifdef ANALYTICAL_DIR
-      Adir=ANALYTICAL_DIR
-#endif
 !
 !-----------------------------------------------------------------------
 !  Define names of variables for Input/Output NetCDF files.
@@ -2071,7 +2047,7 @@
                 END DO
             END SELECT
 #endif
-#if defined SOLVE3D && defined AVERAGES
+#if defined SOLVE3D && (defined AVERAGES || defined AD_AVERAGES)
 !
 !  Determine metadata for quadratic tracer averages.
 !

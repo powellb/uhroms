@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE check_multifile (ng, model)
 !
-!svn $Id: check_multifile.F 1754 2018-03-21 03:22:15Z arango $
+!svn $Id: check_multifile.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -676,16 +676,16 @@
 !
 !  Read in time variable minimum and maximun values (input time units).
 !
-      CALL netcdf_get_fvar (ng, model, ncname, TvarName,                &
-     &                      Tmin,                                       &
+      CALL netcdf_get_time (ng, model, ncname, TvarName,                &
+     &                      Rclock%DateNumber, Tmin,                    &
      &                      ncid = ncid,                                &
      &                      start = (/1/),                              &
      &                      total = (/1/))
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN
 !
-      CALL netcdf_get_fvar (ng, model, ncname, TvarName,                &
-     &                      Tmax,                                       &
+      CALL netcdf_get_time (ng, model, ncname, TvarName,                &
+     &                      Rclock%DateNumber, Tmax,                    &
      &                      ncid = ncid,                                &
      &                      start = (/Nrec/),                           &
      &                      total = (/1/))

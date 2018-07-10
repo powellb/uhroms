@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE stats_modobs (ng)
 !
-!svn $Id: stats_modobs.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: stats_modobs.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -119,8 +119,8 @@
 !
 !  Read in and write out survey time.
 !
-      CALL netcdf_get_fvar (ng, iNLM, OBS(ng)%name, Vname(1,idOday),    &
-     &                      survey,                                     &
+      CALL netcdf_get_time (ng, iNLM, OBS(ng)%name, Vname(1,idOday),    &
+     &                      Rclock%DateNumber, survey,                  &
      &                      ncid = OBS(ng)%ncid,                        &
      &                      start = (/1/), total = (/Nsurvey(ng)/))
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
@@ -164,8 +164,8 @@
 !
 !  Read in and write out observation time.
 !
-      CALL netcdf_get_fvar (ng, iNLM, OBS(ng)%name, Vname(1,idObsT),    &
-     &                      obs_work,                                   &
+      CALL netcdf_get_time (ng, iNLM, OBS(ng)%name, Vname(1,idObsT),    &
+     &                      Rclock%DateNumber, obs_work,                &
      &                      ncid = OBS(ng)%ncid,                        &
      &                      start = (/1/), total = (/Ndatum(ng)/))
       IF (FoundError(exit_flag, NoError, __LINE__,                      &

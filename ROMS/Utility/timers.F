@@ -1,8 +1,8 @@
 #include "cppdefs.h"
-      SUBROUTINE wclock_on (ng, model, region, line, routine)
+      RECURSIVE SUBROUTINE wclock_on (ng, model, region, line, routine)
 !
 
-!svn $Id: timers.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: timers.F 1762 2018-06-23 22:05:41Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -103,7 +103,7 @@
       RETURN
       END SUBROUTINE wclock_on
 !
-      SUBROUTINE wclock_off (ng, model, region, line, routine)
+      RECURSIVE SUBROUTINE wclock_off (ng, model, region, line, routine)
 !
 !=======================================================================
 !                                                                      !
@@ -279,11 +279,10 @@
             sumcpu=0.0_r8
             sumper=0.0_r8
             DO iregion=1,Mregion-1
-              IF (Csum(iregion,imodel,ng).gt.0.0_r8) THEN
+              IF (Master.and.(Csum(iregion,imodel,ng).gt.0.0_r8)) THEN
                 percent=100.0_r8*Csum(iregion, imodel,ng)/total_cpu
-                IF (Master) WRITE (stdout,40) Pregion(iregion),         &
-     &                                        Csum(iregion,imodel,ng),  &
-     &                                        percent
+                WRITE (stdout,40) Pregion(iregion),                     &
+     &                            Csum(iregion,imodel,ng), percent
                 sumcpu=sumcpu+Csum(iregion,imodel,ng)
                 sumper=sumper+percent
               END IF
@@ -313,11 +312,10 @@
             sumper=0.0_r8
             IF (total.gt.0.0_r8) THEN
               DO iregion=Mregion,Nregion
-                IF (Csum(iregion,imodel,ng).gt.0.0_r8) THEN
+                IF (Master.and.(Csum(iregion,imodel,ng).gt.0.0_r8)) THEN
                   percent=100.0_r8*Csum(iregion, imodel,ng)/total_cpu
-                  IF (Master) WRITE (stdout,40) Pregion(iregion),       &
-     &                                          Csum(iregion,imodel,ng),&
-     &                                          percent
+                  WRITE (stdout,40) Pregion(iregion),                   &
+     &                              Csum(iregion,imodel,ng), percent
                   sumcpu=sumcpu+Csum(iregion,imodel,ng)
                   sumper=sumper+percent
                 END IF

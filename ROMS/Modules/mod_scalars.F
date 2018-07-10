@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 1754 2018-03-21 03:22:15Z arango $
+!svn $Id: mod_scalars.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -107,8 +107,8 @@
 
         real(r8) :: seconds            ! frational seconds of the minute
         real(r8) :: base               ! reference date (YYYYMMDD.dd)
-        real(r8) :: Dnumber            ! date number, fractional days
-        real(r8) :: Snumber            ! date number, fractional seconds
+        real(r8) :: DateNumber(2)      ! date number, [1]: days
+                                       !              [2]: seconds
 
         character (len=22) :: string   ! YYYY-MM-DD hh:mm:ss.ss
         character (len=25) :: calendar ! date calendar

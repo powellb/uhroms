@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE def_info (ng, model, ncid, ncname, DimIDs)
 !
-!svn $Id: def_info.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: def_info.F 1765 2018-07-07 20:57:22Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -920,8 +920,10 @@
         END IF
 
         IF (exit_flag.eq.NoError) THEN
+          lstr=INDEX(my_fflags, 'free')-2
+          IF (lstr.le.0) lstr=LEN_TRIM(my_fflags)
           status=nf90_put_att(ncid, nf90_global, 'compiler_flags',      &
-     &                        TRIM(my_fflags))
+     &                        my_fflags(1:lstr))
           IF (FoundError(status, nf90_noerr, __LINE__,                  &
      &                   __FILE__)) THEN
             IF (Master) WRITE (stdout,20) 'compiler_flags', TRIM(ncname)

@@ -4,7 +4,7 @@
      &                      Tid, Lcycle, clength, Tindex,               &
      &                      Tstr, Tend, Tmin, Tmax, Tscale)
 !
-!svn $Id: get_cycle.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: get_cycle.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -166,8 +166,8 @@
 !
 !  Read in time variable values.
 !
-      CALL netcdf_get_fvar (ng, model, ncname, TvarName,                &
-     &                      Tval,                                       &
+      CALL netcdf_get_time (ng, model, ncname, TvarName,                &
+     &                      Rclock%DateNumber, Tval,                    &
      &                      ncid = ncid,                                &
      &                      start = (/1/),                              &
      &                      total = (/ntime/),                          &

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_parallel
 !
-!svn $Id: mod_parallel.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: mod_parallel.F 1765 2018-07-07 20:57:22Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -104,7 +104,7 @@
 !
 !  Distributed-memory master process.
 !
-      integer, parameter :: MyMaster = 0
+      integer :: MyMaster = 0
 !
 !  Rank of the parallel local process.
 !

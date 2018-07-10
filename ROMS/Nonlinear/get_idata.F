@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE get_idata (ng)
 !
-!svn $Id: get_idata.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: get_idata.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -232,8 +232,8 @@
 !  For consistency, check time of written accumulate harmonics and
 !  compare to current time.
 !
-        CALL netcdf_get_fvar (ng, iNLM, HAR(ng)%name, Vname(1,idtime),  &
-     &                        Htime,                                    &
+        CALL netcdf_get_time (ng, iNLM, HAR(ng)%name, Vname(1,idtime),  &
+     &                        Rclock%DateNumber, Htime,                 &
      &                        ncid = HAR(ng)%ncid)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN

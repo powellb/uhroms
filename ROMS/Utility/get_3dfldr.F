@@ -8,7 +8,7 @@
 # endif
      &                       Fout)
 !
-!svn $Id: get_3dfldr.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: get_3dfldr.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -189,8 +189,8 @@
 !  Read in time coordinate and scale it to day units.
 !
           IF (Tid.ge.0) THEN
-            CALL netcdf_get_fvar (ng, model, ncfile, Tname(ifield),     &
-     &                            Tval,                                 &
+            CALL netcdf_get_time (ng, model, ncfile, Tname(ifield),     &
+     &                            Rclock%DateNumber, Tval,              &
      &                            ncid = ncid,                          &
      &                            start = (/Trec/),                     &
      &                            total = (/1/))

@@ -2,7 +2,7 @@
 #ifdef FOUR_DVAR
       SUBROUTINE def_ini (ng)
 !
-!svn $Id: def_ini.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: def_ini.F 1755 2018-03-29 03:32:07Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -70,8 +70,9 @@
 !
       SourceFile=__FILE__
 
-# if defined ADJUST_BOUNDARY || \
-     defined ADJUST_STFLUX   || defined ADJUST_WSTRESS
+# if !defined CORRELATION     && \
+     (defined ADJUST_BOUNDARY || defined ADJUST_STFLUX || \
+      defined ADJUST_WSTRESS)
 !
 !=======================================================================
 !  Open existing nonlinear model initial conditions and define new
@@ -539,8 +540,6 @@
 !
       IF (.not.LdefINI(ng)) THEN
         ncname=INI(ng)%name
-
-# if !(defined ADJUST_STFLUX || defined ADJUST_WSTRESS)
 !
 !  Open initialization file for read/write.
 !
@@ -570,7 +569,6 @@
         DO i=1,NV
           got_var(i)=.FALSE.
         END DO
-# endif
 !
 !  Scan variable list from input NetCDF and activate switches for
 !  initialization variables. Get variable IDs.

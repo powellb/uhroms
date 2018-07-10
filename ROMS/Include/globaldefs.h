@@ -1,7 +1,7 @@
 /*
 ** Include file "globaldef.h"
 **
-** svn $Id: globaldefs.h 1754 2018-03-21 03:22:15Z arango $
+** svn $Id: globaldefs.h 1756 2018-03-29 04:10:02Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2018 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
 **   Licensed under a MIT/X style license                                    **
@@ -587,6 +587,10 @@
 #if defined ATM_COUPLING || defined DATA_COUPLING || \
     defined ICE_COUPLING || defined WAV_COUPLING
 # define MODEL_COUPLING
+#endif
+
+#if defined MODEL_COUPLING && defined ESMF_LIB
+# define REGRESS_STARTCLOCK
 #endif
 
 /*

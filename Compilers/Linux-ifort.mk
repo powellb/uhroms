@@ -1,4 +1,4 @@
-# svn $Id: Linux-ifort.mk 1748 2018-02-10 03:25:17Z arango $
+# svn $Id: Linux-ifort.mk 1762 2018-06-23 22:05:41Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2018 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
@@ -24,7 +24,8 @@
 # First the defaults
 #
                FC := ifort
-           FFLAGS := -heap-arrays -fp-model precise
+           FFLAGS := -fp-model precise
+#          FFLAGS += -heap-arrays
               CPP := /usr/bin/cpp
          CPPFLAGS := -P -traditional
           LDFLAGS :=
@@ -76,9 +77,15 @@ ifdef USE_OpenMP
 endif
 
 ifdef USE_DEBUG
-#          FFLAGS += -g -check bounds -traceback
-           FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
-#          FFLAGS += -g -check uninit -ftrapuv -traceback
+           FFLAGS += -g
+#          FFLAGS += -O3
+#          FFLAGS += -check all
+           FFLAGS += -check bounds
+           FFLAGS += -check uninit
+#          FFLAGS += -fp-stack-check
+           FFLAGS += -traceback
+           FFLAGS += -warn interfaces,nouncalled -gen-interfaces
+           FFLAGS += -Wl,-no_compact_unwind
 else
            FFLAGS += -ip -O3
 endif

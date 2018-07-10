@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_read (ng, model, backward)
 !
-!svn $Id: obs_read.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: obs_read.F 1760 2018-06-21 03:25:58Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -124,8 +124,8 @@
 !
 !  Read in observation time (days).
 !
-        CALL netcdf_get_fvar (ng, model, OBS(ng)%name, Vname(1,idObsT), &
-     &                        Tobs(Mstr:),                              &
+        CALL netcdf_get_time (ng, model, OBS(ng)%name, Vname(1,idObsT), &
+     &                        Rclock%DateNumber, Tobs(Mstr:),           &
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))

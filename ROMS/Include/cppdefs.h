@@ -1,7 +1,7 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 1754 2018-03-21 03:22:15Z arango $
+** svn $Id: cppdefs.h 1757 2018-05-17 22:40:24Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -360,6 +360,7 @@
 **                                                                           **
 ** Lateral boundary conditions OPTIONS:                                      **
 **                                                                           **
+** IMPLICIT_NUDGING    use if implicit nudging term in momentum radiation    **
 ** RADIATION_2D        use if tangential phase speed in radiation conditions **
 **                                                                           **
 ** OPTIONS for tidal forcing at open boundaries:                             **

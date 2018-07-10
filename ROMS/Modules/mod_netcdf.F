@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_netcdf
 !
-!svn $Id: mod_netcdf.F 1754 2018-03-21 03:22:15Z arango $
+!svn $Id: mod_netcdf.F 1764 2018-06-29 01:33:29Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -43,7 +43,14 @@
       INTERFACE netcdf_get_svar
         MODULE PROCEDURE netcdf_get_svar_0d
         MODULE PROCEDURE netcdf_get_svar_1d
+        MODULE PROCEDURE netcdf_get_svar_2d
+        MODULE PROCEDURE netcdf_get_svar_3d
       END INTERFACE netcdf_get_svar
+
+      INTERFACE netcdf_get_time
+        MODULE PROCEDURE netcdf_get_time_0d
+        MODULE PROCEDURE netcdf_get_time_1d
+      END INTERFACE netcdf_get_time
 
       INTERFACE netcdf_put_fvar
         MODULE PROCEDURE netcdf_put_fvar_0d
@@ -68,10 +75,13 @@
       INTERFACE netcdf_put_svar
         MODULE PROCEDURE netcdf_put_svar_0d
         MODULE PROCEDURE netcdf_put_svar_1d
+        MODULE PROCEDURE netcdf_put_svar_2d
+        MODULE PROCEDURE netcdf_put_svar_3d
       END INTERFACE netcdf_put_svar
 !
 !  Local dimension parameters.
 !
+      integer, parameter :: Matts = 50  ! maximum number of attributes
       integer, parameter :: Mdims = 50  ! maximum number of dimensions
       integer, parameter :: Mvars = 900 ! maximum number of variables
       integer, parameter :: NvarD = 5   ! number of variable dimensions
@@ -86,6 +96,7 @@
       integer :: ncformat               ! file format number (version)
       integer :: rec_id                 ! unlimited dimension ID
       integer :: rec_size               ! unlimited dimension value
+      integer :: att_kind(Matts)        ! attribute data type
       integer :: dim_id(Mdims)          ! dimensions ID
       integer :: dim_size(Mdims)        ! dimensions value
       integer :: var_id(Mvars)          ! variables ID
@@ -95,8 +106,9 @@
       integer :: var_ndim(Mvars)        ! variables number of dimensions
       integer :: var_dim(NvarD,Mvars)   ! variables dimensions ID
 !
-      character (len=40) :: dim_name(Mdims)      ! dimensions name
-      character (len=40) :: var_name(Mvars)      ! variables name
+      character (len=40) :: att_name(Matts)      ! attribute names
+      character (len=40) :: dim_name(Mdims)      ! dimension names
+      character (len=40) :: var_name(Mvars)      ! variable names
 !
 !  Generic information about requested current variable.
 !
@@ -259,6 +271,7 @@
       n_dim=0
       n_var=0
       n_gatt=0
+      ncformat=-1
       rec_id=-1
       rec_size=0
       dim_id=0
@@ -288,7 +301,6 @@
      &                      ncformat)
 #else
         status=nf90_inquire(my_ncid, n_dim, n_var, n_gatt, rec_id)
-        ncformat=-1
 #endif
         IF ((status.eq.nf90_noerr).and.(n_dim.le.Mdims)) THEN
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
@@ -399,7 +411,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_dim
-
+!
       SUBROUTINE netcdf_check_dim (ng, model, ncname, ncid)
 !
 !=======================================================================
@@ -588,7 +600,7 @@
 
       RETURN
       END SUBROUTINE netcdf_check_dim
-
+!
       SUBROUTINE netcdf_check_var (ng, model, ncname, ncid)
 !
 !=======================================================================
@@ -1267,7 +1279,7 @@
 
       RETURN
       END SUBROUTINE netcdf_check_var
-
+!
       SUBROUTINE netcdf_inq_var (ng, model, ncname, ncid, myVarName,    &
      &                           SearchVar, VarID, nVarDim, nVarAtt)
 !
@@ -1357,7 +1369,7 @@
       logical :: foundit, WriteError
 
       integer :: i, j, status
-      integer :: my_Alen, my_Atype, my_id, my_ncid
+      integer :: att_id, my_Alen, my_Atype, my_id, my_ncid
 
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(4) :: ibuffer
@@ -1375,12 +1387,18 @@
       n_var=0
       n_gatt=0
       rec_id=-1
+      att_kind=-1
       var_id=0
       var_natt=0
       var_flag=0
       var_type=0
       var_ndim=0
       var_dim=0
+      DO i=1,Matts
+        DO j=1,LEN(att_name(1))
+          att_name(i)(j:j)=' '
+        END DO
+      END DO
       DO i=1,Mvars
         DO j=1,LEN(var_name(1))
           var_name(i)(j:j)=' '
@@ -1410,41 +1428,68 @@
           ibuffer(4)=rec_id
 #endif
 !
-!  Inquire about variables: name, ID, dimensions, data type, and number
-!  of attributes.
+!  Inquire global attribute names and their external data type.
 !
-          DO i=1,n_var
-            var_id(i)=i
-            var_flag(i)=1
-            status=nf90_inquire_variable(my_ncid, var_id(i),            &
-     &                                   var_name(i), var_type(i),      &
-     &                                   var_ndim(i), var_dim(:,i),     &
-     &                                   var_natt(i))
+          DO i=1,MIN(Matts,n_gatt)
+            att_id=i
+            status=nf90_inq_attname(my_ncid, nf90_global, att_id,       &
+      &                             att_name(i))
             IF (status.eq.nf90_noerr) THEN
-              DO j=1,MIN(NvarA,var_natt(i))
-                status=nf90_inq_attname(my_ncid, var_id(i), j,          &
-     &                                  var_Aname(j))
-                IF (status.eq.nf90_noerr) THEN
-                  IF (TRIM(var_Aname(j)).eq.'water_points'.and.         &
-     &                (var_ndim(i).gt.0)) THEN
-                    var_flag(i)=-1
-                  END IF
-                ELSE
-                  WRITE (stdout,10) j, TRIM(var_name(i)),               &
-     &                              TRIM(ncname), TRIM(SourceFile)
-                  exit_flag=2
-                  ioerror=status
-                  EXIT
-                END IF
-              END DO
+              status=nf90_inquire_attribute(my_ncid, nf90_global,       &
+      &                                     TRIM(att_name(i)),          &
+      &                                     xtype = att_kind(i),        &
+      &                                     attnum = att_id)
+              IF (status.ne.nf90_noerr) THEN
+                WRITE (stdout,5) i, TRIM(ncname), TRIM(SourceFile)
+                exit_flag=2
+                ioerror=status
+                EXIT
+              END IF
             ELSE
-              WRITE (stdout,20) var_id(i), TRIM(ncname),                &
-     &                          TRIM(SourceFile)
+              WRITE (stdout,5) i, TRIM(ncname), TRIM(SourceFile)
               exit_flag=2
               ioerror=status
               EXIT
             END IF
           END DO
+!
+!  Inquire about variables: name, ID, dimensions, data type, and number
+!  of attributes.
+!
+          IF (status.eq.nf90_noerr) THEN
+            DO i=1,n_var
+              var_id(i)=i
+              var_flag(i)=1
+              status=nf90_inquire_variable(my_ncid, var_id(i),          &
+     &                                     var_name(i), var_type(i),    &
+     &                                     var_ndim(i), var_dim(:,i),   &
+     &                                     var_natt(i))
+              IF (status.eq.nf90_noerr) THEN
+                DO j=1,MIN(NvarA,var_natt(i))
+                  status=nf90_inq_attname(my_ncid, var_id(i), j,        &
+     &                                    var_Aname(j))
+                  IF (status.eq.nf90_noerr) THEN
+                    IF (TRIM(var_Aname(j)).eq.'water_points'.and.       &
+     &                  (var_ndim(i).gt.0)) THEN
+                      var_flag(i)=-1
+                    END IF
+                  ELSE
+                    WRITE (stdout,10) j, TRIM(var_name(i)),             &
+     &                                TRIM(ncname), TRIM(SourceFile)
+                    exit_flag=2
+                    ioerror=status
+                    EXIT
+                  END IF
+                END DO
+              ELSE
+                WRITE (stdout,20) var_id(i), TRIM(ncname),              &
+     &                            TRIM(SourceFile)
+                exit_flag=2
+                ioerror=status
+                EXIT
+              END IF
+            END DO
+          END IF
         ELSE
           IF (n_var.gt.Mvars) THEN
             WRITE (stdout,30) 'Mvars = ', Mvars, n_var
@@ -1471,12 +1516,14 @@
         n_var=ibuffer(2)
         n_gatt=ibuffer(3)
         rec_id=ibuffer(4)
+        CALL mp_bcasti (ng, model, att_kind)
         CALL mp_bcasti (ng, model, var_id)
         CALL mp_bcasti (ng, model, var_flag)
         CALL mp_bcasti (ng, model, var_type)
         CALL mp_bcasti (ng, model, var_ndim)
         CALL mp_bcasti (ng, model, var_natt)
         CALL mp_bcasti (ng, model, var_dim)
+        CALL mp_bcasts (ng, model, att_name)
         CALL mp_bcasts (ng, model, var_name)
       END IF
 #endif
@@ -1672,6 +1719,9 @@
         CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
       END IF
 !
+   5  FORMAT (/,' NETCDF_INQ_VAR - error while inquiring global',       &
+     &        ' attribute: ',i2.2,/,18x,'in input file:',2x,a,          &
+     &        /,18x,'call from:',2x,a)
   10  FORMAT (/,' NETCDF_INQ_VAR - error while inquiring attribute ',   &
      &        i1,' for variable: ',a,/,18x,'in input file:',2x,a,       &
      &        /,18x,'call from:',2x,a)
@@ -1695,7 +1745,7 @@
 
       RETURN
       END SUBROUTINE netcdf_inq_var
-
+!
       SUBROUTINE netcdf_inq_varid (ng, model, ncname, myVarName,        &
      &                             ncid, VarID)
 !
@@ -1775,7 +1825,7 @@
 
       RETURN
       END SUBROUTINE netcdf_inq_varid
-
+!
       SUBROUTINE netcdf_get_fatt (ng, model, ncname, varid, AttName,    &
      &                            AttValue, foundit, ncid)
 !
@@ -1807,7 +1857,7 @@
       USE mod_scalars
 !
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
-      USE distribute_mod, ONLY : mp_bcastf
+      USE distribute_mod, ONLY : mp_bcastf, mp_bcasti
 #endif
       USE strings_mod,    ONLY : FoundError
 !
@@ -1826,10 +1876,10 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, j, my_natts, my_ncid, nvatts, status
+      integer :: i, j, my_natts, my_ncid, natts, status
 
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
-      real(r8), dimension(20) :: buffer
+      real(r8), allocatable :: buffer(:)
 #endif
 
       character (len=40) :: my_Aname
@@ -1838,6 +1888,19 @@
 !-----------------------------------------------------------------------
 !  Inquire ID of requested variable.
 !-----------------------------------------------------------------------
+!
+!  Get number of variable attributes to process.
+!
+      natts=UBOUND(AttName, DIM=1)
+      DO i=1,natts
+        foundit(i)=.FALSE.
+        AttValue(i)=0.0_r8
+      END DO
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      IF (.not.allocated(buffer)) THEN
+        allocate ( buffer(2*natts+1) )
+      END IF
+#endif
 !
 !  If appropriate, open file for reading.
 !
@@ -1850,17 +1913,8 @@
         my_ncid=ncid
       END IF
 !
-!  Get number of variable attributes to process.
-!
-      nvatts=UBOUND(AttValue, DIM=1)
-!
 !  Inquire about requested attribute value.
 !
-      DO i=1,nvatts
-        foundit(i)=.FALSE.
-        AttValue(i)=0.0_r8
-      END DO
-
       IF (InpThread) THEN
         IF (varid.eq.nf90_global) THEN
           status=nf90_inquire(my_ncid,                                  &
@@ -1874,7 +1928,7 @@
           DO j=1,my_natts
             status=nf90_inq_attname(my_ncid, varid, j, my_Aname)
             IF (status.eq.nf90_noerr) THEN
-              DO i=1,nvatts
+              DO i=1,natts
                 IF (TRIM(my_Aname).eq.TRIM(AttName(i))) THEN
                   status=nf90_get_att(my_ncid, varid, TRIM(AttName(i)), &
      &                                AttValue(i))
@@ -1902,6 +1956,17 @@
               EXIT
             END IF
           END DO
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+          buffer=0.0_r8
+          DO i=1,natts
+            buffer(i)=AttValue(i)
+            IF (foundit(i)) THEN
+               buffer(i+natts)=1.0_r8
+            END IF
+          END DO
+          buffer(2*natts+1)=REAL(ioerror, r8)
+#endif
         ELSE
           IF (Master) WRITE (stdout,30) TRIM(my_Vname),                 &
      &                                  TRIM(ncname),                   &
@@ -1916,28 +1981,20 @@
 !  Broadcast information to all processors in the group. Pack all
 !  data into a real array for efficient communications.
 !
-      buffer=0.0_r8
-      j=0
-      DO i=1,nvatts
-        buffer(i)=AttValue(i)
-        IF (foundit(i)) THEN
-          buffer(i+nvatts)=1.0_r8
+      CALL mp_bcasti (ng, model, exit_flag)
+      IF (exit_flag.eq.NoError) THEN
+        CALL mp_bcastf (ng, model, buffer)
+        DO i=1,natts
+          AttValue(i)=buffer(i)
+          IF (buffer(i+natts).gt.0.0_r8) THEN
+            foundit(i)=.TRUE.
+          END IF
+        END DO
+        ioerror=INT(buffer(2*natts+1))
+        IF (allocated(buffer)) THEN
+          deallocate (buffer)
         END IF
-        j=j+2
-      END DO
-      buffer(j+1)=REAL(exit_flag, r8)
-      buffer(j+2)=REAL(ioerror, r8)
-      CALL mp_bcastf (ng, model, buffer)
-      j=0
-      DO i=1,nvatts
-        AttValue(i)=buffer(i)
-        IF (buffer(i+nvatts).gt.0.0_r8) THEN
-          foundit(i)=.TRUE.
-        END IF
-        j=j+2
-      END DO
-      exit_flag=INT(buffer(j+1))
-      ioerror=INT(buffer(j+2))
+      END IF
 #endif
 !
 !  If applicable, close input NetCDF file.
@@ -1958,7 +2015,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fatt
-
+!
       SUBROUTINE netcdf_get_satt (ng, model, ncname, varid, AttName,    &
      &                            AttValue, foundit, ncid)
 !
@@ -2009,10 +2066,10 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, j, my_natts, my_ncid, nvatts, status
+      integer :: i, j, my_natts, my_ncid, natts, status
 
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
-      integer, dimension(20) :: ibuffer
+      integer, allocatable :: ibuffer(:)
 #endif
 
       character (len=40) :: my_Aname
@@ -2021,6 +2078,19 @@
 !-----------------------------------------------------------------------
 !  Inquire ID of requested variable.
 !-----------------------------------------------------------------------
+!
+!  Get number of variable attributes to process and initialize.
+!
+      natts=UBOUND(AttName, DIM=1)
+      DO i=1,natts
+        foundit(i)=.FALSE.
+        AttValue(i)=' '
+      END DO
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      IF (.not.allocated(ibuffer)) THEN
+        allocate ( ibuffer(natts+1) )
+      END IF
+#endif
 !
 !  If appropriate, open file for reading.
 !
@@ -2033,17 +2103,8 @@
         my_ncid=ncid
       END IF
 !
-!  Get number of variable attributes to process.
-!
-      nvatts=UBOUND(AttValue, DIM=1)
-!
 !  Inquire about requested attribute value.
 !
-      DO i=1,nvatts
-        foundit(i)=.FALSE.
-        AttValue(i)=' '
-      END DO
-
       IF (InpThread) THEN
         IF (varid.eq.nf90_global) THEN
           status=nf90_inquire(my_ncid,                                  &
@@ -2057,7 +2118,7 @@
           DO j=1,my_natts
             status=nf90_inq_attname(my_ncid, varid, j, my_Aname)
             IF (status.eq.nf90_noerr) THEN
-              DO i=1,nvatts
+              DO i=1,natts
                 IF (TRIM(my_Aname).eq.TRIM(AttName(i))) THEN
                   status=nf90_get_att(my_ncid, varid, TRIM(AttName(i)), &
      &                                AttValue(i))
@@ -2085,6 +2146,16 @@
               EXIT
             END IF
           END DO
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+          ibuffer=0
+          DO i=1,natts
+            IF (foundit(i)) THEN
+              ibuffer(i)=1
+            END IF
+          END DO
+          ibuffer(natts+1)=ioerror
+#endif
         ELSE
           IF (Master) WRITE (stdout,30) TRIM(my_Vname),                 &
      &                                  TRIM(ncname),                   &
@@ -2099,27 +2170,20 @@
 !  Broadcast information to all processors in the group. Pack all
 !  data into a real array for efficient communications.
 !
-      ibuffer=0
-      j=0
-      DO i=1,nvatts
-        IF (foundit(i)) THEN
-          ibuffer(i)=1
-        END IF
-        j=j+1
-      END DO
-      ibuffer(j+1)=exit_flag
-      ibuffer(j+2)=ioerror
-      CALL mp_bcasti (ng, model, ibuffer)
-      CALL mp_bcasts (ng, model, AttValue)
-      j=0
-      DO i=1,nvatts
-        IF (ibuffer(i).gt.0) THEN
-          foundit(i)=.TRUE.
-        END IF
-        j=j+1
-      END DO
-      exit_flag=ibuffer(j+1)
-      ioerror=ibuffer(j+2)
+      CALL mp_bcasti (ng, model, exit_flag)
+      IF (exit_flag.eq.NoError) THEN
+        CALL mp_bcasti (ng, model, ibuffer)
+        DO i=1,natts
+          IF (ibuffer(i).gt.0) THEN
+            foundit(i)=.TRUE.
+          END IF
+        END DO
+        ioerror=ibuffer(natts+1)
+        CALL mp_bcasts (ng, model, AttValue)
+      END IF
+      IF (allocated(ibuffer)) THEN
+        deallocate (ibuffer)
+      END IF
 #endif
 !
 !  If applicable, close input NetCDF file.
@@ -2140,7 +2204,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_satt
-
+!
       SUBROUTINE netcdf_get_fvar_0d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total,                &
      &                               min_val, max_val)
@@ -2292,7 +2356,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fvar_0d
-
+!
       SUBROUTINE netcdf_get_fvar_1d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total,                &
      &                               min_val, max_val)
@@ -2520,7 +2584,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fvar_1d
-
+!
       SUBROUTINE netcdf_get_fvar_2d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total,                &
      &                               min_val, max_val)
@@ -2754,7 +2818,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fvar_2d
-
+!
       SUBROUTINE netcdf_get_fvar_3d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total,                &
      &                               min_val, max_val)
@@ -2996,7 +3060,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fvar_3d
-
+!
       SUBROUTINE netcdf_get_fvar_4d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total,                &
      &                               min_val, max_val)
@@ -3246,7 +3310,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_fvar_4d
-
+!
       SUBROUTINE netcdf_get_lvar_0d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
@@ -3419,7 +3483,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_lvar_0d
-
+!
       SUBROUTINE netcdf_get_lvar_1d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
@@ -3595,7 +3659,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_lvar_1d
-
+!
       SUBROUTINE netcdf_get_ivar_0d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
@@ -3731,7 +3795,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_ivar_0d
-
+!
       SUBROUTINE netcdf_get_ivar_1d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
@@ -3865,7 +3929,7 @@
 
       RETURN
       END SUBROUTINE netcdf_get_ivar_1d
-
+!
       SUBROUTINE netcdf_get_ivar_2d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
@@ -4000,14 +4064,24 @@
 
       RETURN
       END SUBROUTINE netcdf_get_ivar_2d
-
+!
       SUBROUTINE netcdf_get_svar_0d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
 !=======================================================================
 !                                                                      !
 !  This routine reads requested string scalar variable from specified  !
-!  NetCDF file.                                                        !
+!  NetCDF file. The CDL of the scalar variable has one-dimension in    !
+!  the NetCDF file for the number of characters:                       !
+!                                                                      !
+!     char string(Nchars)                                         CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string                            F90  !
+!                                                                      !
+!  to read a scalar string use:                                        !
+!                                                                      !
+!     start = (/1/)                                                    !
+!     total = (/Nchars/)                                               !
 !                                                                      !
 !  On Input:                                                           !
 !                                                                      !
@@ -4133,14 +4207,25 @@
 
       RETURN
       END SUBROUTINE netcdf_get_svar_0d
-
+!
       SUBROUTINE netcdf_get_svar_1d (ng, model, ncname, myVarName, A,   &
      &                               ncid, start, total)
 !
 !=======================================================================
 !                                                                      !
-!  This routine reads requested string 1D-array variable from          !
-!  specified NetCDF file.                                              !
+!  This routine reads requested string 1D-array variable or array      !
+!  element from specified NetCDF file. The CDL of the 1D-array         !
+!  variable has two-dimensions in the NetCDF file, and the first       !
+!  dimension is the number of characters:                              !
+!                                                                      !
+!     char string(dim1, Nchars)                                   CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string(dim1)                      F90  !
+!                                                                      !
+!  to read a single array element at location (i) use:                 !
+!                                                                      !
+!     start = (/1, i/)                                                 !
+!     total = (/Nchars, 1/)                                            !
 !                                                                      !
 !  On Input:                                                           !
 !                                                                      !
@@ -4157,13 +4242,7 @@
 !                                                                      !
 !  On Ouput:                                                           !
 !                                                                      !
-!     A            Read 1D-array variable (string)                     !
-!                                                                      !
-!  Examples:                                                           !
-!                                                                      !
-!    CALL netcdf_get_svar (ng, iNLM, 'file.nc', 'VarName', ivar)       !
-!    CALL netcdf_get_svar (ng, iNLM, 'file.nc', 'VarName', ivar(0:))   !
-!    CALL netcdf_get_svar (ng, iNLM, 'file.nc', 'VarName', ivar(:,1))  !
+!     A            Read 1D-array variable or array element (string)    !
 !                                                                      !
 !=======================================================================
 !
@@ -4199,7 +4278,7 @@
 #endif
 !
 !-----------------------------------------------------------------------
-!  Read in a string 1D-array variable.
+!  Read in a string 1D-array or array element.
 !-----------------------------------------------------------------------
 !
 !  If NetCDF file ID is not provided, open NetCDF for reading.
@@ -4267,7 +4346,877 @@
 
       RETURN
       END SUBROUTINE netcdf_get_svar_1d
+!
+      SUBROUTINE netcdf_get_svar_2d (ng, model, ncname, myVarName, A,   &
+     &                               ncid, start, total)
+!
+!=======================================================================
+!                                                                      !
+!  This routine reads requested string 2D-array variable or array      !
+!  element from specified NetCDF file. The CDL of the 2D-array         !
+!  variable has three-dimensions in the NetCDF file, and the first     !
+!  dimension is the number of characters:                              !
+!                                                                      !
+!     char string(dim2, dim1, Nchars)                             CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string(dim1, dim2)                F90  !
+!                                                                      !
+!  to read a single array element at location (i,j) use:               !
+!                                                                      !
+!     start = (/1, i, j/)                                              !
+!     total = (/Nchars, 1, 1/)                                         !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     myVarName    Variable name (string)                              !
+!     ncid         NetCDF file ID (3D vector integer, OPTIONAL)        !
+!     start        Starting index where the first of the data values   !
+!                    will be read along each dimension (integer,       !
+!                    OPTIONAL)                                         !
+!     total        Number of data values to be read along each         !
+!                    dimension (3D vector integer, OPTIONAL)           !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     A            Read 2D-array variable or array element (string)    !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      USE distribute_mod, ONLY : mp_bcasti, mp_bcasts
+#endif
+      USE strings_mod,    ONLY : FoundError
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model
 
+      integer, intent(in), optional :: ncid
+      integer, intent(in), optional :: start(:)
+      integer, intent(in), optional :: total(:)
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: myVarName
+
+      character (len=*), intent(out) :: A(:,:)
+!
+!  Local variable declarations.
+!
+      integer :: my_ncid, status, varid
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(2) :: ibuffer
+#endif
+!
+!-----------------------------------------------------------------------
+!  Read in a string 2D-array or array element.
+!-----------------------------------------------------------------------
+!
+!  If NetCDF file ID is not provided, open NetCDF for reading.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__ //                                      &
+     &                 ", netcdf_get_svar")) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  Read in variable.
+!
+      IF (InpThread) THEN
+        status=nf90_inq_varid(my_ncid, TRIM(myVarName), varid)
+        IF (status.eq.nf90_noerr) THEN
+          IF (PRESENT(start).and.PRESENT(total)) THEN
+            status=nf90_get_var(my_ncid, varid, A, start, total)
+          ELSE
+            status=nf90_get_var(my_ncid, varid, A)
+          END IF
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_get_svar")) THEN
+            WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=2
+            ioerror=status
+          END IF
+        ELSE
+          WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),              &
+     &                      TRIM(SourceFile)
+          exit_flag=2
+          ioerror=status
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast read variable to all processors in the group.
+!
+      ibuffer(1)=exit_flag
+      ibuffer(2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      exit_flag=ibuffer(1)
+      ioerror=ibuffer(2)
+      IF (exit_flag.eq.NoError) THEN
+        CALL mp_bcasts (ng, model, A)
+      END IF
+#endif
+!
+!  If NetCDF file ID is not provided, close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_GET_SVAR_2D - error while reading variable:',  &
+     &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_GET_SVAR_2D - error while inquiring ID for ',  &
+     &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
+     &        'call from:',2x,a)
+
+      RETURN
+      END SUBROUTINE netcdf_get_svar_2d
+!
+      SUBROUTINE netcdf_get_svar_3d (ng, model, ncname, myVarName, A,   &
+     &                               ncid, start, total)
+!
+!=======================================================================
+!                                                                      !
+!  This routine reads requested string 3D-array variable or array      !
+!  element from specified NetCDF file. The CDL of the 3D-array         !
+!  variable has four-dimensions in the NetCDF file, and the first      !
+!  dimension is the number of characters:                              !
+!                                                                      !
+!     char string(dim3, dim2, dim1, Nchars)                       CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string(dim1, dim2, dim3)          F90  !
+!                                                                      !
+!  to write a single array element at location (i,j,k) use:            !
+!                                                                      !
+!     start = (/1, i, j, k/)                                           !
+!     total = (/Nchars, 1, 1, 1/)                                      !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     myVarName    Variable name (string)                              !
+!     ncid         NetCDF file ID (integer, OPTIONAL)                  !
+!     start        Starting index where the first of the data values   !
+!                    will be read along each dimension (4D vector      !
+!                    integer, OPTIONAL)                                !
+!     total        Number of data values to be read along each         !
+!                    dimension (3D vector integer, OPTIONAL)           !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     A            Read 3D-array variable or element (string)          !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      USE distribute_mod, ONLY : mp_bcasti, mp_bcasts
+#endif
+      USE strings_mod,    ONLY : FoundError
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model
+
+      integer, intent(in), optional :: ncid
+      integer, intent(in), optional :: start(:)
+      integer, intent(in), optional :: total(:)
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: myVarName
+
+      character (len=*), intent(out) :: A(:,:,:)
+!
+!  Local variable declarations.
+!
+      integer :: my_ncid, status, varid
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(2) :: ibuffer
+#endif
+!
+!-----------------------------------------------------------------------
+!  Read in a string 3D-array or array element.
+!-----------------------------------------------------------------------
+!
+!  If NetCDF file ID is not provided, open NetCDF for reading.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__ //                                      &
+     &                 ", netcdf_get_svar")) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  Read in variable.
+!
+      IF (InpThread) THEN
+        status=nf90_inq_varid(my_ncid, TRIM(myVarName), varid)
+        IF (status.eq.nf90_noerr) THEN
+          IF (PRESENT(start).and.PRESENT(total)) THEN
+            status=nf90_get_var(my_ncid, varid, A, start, total)
+          ELSE
+            status=nf90_get_var(my_ncid, varid, A)
+          END IF
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_get_svar")) THEN
+            WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=2
+            ioerror=status
+          END IF
+        ELSE
+          WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),              &
+     &                      TRIM(SourceFile)
+          exit_flag=2
+          ioerror=status
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast read variable to all processors in the group.
+!
+      ibuffer(1)=exit_flag
+      ibuffer(2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      exit_flag=ibuffer(1)
+      ioerror=ibuffer(2)
+      IF (exit_flag.eq.NoError) THEN
+        CALL mp_bcasts (ng, model, A)
+      END IF
+#endif
+!
+!  If NetCDF file ID is not provided, close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_GET_SVAR_3D - error while reading variable:',  &
+     &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_GET_SVAR_3D - error while inquiring ID for ',  &
+     &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
+     &        'call from:',2x,a)
+
+      RETURN
+      END SUBROUTINE netcdf_get_svar_3d
+!
+      SUBROUTINE netcdf_get_time_0d (ng, model, ncname, myVarName,      &
+     &                               Rdate, A,                          &
+     &                               ncid, start, total,                &
+     &                               min_val, max_val)
+!
+!=======================================================================
+!                                                                      !
+!  This routine reads requested time scalar variable from specified    !
+!  NetCDF file. If the "units" attribute of the form:                  !
+!                                                                      !
+!    'time-units since YYYY-MM-DD hh:mm:ss'                            !
+!                                                                      !
+!  is different than provided reference date "Rdate", it converts to   !
+!  elapsed time since "Rdate".                                         !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     myVarName    Variable name (string)                              !
+!     Rdate        Reference date (real; [1] seconds, [2] days)        !
+!     ncid         NetCDF file ID (integer, OPTIONAL)                  !
+!     start        Starting index where the first of the data values   !
+!                    will be read along each dimension (integer,       !
+!                    OPTIONAL)                                         !
+!     total        Number of data values to be read along each         !
+!                    dimension (integer, OPTIONAL)                     !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     A            Read scalar variable (real)                         !
+!     min_val      Read data minimum value (real, OPTIONAL)            !
+!     max_val      Read data maximum value (real, OPTIONAL)            !
+!                                                                      !
+!  Examples:                                                           !
+!                                                                      !
+!    CALL netcdf_get_fvar (ng, iNLM, 'file.nc', 'VarName', fvar)       !
+!    CALL netcdf_get_fvar (ng, iNLM, 'file.nc', 'VarName', fvar(1))    !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      USE dateclock_mod,  ONLY : datenum, datestr
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      USE distribute_mod, ONLY : mp_bcastf, mp_bcasti
+#endif
+      USE strings_mod,    ONLY : FoundError, lowercase
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model
+
+      integer, intent(in), optional :: ncid
+      integer, intent(in), optional :: start(:)
+      integer, intent(in), optional :: total(:)
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: myVarName
+
+      real(r8), intent(in) :: Rdate(2)
+
+      real(r8), intent(out), optional :: min_val
+      real(r8), intent(out), optional :: max_val
+
+      real(r8), intent(out) :: A
+!
+!  Local variable declarations.
+!
+      logical :: JulianOffset = .FALSE.
+      logical :: Ldebug = .FALSE.
+
+      logical, dimension(1) :: got_units
+      logical, dimension(2) :: foundit
+
+      integer :: ind, lstr, my_ncid, status, varid
+      integer :: year, month, day, hour, minutes, seconds
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(2) :: ibuffer
+#endif
+      real(r8) :: Afactor, Aoffset, my_Rdate(2)
+      real(r8) :: dnum_old, dnum_new
+
+      real(r8), dimension(1) :: my_A
+      real(r8), dimension(2) :: AttValue
+
+      character (len=12) :: AttName(2)
+      character (len=22) :: dstr_old, dstr_new
+      character (len=40) :: UnitsAtt(1), UnitsValue(1)
+      character (len=40) :: Units, Ustring
+!
+!-----------------------------------------------------------------------
+!  Read in a floating-point scalar variable.
+!-----------------------------------------------------------------------
+!
+!  If NetCDF file ID is not provided, open NetCDF for reading.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__ //                                      &
+     &                 ", netcdf_get_fvar")) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  Read in variable.
+!
+      IF (InpThread) THEN
+        status=nf90_inq_varid(my_ncid, TRIM(myVarName), varid)
+        IF (status.eq.nf90_noerr) THEN
+          IF (PRESENT(start).and.PRESENT(total)) THEN
+            status=nf90_get_var(my_ncid, varid, my_A, start, total)
+            A=my_A(1)
+          ELSE
+            status=nf90_get_var(my_ncid, varid, A)
+          END IF
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_get_fvar")) THEN
+            WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=2
+            ioerror=status
+          END IF
+        ELSE
+          WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),              &
+     &                      TRIM(SourceFile)
+          exit_flag=2
+          ioerror=status
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast read variable to all processors in the group.
+!
+      ibuffer(1)=exit_flag
+      ibuffer(2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      exit_flag=ibuffer(1)
+      ioerror=ibuffer(2)
+      IF (exit_flag.eq.NoError) THEN
+        CALL mp_bcastf (ng, model, A)
+      END IF
+#endif
+!
+!  Check if the following attributes: "scale_factor", "add_offset", and
+!  "_FillValue" are present in the input NetCDF variable:
+!
+!  If the "scale_value" attribute is present, the data is multiplied by
+!  this factor after reading.
+!  If the "add_offset" attribute is present, this value is added to the
+!  data after reading.
+!  If both "scale_factor" and "add_offset" attributes are present, the
+!  data are first scaled before the offset is added.
+!  If the "_FillValue" attribute is present, the data having this value
+!  is treated as missing and it is replaced with zero. This feature it
+!  is usually related with the land/sea masking.
+!
+      AttName(1)='scale_factor'
+      AttName(2)='add_offset  '
+
+      CALL netcdf_get_fatt (ng, model, ncname, varid, AttName,          &
+     &                      AttValue, foundit,                          &
+     &                      ncid = ncid)
+
+      IF (exit_flag.eq.NoError) THEN
+        IF (.not.foundit(1)) THEN
+          Afactor=1.0_r8
+        ELSE
+          Afactor=AttValue(1)
+        END IF
+
+        IF (.not.foundit(2)) THEN
+          Aoffset=0.0_r8
+        ELSE
+          Aoffset=AttValue(2)
+        END IF
+
+        IF (foundit(1)) THEN                  ! scale data
+          A=Afactor*A
+        END IF
+
+        IF (foundit(2)) THEN                  ! add data offset
+          A=A+Aoffset
+          IF (time_ref.eq.-2) JulianOffset=.TRUE.
+        END IF
+      END IF
+!
+!  Get time variable "units" attribute and convert to elapsed time
+!  since reference date. If Julian Day Number (days or seconds) and
+!  'add_offset' attribute,
+!
+      UnitsAtt(1)='units'
+
+      CALL netcdf_get_satt (ng, model, ncname, varid, UnitsAtt,         &
+     &                      UnitsValue, got_units,                      &
+     &                      ncid = ncid)
+
+      IF (exit_flag.eq.NoError) THEN
+        IF (got_units(1)) THEN
+          Units=TRIM(lowercase(UnitsValue(1)))
+          lstr=LEN_TRIM(Units)
+          ind=INDEX(Units,'since')
+          IF (ind.gt.0) THEN
+            READ (Units(ind+6:lstr),30) year, month, day,               &
+     &                                  hour, minutes, seconds
+            CALL datenum (my_Rdate, year, month, day, hour, minutes,    &
+     &                    REAL(seconds,r8))
+            IF (Rdate(1).ne.my_Rdate(1)) THEN
+              Ustring=Units(1:ind-2)
+              SELECT CASE (TRIM(Ustring))
+                CASE ('second', 'seconds')
+                  IF (Ldebug) THEN
+                    IF (JulianOffset) THEN
+                      dnum_old=A
+                    ELSE
+                      dnum_old=my_Rdate(2)+A
+                    END IF
+                    CALL datestr (dnum_old, .FALSE., dstr_old)
+                  END IF
+                  IF (JulianOffset) THEN
+                    A=A-Rdate(2)              ! 'add_offset' added above
+                  ELSE
+                    A=(my_Rdate(2)+A)-Rdate(2)
+                  END IF
+                  IF (Ldebug) THEN
+                    dnum_new=Rdate(2)+A
+                    CALL datestr (dnum_new, .FALSE., dstr_new)
+                  END IF
+                CASE ('day', 'days')
+                  IF (Ldebug) THEN
+                    IF (JulianOffset) THEN
+                      dnum_old=A
+                    ELSE
+                      dnum_old=my_Rdate(1)+A
+                    END IF
+                    CALL datestr (dnum_old, .TRUE., dstr_old)
+                  END IF
+                  IF (JulianOffset) THEN
+                    A=A-Rdate(1)              ! 'add_offset' added above
+                  ELSE
+                    A=(my_Rdate(1)+A)-Rdate(1)
+                  END IF
+                  IF (Ldebug) THEN
+                    dnum_new=Rdate(1)+A
+                    CALL datestr (dnum_new, .TRUE., dstr_new)
+                  END IF
+              END SELECT
+            END IF
+          END IF
+        END IF
+      END IF
+!
+!  Compute minimum and maximum values of read variable. Notice that
+!  the same read value is assigned since a scalar variable was
+!  processed.
+!
+      IF (PRESENT(min_val)) THEN
+        min_val=A
+      END IF
+      IF (PRESENT(max_val)) THEN
+        max_val=A
+      END IF
+!
+!  If NetCDF file ID is not provided, close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_GET_TIME_0D - error while reading variable:',  &
+     &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_GET_TIME_0D - error while inquiring ID for ',  &
+     &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
+     &        'call from:',2x,a)
+  30  FORMAT (i4.4,1x,i2.2,1x,i2.2,1x,i2.2,1x,i2.2,1x,i2.2)
+
+      RETURN
+      END SUBROUTINE netcdf_get_time_0d
+!
+      SUBROUTINE netcdf_get_time_1d (ng, model, ncname, myVarName,      &
+     &                               Rdate, A,                          &
+     &                               ncid, start, total,                &
+     &                               min_val, max_val)
+!
+!=======================================================================
+!                                                                      !
+!  This routine reads requested time 1D-array variable from specified  !
+!  NetCDF file.  If the "units" attribute of the form:                 !
+!                                                                      !
+!    'time-units since YYYY-MM-DD hh:mm:ss'                            !
+!                                                                      !
+!  is different than provided reference date "Rdate", it converts to   !
+!  elapsed time since "Rdate".                                         !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     myVarName    time variable name (string)                         !
+!     Rdate        Reference date (real; [1] seconds, [2] days)        !
+!     ncid         NetCDF file ID (integer, OPTIONAL)                  !
+!     start        Starting index where the first of the data values   !
+!                    will be read along each dimension (integer,       !
+!                    OPTIONAL)                                         !
+!     total        Number of data values to be read along each         !
+!                    dimension (integer, OPTIONAL)                     !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     A            Read 1D-array time variable (real)                  !
+!     min_val      Read data minimum value (real, OPTIONAL)            !
+!     max_val      Read data maximum value (real, OPTIONAL)            !
+!                                                                      !
+!  Examples:                                                           !
+!                                                                      !
+!    CALL netcdf_get_fvar (ng, iNLM, 'file.nc', 'VarName', fvar)       !
+!    CALL netcdf_get_fvar (ng, iNLM, 'file.nc', 'VarName', fvar(0:))   !
+!    CALL netcdf_get_fvar (ng, iNLM, 'file.nc', 'VarName', fvar(:,1))  !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+      USE dateclock_mod,  ONLY : datenum, datestr
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      USE distribute_mod, ONLY : mp_bcastf, mp_bcasti
+#endif
+      USE strings_mod,    ONLY : FoundError, lowercase
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model
+
+      integer, intent(in), optional :: ncid
+      integer, intent(in), optional :: start(:)
+      integer, intent(in), optional :: total(:)
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: myVarName
+
+      real(r8), intent(in) :: Rdate(2)
+
+      real(r8), intent(out), optional :: min_val
+      real(r8), intent(out), optional :: max_val
+
+      real(r8), intent(out) :: A(:)
+!
+!  Local variable declarations.
+!
+      logical :: JulianOffset = .FALSE.
+      logical :: Ldebug = .FALSE.
+
+      logical, dimension(1) :: got_units
+      logical, dimension(2) :: foundit
+
+      integer :: i, ind, lstr, my_ncid, status, varid
+      integer :: year, month, day, hour, minutes, seconds
+
+      integer, dimension(1) :: Asize
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(2) :: ibuffer
+#endif
+      real(r8) :: Afactor, Aoffset, my_Rdate(2)
+      real(r8) :: dnum_old, dnum_new
+
+      real(r8), dimension(2) :: AttValue
+
+      character (len=12) :: AttName(2)
+      character (len=22) :: dstr_old, dstr_new
+      character (len=40) :: UnitsAtt(1), UnitsValue(1)
+      character (len=40) :: Units, Ustring
+!
+!-----------------------------------------------------------------------
+!  Read in a time 1D-array variable.
+!-----------------------------------------------------------------------
+!
+      IF (PRESENT(start).and.PRESENT(total)) THEN
+        Asize(1)=1
+        DO i=1,SIZE(total)              ! this logic is for the case
+          Asize(1)=Asize(1)*total(i)    ! of reading multidimensional
+        END DO                          ! data into a compact 1D array
+      ELSE
+        Asize(1)=UBOUND(A, DIM=1)
+      END IF
+!
+!  If NetCDF file ID is not provided, open NetCDF for reading.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__ //                                      &
+     &                 ", netcdf_get_fvar")) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  Read in time variable.
+!
+      IF (InpThread) THEN
+        status=nf90_inq_varid(my_ncid, TRIM(myVarName), varid)
+        IF (status.eq.nf90_noerr) THEN
+          IF (PRESENT(start).and.PRESENT(total)) THEN
+            status=nf90_get_var(my_ncid, varid, A, start, total)
+          ELSE
+            status=nf90_get_var(my_ncid, varid, A)
+          END IF
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_get_fvar")) THEN
+            WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=2
+            ioerror=status
+          END IF
+        ELSE
+          WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),              &
+     &                      TRIM(SourceFile)
+          exit_flag=2
+          ioerror=status
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast read variable to all processors in the group.
+!
+      ibuffer(1)=exit_flag
+      ibuffer(2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      exit_flag=ibuffer(1)
+      ioerror=ibuffer(2)
+      IF (exit_flag.eq.NoError) THEN
+        CALL mp_bcastf (ng, model, A)
+      END IF
+#endif
+!
+!  Check if the following attributes: "scale_factor", "add_offset", and
+!  "_FillValue" are present in the input NetCDF variable:
+!
+!  If the "scale_value" attribute is present, the data is multiplied by
+!  this factor after reading.
+!  If the "add_offset" attribute is present, this value is added to the
+!  data after reading.
+!  If both "scale_factor" and "add_offset" attributes are present, the
+!  data are first scaled before the offset is added.
+!  If the "_FillValue" attribute is present, the data having this value
+!  is treated as missing and it is replaced with zero. This feature it
+!  is usually related with the land/sea masking.
+!
+      AttName(1)='scale_factor'
+      AttName(2)='add_offset  '
+
+      CALL netcdf_get_fatt (ng, model, ncname, varid, AttName,          &
+     &                      AttValue, foundit,                          &
+     &                      ncid = ncid)
+
+      IF (exit_flag.eq.NoError) THEN
+        IF (.not.foundit(1)) THEN
+          Afactor=1.0_r8
+        ELSE
+          Afactor=AttValue(1)
+        END IF
+
+        IF (.not.foundit(2)) THEN
+          Aoffset=0.0_r8
+        ELSE
+          Aoffset=AttValue(2)
+        END IF
+
+        IF (foundit(1)) THEN                  ! scale data
+          DO i=1,Asize(1)
+            A(i)=Afactor*A(i)
+          END DO
+        END IF
+
+        IF (foundit(2)) THEN                  ! add data offset
+          DO i=1,Asize(1)
+            A(i)=A(i)+Aoffset
+          END DO
+          IF (time_ref.eq.-2) JulianOffset=.TRUE.
+        END IF
+      END IF
+!
+!  Get time variable "units" attribute and convert to elapsed time
+!  since reference date.
+!
+      UnitsAtt(1)='units'
+
+      CALL netcdf_get_satt (ng, model, ncname, varid, UnitsAtt,         &
+     &                      UnitsValue, got_units,                      &
+     &                      ncid = ncid)
+
+      IF (exit_flag.eq.NoError) THEN
+        IF (got_units(1)) THEN
+          Units=TRIM(lowercase(UnitsValue(1)))
+          lstr=LEN_TRIM(Units)
+          ind=INDEX(Units,'since')
+          IF (ind.gt.0) THEN
+            READ (Units(ind+6:lstr),30) year, month, day,               &
+     &                                  hour, minutes, seconds
+            CALL datenum (my_Rdate, year, month, day, hour, minutes,    &
+     &                    REAL(seconds,r8))
+            IF (Rdate(1).ne.my_Rdate(1)) THEN
+              Ustring=Units(1:ind-2)
+              SELECT CASE (TRIM(Ustring))
+                CASE ('second', 'seconds')
+                  IF (Ldebug) THEN
+                    IF (JulianOffset) THEN
+                      dnum_old=A(1)
+                    ELSE
+                      dnum_old=my_Rdate(2)+A(1)
+                    END IF
+                    CALL datestr (dnum_old, .FALSE., dstr_old)
+                  END IF
+                  IF (JulianOffset) THEN
+                    DO i=1,Asize(1)
+                      A(i)=A(i)-Rdate(2)      ! 'add_offset' added above
+                    END DO
+                  ELSE
+                    DO i=1,Asize(1)
+                      A(i)=(my_Rdate(2)+A(i))-Rdate(2)
+                    END DO
+                  END IF
+                  IF (Ldebug) THEN
+                    dnum_new=Rdate(2)+A(1)
+                    CALL datestr (dnum_new, .FALSE., dstr_new)
+                  END IF
+                CASE ('day', 'days')
+                  IF (Ldebug) THEN
+                    IF (JulianOffset) THEN
+                      dnum_old=A(1)
+                    ELSE
+                      dnum_old=my_Rdate(1)+A(1)
+                    END IF
+                    CALL datestr (dnum_old, .TRUE., dstr_old)
+                  END IF
+                  IF (JulianOffset) THEN
+                    DO i=1,Asize(1)
+                      A(i)=A(i)-Rdate(1)      ! 'add_offset' added above
+                    END DO
+                  ELSE
+                    DO i=1,Asize(1)
+                      A(i)=(my_Rdate(1)+A(i))-Rdate(1)
+                    END DO
+                  END IF
+                  IF (Ldebug) THEN
+                    dnum_new=Rdate(1)+A(1)
+                    CALL datestr (dnum_new, .TRUE., dstr_new)
+                  END IF
+              END SELECT
+            END IF
+          END IF
+        END IF
+      END IF
+!
+!  Compute minimum and maximum values of read variable.
+!
+      IF (PRESENT(min_val)) THEN
+        min_val=MINVAL(A)
+      END IF
+      IF (PRESENT(max_val)) THEN
+        max_val=MAXVAL(A)
+      END IF
+!
+!  If NetCDF file ID is not provided, close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_GET_TIME_1D - error while reading variable:',  &
+     &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_GET_TIME_1D - error while inquiring ID for ',  &
+     &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
+     &        'call from:',2x,a)
+  30  FORMAT (i4.4,1x,i2.2,1x,i2.2,1x,i2.2,1x,i2.2,1x,i2.2)
+
+      RETURN
+      END SUBROUTINE netcdf_get_time_1d
+!
       SUBROUTINE netcdf_put_fvar_0d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -4409,7 +5358,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_fvar_0d
-
+!
       SUBROUTINE netcdf_put_fvar_1d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -4545,7 +5494,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_fvar_1d
-
+!
       SUBROUTINE netcdf_put_fvar_2d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -4681,7 +5630,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_fvar_2d
-
+!
       SUBROUTINE netcdf_put_fvar_3d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -4817,7 +5766,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_fvar_3d
-
+!
       SUBROUTINE netcdf_put_fvar_4d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -4953,7 +5902,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_fvar_4d
-
+!
       SUBROUTINE netcdf_put_ivar_0d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5096,7 +6045,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_ivar_0d
-
+!
       SUBROUTINE netcdf_put_ivar_1d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5232,7 +6181,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_ivar_1d
-
+!
       SUBROUTINE netcdf_put_ivar_2d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5368,7 +6317,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_ivar_2d
-
+!
       SUBROUTINE netcdf_put_lvar_0d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5524,7 +6473,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_lvar_0d
-
+!
       SUBROUTINE netcdf_put_lvar_1d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5676,7 +6625,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_lvar_1d
-
+!
       SUBROUTINE netcdf_put_lvar_2d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5830,15 +6779,25 @@
 
       RETURN
       END SUBROUTINE netcdf_put_lvar_2d
-
+!
       SUBROUTINE netcdf_put_svar_0d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
 !=======================================================================
 !                                                                      !
-!  This routine writes a  string scalar variable into a NetCDF file.   !
-!  If the NetCDF ID is not provided, it opens the file, writes data,   !
-!  and then closes the file.                                           !
+!  This routine writes a string scalar variable into a file.  If       !
+!  the NetCDF ID is not provided, it opens the file,  writes data,     !
+!  and then closes the file. The CDL of the scalar variable has        !
+!  one-dimension in the NetCDF file for the number of characters:      !
+!                                                                      !
+!     char string(Nchars)                                         CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string                            F90  !
+!                                                                      !
+!  to write a scalar string use:                                       !
+!                                                                      !
+!     start = (/1/)                                                    !
+!     total = (/Nchars/)                                               !
 !                                                                      !
 !  On Input:                                                           !
 !                                                                      !
@@ -5848,9 +6807,10 @@
 !     myVarName    Variable name (string)                              !
 !     A            Data value(s) to be written (string)                !
 !     start        Starting index where the first of the data values   !
-!                    will be written along each dimension (integer)    !
+!                    will be written along each dimension (1D vector   !
+!                    integer)                                          !
 !     total        Number of data values to be written along each      !
-!                    dimension (integer)                               !
+!                    dimension (1D vector integer)                     !
 !     ncid         NetCDF file ID (integer, OPTIONAL)                  !
 !     varid        NetCDF variable ID (integer, OPTIONAL)              !
 !                                                                      !
@@ -5877,7 +6837,7 @@
 !
       integer, intent(in) :: ng, model
 
-      integer, intent(in) :: start(:), total(:)    ! dummy variables
+      integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
 
@@ -5889,14 +6849,12 @@
 !
       integer :: my_ncid, my_varid, status
 
-      integer, dimension(1) :: mystart, mytotal
-
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
 !
 !-----------------------------------------------------------------------
-!  Read in a floating-point scalar variable.
+!  Write out a scalar string.
 !-----------------------------------------------------------------------
 !
 !  If file ID is not provided, open file for writing.
@@ -5930,9 +6888,7 @@
 !  Write out data.
 !
         IF (exit_flag.eq.NoError) THEN
-          mystart(1)=1
-          mytotal(1)=LEN_TRIM(A)
-          status=nf90_put_var(my_ncid, my_varid, A, mystart, mytotal)
+          status=nf90_put_var(my_ncid, my_varid, A, start, total)
           IF (FoundError(status, nf90_noerr, __LINE__,                  &
      &                   __FILE__ //                                    &
      &                   ", netcdf_put_svar")) THEN
@@ -5969,7 +6925,7 @@
 
       RETURN
       END SUBROUTINE netcdf_put_svar_0d
-
+!
       SUBROUTINE netcdf_put_svar_1d (ng, model, ncname, myVarName, A,   &
      &                               start, total, ncid, varid)
 !
@@ -5977,7 +6933,18 @@
 !                                                                      !
 !  This routine writes a string 1D-array variable into a file.  If     !
 !  the NetCDF ID is not provided, it opens the file,  writes data,     !
-!  and then closes the file.                                           !
+!  and then closes the file. The CDL of the 1D-array variable has      !
+!  two-dimensions in the NetCDF file, and the first dimension is       !
+!  the number of characters:                                           !
+!                                                                      !
+!     char string(dim1, Nchars)                                   CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string(dim1)                      F90  !
+!                                                                      !
+!  to write a single array element at location (i) use:                !
+!                                                                      !
+!     start = (/1, i/)                                                 !
+!     total = (/Nchars, 1/)                                            !
 !                                                                      !
 !  On Input:                                                           !
 !                                                                      !
@@ -5987,9 +6954,10 @@
 !     myVarName    Variable name (string)                              !
 !     A            Data value(s) to be written (1D string array)       !
 !     start        Starting index where the first of the data values   !
-!                    will be written along each dimension (integer)    !
+!                    will be written along each dimension (2D vector   !
+!                    integer)                                          !
 !     total        Number of data values to be written along each      !
-!                    dimension (integer)                               !
+!                    dimension (2D vector integer)                     !
 !     ncid         NetCDF file ID (integer, OPTIONAL)                  !
 !     varid        NetCDF variable ID (integer, OPTIONAL)              !
 !                                                                      !
@@ -6029,14 +6997,12 @@
 !
       integer :: my_ncid, my_varid, status
 
-      integer, dimension(2) :: mystart, mytotal
-
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
 !
 !-----------------------------------------------------------------------
-!  Read in a floating-point scalar variable.
+!  Write out a string 1D array or array element.
 !-----------------------------------------------------------------------
 !
 !  If NetCDF file ID is not provided, open NetCDF for writing.
@@ -6070,11 +7036,7 @@
 !  Write out data.
 !
         IF (exit_flag.eq.NoError) THEN
-          mystart(1)=1
-          mytotal(1)=LEN_TRIM(A(1))
-          mystart(2)=start(1)
-          mytotal(2)=total(1)
-          status=nf90_put_var(my_ncid, my_varid, A, mystart, mytotal)
+          status=nf90_put_var(my_ncid, my_varid, A, start, total)
           IF (FoundError(status, nf90_noerr, __LINE__,                  &
      &                   __FILE__ //                                    &
      &                   ", netcdf_put_svar")) THEN
@@ -6111,7 +7073,299 @@
 
       RETURN
       END SUBROUTINE netcdf_put_svar_1d
+!
+      SUBROUTINE netcdf_put_svar_2d (ng, model, ncname, myVarName, A,   &
+     &                               start, total, ncid, varid)
+!
+!=======================================================================
+!                                                                      !
+!  This routine writes a string 2D-array variable into a file.  If     !
+!  the NetCDF ID is not provided, it opens the file,  writes data,     !
+!  and then closes the file. The CDL of the 2D-array variable has      !
+!  three-dimensions in the NetCDF file, and the first dimension is     !
+!  the number of characters:                                           !
+!                                                                      !
+!     char string(dim2, dim1, Nchars)                             CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string(dim1, dim2)                F90  !
+!                                                                      !
+!  to write a single array element at location (i,j) use:              !
+!                                                                      !
+!     start = (/1, i, j/)                                              !
+!     total = (/Nchars, 1, 1/)                                         !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     myVarName    Variable name (string)                              !
+!     A            Data value(s) to be written (2D string array)       !
+!     start        Starting index where the first of the data values   !
+!                    will be written along each dimension (3D vector   !
+!                    integer)                                          !
+!     total        Number of data values to be written along each      !
+!                    dimension (3D vector integer)                     !
+!     ncid         NetCDF file ID (integer, OPTIONAL)                  !
+!     varid        NetCDF variable ID (integer, OPTIONAL)              !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     exit_flag    Error flag (integer) stored in MOD_SCALARS          !
+!     ioerror      NetCDF return code (integer) stored in MOD_IOUNITS  !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      USE distribute_mod, ONLY : mp_bcasti
+#endif
+      USE strings_mod,    ONLY : FoundError
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model
 
+      integer, intent(in) :: start(:), total(:)
+
+      integer, intent(in), optional :: ncid, varid
+
+      character (len=*), intent(in) :: A(:,:)
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: myVarName
+!
+!  Local variable declarations.
+!
+      integer :: my_ncid, my_varid, status
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(2) :: ibuffer
+#endif
+!
+!-----------------------------------------------------------------------
+!  Write out a string array element or full 2D array.
+!-----------------------------------------------------------------------
+!
+!  If NetCDF file ID is not provided, open NetCDF for writing.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__ //                                      &
+     &                 ", netcdf_put_svar")) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  If variable ID is not provided, inquire its value.
+!
+      IF (OutThread) THEN
+        IF (.not.PRESENT(varid)) THEN
+          status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_put_svar")) THEN
+            WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=3
+            ioerror=status
+          END IF
+        ELSE
+          my_varid=varid
+        END IF
+!
+!  Write out data.
+!
+        IF (exit_flag.eq.NoError) THEN
+          status=nf90_put_var(my_ncid, my_varid, A, start, total)
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_put_svar")) THEN
+            WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=3
+            ioerror=status
+          END IF
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast error flags to all processors in the group.
+!
+      ibuffer(1)=exit_flag
+      ibuffer(2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      exit_flag=ibuffer(1)
+      ioerror=ibuffer(2)
+#endif
+!
+!  Close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_PUT_SVAR_2D - error while inquiring ID for ',  &
+     &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
+     &        'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_PUT_SVAR_2D - error while writing variable:',  &
+     &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a)
+
+      RETURN
+      END SUBROUTINE netcdf_put_svar_2d
+!
+      SUBROUTINE netcdf_put_svar_3d (ng, model, ncname, myVarName, A,   &
+     &                               start, total, ncid, varid)
+!
+!=======================================================================
+!                                                                      !
+!  This routine writes a string 3D-array variable into a file.  If     !
+!  the NetCDF ID is not provided, it opens the file,  writes data,     !
+!  and then closes the file. The CDL of the 3D-array variable has      !
+!  four-dimensions in the NetCDF file, and the first dimension is      !
+!  the number of characters:                                           !
+!                                                                      !
+!     char string(dim3, dim2, dim1, Nchars)                       CDL  !
+!                                                                      !
+!     character (len=Nchars) :: string(dim1, dim2, dim3)          F90  !
+!                                                                      !
+!  to write a single array element at location (i,j,k) use:            !
+!                                                                      !
+!     start = (/1, i, j, k/)                                           !
+!     total = (/Nchars, 1, 1, 1/)                                      !
+!                                                                      !
+!  On Input:                                                           !
+!                                                                      !
+!     ng           Nested grid number (integer)                        !
+!     model        Calling model identifier (integer)                  !
+!     ncname       NetCDF file name (string)                           !
+!     myVarName    Variable name (string)                              !
+!     A            Data value(s) to be written (3D string array)       !
+!     start        Starting index where the first of the data values   !
+!                    will be written along each dimension (4D vector   !
+!                    integer)                                          !
+!     total        Number of data values to be written along each      !
+!                    dimension (4D vector integer)                     !
+!     ncid         NetCDF file ID (integer, OPTIONAL)                  !
+!     varid        NetCDF variable ID (integer, OPTIONAL)              !
+!                                                                      !
+!  On Ouput:                                                           !
+!                                                                      !
+!     exit_flag    Error flag (integer) stored in MOD_SCALARS          !
+!     ioerror      NetCDF return code (integer) stored in MOD_IOUNITS  !
+!                                                                      !
+!=======================================================================
+!
+      USE mod_param
+      USE mod_parallel
+      USE mod_iounits
+      USE mod_scalars
+!
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      USE distribute_mod, ONLY : mp_bcasti
+#endif
+      USE strings_mod,    ONLY : FoundError
+!
+!  Imported variable declarations.
+!
+      integer, intent(in) :: ng, model
+
+      integer, intent(in) :: start(:), total(:)
+
+      integer, intent(in), optional :: ncid, varid
+
+      character (len=*), intent(in) :: A(:,:,:)
+
+      character (len=*), intent(in) :: ncname
+      character (len=*), intent(in) :: myVarName
+!
+!  Local variable declarations.
+!
+      integer :: my_ncid, my_varid, status
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+      integer, dimension(2) :: ibuffer
+#endif
+!
+!-----------------------------------------------------------------------
+!  Write out a string array element or full 3D array.
+!-----------------------------------------------------------------------
+!
+!  If NetCDF file ID is not provided, open NetCDF for writing.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__ //                                      &
+     &                 ", netcdf_put_svar")) RETURN
+      ELSE
+        my_ncid=ncid
+      END IF
+!
+!  If variable ID is not provided, inquire its value.
+!
+      IF (OutThread) THEN
+        IF (.not.PRESENT(varid)) THEN
+          status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_put_svar")) THEN
+            WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=3
+            ioerror=status
+          END IF
+        ELSE
+          my_varid=varid
+        END IF
+!
+!  Write out data.
+!
+        IF (exit_flag.eq.NoError) THEN
+          status=nf90_put_var(my_ncid, my_varid, A, start, total)
+          IF (FoundError(status, nf90_noerr, __LINE__,                  &
+     &                   __FILE__ //                                    &
+     &                   ", netcdf_put_svar")) THEN
+            WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
+     &                        TRIM(SourceFile)
+            exit_flag=3
+            ioerror=status
+          END IF
+        END IF
+      END IF
+
+#if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
+!  Broadcast error flags to all processors in the group.
+!
+      ibuffer(1)=exit_flag
+      ibuffer(2)=ioerror
+      CALL mp_bcasti (ng, model, ibuffer)
+      exit_flag=ibuffer(1)
+      ioerror=ibuffer(2)
+#endif
+!
+!  Close input NetCDF file.
+!
+      IF (.not.PRESENT(ncid)) THEN
+        CALL netcdf_close (ng, model, my_ncid, ncname, .FALSE.)
+      END IF
+!
+  10  FORMAT (/,' NETCDF_PUT_SVAR_3D - error while inquiring ID for ',  &
+     &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
+     &        'call from:',2x,a)
+  20  FORMAT (/,' NETCDF_PUT_SVAR_3D - error while writing variable:',  &
+     &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a)
+
+      RETURN
+      END SUBROUTINE netcdf_put_svar_3d
+!
       SUBROUTINE netcdf_close (ng, model, ncid, ncname, Lupdate)
 !
 !=======================================================================
@@ -6274,7 +7528,7 @@
 
       RETURN
       END SUBROUTINE netcdf_close
-
+!
       SUBROUTINE netcdf_create (ng, model, ncname, ncid)
 !
 !=======================================================================
@@ -6377,7 +7631,7 @@
 
       RETURN
       END SUBROUTINE netcdf_create
-
+!
       SUBROUTINE netcdf_enddef (ng, model, ncname, ncid)
 !
 !=======================================================================
@@ -6458,7 +7712,7 @@
 
       RETURN
       END SUBROUTINE netcdf_enddef
-
+!
       SUBROUTINE netcdf_open (ng, model, ncname, omode, ncid)
 !
 !=======================================================================
@@ -6569,11 +7823,13 @@
           exit_flag=3
           ioerror=status
         END IF
+# ifdef DISTRIBUTE
+        ibuffer(1)=exit_flag
+        ibuffer(2)=ioerror
+        ibuffer(3)=ncid
+# endif
       END IF
 # ifdef DISTRIBUTE
-      ibuffer(1)=exit_flag
-      ibuffer(2)=ioerror
-      ibuffer(3)=ncid
       CALL mp_bcasti (ng, model, ibuffer)
       exit_flag=ibuffer(1)
       ioerror=ibuffer(2)
@@ -6591,7 +7847,7 @@
 
       RETURN
       END SUBROUTINE netcdf_open
-
+!
       SUBROUTINE netcdf_redef (ng, model, ncname, ncid)
 !
 !=======================================================================
@@ -6664,7 +7920,7 @@
 
       RETURN
       END SUBROUTINE netcdf_redef
-
+!
       SUBROUTINE netcdf_sync (ng, model, ncname, ncid)
 !
 !=======================================================================
@@ -6740,5 +7996,5 @@
 
       RETURN
       END SUBROUTINE netcdf_sync
-
+!
       END MODULE mod_netcdf

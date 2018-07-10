@@ -2,7 +2,7 @@
 #ifdef NESTING
       SUBROUTINE set_contact (ng, model)
 !
-!svn $Id: set_contact.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: set_contact.F 1757 2018-05-17 22:40:24Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -958,11 +958,11 @@
         RefineStepsCounter = 0
       END IF
 !
-!  Counter for two-way exchange between fine and coarse grids.
+!  Interval used in the two-way exchange between fine and coarse grids.
 !
-      IF (.not.allocated(TwoWayCounter)) THEN
-        allocate ( TwoWayCounter(Ngrids) )
-        TwoWayCounter = 0
+      IF (.not.allocated(TwoWayInterval)) THEN
+        allocate ( TwoWayInterval(Ngrids) )
+        TwoWayInterval = 0.0_r8
       END IF
 !
 !  Switch indicating which refined grid(s) include finer refined grids:

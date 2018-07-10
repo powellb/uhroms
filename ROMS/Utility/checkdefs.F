@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE checkdefs
 !
-!svn $Id: checkdefs.F 1754 2018-03-21 03:22:15Z arango $
+!svn $Id: checkdefs.F 1757 2018-05-17 22:40:24Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1123,6 +1123,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+14)=' IMPACT_INNER,'
 #endif
+#ifdef IMPLICIT_NUDGING
+!
+      IF (Master) WRITE (stdout,20) 'IMPLICIT_NUDGING',                 &
+     &   'Implicit nudging term in momentum radiation conditions.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' IMPLICIT_NUDGING,'
+#endif
 #if defined IMPLICIT_VCONV && defined FOUR_DVAR && defined VCONVOLUTION
 !
       IF (Master) WRITE (stdout,20) 'IMPLICIT_VCONV',                   &
@@ -1861,6 +1868,14 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' RED_TIDE,'
       ibiology=ibiology+1
+#endif
+#if defined REGRESS_STARTCLOCK && defined MODEL_COUPLING && \
+    defined ESMF_LIB
+!
+      IF (Master) WRITE (stdout,20) 'REGRESS_STARTCLOCK',               &
+     &   'Regressing start clock by one coupling interval.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+20)=' REGRESS_STARTCLOCK,'
 #endif
 #ifdef ROMS_STDOUT
 !

@@ -2,7 +2,7 @@
 #ifndef ANA_GRID
       SUBROUTINE get_grid (ng, model)
 !
-!svn $Id: get_grid.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: get_grid.F 1757 2018-05-17 22:40:24Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1356,7 +1356,8 @@
               ELSE
                 IF (Master) THEN
                   WRITE (stdout,30) 'longitude of RHO-points: lon_rho', &
-     &                              ng, TRIM(ncname), Fmin, Fmax
+     &                              ng, TRIM(ncname),                   &
+     &                              LonMin(ng), LonMax(ng)
                 END IF
               END IF
 # ifdef NESTING
@@ -1400,7 +1401,8 @@
               ELSE
                 IF (Master) THEN
                   WRITE (stdout,30) 'latitude of RHO-points lat_rho',   &
-     &                              ng, TRIM(ncname), Fmin, Fmax
+     &                              ng, TRIM(ncname),                   &
+     &                              LatMin(ng), LatMax(ng)
                 END IF
               END IF
 # ifdef NESTING

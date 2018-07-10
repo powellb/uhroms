@@ -1,11 +1,11 @@
-# svn $Id: Darwin-ifort.mk 1748 2018-02-10 03:25:17Z arango $
+# svn $Id: Darwin-ifort.mk 1757 2018-05-17 22:40:24Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2018 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #
-# Include file for Intel IFORT (version 10.1) compiler on Linux
+# Include file for Intel IFORT compiler on Darwin
 # -------------------------------------------------------------------------
 #
 # ARPACK_LIBDIR  ARPACK libary directory
@@ -24,7 +24,8 @@
 # First the defaults
 #
                FC := ifort
-           FFLAGS := -heap-arrays -fp-model source
+           FFLAGS := -fp-model source
+#          FFLAGS += -heap-arrays
               CPP := /usr/bin/cpp
          CPPFLAGS := -P -traditional-cpp
           LDFLAGS :=
@@ -76,12 +77,19 @@ ifdef USE_OpenMP
 endif
 
 ifdef USE_DEBUG
-#          FFLAGS += -g -traceback -check all -fp-stack-check
-           FFLAGS += -g -check bounds -traceback -check uninit -warn interfaces,nouncalled -gen-interfaces
-#          FFLAGS += -g -check bounds
+           FFLAGS += -g
+#          FFLAGS += -O3
+#          FFLAGS += -check all
+           FFLAGS += -check bounds
+           FFLAGS += -check uninit
+#          FFLAGS += -fp-stack-check
+           FFLAGS += -traceback
+           FFLAGS += -warn interfaces,nouncalled -gen-interfaces
+           FFLAGS += -Wl,-no_compact_unwind
+           FFLAGS += -Wl,-stack_size,0x64000000
 else
-#          FFLAGS += -ip -O3 -Wl,-stack_size,0x10000000
            FFLAGS += -ip -O3
+           FFLAGS += -Wl,-stack_size,0x64000000
 endif
 
 ifdef USE_MCT
