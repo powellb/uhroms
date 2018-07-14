@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: array_modes_w4dvar.h 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: array_modes_w4dvar.h 1766 2018-07-14 00:05:51Z arango $
 !=================================================== Andrew M. Moore ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
@@ -264,7 +264,8 @@
      &                 __FILE__)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'TLmodVal_S',     &
-     &                        TLmodVal_S)
+     &                        TLmodVal_S,                               &
+     &                        broadcast = .FALSE.)   ! Master use only
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
       END DO

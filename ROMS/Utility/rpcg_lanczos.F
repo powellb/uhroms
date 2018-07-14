@@ -4,7 +4,7 @@
       SUBROUTINE rpcg_lanczos (ng, model, outLoop, innLoop, NinnLoop,   &
      &                         Lcgini)
 !
-!svn $Id: rpcg_lanczos.F 1754 2018-03-21 03:22:15Z arango $
+!svn $Id: rpcg_lanczos.F 1766 2018-07-14 00:05:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Selime Gurol      !
 !    Licensed under a MIT/X style license            Andrew M. Moore   !
@@ -1031,7 +1031,7 @@
 #  if defined SENSITIVITY_4DVAR || \
       defined TL_W4DPSAS        || defined TL_W4DVAR || \
       defined W4DPSAS           || defined W4DVAR
-      CALL mp_bcastf (ng, model, TLmodVal_S(:,:,outLoop))
+!!    CALL mp_bcastf (ng, model, TLmodVal_S(:,:,outLoop))   ! not needed
       CALL mp_bcastf (ng, model, Hbk(:,outLoop))
       CALL mp_bcastf (ng, model, Jb0(outLoop-1))
 #  endif

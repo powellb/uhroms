@@ -3,7 +3,7 @@
 
 #if defined FOUR_DVAR || defined VERIFICATION
 !
-!svn $Id: mod_fourdvar.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: mod_fourdvar.F 1766 2018-07-14 00:05:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1225,8 +1225,10 @@
        defined TL_W4DVAR            || defined W4DPSAS     || \
        defined W4DVAR               || defined ARRAY_MODES || \
        defined CLIPPING
-      allocate ( TLmodVal_S(Mobs,Ninner,Nouter) )
-      TLmodVal_S = IniVal
+      IF (Master) THEN                                ! Needed only
+        allocate ( TLmodVal_S(Mobs,Ninner,Nouter) )   ! by master. It
+        TLmodVal_S = IniVal                           ! is a memory hog
+      END IF                                          ! in other nodes
 #   endif
 #   if defined TL_W4DPSAS           || defined W4DPSAS    || \
        defined W4DPSAS_SENSITIVITY

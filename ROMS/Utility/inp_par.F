@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE inp_par (model)
 !
-!svn $Id: inp_par.F 1754 2018-03-21 03:22:15Z arango $
+!svn $Id: inp_par.F 1766 2018-07-14 00:05:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -62,10 +62,12 @@
 !  directed to a file. This is advantageous in coupling applications to
 !  ROMS information separated from other models.
 !
-       stdout=20                      ! overwite Fortran default unit 6
+       stdout=66                     ! overwite Fortran default unit 6
 !
-       OPEN (stdout, FILE='log.roms', FORM='formatted',                 &
-     &       STATUS='replace')
+       IF (Master) THEN
+         OPEN (stdout, FILE='log.roms', FORM='formatted',               &
+     &         STATUS='replace')
+       END IF
 #endif
 !
 !  Set input units.
