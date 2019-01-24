@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE def_rst (ng)
 !
-!svn $Id: def_rst.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: def_rst.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -629,7 +629,7 @@
         Vinfo( 4)=TRIM(Rclock%calendar)
         Vinfo(14)=Vname(4,idtime)
         status=def_var(ng, iNLM, RST(ng)%ncid, RST(ng)%Vid(idtime),     &
-     &                 NF_TYPE, 1, (/recdim/), Aval, Vinfo, ncname,     &
+     &                 NF_TOUT, 1, (/recdim/), Aval, Vinfo, ncname,     &
      &                 SetParAccess = .TRUE.)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN

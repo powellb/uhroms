@@ -2,7 +2,7 @@
       SUBROUTINE inquiry (ng, model, job, Iout, Irec, Mrec, ifield,     &
      &                    ncid, Lmulti, nfiles, S)
 !
-!svn $Id: inquiry.F 1760 2018-06-21 03:25:58Z arango $
+!svn $Id: inquiry.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -71,8 +71,8 @@
       integer :: i, ifile, lstr, my_ncid, nvatt, nvdim
       integer :: Vsize(4)
 
-      real(r8) :: Clength, Tend, Tmax, Tmin, Tmono, Tscale, Tstr, Tval
-      real(r8) :: scale
+      real(dp) :: Clength, Tend, Tmax, Tmin, Tmono, Tscale, Tstr, Tval
+      real(dp) :: scale
 
       character (len=1  ), parameter :: blank = ' '
       character (len=3  ) :: label

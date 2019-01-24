@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE nf_fread3d_bry_mod
 !
-!svn $Id: nf_fread3d_bry.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: nf_fread3d_bry.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -68,7 +68,7 @@
       integer, intent(in) :: ng, model, ncid, ncvarid, tindex, gtype
       integer, intent(in) :: LBij, UBij, LBk, UBk, Nrec
 
-      real(r8), intent(in)  :: Ascl
+      real(dp), intent(in)  :: Ascl
       real(r8), intent(out) :: Amin
       real(r8), intent(out) :: Amax
 

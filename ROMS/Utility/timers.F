@@ -2,7 +2,7 @@
       RECURSIVE SUBROUTINE wclock_on (ng, model, region, line, routine)
 !
 
-!svn $Id: timers.F 1766 2018-07-14 00:05:51Z arango $
+!svn $Id: timers.F 1769 2018-09-06 18:27:01Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -118,7 +118,7 @@
      &                      ' (pid=',proc(0,MyModel,ng),') is active.'
 #endif
         END IF
- 10     FORMAT (a,i3,a,i8,a)
+ 10     FORMAT (a,i5,a,i8,a)
         thread_count=thread_count+1
         IF (thread_count.eq.NSUB) thread_count=0
 !$OMP END CRITICAL (START_WCLOCK)
@@ -263,7 +263,7 @@
           WRITE (stdout,10) ' Thread #', MyThread, ' CPU:',             &
      &                      Cend(region,MyModel,ng)
 #endif
- 10       FORMAT (a,i3,a,f12.3)
+ 10       FORMAT (a,i5,a,f12.3)
         END IF
 !
 !  Sum the elapsed time for each profile region by model.
@@ -306,7 +306,7 @@
             END DO
             IF (ng.eq.1) THEN
               WRITE (stdout,20) ' Total:', total_cpu
- 20           FORMAT (a,8x,f14.3)
+ 20           FORMAT (a,10x,f14.3)
             END IF
           END IF
 #ifdef PROFILE

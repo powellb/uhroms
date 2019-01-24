@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE def_quick (ng, ldef)
 !
-!svn $Id: def_quick.F 1753 2018-02-14 18:00:35Z arango $
+!svn $Id: def_quick.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -426,7 +426,7 @@
         Vinfo( 4)=TRIM(Rclock%calendar)
         Vinfo(14)=Vname(4,idtime)
         status=def_var(ng, iNLM, QCK(ng)%ncid, QCK(ng)%Vid(idtime),     &
-     &                 NF_TYPE, 1, (/recdim/), Aval, Vinfo, ncname,     &
+     &                 NF_TOUT, 1, (/recdim/), Aval, Vinfo, ncname,     &
      &                 SetParAccess = .TRUE.)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN

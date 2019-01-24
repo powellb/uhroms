@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE check_multifile (ng, model)
 !
-!svn $Id: check_multifile.F 1760 2018-06-21 03:25:58Z arango $
+!svn $Id: check_multifile.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -40,7 +40,7 @@
 
       integer :: Fcount, Nfiles, i, ifile, lstr
 
-      real(r8) :: Tfinal, Tmax, Tmin, Tscale
+      real(dp) :: Tfinal, Tmax, Tmin, Tscale
 
       character (len=1), parameter :: blank = ' '
       character (len= 22) :: F_code, I_code, Tmin_code, Tmax_code
@@ -558,7 +558,7 @@
 
       character (*), intent(in) :: ncname
 
-      real(r8), intent(out) :: Tmin, Tmax, Tscale
+      real(dp), intent(out) :: Tmin, Tmax, Tscale
 !
 !  Local variable declarations.
 !

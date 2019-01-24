@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE ntimesteps (model, RunInterval, nl, Nsteps, Rsteps)
 !
-!svn $Id: ntimestep.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: ntimestep.F 1774 2018-10-16 03:49:52Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -44,7 +44,7 @@
       integer, intent(inout) :: nl
       integer, intent(out)   :: Nsteps, Rsteps
 !
-      real(r8), intent(in)   :: RunInterval
+      real(dp), intent(in)   :: RunInterval
 !
 !  Local variable declarations.
 !

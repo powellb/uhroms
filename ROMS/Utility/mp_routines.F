@@ -1,6 +1,6 @@
 #include "cppdefs.h"
 !
-!svn $Id: mp_routines.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: mp_routines.F 1767 2018-08-21 22:25:26Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -40,6 +40,7 @@
       CALL flush_ (unit)
 #else
       CALL flush (unit)
+!!    FLUSH (unit)                     ! Fortran 2003 standard
 #endif
 
       RETURN

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE u2dbc_mod
 !
-!svn $Id: u2dbc_im.F 1757 2018-05-17 22:40:24Z arango $
+!svn $Id: u2dbc_im.F 1773 2018-10-09 17:07:57Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -438,7 +438,9 @@
 # ifdef MASKING
                 bry_val=bry_val*GRID(ng)%umask(Istr,j)
 # endif
-                BRY_CONTACT(ieast,cr)%Mflux(j)=cff*bry_val
+# ifdef NESTING_DEBUG
+                BRY_CONTACT(iwest,cr)%Mflux(j)=cff*bry_val
+# endif
                 ubar(Istr,j,kout)=bry_val
               END DO
             END IF
@@ -766,7 +768,9 @@
 # ifdef MASKING
                 bry_val=bry_val*GRID(ng)%umask(Iend+1,j)
 # endif
+# ifdef NESTING_DEBUG
                 BRY_CONTACT(ieast,cr)%Mflux(j)=cff*bry_val
+# endif
                 ubar(Iend+1,j,kout)=bry_val
               END DO
             END IF

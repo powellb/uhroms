@@ -25,7 +25,7 @@
 
 #ifdef PROPAGATOR
 !
-!svn $Id: packing.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: packing.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -2319,8 +2319,9 @@
 
       real(r8), parameter :: Aspv = 0.0_r8
 
-      real(r8) :: Fmin, Fmax, scale
+      real(dp) :: scale
 
+      real(r8) :: Fmin, Fmax
       real(r8) :: cff, cff1, afac, scalev
 
 #  include "set_bounds.h"
@@ -2544,7 +2545,7 @@
 !  Loop over the number of number of ADJ netcdf file records.
 !
       Iinp=1
-      scale=1.0_r8
+      scale=1.0_dp
       ntTL=(IntTrap-1)*nADJ(ng)+1
       Fcount=ADM(ng)%Fcount
       Nrec=ADM(ng)%Nrec(Fcount)

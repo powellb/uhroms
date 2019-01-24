@@ -2,7 +2,7 @@
 #ifndef ANA_GRID
       SUBROUTINE get_grid (ng, model)
 !
-!svn $Id: get_grid.F 1757 2018-05-17 22:40:24Z arango $
+!svn $Id: get_grid.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -55,7 +55,7 @@
 # endif
       integer :: Vsize(4)
 
-      real(r8), parameter :: Fscl = 1.0_r8
+      real(dp), parameter :: Fscl = 1.0_dp
 
       real(r8) :: Fmax, Fmin
 
@@ -322,7 +322,7 @@
      &                        var_name(i), var_id(i),                   &
      &                        0, gtype, Vsize,                          &
      &                        LBi, UBi, LBj, UBj,                       &
-     &                        Fscl, hmin(ng), hmax(ng),                 &
+     &                        Fscl, Fmin, Fmax,                         &
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
@@ -333,6 +333,13 @@
               ioerror=status
               EXIT
             ELSE
+# ifdef SINGLE_PRECISION
+              Hmin(ng)=REAL(Fmin,dp)
+              Hmax(ng)=REAL(Fmax,dp)
+# else
+              Hmin(ng)=Fmin
+              Hmax(ng)=Fmax
+# endif
               IF (Master) THEN
                 WRITE (stdout,30) 'bathymetry at RHO-points: h',        &
      &                            ng, TRIM(ncname), hmin(ng), hmax(ng)

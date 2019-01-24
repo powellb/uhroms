@@ -1,7 +1,7 @@
 /*
 ** Include file "globaldef.h"
 **
-** svn $Id: globaldefs.h 1756 2018-03-29 04:10:02Z arango $
+** svn $Id: globaldefs.h 1774 2018-10-16 03:49:52Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2018 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
 **   Licensed under a MIT/X style license                                    **
@@ -83,11 +83,20 @@
 #define RHO_SURF
 
 /*
-** Turn ON/OFF double precision for real type variables and
-** associated intrinsic functions.
+** Turn ON/OFF double precision arithmetic in numerical kernel (default)
+** and floating-point type variables and associated intrinsic functions.
 */
 
-#define DOUBLE_PRECISION
+#ifdef SINGLE_PRECISION
+# ifdef OUT_DOUBLE
+#   undef OUT_DOUBLE
+# endif
+# ifndef RST_SINGLE
+#   define RST_SINGLE
+# endif
+#else
+# define DOUBLE_PRECISION
+#endif
 
 /*
 ** Turn ON masking when wetting and drying is activated.

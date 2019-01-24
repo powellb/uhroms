@@ -2,7 +2,7 @@
 #if defined TL_IOMS && !defined SOLVE3D
       SUBROUTINE rp_main2d (RunInterval)
 !
-!svn $Id: rp_main2d.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: rp_main2d.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -68,7 +68,7 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: RunInterval
+      real(dp), intent(in) :: RunInterval
 !
 !  Local variable declarations.
 !

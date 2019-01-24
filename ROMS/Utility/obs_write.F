@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_write (ng, tile, model)
 !
-!svn $Id: obs_write.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: obs_write.F 1778 2018-11-30 23:15:40Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -502,10 +502,23 @@
 !  Radial Velocity. The observations are in terms of radial speed and
 !  angle (stored in obs_meta).  The observation angle converts the
 !  velocity components to geographical EAST and North components.
+#  ifdef RADIAL_ANGLE_CCW_EAST  
+!  The radial velocity observations are processed as magnitude and
+!  heading angle (obs_meta; radians) in the math convention: an
+!  azimuth that is counterclockwise from TRUE East. 
 !
 !  In curvilinear coordinates, the radial forward problem is:
 !
 !     radial = u * COS(obs_meta - angler) + v * SIN(obs_meta - angler)
+#  else
+!  By default, the radial velocity observations are processed as
+!  magnitude and heading angle (obs_meta; radians) in the navigation
+!  convention: an azimuth that is clockwise from TRUE North.
+!
+!  In curvilinear coordinates, the radial forward problem is:
+!
+!     radial = u * SIN(obs_meta + angler) + v * COS(obs_meta + angler)
+#  endif
 !-----------------------------------------------------------------------
 !
 #  ifndef IS4DVAR_SENSITIVITY
@@ -627,13 +640,24 @@
 !
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
-#   ifdef CURVGRID
+#   ifdef RADIAL_ANGLE_CCW_EAST  
+#    ifdef CURVGRID
               angle=ObsMeta(iobs)-ObsAngler(iobs)
               NLmodVal(iobs)=uradial(iobs)*COS(angle)+                  &
      &                       vradial(iobs)*SIN(angle)         
-#   else
+#    else
               NLmodVal(iobs)=uradial(iobs)*COS(ObsMeta(iobs))+          &
      &                       vradial(iobs)*SIN(ObsMeta(iobs))         
+#    endif
+#   else
+#    ifdef CURVGRID
+              angle=ObsMeta(iobs)+ObsAngler(iobs)
+              NLmodVal(iobs)=uradial(iobs)*SIN(angle)+                  &
+     &                       vradial(iobs)*COS(angle)         
+#    else
+              NLmodVal(iobs)=uradial(iobs)*SIN(ObsMeta(iobs))+          &
+     &                       vradial(iobs)*COS(ObsMeta(iobs))         
+#    endif
 #   endif
 #   ifdef BGQC
               BgErr(iobs)=MAX(uBgErr(iobs), vBgErr(iobs))
@@ -730,13 +754,24 @@
 !
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
-#   ifdef CURVGRID
+#   ifdef RADIAL_ANGLE_CCW_EAST  
+#    ifdef CURVGRID
               angle=ObsMeta(iobs)-ObsAngler(iobs)
               TLmodVal(iobs)=uradial(iobs)*COS(angle)+                  &
-     &                       vradial(iobs)*SIN(angle)         
-#   else
+     &                       vradial(iobs)*SIN(angle)
+#    else
               TLmodVal(iobs)=uradial(iobs)*COS(ObsMeta(iobs))+          &
-     &                       vradial(iobs)*SIN(ObsMeta(iobs))         
+     &                       vradial(iobs)*SIN(ObsMeta(iobs))
+#    endif
+#   else
+#    ifdef CURVGRID
+              angle=ObsMeta(iobs)+ObsAngler(iobs)
+              TLmodVal(iobs)=uradial(iobs)*SIN(angle)+                  &
+     &                       vradial(iobs)*COS(angle)
+#    else
+              TLmodVal(iobs)=uradial(iobs)*SIN(ObsMeta(iobs))+          &
+     &                       vradial(iobs)*COS(ObsMeta(iobs))
+#    endif
 #   endif
             END IF
           END DO

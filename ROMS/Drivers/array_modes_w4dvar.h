@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: array_modes_w4dvar.h 1766 2018-07-14 00:05:51Z arango $
+!svn $Id: array_modes_w4dvar.h 1774 2018-10-16 03:49:52Z arango $
 !=================================================== Andrew M. Moore ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
@@ -110,7 +110,7 @@
 #ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-!  Set distribute-memory (MPI) world communicator.
+!  Set distribute-memory (mpi) world communicator.
 !-----------------------------------------------------------------------
 !
       IF (PRESENT(mpiCOMM)) THEN
@@ -368,7 +368,7 @@
 !
 !  Imported variable declarations
 !
-      real(r8), intent(in) :: RunInterval            ! seconds
+      real(dp), intent(in) :: RunInterval            ! seconds
 !
 !  Local variable declarations.
 !
@@ -1907,7 +1907,8 @@
       END DO
 !
 !-----------------------------------------------------------------------
-!  Stop model and time profiling clocks.  Close output NetCDF files.
+!  Stop model and time profiling clocks, report memory requirements, and
+!  close output NetCDF files.
 !-----------------------------------------------------------------------
 !
 !  Stop time clocks.
@@ -1916,7 +1917,7 @@
         WRITE (stdout,20)
  20     FORMAT (/,'Elapsed CPU time (seconds):',/)
       END IF
-
+!
       DO ng=1,Ngrids
 !$OMP PARALLEL
         DO thread=THREAD_RANGE
@@ -1924,6 +1925,12 @@
         END DO
 !$OMP END PARALLEL
       END DO
+!
+!  Report dynamic memory and automatic memory requirements.
+!
+!$OMP PARALLEL
+      CALL memory
+!$OMP END PARALLEL
 !
 !  Close IO files.
 !

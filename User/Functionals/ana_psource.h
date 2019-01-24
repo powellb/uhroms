@@ -1,6 +1,6 @@
       SUBROUTINE ana_psource (ng, tile, model)
 !
-!! svn $Id: ana_psource.h 1748 2018-02-10 03:25:17Z arango $
+!! svn $Id: ana_psource.h 1779 2019-01-23 23:25:40Z arango $
 !!======================================================================
 !! Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -136,7 +136,7 @@
 !!           applications.  See examples for how to do this in
 !!           source file:  "ROMS/Functionals/ana_psource.h".
 !!
-      IF (iic(ng).eq.ntstart(ng)) THEN
+      IF ((iic(ng).eq.ntstart(ng)).or.(iic(ng).eq.0)) THEN
 !
 !  Set-up point Sources/Sink number (Nsrc), direction (Dsrc), I- and
 !  J-grid locations (Isrc,Jsrc). Currently, the direction can be along

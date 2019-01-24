@@ -2,7 +2,7 @@
       MODULE bulk_flux_mod
 #ifdef BULK_FLUXES
 !
-!svn $Id: bulk_flux.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: bulk_flux.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -993,7 +993,8 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: ZoL, pi
+      real(dp), intent(in) :: pi
+      real(r8), intent(in) :: ZoL
 !
 !  Local variable declarations.
 !
@@ -1057,7 +1058,8 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: ZoL, pi
+      real(dp), intent(in) :: pi
+      real(r8), intent(in) :: ZoL
 !
 !  Local variable declarations.
 !

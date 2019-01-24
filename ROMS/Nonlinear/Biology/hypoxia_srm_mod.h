@@ -1,5 +1,5 @@
 !
-!svn $Id: hypoxia_srm_mod.h 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: hypoxia_srm_mod.h 1769 2018-09-06 18:27:01Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -74,16 +74,19 @@
 !
       IF (.not.allocated(BioIter)) THEN
         allocate ( BioIter(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
       END IF
 
       IF (.not.allocated(ResRate)) THEN
         allocate ( ResRate(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
       END IF
 !
 !  Allocate biological tracer vector.
 !
       IF (.not.allocated(idbio)) THEN
         allocate ( idbio(NBT) )
+        Dmem(1)=Dmem(1)+REAL(NBT,r8)
       END IF
 
 #if defined DIAGNOSTICS && defined DIAGNOSTICS_BIO
@@ -92,6 +95,7 @@
 !
       IF (.not.allocated(iDbio2)) THEN
         allocate ( iDbio2(NDbio2d) )
+        Dmem(1)=Dmem(1)+REAL(NDbio2d,r8)
       END IF
 #endif
 !

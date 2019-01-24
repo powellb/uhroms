@@ -2,7 +2,7 @@
 #ifdef STATIONS
       SUBROUTINE read_StaPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_stapar.F 1762 2018-06-23 22:05:41Z arango $
+!svn $Id: read_stapar.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -22,6 +22,8 @@
 # endif
       USE mod_scalars
 !
+      USE inp_decode_mod
+!
       implicit none
 !
 !  Imported variable declarations
@@ -34,8 +36,6 @@
       integer :: Mstation, Npts, Nval
       integer :: flag, i, igrid, ista, itrc, ng, status
 
-      integer :: decode_line, load_i, load_l, load_r
-
       real(r8) :: Xpos, Ypos
 
       logical, dimension(Ngrids) :: Lswitch
@@ -43,11 +43,11 @@
 
       integer, dimension(Ngrids) :: is
 
-      real(r8), dimension(100) :: Rval
+      real(dp), dimension(nRval) :: Rval
 
       character (len=40 ) :: KeyWord
       character (len=256) :: line
-      character (len=256), dimension(200) :: Cval
+      character (len=256), dimension(nCval) :: Cval
 !
 !-----------------------------------------------------------------------
 !  Read in stations parameters.
@@ -99,7 +99,7 @@
               Sout(idBath,1:Ngrids)=Lswitch(1:Ngrids)
 # endif
             CASE ('Sout(idTvar)')
-              Npts=load_l(Nval, Cval, MT*Ngrids, Ltracer)
+              Npts=load_l(Nval, Cval, MT, Ngrids, Ltracer)
               DO ng=1,Ngrids
                 DO itrc=1,NT(ng)
                   Sout(idTvar(itrc),ng)=Ltracer(itrc,ng)
@@ -239,7 +239,7 @@
               Sout(idVair,1:Ngrids)=Lswitch(1:Ngrids)
 #  endif
             CASE ('Sout(idTsur)')
-              Npts=load_l(Nval, Cval, NAT*Ngrids, Ltracer)
+              Npts=load_l(Nval, Cval, NAT, Ngrids, Ltracer)
               DO ng=1,Ngrids
                 DO itrc=1,NAT
                   Sout(idTsur(itrc),ng)=Ltracer(itrc,ng)
@@ -410,6 +410,7 @@
                   allocate ( SCALARS(ng) % Sflag(Nstation(ng)) )
                   allocate ( SCALARS(ng) % SposX(Nstation(ng)) )
                   allocate ( SCALARS(ng) % SposY(Nstation(ng)) )
+                  Dmem(ng)=Dmem(ng)+3.0_r8*REAL(Nstation(ng),r8)
                 END IF
               END DO
               is(1:Ngrids)=0

@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined VERIFICATION
       SUBROUTINE def_mod (ng)
 !
-!svn $Id: def_mod.F 1765 2018-07-07 20:57:22Z arango $
+!svn $Id: def_mod.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1093,7 +1093,7 @@
             END IF
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOday),   &
-     &                   NF_FRST, 1, (/surveyDim/), Aval, Vinfo, ncname)
+     &                   NF_TOUT, 1, (/surveyDim/), Aval, Vinfo, ncname)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN
         END IF
@@ -1209,7 +1209,7 @@
             END IF
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsT),   &
-     &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
+     &                   NF_TOUT, 1, (/datumDim/), Aval, Vinfo, ncname)
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN
         END IF

@@ -8,7 +8,7 @@
 # endif
      &                      Fout)
 !
-!svn $Id: get_3dfld.F 1760 2018-06-21 03:25:58Z arango $
+!svn $Id: get_3dfld.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -82,9 +82,11 @@
       integer :: i, job, lend, lstr, lvar, status
       integer :: Vsize(4)
 
-      real(r8) :: Clength, Fmax, Fmin, Tdelta, Tend
-      real(r8) :: Tmax, Tmin, Tmono, Tscale, Tstr
-      real(r8) :: Fval, Tsec, Tval
+      real(r8) :: Fmax, Fmin, Fval
+
+      real(dp) :: Clength,  Tdelta, Tend
+      real(dp) :: Tmax, Tmin, Tmono, Tscale, Tstr
+      real(dp) :: Tsec, Tval
 
       character (len=22)  :: t_code
 !

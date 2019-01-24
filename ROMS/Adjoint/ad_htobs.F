@@ -2,7 +2,7 @@
       MODULE ad_htobs_mod
 #if defined ADJOINT && defined OBSERVATIONS && defined WEAK_CONSTRAINT
 !
-!svn $Id: ad_htobs.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: ad_htobs.F 1778 2018-11-30 23:15:40Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -383,15 +383,33 @@
 !  Radial Velocity.  The observations are in terms of radial speed and
 !  angle (stored in obs_meta).  The observation angle converts the
 !  velocity components to geographical EAST and North components.
+#  ifdef RADIAL_ANGLE_CCW_EAST  
+!  The radial velocity observations are processed as magnitude and
+!  heading angle (obs_meta; radians) in the math convention: an
+!  azimuth that is counterclockwise from TRUE East. 
 !
 !  In curvilinear coordinates, the radial forward problem is:
 !
 !     radial = u * COS(obs_meta - angler) + v * SIN(obs_meta - angler)
-! 
+!
 !  In the adjoint, u and v are given by:
 !
 !        f_v = f_v + ADmodVal * SIN(obs_meta - angler)
 !        f_u = f_u + ADmodVal * COS(obs_meta - angler)
+#  else
+!  By default, the radial velocity observations are processed as
+!  magnitude and heading angle (obs_meta; radians) in the navigation
+!  convention: an azimuth that is clockwise from TRUE North.
+!
+!  In curvilinear coordinates, the radial forward problem is:
+!
+!     radial = u * SIN(obs_meta + angler) + v * COS(obs_meta + angler)
+!
+!  In the adjoint, u and v are given by:
+!
+!        f_v = f_v + ADmodVal * COS(obs_meta + angler)
+!        f_u = f_u + ADmodVal * SIN(obs_meta + angler)
+#  endif
 !
         IF (FOURDVAR(ng)%ObsCount(isRadial).gt.0) THEN
           DO iobs=Mstr,Mend
@@ -400,17 +418,32 @@
           END DO
           DO iobs=Mstr,Mend
             IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
-#  ifdef CURVGRID
+#  ifdef RADIAL_ANGLE_CCW_EAST  
+#   ifdef CURVGRID
               angle=ObsMeta(iobs)-ObsAngler(iobs)
               ad_uradial(iobs)=ad_uradial(iobs)+                        &
      &                         ADmodVal(iobs)*COS(angle)
               ad_vradial(iobs)=ad_vradial(iobs)+                        &
      &                         ADmodVal(iobs)*SIN(angle)
-#  else
+#   else
               ad_uradial(iobs)=ad_uradial(iobs)+                        &
      &                         ADmodVal(iobs)*COS(ObsMeta(iobs))
               ad_vradial(iobs)=ad_vradial(iobs)+                        &
      &                         ADmodVal(iobs)*SIN(ObsMeta(iobs))
+#   endif
+#  else
+#   ifdef CURVGRID
+              angle=ObsMeta(iobs)+ObsAngler(iobs)
+              ad_uradial(iobs)=ad_uradial(iobs)+                        &
+     &                         ADmodVal(iobs)*SIN(angle)
+              ad_vradial(iobs)=ad_vradial(iobs)+                        &
+     &                         ADmodVal(iobs)*COS(angle)
+#   else
+              ad_uradial(iobs)=ad_uradial(iobs)+                        &
+     &                         ADmodVal(iobs)*SIN(ObsMeta(iobs))
+              ad_vradial(iobs)=ad_vradial(iobs)+                        &
+     &                         ADmodVal(iobs)*COS(ObsMeta(iobs))
+#   endif
 #  endif
               ADmodVal(iobs)=0.0_r8
             END IF

@@ -2,7 +2,7 @@
 #if defined PROPAGATOR && defined CHECKPOINTING
       SUBROUTINE def_gst (ng, model)
 !
-!svn $Id: def_gst.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: def_gst.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -271,7 +271,7 @@
 !
         Vinfo( 1)='Ritz_tol'
         Vinfo( 2)='relative accuracy of computed Ritz values'
-        status=def_var(ng, model, GST(ng)%ncid, varid, NF_FRST,         &
+        status=def_var(ng, model, GST(ng)%ncid, varid, NF_TOUT,         &
      &                 1, (/0/), Aval, Vinfo, ncname,                   &
      &                 SetParAccess = .FALSE.)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &

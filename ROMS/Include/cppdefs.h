@@ -1,7 +1,7 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 1757 2018-05-17 22:40:24Z arango $
+** svn $Id: cppdefs.h 1774 2018-10-16 03:49:52Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -198,6 +198,7 @@
 ** DIAGNOSTICS_UV      use if writing out momentum diagnostics               **
 ** DIAGNOSTICS_TS      use if writing out tracer diagnostics                 **
 ** ICESHELF            use if including ice shelf cavities                   **
+** SINGLE_PRECISION    use if single precision arithmetic numerical kernel   **
 ** SPHERICAL           use if analytical spherical grid                      **
 ** STATIONS            use if writing out station data                       **
 ** STATIONS_CGRID      use if extracting data at native C-grid               **
@@ -524,6 +525,7 @@
 ** OPTIONS for grid nesting:                                                 **
 **                                                                           **
 ** NESTING             use to activate grid nesting: composite/refinement    **
+** NESTING_DEBUG       use to check mass fluxes conservation in refinement   **
 ** NO_CORRECT_TRACER   use to avoid two-way correction of boundary tracer    **
 ** ONE_WAY             use if one-way nesting in refinement grids            **
 ** TIME_INTERP_FLUX    time interpolate coarse mass flux instead of persist  **

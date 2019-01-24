@@ -2,7 +2,7 @@
 
       MODULE v2dbc_mod
 !
-!svn $Id: v2dbc_im.F 1757 2018-05-17 22:40:24Z arango $
+!svn $Id: v2dbc_im.F 1773 2018-10-09 17:07:57Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -440,7 +440,9 @@
 # ifdef MASKING
                 bry_val=bry_val*GRID(ng)%vmask(i,Jstr)
 # endif
+# ifdef NESTING_DEBUG
                 BRY_CONTACT(isouth,cr)%Mflux(i)=cff*bry_val
+# endif
                 vbar(i,Jstr,kout)=bry_val
               END DO
             END IF
@@ -769,7 +771,9 @@
 # ifdef MASKING
                 bry_val=bry_val*GRID(ng)%vmask(i,Jend+1)
 # endif
+# ifdef NESTING_DEBUG
                 BRY_CONTACT(inorth,cr)%Mflux(i)=cff*bry_val
+# endif
                 vbar(i,Jend+1,kout)=bry_val
               END DO
             END IF

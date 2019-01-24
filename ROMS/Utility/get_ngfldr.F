@@ -5,7 +5,7 @@
      &                       Istr, Iend, Jrec,                          &
      &                       Fout)
 !
-!svn $Id: get_ngfldr.F 1760 2018-06-21 03:25:58Z arango $
+!svn $Id: get_ngfldr.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -75,9 +75,11 @@
       integer :: Nrec, Tid, Tindex, Trec, Vid, Vtype
       integer :: i, ic, j, job, lend, lstr, npts, status
 
-      real(r8) :: Aval, Clength, Fmax, Fmin, Tdelta, Tend
-      real(r8) :: Tmax, Tmin, Tmono, Tscale, Tstr
-      real(r8) :: Tsec, Tval
+      real(r8) :: Aval, Fmax, Fmin
+
+      real(dp) :: Clength, Tdelta, Tend
+      real(dp) :: Tmax, Tmin, Tmono, Tscale, Tstr
+      real(dp) :: Tsec, Tval
 
       real(r8), dimension((UBi-LBi+1)*UBj) :: A
 

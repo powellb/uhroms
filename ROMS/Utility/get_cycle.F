@@ -4,7 +4,7 @@
      &                      Tid, Lcycle, clength, Tindex,               &
      &                      Tstr, Tend, Tmin, Tmax, Tscale)
 !
-!svn $Id: get_cycle.F 1760 2018-06-21 03:25:58Z arango $
+!svn $Id: get_cycle.F 1774 2018-10-16 03:49:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -80,9 +80,9 @@
 
       integer, intent(out) :: Tindex, Tid
 
-      real(r8), intent(in) :: smday
+      real(dp), intent(in) :: smday
 
-      real(r8), intent(out) :: Tmax, Tmin, Tend, Tscale, Tstr, clength
+      real(dp), intent(out) :: Tmax, Tmin, Tend, Tscale, Tstr, clength
 
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: TvarName
@@ -94,8 +94,8 @@
 
       integer :: i, nvatt, nvdim
 
-      real(r8) :: mday, tstart
-      real(r8) :: Tval(ntime)
+      real(dp) :: mday, tstart
+      real(dp) :: Tval(ntime)
 
       character (len=40) :: tunits
 !
