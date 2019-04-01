@@ -1,7 +1,7 @@
 /*
-** svn $Id: double_gyre.h 1748 2018-02-10 03:25:17Z arango $
+** svn $Id: double_gyre.h 1782 2019-01-28 06:05:46Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for 4DVar Data Assimilation Toy.
 **
 ** Application flag:   DOUBLE_GYRE
-** Input script:       ocean_double_gyre.in
+** Input script:       roms_double_gyre.in
 **
 **
 ** Available Driver options:  choose only one and activate it in the

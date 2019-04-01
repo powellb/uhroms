@@ -1,9 +1,9 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 1774 2018-10-16 03:49:52Z arango $
+** svn $Id: cppdefs.h 1793 2019-02-28 03:24:30Z arango $
 ********************************************************** Hernan G. Arango ***
-** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -145,6 +145,7 @@
 ** WJ_GRADP            use if weighted density Jacobian (Song,1998)          **
 **                                                                           **
 ** ATM_PRESS           use to impose atmospheric pressure onto sea surface   **
+** PRESS_COMPENSATE    use to compensate for boundary without ATM pressure   **
 **                                                                           **
 ** OPTIONS for surface fluxes formulation using atmospheric boundary layer   **
 ** (Fairall et al, 1996):                                                    **
@@ -542,6 +543,7 @@
 ** CICE_COUPLING       use if coupling to CICE sea ice model                 **
 ** COAMPS_COUPLING     use if coupling to COAMPS atmospheric model           **
 ** DATA_COUPLING       use if coupling to DATA model                         **
+** EXCLUDE_SPONGE      use if excluding sponge point in export fields        **
 ** FRC_COUPLING        use if forcing from Atmopheric or Data model          **
 ** REFDIF_COUPLING     use if coupling to REFDIT wave model                  **
 ** REGCM_COUPLING      use if coupling to RegCM atmospheric model            **
@@ -549,6 +551,7 @@
 ** TIME_INTERP         use if importing snapshots for time interpolation     **
 ** WAM_COUPLING        use if coupling to WAM wave model                     **
 ** WRF_COUPLING        use if coupling to WRF atmospheric model              **
+** WRF_TIMEAVG         use if time-averaged fields over coupling interval    **
 **                                                                           **
 ** Nearshore and shallow water model OPTIONS:                                **
 **                                                                           **

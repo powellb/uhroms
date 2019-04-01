@@ -5,9 +5,9 @@
    (defined RP_AVERAGES && defined TL_IOMS) || \
    (defined TL_AVERAGES && defined TANGENT)
 !
-!svn $Id: mod_average.F 1769 2018-09-06 18:27:01Z arango $
+!svn $Id: mod_average.F 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

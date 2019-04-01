@@ -2,9 +2,9 @@
 #ifdef STATIONS
       SUBROUTINE read_StaPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_stapar.F 1774 2018-10-16 03:49:52Z arango $
+!svn $Id: read_stapar.F 1790 2019-02-13 03:42:29Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -239,7 +239,7 @@
               Sout(idVair,1:Ngrids)=Lswitch(1:Ngrids)
 #  endif
             CASE ('Sout(idTsur)')
-              Npts=load_l(Nval, Cval, NAT, Ngrids, Ltracer)
+              Npts=load_l(Nval, Cval, MT, Ngrids, Ltracer)
               DO ng=1,Ngrids
                 DO itrc=1,NAT
                   Sout(idTsur(itrc),ng)=Ltracer(itrc,ng)

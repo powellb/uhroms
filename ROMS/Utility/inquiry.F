@@ -2,9 +2,9 @@
       SUBROUTINE inquiry (ng, model, job, Iout, Irec, Mrec, ifield,     &
      &                    ncid, Lmulti, nfiles, S)
 !
-!svn $Id: inquiry.F 1774 2018-10-16 03:49:52Z arango $
+!svn $Id: inquiry.F 1790 2019-02-13 03:42:29Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -48,7 +48,7 @@
       USE mod_netcdf
       USE mod_scalars
 !
-      USE strings_mod, ONLY : FoundError
+      USE strings_mod, ONLY : FoundError, lowercase
 !
       implicit none
 !
@@ -285,7 +285,7 @@
 !
           IF (got_time.and.(Nrec.eq.0)) THEN
             DO i=1,n_vdim
-              IF (INDEX(TRIM(var_Dname(i)),'time').ne.0) THEN
+              IF (INDEX(TRIM(lowercase(var_Dname(i))),'time').ne.0) THEN
                 Nrec=var_Dsize(i)
               END IF
             END DO

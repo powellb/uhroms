@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE checkdefs
 !
-!svn $Id: checkdefs.F 1778 2018-11-30 23:15:40Z arango $
+!svn $Id: checkdefs.F 1793 2019-02-28 03:24:30Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -729,7 +729,7 @@
 #endif
 #ifdef DATA_COUPLING
 !
-      IF (Master) WRITE (stdout,20) 'DATA_COUPLING',                     &
+      IF (Master) WRITE (stdout,20) 'DATA_COUPLING',                    &
      &   'DATA model included in coupling'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' DATA_COUPLING,'
@@ -933,6 +933,14 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' EVOLVED_LCZ,'
 #endif
+# if defined EXCLUDE_SPONGE &&  defined MODEL_COUPLING && \
+    (defined DATA_COUPLING  && !defined ANA_SPONGE)
+!
+      IF (Master) WRITE (stdout,20) 'EXCLUDE_SPONGE',                   &
+     &   'Exclude sponge points in export fields during coupling'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' EXCLUDE_SPONGE,'
+#endif
 #ifdef FLOATS
 !
       IF (Master) WRITE (stdout,20) 'FLOATS',                           &
@@ -942,7 +950,7 @@
 #endif
 #if defined FLOAT_BIOLOGY && defined FLOATS
 !
-      IF (Master) WRITE (stdout,20) 'FLOAT_BIOLOGY',                   &
+      IF (Master) WRITE (stdout,20) 'FLOAT_BIOLOGY',                    &
      &   'Biological behavior on Lagrangian drifters'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' FLOAT_BIOLOGY,'
@@ -1712,6 +1720,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' PJ_GRADPQ4,'
 #endif
+# if defined PRESS_COMPENSATE && defined ATM_PRESS
+!
+      IF (Master) WRITE (stdout,20) 'PRESS_COMPENSATE',                 &
+     &   'Compensate for boundary data without ATM pressure effect'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' PRESS_COMPENSATE,'
+# endif
 #ifdef POSITIVE_ZERO
 !
       IF (Master) WRITE (stdout,20) 'POSITIVE_ZERO',                    &
@@ -2876,6 +2891,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+14)=' WRF_COUPLING,'
       iatms=iatms+1
+# ifdef WRF_TIMEAVG
+!
+      IF (Master) WRITE (stdout,20) 'WRF_TIMEAVG',                      &
+     &   'WRF Exports time-averaged fields over the coupling interval'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+13)=' WRF_TIMEAVG,'
+# endif
 #endif
 #if defined WTYPE_GRID && \
    (defined LMD_SKPP   || defined SOLAR_SOURCE) && \
@@ -3236,7 +3258,7 @@
 !
       IF (Master.and.(iatms.gt.1)) THEN
         WRITE (stdout,270)
- 270    FORMAT (/,' CHECKDEFS - only one atmosphere model coupling',   &
+ 270    FORMAT (/,' CHECKDEFS - only one atmosphere model coupling',    &
      &            ' is allowed.')
         exit_flag=5
       END IF

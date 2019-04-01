@@ -2,9 +2,9 @@
 #ifdef FOUR_DVAR
       SUBROUTINE def_ini (ng)
 !
-!svn $Id: def_ini.F 1755 2018-03-29 03:32:07Z arango $
+!svn $Id: def_ini.F 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

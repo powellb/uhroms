@@ -4,9 +4,9 @@
 
 #if (defined DIFF_3DCOEF || defined VISC_3DCOEF) && defined SOLVE3D
 !
-!svn $Id: hmixing.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: hmixing.F 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

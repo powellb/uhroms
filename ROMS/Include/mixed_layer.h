@@ -1,7 +1,7 @@
 /*
-** svn $Id: mixed_layer.h 1748 2018-02-10 03:25:17Z arango $
+** svn $Id: mixed_layer.h 1782 2019-01-28 06:05:46Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -10,7 +10,7 @@
 ** thermal stratification and wind stress.
 **
 ** Application flag:   MIXED_LAYER
-** Input script:       ocean_mixed_layer.in
+** Input script:       roms_mixed_layer.in
 */
 
 #define WRITE_GRID

@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_grid
 !
-!svn $Id: mod_grid.F 1769 2018-09-06 18:27:01Z arango $
+!svn $Id: mod_grid.F 1790 2019-02-13 03:42:29Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -46,6 +46,7 @@
 !  lonr       Longitude (degrees_east) at RHO-points.                  !
 !  lonu       Longitude (degrees_east) at U-points.                    !
 !  lonv       Longitude (degrees_east) at V-points.                    !
+!  MyLon      Longitude work array for regridding.                     !
 !  omm        RHO-grid area (meters2).                                 !
 !  om_p       PSI-grid spacing (meters) in the XI-direction.           !
 !  om_r       RHO-grid spacing (meters) in the XI-direction.           !
@@ -166,6 +167,7 @@
           real(r8), pointer :: lonr(:,:)
           real(r8), pointer :: lonu(:,:)
           real(r8), pointer :: lonv(:,:)
+          real(r8), pointer :: MyLon(:,:)
           real(r8), pointer :: omn(:,:)
           real(r8), pointer :: om_p(:,:)
           real(r8), pointer :: om_r(:,:)
@@ -393,6 +395,9 @@
       Dmem(ng)=Dmem(ng)+size2d
 
       allocate ( GRID(ng) % lonv(LBi:UBi,LBj:UBj))
+      Dmem(ng)=Dmem(ng)+size2d
+
+      allocate ( GRID(ng) % Mylon(LBi:UBi,LBj:UBj))
       Dmem(ng)=Dmem(ng)+size2d
 
       allocate ( GRID(ng) % omn(LBi:UBi,LBj:UBj) )
@@ -788,6 +793,7 @@
             GRID(ng) % lonr(i,j) = IniMetricVal
             GRID(ng) % lonu(i,j) = IniMetricVal
             GRID(ng) % lonv(i,j) = IniMetricVal
+            GRID(ng) % MyLon(i,j) = IniMetricVal
 
             GRID(ng) % omn(i,j) = IniVal
             GRID(ng) % om_p(i,j) = IniVal

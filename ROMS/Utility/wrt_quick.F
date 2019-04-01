@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_quick (ng, tile)
 !
-!svn $Id: wrt_quick.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: wrt_quick.F 1792 2019-02-22 18:28:13Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -1166,29 +1166,6 @@
       END IF
 #  ifdef EMINUSP
 !
-!  Write out E-P (m/s).
-!
-      IF (Qout(idEmPf,ng)) THEN
-        scale=1.0_r8
-        gtype=gfactor*r2dvar
-        status=nf_fwrite2d(ng, iNLM, QCK(ng)%ncid, QCK(ng)%Vid(idEmPf), &
-     &                     QCK(ng)%Rindex, gtype,                       &
-     &                     LBi, UBi, LBj, UBj, scale,                   &
-#   ifdef MASKING
-     &                     GRID(ng) % rmask,                            &
-#   endif
-     &                     FORCES(ng) % EminusP)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__)) THEN
-          IF (Master) THEN
-            WRITE (stdout,10) TRIM(Vname(1,idEmPf)), QCK(ng)%Rindex
-          END IF
-          exit_flag=3
-          ioerror=status
-          RETURN
-        END IF
-      END IF
-!
 !  Write out evaporation rate (kg/m2/s).
 !
       IF (Qout(idevap,ng)) THEN
@@ -1235,6 +1212,31 @@
         END IF
       END IF
 #  endif
+# endif
+# if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+!
+!  Write out E-P (m/s).
+!
+      IF (Qout(idEmPf,ng)) THEN
+        scale=1.0_r8
+        gtype=gfactor*r2dvar
+        status=nf_fwrite2d(ng, iNLM, QCK(ng)%ncid, QCK(ng)%Vid(idEmPf), &
+     &                     QCK(ng)%Rindex, gtype,                       &
+     &                     LBi, UBi, LBj, UBj, scale,                   &
+#  ifdef MASKING
+     &                     GRID(ng) % rmask,                            &
+#  endif
+     &                     FORCES(ng) % EminusP)
+        IF (FoundError(status, nf90_noerr, __LINE__,                    &
+     &                 __FILE__)) THEN
+          IF (Master) THEN
+            WRITE (stdout,10) TRIM(Vname(1,idEmPf)), QCK(ng)%Rindex
+          END IF
+          exit_flag=3
+          ioerror=status
+          RETURN
+        END IF
+      END IF
 # endif
 # ifdef SHORTWAVE
 !

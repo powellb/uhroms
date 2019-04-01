@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_phypar.F 1774 2018-10-16 03:49:52Z arango $
+!svn $Id: read_phypar.F 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -3203,7 +3203,7 @@
 !
 !  Check if nesting parameters "NestLayers", "GridsInLayer", and
 !  "GridNumber" have been assigned.  The code below is necessary
-!  for compatability with old "ocean.in" input scripts.
+!  for compatability with old "roms.in" input scripts.
 !
 #ifndef NESTING
       IF (.not.got_NestLayers) THEN
@@ -6120,7 +6120,7 @@
      &        /,15x,'Grid ',i2.2,':',f14.1,' (sec)',2x,f14.2,' (days)', &
      &        /,15x,'Grid ',i2.2,':',f14.1,' (sec)',2x,f14.2,' (days)', &
      &        /,15x,'Adjust standard input parameter NTIMES in ',       &
-     &              '''ocean.in''.'/)
+     &              '''roms.in''.'/)
 
       RETURN
       END SUBROUTINE read_PhyPar

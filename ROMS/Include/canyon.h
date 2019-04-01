@@ -1,7 +1,7 @@
 /*
-** svn $Id: canyon.h 1748 2018-02-10 03:25:17Z arango $
+** svn $Id: canyon.h 1782 2019-01-28 06:05:46Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for an Idealized Canyon.
 **
 ** Application flag:   CANYON
-** Input script:       ocean_canyon2d.in, ocean_canyon3d.in
+** Input script:       roms_canyon2d.in, roms_canyon3d.in
 */
 
 #ifndef SOLVE3D                   /* 2D set-up */

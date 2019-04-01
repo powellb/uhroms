@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_kinds
 !
-!svn $Id: mod_kinds.F 1779 2019-01-23 23:25:40Z arango $
+!svn $Id: mod_kinds.F 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

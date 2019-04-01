@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE analytical_mod
 !
-!svn $Id: analytical.F 1748 2018-02-10 03:25:17Z arango $
+!svn $Id: analytical.F 1791 2019-02-16 02:50:21Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -212,7 +212,7 @@
 #  include <ana_sponge.h>
 # endif
 
-# if (defined ANA_SRFLUX && defined SOLVE3D) || defined DIURNAL_SRFLUX
+# if (defined ANA_SRFLUX || defined DIURNAL_SRFLUX) && defined SOLVE3D
 #  include <ana_srflux.h>
 # endif
 

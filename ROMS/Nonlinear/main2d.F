@@ -2,9 +2,9 @@
 #if defined NONLINEAR && !defined SOLVE3D
       SUBROUTINE main2d (RunInterval)
 !
-!svn $Id: main2d.F 1774 2018-10-16 03:49:52Z arango $
+!svn $Id: main2d.F 1782 2019-01-28 06:05:46Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===

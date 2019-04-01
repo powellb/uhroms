@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: correlation.h 1774 2018-10-16 03:49:52Z arango $
+!svn $Id: correlation.h 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

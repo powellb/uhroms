@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 1779 2019-01-23 23:25:40Z arango $
+!svn $Id: mod_scalars.F 1784 2019-01-31 23:21:17Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2018 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -353,7 +353,7 @@
 !    Eradius       Earth equatorial radius (m).
 !    Infinity      Value resulting when dividing by zero.
 !    StefBo        Stefan-Boltzmann constant (W/m2/K4).
-!    emmiss        Infrared emmissivity.
+!    emmiss        Infrared emissivity.
 !    g             Acceleration due to gravity (m/s2).
 !    gorho0        gravity divided by mean density anomaly.
 !    rhow          fresh water density (kg/m3).

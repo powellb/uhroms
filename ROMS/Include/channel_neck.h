@@ -1,7 +1,7 @@
 /*
-** svn $Id: channel_neck.h 1748 2018-02-10 03:25:17Z arango $
+** svn $Id: channel_neck.h 1782 2019-01-28 06:05:46Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2018 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for Channel with a Constriction Test.
 **
 ** Application flag:   CHANNEL_NECK
-** Input script:       ocean_channel_neck1.in, ocean_channel_neck3.in
+** Input script:       roms_channel_neck1.in, roms_channel_neck3.in
 */
 
 #undef  AD_SENSITIVITY
