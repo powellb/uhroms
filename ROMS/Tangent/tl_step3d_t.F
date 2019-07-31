@@ -2,7 +2,7 @@
       MODULE tl_step3d_t_mod
 #if !defined TS_FIXED && (defined TANGENT && defined SOLVE3D)
 !
-!svn $Id: tl_step3d_t.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: tl_step3d_t.F 1799 2019-04-30 21:09:14Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -668,7 +668,7 @@
 !  Apply tracers point sources to the horizontal advection terms,
 !  if any.
 !
-          IF (LuvSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+          IF (LuvSrc(ng)) THEN
             DO is=1,Nsrc(ng)
               Isrc=SOURCES(ng)%Isrc(is)
               Jsrc=SOURCES(ng)%Jsrc(is)
@@ -1156,7 +1156,7 @@
 !
 !  Apply mass point sources (volume vertical influx), if any.
 !
-          IF (LwSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+          IF (LwSrc(ng)) THEN
             DO is=1,Nsrc(ng)
               Isrc=SOURCES(ng)%Isrc(is)
               Jsrc=SOURCES(ng)%Jsrc(is)

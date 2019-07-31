@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_mixing
 !
-!svn $Id: mod_mixing.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: mod_mixing.F 1801 2019-05-16 01:50:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -410,7 +410,7 @@
 !
 !  Set horizontal array size.
 !
-      size2d=REAL((UBi-LBi)*(UBj-LBj),r8)
+      size2d=REAL((UBi-LBi+1)*(UBj-LBj+1),r8)
 !
 !  Nonlinear model state.
 !

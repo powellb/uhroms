@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE checkdefs
 !
-!svn $Id: checkdefs.F 1793 2019-02-28 03:24:30Z arango $
+!svn $Id: checkdefs.F 1803 2019-07-09 02:44:53Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -596,6 +596,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+7)=' BNORM,'
 #endif
+#if defined BIO_OPTIC && defined ECOSIM
+!
+      IF (Master) WRITE (stdout,20) 'BIO_OPTIC',                        &
+     &   'Underwater light field calculations'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+11)=' BIO_OPTIC,'
+#endif
 #if defined BIO_SEDIMENT && \
    (defined BIO_FENNEL   || defined NEMURO || defined ECOSIM)
 !
@@ -1122,9 +1129,9 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' ICESHELF,'
 #endif
-#if defined IMPACT_INNER        && defined OBS_IMPACT          && \
-   (defined W4DVAR_SENSITIVITY  || defined W4DPSAS_SENSITIVITY || \
-    defined IS4DVAR_SENSITIVITY)
+#if defined IMPACT_INNER        && defined OBS_IMPACT              && \
+   (defined IS4DVAR_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY || \
+    defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY)
 !
       IF (Master) WRITE (stdout,20) 'IMPACT_INNER',                     &
      &   'Writing observations impacts for each inner loop'
@@ -2321,8 +2328,8 @@
 #endif
 #if defined TIME_INTERP && defined MODEL_COUPLING
 !
-      IF (Master) WRITE (stdout,20) 'TIME_INTERP',                  &
-     &   'Time interpolation from coupling snapshots arrays'
+      IF (Master) WRITE (stdout,20) 'TIME_INTERP',                      &
+     &   'Time interpolation from imported coupling snapshots data'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' TIME_INTERP,'
 #endif
@@ -2808,6 +2815,14 @@
      &   'Weak constraint 4D-PSAS data assimilation'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' W4DPSAS,'
+      idriver=idriver+1
+#endif
+#ifdef W4DPSAS_FCT_SENSITIVITY
+!
+      IF (Master) WRITE (stdout,20) 'W4DPSAS_FCT_SENSITIVITY',          &
+     &   'Weak constraint 4D-PSAS observation forecast sensitivity'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+25)=' W4DPSAS_FCT_SENSITIVITY,'
       idriver=idriver+1
 #endif
 #ifdef W4DPSAS_SENSITIVITY

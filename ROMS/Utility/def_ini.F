@@ -2,7 +2,7 @@
 #ifdef FOUR_DVAR
       SUBROUTINE def_ini (ng)
 !
-!svn $Id: def_ini.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: def_ini.F 1803 2019-07-09 02:44:53Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -51,7 +51,7 @@
 # if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
       integer :: frecdim
 # endif
-      integer :: DimIDs(32), Vsize(4)
+      integer :: DimIDs(nDimID)
 # ifdef ADJUST_BOUNDARY
       integer :: t2dobc(4)
 #  ifdef SOLVE3D
@@ -347,7 +347,7 @@
 !  in addition to initialization time.
 !-----------------------------------------------------------------------
 
-#  ifdef ADJUST_BOUNDARY
+#  if defined ADJUST_BOUNDARY && !defined W4DPSAS_FCT_SENSITIVITY
 !
 !  Define free-surface open boundaries.
 !

@@ -2,7 +2,7 @@
       MODULE tl_set_vbc_mod
 #ifdef TANGENT
 !
-!svn $Id: tl_set_vbc.F 1792 2019-02-22 18:28:13Z arango $
+!svn $Id: tl_set_vbc.F 1803 2019-07-09 02:44:53Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -315,14 +315,14 @@
 !  surface net heat flux (degC m/s).  During model coupling, we need
 !  to make sure that this forcing is unaltered during the coupling
 !  interval when ROMS timestep size is smaller. Notice that further
-!  manipulations to state variable stflx(:,:,itemp)are allowed below.
+!  manipulations to state variable stflx(:,:,itemp) are allowed below.
 !-----------------------------------------------------------------------
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
 !>        stflx(i,j,itemp)=snhflx(i,j)
 !>
-          tl_stflx(i,j,itemp)=0.0_r8
+!!        tl_stflx(i,j,itemp)=0.0_r8      ! not needed in TLM
         END DO
       END DO
 #  endif
@@ -396,7 +396,7 @@
           tl_EmP=0.0_r8
 #  else
           EmP=stflx(i,j,isalt)
-          tl_EmP=0.0_r8
+          tl_EmP=tl_stflx(i,j,isalt)
 #  endif
 #  if defined SCORRECTION
 !>        stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)-                 &

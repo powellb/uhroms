@@ -2,7 +2,7 @@
 #if defined NONLINEAR && defined SOLVE3D
       SUBROUTINE main3d (RunInterval)
 !
-!svn $Id: main3d.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: main3d.F 1806 2019-07-25 15:27:28Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -48,8 +48,8 @@
 # ifdef TLM_CHECK
       USE dotproduct_mod,       ONLY : nl_dotproduct
 # endif
-# if defined W4DPSAS || defined NLM_OUTER || \
-     defined W4DPSAS_SENSITIVITY
+# if defined NLM_OUTER           || defined W4DPSAS                 ||\
+     defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
       USE forcing_mod,          ONLY : forcing
 # endif
 # if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
@@ -217,8 +217,8 @@
             IF (FoundError(exit_flag, NoError, __LINE__,                &
      &                     __FILE__)) RETURN
 
-# if defined W4DPSAS || defined NLM_OUTER || \
-     defined W4DPSAS_SENSITIVITY
+# if defined NLM_OUTER           || defined W4DPSAS                 ||\
+     defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  If appropriate, add convolved adjoint solution impulse forcing to

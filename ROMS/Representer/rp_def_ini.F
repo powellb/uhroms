@@ -2,7 +2,7 @@
 #if defined TL_IOMS && defined FOUR_DVAR
       SUBROUTINE rp_def_ini (ng)
 !
-!svn $Id: rp_def_ini.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: rp_def_ini.F 1800 2019-05-09 03:06:49Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -51,7 +51,7 @@
 # if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
       integer :: frecdim
 # endif
-      integer :: DimIDs(32), Vsize(4)
+      integer :: DimIDs(nDimID)
 # ifdef ADJUST_BOUNDARY
       integer :: t2dobc(4)
 #  ifdef SOLVE3D

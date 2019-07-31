@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE get_state (ng, model, msg, ncname, IniRec, Tindex)
 !
-!svn $Id: get_state.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: get_state.F 1803 2019-07-09 02:44:53Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -5377,9 +5377,9 @@
       END IF FRC_STATE
 #endif
 
-#if (defined W4DPSAS || defined TL_W4DPSAS || \
-     defined W4DPSAS_SENSITIVITY)          && \
-    (defined ADJUST_BOUNDARY || defined ADJUST_WSTRESS ||\
+#if (defined TL_W4DPSAS      || defined W4DPSAS_FCT_SENSITIVITY || \
+     defined W4DPSAS         || defined W4DPSAS_SENSITIVITY)    && \
+    (defined ADJUST_BOUNDARY || defined ADJUST_WSTRESS          || \
      defined ADJUST_STFLUX)
 !
 !-----------------------------------------------------------------------

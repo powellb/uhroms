@@ -2,7 +2,7 @@
       MODULE ad_set_vbc_mod
 #ifdef ADJOINT
 !
-!svn $Id: ad_set_vbc.F 1792 2019-02-22 18:28:13Z arango $
+!svn $Id: ad_set_vbc.F 1806 2019-07-25 15:27:28Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -1124,8 +1124,9 @@
 !>
           ad_EmP=0.0_r8
 #   else
-!>        tl_EmP=0.0_r8
+!>        tl_EmP=tl_stflx(i,j,isalt)
 !>
+          ad_stflx(i,j,isalt)=ad_stflx(i,j,isalt)+ad_EmP
           ad_EmP=0.0_r8
 #   endif
         END DO
@@ -1161,7 +1162,7 @@
 !>
           ad_cff2=ad_cff2+                                              &
      &            (1.0_r8-cff3*0.5_r8*(1.0_r8-SIGN(1.0_r8,cff2)))*      &
-     &            ad_stfx(i,j,itemp)
+     &            ad_stflx(i,j,itemp)
           ad_stflx(i,j,itemp)=0.0_r8
 !>        tl_cff3=0.5_r8*SIGN(1.0_r8, cff1-t(i,j,N(ng),nrhs,itemp))*0.0
 !>        tl_cff3=0.0_r8
@@ -1209,9 +1210,9 @@
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-!>        tl_stflx(i,j,itemp)=0.0_r8
+!>        tl_stflx(i,j,itemp)=0.0_r8      ! not needed in TLM
 !>
-          ad_stflx(i,j,itemp)=0.0_r8
+!!        ad_stflx(i,j,itemp)=0.0_r8      ! not needed in ADM
         END DO
       END DO
 #  endif

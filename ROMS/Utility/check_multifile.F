@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE check_multifile (ng, model)
 !
-!svn $Id: check_multifile.F 1790 2019-02-13 03:42:29Z arango $
+!svn $Id: check_multifile.F 1799 2019-04-30 21:09:14Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -199,6 +199,8 @@
           END IF
         END IF
       END IF
+
+#ifndef ANA_PSOURCE
 !
 !-----------------------------------------------------------------------
 !  Input Source/Sink data (river runoff).
@@ -298,7 +300,7 @@
           END IF
         END IF
       END IF
-
+#endif
 #ifdef FRC_FILE
 !
 !-----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE memory
 !
-!svn $Id: memory.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: memory.F 1801 2019-05-16 01:50:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -78,7 +78,7 @@
 !
 !  Determine size floating-point arrays in bytes.  We could use the
 !  Fortran 2008 standard function STORAGE_SIZE.  However since ROMS
-!  ROMS by default is double-precision, we just set it value to 64 bits
+!  is double-precision by default, we just set its value to 64 bits
 !  or 8 bytes (1 byte = 8 bits).  The number of array elements is
 !  multiplied by the megabytes factor.
 !
@@ -119,8 +119,8 @@
           JminS=BOUNDS(ng)%Jstr(tile)-3
           JmaxS=BOUNDS(ng)%Jend(tile)+3
 #endif
-          size1d=REAL((ImaxS-IminS),r8)
-          size2d=REAL((ImaxS-IminS)*(JmaxS-JminS),r8)
+          size1d=REAL((ImaxS-IminS+1),r8)
+          size2d=REAL((ImaxS-IminS+1)*(JmaxS-JminS+1),r8)
 #ifdef SOLVE3D
           Asize(tile,ng)=megabytefac*                                   &
      &                   (4.0_r8*size1d*REAL(N(ng)+1,r8)+               &

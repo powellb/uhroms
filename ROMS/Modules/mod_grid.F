@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_grid
 !
-!svn $Id: mod_grid.F 1790 2019-02-13 03:42:29Z arango $
+!svn $Id: mod_grid.F 1801 2019-05-16 01:50:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -329,7 +329,7 @@
 !
 !  Set horizontal array size.
 !
-      size2d=REAL((UBi-LBi)*(UBj-LBj),r8)
+      size2d=REAL((UBi-LBi+1)*(UBj-LBj+1),r8)
 !
 !  Nonlinear model state.
 !

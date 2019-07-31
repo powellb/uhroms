@@ -1,4 +1,4 @@
-# svn $Id: makefile 1782 2019-01-28 06:05:46Z arango $
+# svn $Id: makefile 1804 2019-07-09 20:17:48Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
 # Copyright (c) 2002-2019 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
@@ -176,7 +176,7 @@ endif
 #  step (beggining and almost the end of ROMS library list).
 #--------------------------------------------------------------------------
 
-  libraries  := $(SCRATCH_DIR)/libUTIL.a
+   libraries := $(SCRATCH_DIR)/libNLM.a $(SCRATCH_DIR)/libUTIL.a
 
 #--------------------------------------------------------------------------
 #  Set Pattern rules.
@@ -322,7 +322,8 @@ OS := $(patsubst sn%,UNICOS-sn,$(OS))
 
 CPU := $(shell uname -m | sed 's/[\/ ]/-/g')
 
-SVNREV ?= $(shell svnversion -n .)
+SVNURL := $(shell svn info | grep '^URL:' | sed 's/URL: //')
+SVNREV := $(shell svn info | grep '^Revision:' | sed 's/Revision: //')
 
 ROOTDIR := $(shell pwd)
 
@@ -368,12 +369,8 @@ ifdef MY_ANALYTICAL
   CPPFLAGS += -D'MY_ANALYTICAL="$(MY_ANALYTICAL)"'
 endif
 
-ifdef SVNREV
-  CPPFLAGS += -D'SVN_REV="$(SVNREV)"'
-else
-  SVNREV := $(shell grep Revision ./ROMS/Version | sed 's/.* \([0-9]*\) .*/\1/')
-  CPPFLAGS += -D'SVN_REV="$(SVNREV)"'
-endif
+CPPFLAGS += -D'SVN_URL="$(SVNURL)"'
+CPPFLAGS += -D'SVN_REV="$(SVNREV)"'
 
 #--------------------------------------------------------------------------
 #  Build target directories.

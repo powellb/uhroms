@@ -2,7 +2,7 @@
       MODULE set_vbc_mod
 #ifdef NONLINEAR
 !
-!svn $Id: set_vbc.F 1792 2019-02-22 18:28:13Z arango $
+!svn $Id: set_vbc.F 1803 2019-07-09 02:44:53Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -285,11 +285,21 @@
 !  manipulations to state variable stflx(:,:,itemp)are allowed below.
 !-----------------------------------------------------------------------
 !
+#   if defined FOUR_DVAR && defined NL_BULK_FLUXES
+      IF (Nrun.eq.1) THEN
+        DO j=JstrR,JendR
+          DO i=IstrR,IendR
+            stflx(i,j,itemp)=snhflx(i,j)
+          END DO
+        END DO
+      END IF
+#   else
       DO j=JstrR,JendR
         DO i=IstrR,IendR
           stflx(i,j,itemp)=snhflx(i,j)
         END DO
       END DO
+#   endif
 #  endif
 
 #  ifdef QCORRECTION
@@ -343,26 +353,53 @@
 !  apply correction.
 !-----------------------------------------------------------------------
 !
+#   if defined FOUR_DVAR && defined NL_BULK_FLUXES
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
-          EmP=EminusP(i,j)
-#   else
-          EmP=stflx(i,j,isalt)
-#   endif
-#   if defined SCORRECTION
+          IF (Nrun.eq.1) THEN
+#    if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+            EmP=EminusP(i,j)
+#    else
+            EmP=stflx(i,j,isalt)
+#    endif
+          ELSE
+            EmP=stflx(i,j,isalt)
+          END IF
+#    if defined SCORRECTION
           stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)-                 &
      &                     Tnudg(isalt,ng)*Hz(i,j,N(ng))*               &
      &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
-#   elif defined SRELAXATION
+#    elif defined SRELAXATION
           stflx(i,j,isalt)=-Tnudg(isalt,ng)*Hz(i,j,N(ng))*              &
      &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
-#   else
+#    else
           stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)
-#   endif
+#    endif
           btflx(i,j,isalt)=btflx(i,j,isalt)*t(i,j,1,nrhs,isalt)
         END DO
       END DO
+#   else
+      DO j=JstrR,JendR
+        DO i=IstrR,IendR
+#    if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+          EmP=EminusP(i,j)
+#    else
+          EmP=stflx(i,j,isalt)
+#    endif
+#    if defined SCORRECTION
+          stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)-                 &
+     &                     Tnudg(isalt,ng)*Hz(i,j,N(ng))*               &
+     &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
+#    elif defined SRELAXATION
+          stflx(i,j,isalt)=-Tnudg(isalt,ng)*Hz(i,j,N(ng))*              &
+     &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
+#    else
+          stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)
+#    endif
+          btflx(i,j,isalt)=btflx(i,j,isalt)*t(i,j,1,nrhs,isalt)
+        END DO
+      END DO
+#   endif
 #  endif
 #  ifdef ICESHELF
 !

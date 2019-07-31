@@ -2,7 +2,7 @@
 #ifdef ADJOINT
       SUBROUTINE ad_initial (ng)
 !
-!svn $Id: ad_initial.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: ad_initial.F 1806 2019-07-25 15:27:28Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -537,7 +537,19 @@
 !-----------------------------------------------------------------------
 !
 !$OMP MASTER
-      CALL obs_initial (ng, iADM, .TRUE.)
+# ifdef W4DPSAS_FCT_SENSITIVITY
+      IF (.not.LsenPSAS(ng).and.LsenFCT(ng)) THEN
+#  ifdef OBS_SPACE
+        IF (Lobspace(ng)) THEN
+#  endif
+# endif
+          CALL obs_initial (ng, iADM, .TRUE.)
+# ifdef OBS_SPACE
+        END IF
+# endif
+# ifdef W4DPSAS_FCT_SENSITIVITY
+      END IF
+# endif
 !$OMP END MASTER
 !$OMP BARRIER
       IF (FoundError(exit_flag, NoError, __LINE__,                      &

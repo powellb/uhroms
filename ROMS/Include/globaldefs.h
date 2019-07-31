@@ -1,7 +1,7 @@
 /*
 ** Include file "globaldef.h"
 **
-** svn $Id: globaldefs.h 1795 2019-03-10 22:28:02Z arango $
+** svn $Id: globaldefs.h 1803 2019-07-09 02:44:53Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2019 The ROMS/TOMS Group     Alexander F. Shchepetkin  **
 **   Licensed under a MIT/X style license                                    **
@@ -213,9 +213,13 @@
 ** Set 4DVAR sensitivity switch.
 */
 
-#if defined W4DPSAS_SENSITIVITY || \
+#if defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY || \
     defined W4DVAR_SENSITIVITY
 # define SENSITIVITY_4DVAR
+#endif
+
+#if defined W4DPSAS && defined OBS_SPACE
+# undef OBS_SPACE
 #endif
 
 /*
@@ -404,12 +408,12 @@
 ** Set internal switches for all the 4DVAR schemes.
 */
 
-#if !defined WEAK_CONSTRAINT     && \
-    (defined ARRAY_MODES         || defined CLIPPING            || \
-     defined R_SYMMETRY          || defined TL_W4DPSAS          || \
-     defined TL_W4DVAR           || defined W4DPSAS             || \
-     defined W4DVAR              || defined W4DPSAS_SENSITIVITY || \
-     defined W4DVAR_SENSITIVITY)
+#if !defined WEAK_CONSTRAINT    && \
+    (defined ARRAY_MODES        || defined CLIPPING                || \
+     defined R_SYMMETRY         || defined TL_W4DPSAS              || \
+     defined TL_W4DVAR          || defined W4DPSAS                 || \
+     defined W4DVAR             || defined W4DPSAS_SENSITIVITY     || \
+     defined W4DVAR_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY)
 # define WEAK_CONSTRAINT
 #endif
 #if !defined WEAK_CONSTRAINT     && defined RPM_RELAXATION
@@ -438,12 +442,11 @@
       defined OBS_IMPACT
 # undef OBS_IMPACT
 #endif
-#if !(defined OBS_IMPACT             && \
-      (defined W4DVAR_SENSITIVITY    || defined W4DPSAS_SENSITIVITY || \
-       defined IS4DVAR_SENSITIVITY))
+#if !(defined OBS_IMPACT                && \
+      (defined IS4DVAR_SENSITIVITY      || defined W4DPSAS_SENSITIVITY || \
+       defined W4DPSAS_FCT_SENSITIVITY  || defined W4DVAR_SENSITIVITY))
 # undef IMPACT_INNER
 #endif
-
 
 /*
 ** Activate internal switch to process 4DVAR observations.
@@ -803,7 +806,7 @@
 # endif
 #endif
 #if defined DIAGNOSTICS_BIO && \
-  !(defined BIO_FENNEL      || defined HYPOXIA_SRM)
+  !(defined BIO_FENNEL      || defined HYPOXIA_SRM || defined ECOSIM)
 #  undef DIAGNOSTICS_BIO
 #endif
 #if defined DIAGNOSTICS_BIO || defined DIAGNOSTICS_TS || \

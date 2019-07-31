@@ -2,7 +2,7 @@
 #ifdef NONLINEAR
       SUBROUTINE set_data (ng, tile)
 !
-!svn $Id: set_data.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: set_data.F 1806 2019-07-25 15:27:28Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1349,8 +1349,8 @@
 #  endif
 # endif
 
-# if defined W4DPSAS || defined NLM_OUTER || \
-     defined W4DPSAS_SENSITIVITY
+# if defined NLM_OUTER           || defined W4DPSAS                 ||\
+     defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  Set weak contraint forcing.

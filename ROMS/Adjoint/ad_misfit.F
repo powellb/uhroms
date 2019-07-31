@@ -3,7 +3,7 @@
 #if  defined ADJOINT && defined FOUR_DVAR  && defined OBSERVATIONS && \
     !defined WEAK_CONSTRAINT
 !
-!svn $Id: ad_misfit.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: ad_misfit.F 1804 2019-07-09 20:17:48Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -198,7 +198,7 @@
 !  Load observation reject and accept flag into screening variable.
 !-----------------------------------------------------------------------
 !
-!  In the primal formulation, the current time window (or survey) 
+!  In the primal formulation, the current time window (or survey)
 !  observations are loaded to the working arrays using local indexes
 !  (array elements 1:Nobs) as opposed to global indexes in the dual
 !  formulation. Recall that the screening variable ObsScale is computed
@@ -352,10 +352,10 @@
 !  Radial Velocity.  The observations are in terms of radial speed and
 !  angle (stored in obs_meta).  The observation angle converts the
 !  velocity components to geographical EAST and North components.
-#  ifdef RADIAL_ANGLE_CCW_EAST  
+#  ifdef RADIAL_ANGLE_CCW_EAST
 !  The radial velocity observations are processed as magnitude and
 !  heading angle (obs_meta; radians) in the math convention: an
-!  azimuth that is counterclockwise from TRUE East. 
+!  azimuth that is counterclockwise from TRUE East.
 !
 !  In curvilinear coordinates, the radial forward problem is:
 !
@@ -388,7 +388,7 @@
           END DO
           DO iobs=1,Nobs(ng)
             IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
-#  ifdef RADIAL_ANGLE_CCW_EAST  
+#  ifdef RADIAL_ANGLE_CCW_EAST
 #   ifdef CURVGRID
               angle=ObsMeta(iobs)-ObsAngler(iobs)
               ad_uradial(iobs)=ad_uradial(iobs)+                        &

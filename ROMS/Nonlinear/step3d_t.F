@@ -2,7 +2,7 @@
       MODULE step3d_t_mod
 #if !defined TS_FIXED && (defined NONLINEAR && defined SOLVE3D)
 !
-!svn $Id: step3d_t.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: step3d_t.F 1799 2019-04-30 21:09:14Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -518,7 +518,7 @@
 !  Apply tracers point sources to the horizontal advection terms,
 !  if any.
 !
-          IF (LuvSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+          IF (LuvSrc(ng)) THEN
             DO is=1,Nsrc(ng)
               Isrc=SOURCES(ng)%Isrc(is)
               Jsrc=SOURCES(ng)%Jsrc(is)
@@ -580,7 +580,7 @@
 !
 !  If refinement grids, extract tracer horizontal advection fluxes
 !  (Hz*u*T/n, Hz*v*T/m) at the grid contact boundary (physical
-!  domain period) to be used in two-way nesting.
+!  domain perimeter) to be used in two-way nesting.
 !
          IF (RefinedGrid(ng)) THEN
            DO cr=1,Ncontact
@@ -838,7 +838,7 @@
 !
 !  Apply mass point sources (volume vertical influx), if any.
 !
-          IF (LwSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+          IF (LwSrc(ng)) THEN
             DO is=1,Nsrc(ng)
               Isrc=SOURCES(ng)%Isrc(is)
               Jsrc=SOURCES(ng)%Jsrc(is)

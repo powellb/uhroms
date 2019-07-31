@@ -1,7 +1,7 @@
 /*
 ** Include file "cppdefs.h"
 **
-** svn $Id: cppdefs.h 1793 2019-02-28 03:24:30Z arango $
+** svn $Id: cppdefs.h 1800 2019-05-09 03:06:49Z arango $
 ********************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -498,6 +498,7 @@
 ** Bio-optical EcoSim model OPTIONS:                                         **
 **                                                                           **
 ** ECOSIM              use if bio-optical EcoSim model                       **
+** BIO_OPTICAL         use to compute underwater spectral light properties   **
 **                                                                           **
 ** Nemuro lower trophic level ecosystem model OPTIONS:                       **
 **                                                                           **

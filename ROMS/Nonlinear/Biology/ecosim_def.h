@@ -1,5 +1,5 @@
 /*
-** svn $Id: ecosim_def.h 1782 2019-01-28 06:05:46Z arango $
+** svn $Id: ecosim_def.h 1800 2019-05-09 03:06:49Z arango $
 *************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2019 The ROMS/TOMS Group                        **
 **   Licensed under a MIT/X style license                             **
@@ -49,6 +49,15 @@
       Vinfo(10)='.TRUE.'
       status=def_var(ng, model, ncid, varid, nf90_int,                  &
      &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+
+      Vinfo( 1)='light'
+      Vinfo( 2)='center wavelength of spectral irradiance bands'
+      Vinfo( 3)='nanometer'
+      status=def_var(ng, model, ncid, varid, NF_TYPE,                   &
+     &               1, (/lightdim/), Aval, Vinfo, ncname,              &
      &               SetParAccess = .FALSE.)
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE metrics_mod
 !
-!svn $Id: metrics.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: metrics.F 1808 2019-07-31 15:35:51Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1299,7 +1299,7 @@
                 Text='South bry Hconvolution, NHstepsB, DTsizeHB ='
               ELSE IF (ibry.eq.ieast) THEN
                 Text='East  bry Hconvolution, NHstepsB, DTsizeHB ='
-              ELSE IF (ibry.eq.isouth) THEN
+              ELSE IF (ibry.eq.inorth) THEN
                 Text='North bry Hconvolution, NHstepsB, DTsizeHB ='
               END IF
               IF (HdecayB(is,ibry,ng).gt.0.0_r8) THEN
@@ -1321,7 +1321,7 @@
                 Text='South bry Vconvolution, NVstepsB, DTsizeVB ='
               ELSE IF (ibry.eq.ieast) THEN
                 Text='East  bry Vconvolution, NVstepsB, DTsizeVB ='
-              ELSE IF (ibry.eq.isouth) THEN
+              ELSE IF (ibry.eq.inorth) THEN
                 Text='North bry Vconvolution, NVstepsB, DTsizeVB ='
               END IF
               IF (VdecayB(is,ibry,ng).gt.0.0_r8) THEN

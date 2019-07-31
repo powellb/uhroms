@@ -2,7 +2,7 @@
       MODULE rp_set_vbc_mod
 #ifdef TL_IOMS
 !
-!svn $Id: rp_set_vbc.F 1792 2019-02-22 18:28:13Z arango $
+!svn $Id: rp_set_vbc.F 1803 2019-07-09 02:44:53Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -468,7 +468,7 @@
 !>
 #   ifdef TL_IOMS
           tl_stflx(i,j,isalt)=EmP*tl_t(i,j,N(ng),nrhs,isalt)+           &
-     &                        (tl_EmP-EmP))*                            &
+     &                        (tl_EmP-EmP)*                             &
      &                        t(i,j,N(ng),nrhs,isalt)
 #   else
           tl_stflx(i,j,isalt)=EmP*tl_t(i,j,N(ng),nrhs,isalt)+           &

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_param
 !
-!svn $Id: mod_param.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: mod_param.F 1800 2019-05-09 03:06:49Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -77,8 +77,12 @@
 !                                                                      !
 !  Diagnostic fields parameters:                                       !
 !                                                                      !
+# if defined ECOSIM && defined BIO_OPTIC
+!  NDbands    Number of spectral irradiance bands.                     !
+# endif
 !  NDbio2d    Number of diagnostic 2D biology fields.                  !
 !  NDbio3d    Number of diagnostic 3D biology fields.                  !
+!  NDbio4d    Number of diagnostic 4D bio-optical fields.              !
 !  NDT        Number of diagnostic tracer fields.                      !
 !  NDM2d      Number of diagnostic 2D momentum fields.                 !
 !  NDM3d      Number of diagnostic 3D momentum fields.                 !
@@ -541,15 +545,23 @@
       integer :: NDM2d                  ! 2D momentum
       integer :: NDM3d                  ! 3D momentum
 !
-!  Number of diagnostic biology fields.  Currenly, only available for
-!  the Fennel model.
+!  Number of diagnostic biology/bio-optical fields.  Currently, only
+!  available for the Fennel and EcoSim models.
 !
       integer :: NDbio2d                ! 2D fields
       integer :: NDbio3d                ! 3D fields
+      integer :: NDbio4d                ! 4D fields
 !
 !  Number of diagnostic 3D right-hand-side fields.
 !
       integer :: NDrhs
+
+# if defined ECOSIM && defined BIO_OPTIC
+!
+!  Number of light spectral irradiance bands to process.
+!
+      integer :: NDbands
+# endif
 #endif
 
 #if defined FOUR_DVAR || defined IMPULSE

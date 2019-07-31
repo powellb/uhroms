@@ -3,7 +3,7 @@
 #if defined NONLINEAR && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id: pre_step3d.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: pre_step3d.F 1799 2019-04-30 21:09:14Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -518,19 +518,26 @@
 !  Apply tracers point sources to the horizontal advection terms,
 !  if any.
 !
-          IF (LuvSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+          IF (LuvSrc(ng)) THEN
             DO is=1,Nsrc(ng)
               Isrc=SOURCES(ng)%Isrc(is)
               Jsrc=SOURCES(ng)%Jsrc(is)
-              IF (LtracerSrc(itrc,ng).and.                              &
-     &            ((Istr.le.Isrc).and.(Isrc.le.Iend+1)).and.            &
+              IF (((Istr.le.Isrc).and.(Isrc.le.Iend+1)).and.            &
      &            ((Jstr.le.Jsrc).and.(Jsrc.le.Jend+1))) THEN
                 IF (INT(SOURCES(ng)%Dsrc(is)).eq.0) THEN
-                  FX(Isrc,Jsrc)=Huon(Isrc,Jsrc,k)*                      &
-     &                          SOURCES(ng)%Tsrc(is,k,itrc)
+                  IF (LtracerSrc(itrc,ng)) THEN
+                    FX(Isrc,Jsrc)=Huon(Isrc,Jsrc,k)*                    &
+     &                            SOURCES(ng)%Tsrc(is,k,itrc)
+                  ELSE
+                    FX(Isrc,Jsrc)=0.0_r8
+                  END IF
                 ELSE
-                  FE(Isrc,Jsrc)=Hvom(Isrc,Jsrc,k)*                      &
-     &                          SOURCES(ng)%Tsrc(is,k,itrc)
+                  IF (LtracerSrc(itrc,ng)) THEN
+                    FE(Isrc,Jsrc)=Hvom(Isrc,Jsrc,k)*                    &
+     &                            SOURCES(ng)%Tsrc(is,k,itrc)
+                  ELSE
+                     FE(Isrc,Jsrc)=0.0_r8
+                  END IF
                 END IF
               END IF
             END DO
@@ -778,7 +785,7 @@
 !  Apply mass point sources (volume vertical influx), if any.
 !  (Notice the j-loop is pipelined above).
 !
-          IF (LwSrc(ng).and.ANY(LtracerSrc(:,ng))) THEN
+          IF (LwSrc(ng)) THEN
             DO is=1,Nsrc(ng)
               Isrc=SOURCES(ng)%Isrc(is)
               Jsrc=SOURCES(ng)%Jsrc(is)
