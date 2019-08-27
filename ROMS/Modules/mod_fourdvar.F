@@ -2118,6 +2118,9 @@
             CASE ('RADIAL')
               isRadial=icount
               ObsState2Type(icount)=ExtraIndex(i)
+            CASE ('TRANSPORT')
+              isTransport=icount
+              ObsState2Type(icount)=ExtraIndex(i)
           END SELECT
         END DO
       END IF
@@ -2139,6 +2142,8 @@
           SELECT CASE (TRIM(uppercase(ExtraName(i))))
             CASE ('RADIAL')
               ObsType2State(icount)=isRadial
+            CASE ('TRANSPORT')
+              ObsType2State(icount)=isTransport
           END SELECT
         END DO
       END IF
