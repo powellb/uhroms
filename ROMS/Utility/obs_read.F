@@ -337,6 +337,10 @@
             haveObsMeta(ng)=.TRUE.
             FOURDVAR(ng)%ObsCount(isRadial)=                            &
      &                           FOURDVAR(ng)%ObsCount(isRadial)+1
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport)) THEN
+            haveObsMeta(ng)=.TRUE.
+            FOURDVAR(ng)%ObsCount(isTransport)=                            &
+     &                           FOURDVAR(ng)%ObsCount(isTransport)+1
           ELSE
             DO itrc=1,NT(ng)
               IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN

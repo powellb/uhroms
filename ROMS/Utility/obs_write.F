@@ -32,6 +32,7 @@
       USE extract_obs_mod, ONLY : extract_obs2d
 # ifdef SOLVE3D
       USE extract_obs_mod, ONLY : extract_obs3d
+      USE extract_transport_mod, ONLY : extract_transport
 # endif
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
@@ -61,6 +62,7 @@
       real(r8) :: df1, df2, Thresh
 # endif
       real(r8) :: misfit(Mobs), uradial(Mobs), vradial(Mobs)
+      real(r8) :: transport(Mobs), pm(Mobs), pn(Mobs), dz(Mobs)
 # ifdef BGQC
       real(r8) :: uBgErr(Mobs), vBgErr(Mobs)
 # endif
@@ -779,6 +781,30 @@
 #  endif
 !
 !-----------------------------------------------------------------------
+!  Transport cable observations. This assumes that all layers are
+!  used in computing the transport across the points specified.
+!
+!  The transport line angle is stored in obs_meta, and every grid
+!  location that goes into the calculation of the transport must be
+!  an "observation", such that if the transport is from the upper 10
+!  layers, then every k value in the upper 10 layers for a given i, j
+!  location is specified as an observation.
+!
+!  The observation value for every transport observation should be the
+!  total observation
+!  Currently, only a single transport line is supported. We need an
+!  additional vector to provide unique IDs if we want to support more
+!  lines.
+!
+!-----------------------------------------------------------------------
+!
+#  ifndef IS4DVAR_SENSITIVITY
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTransport).gt.0)) THEN
+        END IF
+#  endif
+!
+!-----------------------------------------------------------------------
 !  Tracer type observations.
 !-----------------------------------------------------------------------
 !
@@ -1334,6 +1360,9 @@
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
               FOURDVAR(ng)%ObsReject(isRadial)=                         &
      &                              FOURDVAR(ng)%ObsReject(isRadial)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport)=                         &
+     &                              FOURDVAR(ng)%ObsReject(isTransport)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN
