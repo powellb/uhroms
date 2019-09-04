@@ -90,6 +90,13 @@
 !  Xobs          Observations X-locations (grid coordinates).          !
 !  Yobs          Observations Y-locations (grid coordinates).          !
 !  Zobs          Observations Z-locations (grid coordinates).          !
+!  NPath         Number of observation path points                     !
+!  PathID        Observation Path identifier                           !
+!  PathX         Path point x-location (grid coordinate)               !
+!  PathY         Path point y-location (grid coordinate)               !
+!  PathZ         Path point z-location (grid coordinate)               !
+!  PathLength    Path length (for acoustics)                           !
+!  PathAngle     Path Angle (for transport)                            !
 !  cg_Gnorm      Initial gradient vector normalization factor.         !
 !  cg_Greduc     Reduction in the gradient norm; excess cost function. !
 !  cg_QG         Lanczos vector normalization factor.                  !
@@ -220,6 +227,12 @@
 #  ifdef SOLVE3D
         real(r8), allocatable :: Zobs(:)
 #  endif
+        integer,  allocatable :: PathID(:)
+        real(r8), allocatable :: PathX(:)
+        real(r8), allocatable :: PathY(:)
+        real(r8), allocatable :: PathZ(:)
+        real(r8), allocatable :: PathLength(:)
+        real(r8), allocatable :: PathAngle(:)
         real(r8), allocatable :: ADmodVal(:)
         real(r8), allocatable :: NLmodVal(:)
 #  ifdef TLM_OBS
@@ -375,6 +388,10 @@
 !  Size of observation NetCDF file unlimited dimension.
 !
         integer, allocatable :: Ndatum(:)
+!
+!  Number of path locations
+!
+        integer, allocatable :: Npath(:)
 !
 !  Number of observations surveys available.
 !
@@ -895,6 +912,10 @@
         allocate ( Ndatum(Ngrids) )
         Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
       END IF
+      IF (.not.allocated(Npath)) THEN
+        allocate ( Npath(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
       IF (.not.allocated(Nsurvey)) THEN
         allocate ( Nsurvey(Ngrids) )
         Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
@@ -1197,6 +1218,30 @@
         deallocate (Zobs)
       END IF
 #  endif
+
+      IF (allocated(PathID)) THEN
+        deallocate (PathID)
+      END IF
+
+      IF (allocated(PathX)) THEN
+        deallocate (PathX)
+      END IF
+
+      IF (allocated(PathY)) THEN
+        deallocate (PathY)
+      END IF
+
+      IF (allocated(PathZ)) THEN
+        deallocate (PathZ)
+      END IF
+
+      IF (allocated(PathLength)) THEN
+        deallocate (PathLength)
+      END IF
+
+      IF (allocated(PathAngle)) THEN
+        deallocate (PathAngle)
+      END IF
 
       IF (allocated(ADmodVal)) THEN
         deallocate (ADmodVal)
@@ -1519,12 +1564,15 @@
      &                 __FILE__)) RETURN
 !
         Ndatum(ng)=0
+        Npath(ng)=0
         Nsurvey(ng)=0
         DO i=1,n_dim
           IF (TRIM(dim_name(i)).eq.'datum') then
             Ndatum(ng)=dim_size(i)
           ELSE IF (TRIM(dim_name(i)).eq.'survey') THEN
             Nsurvey(ng)=dim_size(i)
+          ELSE IF (TRIM(dim_name(i)).eq.'path') THEN
+            Npath(ng)=dim_size(i)
           ELSE IF (TRIM(dim_name(i)).eq.'state_variable') THEN
             my_NobsVar=dim_size(i)
           END IF
@@ -1853,11 +1901,13 @@
 !
 #  ifdef WEAK_CONSTRAINT
         Mobs=MAXVAL(Ndatum)
+        Mpath=MAXVAL(Npath)
 #  else
         Mobs=0
         DO i=1,Nsurvey(ng)
           Mobs=MAX(Mobs, FOURDVAR(ng)%NobsSurvey(i))
         END DO
+        Mpath=Mpath+Npath(ng)
 #  endif
       END DO
 !
@@ -1954,6 +2004,44 @@
       END IF
       Zobs = IniVal
 #  endif
+
+      IF (Mpath.gt.0) THEN
+        IF (.not.allocated(PathID)) THEN
+          allocate ( PathID(Mpath) )
+          Dmem(1)=Dmem(1)+REAL(Mpath,r8)
+        END IF
+        PathID = IniVal
+
+        IF (.not.allocated(PathX)) THEN
+          allocate ( PathX(Mpath) )
+          Dmem(1)=Dmem(1)+REAL(Mpath,r8)
+        END IF
+        PathX = IniVal
+
+        IF (.not.allocated(PathY)) THEN
+          allocate ( PathY(Mpath) )
+          Dmem(1)=Dmem(1)+REAL(Mpath,r8)
+        END IF
+        PathY = IniVal
+
+        IF (.not.allocated(PathZ)) THEN
+          allocate ( PathZ(Mpath) )
+          Dmem(1)=Dmem(1)+REAL(Mpath,r8)
+        END IF
+        PathZ = IniVal
+
+        IF (.not.allocated(PathLength)) THEN
+          allocate ( PathLength(Mpath) )
+          Dmem(1)=Dmem(1)+REAL(Mpath,r8)
+        END IF
+        PathLength = IniVal
+
+        IF (.not.allocated(PathAngle)) THEN
+          allocate ( PathAngle(Mpath) )
+          Dmem(1)=Dmem(1)+REAL(Mpath,r8)
+        END IF
+        PathAngle = IniVal
+      END IF
 
       IF (.not.allocated(ADmodVal)) THEN
         allocate ( ADmodVal(Mobs) )

@@ -5631,3 +5631,57 @@
   'idBgTh'
   'nulvar'
   1.0d0
+
+'path_id'                                           ! Input
+  'path ID for path information'
+  'nondimensional'
+  'nulvar'
+  'path_datum'
+  'idPathID'
+  'nulvar'
+  1.0d0
+
+'path_Xgrid'                                        ! Input
+  'path x-grid location'
+  'nondimensional'
+  'nulvar'
+  'path_datum'
+  'idPathX'
+  'nulvar'
+  1.0d0
+
+'path_Ygrid'                                        ! Input
+  'path y-grid location'
+  'nondimensional'
+  'nulvar'
+  'path_datum'
+  'idPathY'
+  'nulvar'
+  1.0d0
+
+'path_Zgrid'                                        ! Input
+  'path z-grid location'
+  'nondimensional'
+  'nulvar'
+  'path_datum'
+  'idPathZ'
+  'nulvar'
+  1.0d0
+
+'path_length'                                       ! Input
+  'path arc length'
+  'nondimensional'
+  'nulvar'
+  'path_datum'
+  'idPathL'
+  'nulvar'
+  1.0d0
+
+'path_angle'                                        ! Input
+  'path angle'
+  'radians'
+  'nulvar'
+  'path_datum'
+  'idPathL'
+  'nulvar'
+  1.0d0

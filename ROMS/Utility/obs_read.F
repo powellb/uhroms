@@ -353,6 +353,74 @@
         END DO
 !
 !-----------------------------------------------------------------------
+!  If there are path observations present, then load the path
+!  information from the observation file
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTransport).gt.0) THEN
+!
+!  Read in path ID.
+!
+          CALL netcdf_get_ivar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idPatD),                        &
+     &                          PathID(:),                              &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Npath(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in path X-grid location.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idPatX),                        &
+     &                          PathX(:),                               &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Npath(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in path Y-grid location.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idPatY),                        &
+     &                          PathY(:),                               &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Npath(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in path Z-grid location.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idPatZ),                        &
+     &                          PathZ(:),                               &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Npath(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in path arc length.
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idPatL),                        &
+     &                          PathLength(:),                          &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Npath(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+!
+!  Read in path angle
+!
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idPatA),                        &
+     &                          PathAngle(:),                           &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/1/),                          &
+     &                          total = (/Npath(ng)/))
+          IF (exit_flag.ne.NoError) RETURN
+        END IF
+!
+!-----------------------------------------------------------------------
 !  If applicable, set next observation survey time to process.
 !-----------------------------------------------------------------------
 !

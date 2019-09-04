@@ -234,6 +234,12 @@
         integer  :: idOvel        ! omega vertical velocity
         integer  :: idQair        ! surface air humidity
         integer  :: idPair        ! surface air pressure
+        integer  :: idPatD        ! path id
+        integer  :: idPatX        ! path X-grid location
+        integer  :: idPatY        ! path Y-grid location
+        integer  :: idPatZ        ! path Z-grid location
+        integer  :: idPatL        ! path arc length
+        integer  :: idPatA        ! path angle
         integer  :: idPbar        ! streamfunction
         integer  :: idPwet        ! wet/dry mask on PSI-points
         integer  :: idpthR        ! depths of RHO-points
@@ -1843,6 +1849,18 @@
               idMOMi=varid
             CASE ('idMOMf')
               idMOMf=varid
+            CASE ('idPatD')
+              idPatD=varid
+            CASE ('idPatX')
+              idPatX=varid
+            CASE ('idPatY')
+              idPatY=varid
+            CASE ('idPatZ')
+              idPatZ=varid
+            CASE ('idPatL')
+              idPatL=varid
+            CASE ('idPatA')
+              idPatA=varid
 #endif
 
 #ifdef BIOLOGY

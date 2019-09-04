@@ -781,26 +781,22 @@
 #  endif
 !
 !-----------------------------------------------------------------------
-!  Transport cable observations. This assumes that all layers are
-!  used in computing the transport across the points specified.
-!
-!  The transport line angle is stored in obs_meta, and every grid
-!  location that goes into the calculation of the transport must be
-!  an "observation", such that if the transport is from the upper 10
-!  layers, then every k value in the upper 10 layers for a given i, j
-!  location is specified as an observation.
-!
-!  The observation value for every transport observation should be the
-!  total observation
-!  Currently, only a single transport line is supported. We need an
-!  additional vector to provide unique IDs if we want to support more
-!  lines.
-!
+!  Transport cable observations.
 !-----------------------------------------------------------------------
 !
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isTransport).gt.0)) THEN
+            CALL extract_transport (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,       &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          ObsState2Type(isTransport),             &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          ObsType, ObsVetting,                    &
+     &                          Tobs, Xobs, Yobs, Zobs,                 &
+     &                          NLmodVal)
         END IF
 #  endif
 !

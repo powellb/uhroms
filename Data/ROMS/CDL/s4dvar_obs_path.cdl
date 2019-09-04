@@ -3,6 +3,7 @@ netcdf s4dvar_obs {
 dimensions:
   survey = 1 ;
   state_variable = 20 ;
+  path = 1 ;
   datum = UNLIMITED ; // (0 currently)
 variables:
   int spherical ;
@@ -56,6 +57,26 @@ variables:
   double obs_meta(datum) ;
     obs_meta:long_name = "observation meta value" ;
     obs_meta:units = "observational secondary units" ;
+  int path_id(path) ;
+    path_id:long_name = "identification for the path value" ;
+  int path_Xgrid(path) ;
+    path_Xgrid:long_name = "x-grid path location" ;
+    path_Xgrid:left = "INT(path_Xgrid(path))" ;
+    path_Xgrid:right = "INT(path_Xgrid(path))+1" ;
+  int path_Ygrid(path) ;
+    path_Ygrid:long_name = "y-grid path location" ;
+    path_Ygrid:left = "INT(path_Ygrid(path))" ;
+    path_Ygrid:right = "INT(path_Ygrid(path))+1" ;
+  int path_Zgrid(datum) ;
+    path_Zgrid:long_name = "z-grid path location" ;
+    path_Zgrid:up = "INT(path_Zgrid(path))+1" ;
+    path_Zgrid:down = "INT(path_Zgrid(path))" ;
+  double path_length(path) ;
+    path_length:long_name = "arc-length of this portion of the path" ;
+    path_length:units = "meters" ;
+  double path_angle(path) ;
+    path_length:long_name = "angle of this portion of the path" ;
+    path_length:units = "radians" ;
 
 // global attributes:
     :type = "ROMS Observations" ;
