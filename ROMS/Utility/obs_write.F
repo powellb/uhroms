@@ -787,7 +787,22 @@
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isTransport).gt.0)) THEN
-            CALL extract_transport (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,       &
+          CALL extract_transport (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,         &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          ObsState2Type(isTransport),             &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          ObsType, ObsVetting,                    &
+     &                          Tobs, Xobs, Yobs, Zobs,                 &
+     &                          NLmodVal)
+        END IF
+#  endif
+#  ifdef TLM_OBS
+        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
+     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
+          CALL tl_extract_transport (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          ObsState2Type(isTransport),             &
      &                          Mobs, Mstr, Mend,                       &

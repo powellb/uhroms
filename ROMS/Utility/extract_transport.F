@@ -82,9 +82,11 @@
 
       real(r8), allocatable, dimension(:) :: path_time
       real(r8), allocatable, dimension(:) :: path_type, path_vetting
-      real(r8), allocatable, dimension(:) :: path_u, path_v
-      real(r8), allocatable, dimension(:) :: path_pm, path_pn, path_hz
+      real(r8), allocatable, dimension(:) :: path_u, path_v, path_hz
       real(r8) :: transport
+# ifdef BGQC
+      real(r8), allocatable, dimension(:) :: uBgErr, vBgErr
+# endif
 
 !
 !  Find the transport path observations that are available
@@ -132,14 +134,16 @@
           allocate ( path_v(Robs) )
           path_v(ic)=IniVal
 
-          allocate ( path_pm(Robs) )
-          path_pm(ic)=IniVal
-
-          allocate ( path_pn(Robs) )
-          path_pn(ic)=IniVal
-
           allocate ( path_hz(Robs) )
           path_hz(ic)=IniVal
+
+# ifdef BGQC
+          allocate ( uBgErr(Robs) )
+          path_hz(ic)=IniVal
+
+          allocate ( vBgErr(Robs) )
+          path_hz(ic)=IniVal
+# endif
 
 !
 !  Get the u-component for transport calculations.
@@ -170,6 +174,22 @@
 #   endif
      &                        path_u)
 #   ifdef BGQC
+            CALL extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,           &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          ObsState2Type(isTransport),             &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          uXmin(ng)+0.5_r8, rXmax(ng)+0.5_r8,     &
+     &                          uYmin(ng), uYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          path_type, path_vetting,                &
+     &                          path_time, PathX(Rstr:Rend)+0.5_r8,     &
+     &                          PathY(Rstr:Rend), PathZ(Rstr:Rend),     &
+     &                          OCEAN(ng)%e_u(:,:,:,1),                 &
+     &                          GRID(ng)%z_v,                           &
+#    ifdef MASKING
+     &                          GRID(ng)%umask,                         &
+#    endif
+     &                          uBgErr)
 #   endif
 
 !
@@ -202,43 +222,25 @@
 #   endif
      &                        path_v)
 #   ifdef BGQC
+          CALL extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        ObsState2Type(isTransport),               &
+     &                        Mobs, Mstr, Mend,                         &
+     &                        uXmin(ng), uXmax(ng),                     &
+     &                        uYmin(ng)+0.5_r8,                         &
+     &                        uYmax(ng)+0.5_r8,                         &
+     &                        time(ng), dt(ng), path_type,              &
+     &                        path_vetting, path_time,                  &
+     &                        PathX(Rstr:Rend),                         &
+     &                        PathY(Rstr:Rend)+0.5_r8,                  &
+     &                        PathZ(Rstr:Rend),                         &
+     &                        OCEAN(ng)%e_v(:,:,:,NOUT),                &
+     &                        GRID(ng)%z_v,                             &
+#   ifdef MASKING
+     &                        GRID(ng)%vmask,                           &
 #   endif
-
-!
-!  Get the pm-component for transport calculations.
-!
-          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        ObsState2Type(isTransport),               &
-     &                        Mobs, Mstr, Mend,                         &
-     &                        rXmin(ng), rXmax(ng),                     &
-     &                        rYmin(ng), rYmax(ng),                     &
-     &                        time(ng), dt(ng), path_type,              &
-     &                        path_vetting, path_time,                  &
-     &                        PathX(Rstr:Rend), PathX(Rstr:Rend)        &
-     &                        GRID(ng)%pm,                              &
-#  ifdef MASKING
-     &                        GRID(ng)%rmask,                           &
-#  endif
-     &                        path_pm)
-
-!
-!  Get the pn-component for transport calculations.
-!
-          CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        ObsState2Type(isTransport),               &
-     &                        Mobs, Mstr, Mend,                         &
-     &                        rXmin(ng), rXmax(ng),                     &
-     &                        rYmin(ng), rYmax(ng),                     &
-     &                        time(ng), dt(ng), path_type,              &
-     &                        path_vetting, path_time,                  &
-     &                        PathX(Rstr:Rend), PathX(Rstr:Rend)        &
-     &                        GRID(ng)%pn,                              &
-#  ifdef MASKING
-     &                        GRID(ng)%rmask,                           &
-#  endif
-     &                        path_pn)
+     &                        vBgErr)
+#   endif
 
 !
 !  Get the thickness-component for transport calculations.
@@ -259,8 +261,6 @@
      &                        GRID(ng)%rmask,                           &
 #   endif
      &                        path_hz)
-#   ifdef BGQC
-#   endif
 
 # ifdef DISTRIBUTE
 !
@@ -270,13 +270,15 @@
 #  ifdef SPHERICAL
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_time)
 #  endif
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_pm)
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_pn)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_hz)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_u)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_v)
 #  ifndef IS4DVAR_SENSITIVITY
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_vetting)
+#  endif
+#  ifdef BGQC
+          CALL mp_collect (ng, iNLM, Ncollect, IniVal, uBgErr)
+          CALL mp_collect (ng, iNLM, Ncollect, IniVal, vBgErr)
 #  endif
 # endif
 !
@@ -285,22 +287,58 @@
 !
           IF (Master) THEN
             Aobs(iobs)=IniVal
+            ObsVetting(iobs)=0.0_r8
             DO ic=1,Robs
               IF path_vetting(ic).ne.0.0_r8 THEN
-                Aobs(iobs)=Aobs(iobs)+
-     &                     path_u(ic)*SIN(PathAngle(Rstr-1+ic))*        &
-     &                       path_hz(ic)/path_pn(ic)+                   &
-     &                     path_v(ic)*COS(PathAngle(Rstr-1+ic)*         &
-     &                       path_hz(ic)/path_pm(ic)                    &
-#   ifdef BGQC
-!               BgErr(iobs)=MAX(uBgErr(iobs), vBgErr(iobs))
-#   endif
+                Aobs(iobs)=Aobs(iobs)+                                  &
+     &                     PathLength(Rstr-1+ic)*path_hz(ic)*           &           
+     &                     (path_u(ic)*SIN(PathAngle(Rstr-1+ic))+       &
+     &                      path_v(ic)*COS(PathAngle(Rstr-1+ic))
               END IF
             END IF
+#   ifdef BGQC
+            BgErr(iobs)=MAX(MAXVAL(uBgErr), MAXVAL(vBgErr))
+#   endif
             IF (Aobs(iobs).ne.0.0_r8) THEN
               ObsVetting(iobs)=1.0_r8
             END IF
           END IF
+!
+!  Free the allocated arrays
+!
+          IF (allocated(path_time)) THEN
+            deallocate (path_time)
+          END IF
+
+          IF (allocated(path_type)) THEN
+            deallocate (path_type)
+          END IF
+
+          IF (allocated(path_vetting)) THEN
+            deallocate (path_vetting)
+          END IF
+
+          IF (allocated(path_u)) THEN
+            deallocate (path_u)
+          END IF
+
+          IF (allocated(path_v)) THEN
+            deallocate (path_v)
+          END IF
+
+          IF (allocated(path_hz)) THEN
+            deallocate (path_hz)
+          END IF
+
+# ifdef BGQC
+          IF (allocated(uBgErr)) THEN
+            deallocate (uBgErr)
+          END IF
+
+          IF (allocated(vBgErr)) THEN
+            deallocate (vBgErr)
+          END IF
+# endif
         END IF OBS_TYPE
       END DO OBS_THREAD
       END SUBROUTINE extract_transport
