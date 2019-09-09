@@ -42,7 +42,9 @@
 # ifdef DISTRIBUTE
       USE distribute_mod, ONLY :  mp_collect
 # endif
+# ifdef SOLVE3D
       USE obs_k2z_mod, ONLY : obs_k2z
+# endif
       USE strings_mod, ONLY : FoundError, find_string
 !
       implicit none
@@ -332,6 +334,7 @@
 # endif
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN
+# ifdef SOLVE3D
 !
 !-----------------------------------------------------------------------
 !  If appropriate, convert depth in vertical fractional coordinates to
@@ -348,6 +351,7 @@
      &              obs_Xgrid, obs_Ygrid, obs_depths, obs_scale,        &
      &              GRID(ng) % z0_w,                                    &
      &              obs_work)
+# endif
 
 # ifdef DISTRIBUTE
 !
@@ -553,4 +557,3 @@
       RETURN
       END SUBROUTINE stats_modobs
 #endif
-
