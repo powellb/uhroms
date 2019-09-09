@@ -1,4 +1,4 @@
-# svn $Id: makefile 1804 2019-07-09 20:17:48Z arango $
+# svn $Id: makefile 1809 2019-08-08 19:58:21Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
 # Copyright (c) 2002-2019 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
@@ -169,7 +169,7 @@ ifeq "$(strip $(SCRATCH_DIR))" "./"
 endif
 
 #--------------------------------------------------------------------------
-#  Notice that the token "libraries" is initialize with the ROMS/Utility
+#  Notice that the token "libraries" is initialized with the ROMS/Utility
 #  library to account for calls to objects in other ROMS libraries or
 #  cycling dependencies. These type of dependencies are problematic in
 #  some compilers during linking. This library appears twice at linking
