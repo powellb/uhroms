@@ -446,7 +446,8 @@
         integer  :: isVvel = 5                ! 3D V-velocity
         integer  :: isWvel                    ! 3D W-velocity
         integer  :: isRadial = 0              ! HF radial-velocity
-        integer  :: isTransport = 0           ! Transport Obs
+        integer  :: isTransport2d = 0         ! 2D Transport Obs
+        integer  :: isTransport3d = 0         ! 3D Transport Obs
         integer  :: isUstr                    ! surface u-stress
         integer  :: isVstr                    ! surface v-stress
         integer  :: isMtke                    ! turbulent kinetic energy

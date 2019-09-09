@@ -337,10 +337,14 @@
             haveObsMeta(ng)=.TRUE.
             FOURDVAR(ng)%ObsCount(isRadial)=                            &
      &                           FOURDVAR(ng)%ObsCount(isRadial)+1
-          ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport)) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
             haveObsMeta(ng)=.TRUE.
-            FOURDVAR(ng)%ObsCount(isTransport)=                            &
-     &                           FOURDVAR(ng)%ObsCount(isTransport)+1
+            FOURDVAR(ng)%ObsCount(isTransport2d)=                       &
+     &                           FOURDVAR(ng)%ObsCount(isTransport2d)+1
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport3d)) THEN
+            haveObsMeta(ng)=.TRUE.
+            FOURDVAR(ng)%ObsCount(isTransport3d)=                       &
+     &                           FOURDVAR(ng)%ObsCount(isTransport3d)+1
           ELSE
             DO itrc=1,NT(ng)
               IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN
@@ -357,7 +361,8 @@
 !  information from the observation file
 !-----------------------------------------------------------------------
 !
-        IF (FOURDVAR(ng)%ObsCount(isTransport).gt.0) THEN
+        IF ((FOURDVAR(ng)%ObsCount(isTransport2d).gt.0).or.
+            (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
 !
 !  Read in path ID.
 !

@@ -1,8 +1,9 @@
 #include "cppdefs.h"
-      MODULE extract_transport_mod
-#if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
+      MODULE tl_extract_transport_mod
+#if (defined FOUR_DVAR || defined VERIFICATION) && \
+    (defined OBSERVATIONS && defined TLM_OBS)
 !
-!svn $Id: extract_transport.F
+!svn $Id: tl_extract_transport.F
 !================================================== Brian S. Powell ====
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -10,66 +11,9 @@
 !=======================================================================
 !                                                                      !
 !   This module extracts the paths of transport obs and calculates     !
-!   the total transport for each path. Transport can use the           !
+!   the tangent transport for each path. Transport can use the         !
 !   barotropic velocity (isTransport2d) or the baroclinic velocity     !
 !   (isTransport3d).                                                   !
-!                                                                      !
-!   For a transport observation, it is of the appropriate type,        !
-!   specifies:                                                         !
-!                                                                      !
-!       obs_time       : time of the transport measurement             !
-!       obs_value      : the transport measurement in Sverdrups        !
-!       obs_type       : either isTransport2d or isTransport3d         !
-!       obs_provenance : user selectable                               !
-!       obs_meta       : the path ID that describes the plane through  !
-!                        which the transport is calculated             !
-!                                                                      !
-!   The path is stored as a series of points (dimension path), all     !
-!   sharing the same ID so they are kept together. Each path point     !
-!   represents a surface that the transport is passing through and     !
-!   must have the following information:                               !
-!                                                                      !
-!       path_id     : the ID of the path that this point belongs to    !
-!       path_Xgrid  : the fractional i-location of the model grid      !
-!                     for this path point                              !
-!       path_Ygrid  : the fractional j-location of the model grid      !
-!                     for this path point                              !
-# ifdef SOLVE3D
-!       path_Zgrid  : the fractional k-location of the model grid      !
-!                     for this path point if it is a 3D transport      !
-!                 NOTE: the height of the cell is calculated for the   !
-!                       location provided, so over a single path,      !
-!                       each path point should be a full k-value       !
-!                       apart from the others; otherwise, there will   !
-!                       be "double-counting" as the grid hz values     !
-!                       will overlap.                                  !
-# endif
-!       path_length : the horizontal distance in meters that of this   !
-!                     portion of the path                              !
-!       path_angle  : the angle in radians of the orientation of this  !   
-!                     path relative to the grid (i.e., positive right  !
-!                     along the xi-direction is 0 radians).            !
-!                                                                      !
-!   Multiple paths are allowed, but must have an independent path_ID.  !
-!                                                                      !
-!   An example of a full-column transport observation across 3         !
-!   diagonal points in a 1km resolution grid:                          !
-!     obs_time(i)       = 20.33                                        !
-!     obs_type(i)       = isTransport2D                                !
-!     obs_provenance(i) = 552                                          !
-!     obs_value(i)      = 12.34  [Sv]                                  !
-!     obs_meta(i)       = 15                                           !
-!                                                                      !
-!     NOTE: the location is not needed for the transport value because !
-!     the values are located in the path; however, for analysis use,   !
-!     it may be preferable to specify the lat/lon of the center.       !
-!                                                                      !
-!   The path, 15, must be defined:                                     !
-!     path_ID(1:3)     = 15, 15, 15                                    !
-!     path_Xgrid(1:3)  = 10, 11, 12                                    !
-!     path_Ygrid(1:3)  = 26, 27, 28                                    !
-!     path_length(1:3) = 1414, 1414, 1414     [m]                      !
-!     path_angle(1:3)  = 0.7854, 0.7854, 0.7854 [radians]              !
 !                                                                      !
 !   This will then extract the appropriate velocity at each point      !
 !   along with the height (full-column for 2D or cell height for 3D)   !
@@ -83,15 +27,15 @@
 
       implicit none
 
-      PUBLIC extract_transport_2d
+      PUBLIC tl_extract_transport_2d
 # ifdef SOLVE3D
-      PUBLIC extract_transport_3d
+      PUBLIC tl_extract_transport_3d
 # endif
 
       CONTAINS
 !
 !***********************************************************************
-      SUBROUTINE extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,      &
+      SUBROUTINE tl_extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,   &
      &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
      &                          ifield, Mobs, NobsSTR, NobsEND,         &
      &                          Xmin, Xmax, Ymin, Ymax,                 &
@@ -384,10 +328,10 @@
 # endif
         END IF OBS_TYPE
       END DO OBS_THREAD
-      END SUBROUTINE extract_transport_2d
+      END SUBROUTINE tl_extract_transport_2d
 !
 !***********************************************************************
-      SUBROUTINE extract_transport_3d (ng, Imin, Imax, Jmin, Jmax,      &
+      SUBROUTINE tl_extract_transport_3d (ng, Imin, Imax, Jmin, Jmax,   &
      &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
      &                          ifield, Mobs, NobsSTR, NobsEND,         &
      &                          Xmin, Xmax, Ymin, Ymax,                 &
@@ -706,7 +650,7 @@
 # endif
         END IF OBS_TYPE
       END DO OBS_THREAD
-      END SUBROUTINE extract_transport_3d
+      END SUBROUTINE tl_extract_transport_3d
 #else
-      END MODULE extract_transport_mod
+      END MODULE tl_extract_transport_mod
 #endif

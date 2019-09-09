@@ -30,9 +30,12 @@
       USE distribute_mod,  ONLY :  mp_collect
 # endif
       USE extract_obs_mod, ONLY : extract_obs2d
+      USE extract_transport_mod, ONLY : extract_transport_2d
+      USE tl_extract_transport_mod, ONLY : tl_extract_transport_2d
 # ifdef SOLVE3D
       USE extract_obs_mod, ONLY : extract_obs3d
-      USE extract_transport_mod, ONLY : extract_transport
+      USE extract_transport_mod, ONLY : extract_transport_3d
+      USE tl_extract_transport_mod, ONLY : tl_extract_transport_3d
 # endif
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
@@ -781,13 +784,48 @@
 #  endif
 !
 !-----------------------------------------------------------------------
-!  Transport cable observations.
+!  2D Transport cable observations.
 !-----------------------------------------------------------------------
 !
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
-     &      (FOURDVAR(ng)%ObsCount(isTransport).gt.0)) THEN
-          CALL extract_transport (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,         &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          ObsState2Type(isTransport),             &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          ObsType, ObsVetting,                    &
+     &                          Tobs, Xobs, Yobs,                       &
+     &                          NLmodVal)
+        END IF
+#  endif
+#  ifdef TLM_OBS
+        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL tl_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          ObsState2Type(isTransport),             &
+     &                          Mobs, Mstr, Mend,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          time(ng), dt(ng),                       &
+     &                          ObsType, ObsVetting,                    &
+     &                          Tobs, Xobs, Yobs,                       &
+     &                          TLmodVal)
+        END IF
+#  endif
+!
+!-----------------------------------------------------------------------
+!  3D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+#  if (! defined IS4DVAR_SENSITIVITY) && defined SOLVE3D
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
+          CALL extract_transport_3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          ObsState2Type(isTransport),             &
      &                          Mobs, Mstr, Mend,                       &
@@ -799,10 +837,10 @@
      &                          NLmodVal)
         END IF
 #  endif
-#  ifdef TLM_OBS
+#  if defined TLM_OBS && defined SOLVE3D
         IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
-     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
-          CALL tl_extract_transport (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
+     &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
+          CALL tl_extract_transport_3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          ObsState2Type(isTransport),             &
      &                          Mobs, Mstr, Mend,                       &
@@ -811,7 +849,7 @@
      &                          time(ng), dt(ng),                       &
      &                          ObsType, ObsVetting,                    &
      &                          Tobs, Xobs, Yobs, Zobs,                 &
-     &                          NLmodVal)
+     &                          TLmodVal)
         END IF
 #  endif
 !

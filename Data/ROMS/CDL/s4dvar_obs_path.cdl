@@ -67,7 +67,7 @@ variables:
     path_Ygrid:long_name = "y-grid path location" ;
     path_Ygrid:left = "INT(path_Ygrid(path))" ;
     path_Ygrid:right = "INT(path_Ygrid(path))+1" ;
-  int path_Zgrid(datum) ;
+  int path_Zgrid(path) ;
     path_Zgrid:long_name = "z-grid path location" ;
     path_Zgrid:up = "INT(path_Zgrid(path))+1" ;
     path_Zgrid:down = "INT(path_Zgrid(path))" ;

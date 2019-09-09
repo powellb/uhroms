@@ -155,9 +155,9 @@ endif
           LDFLAGS := $(FFLAGS)
 
 ifdef USE_NETCDF4
-        NF_CONFIG ?= nf-config
+        NF_CONFIG ?= nc-config
     NETCDF_INCDIR ?= $(shell $(NF_CONFIG) --prefix)/include
-             LIBS += $(shell $(NF_CONFIG) --flibs)
+             LIBS += $(shell $(NF_CONFIG) --flibs --libs)
            INCDIR += $(NETCDF_INCDIR) $(INCDIR)
 else
     NETCDF_INCDIR ?= /opt/intelsoft/serial/netcdf3/include
