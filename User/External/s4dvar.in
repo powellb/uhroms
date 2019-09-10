@@ -144,7 +144,9 @@ balance(isVvel) =  T                      ! 3D momentum (u, v)
 
       NextraObs = 3
 
-     ExtraIndex = 20
+     ExtraIndex = 20 \
+                  21 \
+                  22
 
       ExtraName = radial \
                   transport-2d \

@@ -306,6 +306,40 @@
 # endif
      &                           ADmodVal)
         END IF
+!
+!-----------------------------------------------------------------------
+!  2D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL ad_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          Mstr, Mend, KOUT,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          f_ubar, f_vbar, ADmodVal)
+        END IF
+# ifdef DISTRIBUTE
+!
+!  Exchange adjoint barotropic velocity forcing terms, after all
+!  the 2D velocity observations are processed.
+!
+        IF ((FOURDVAR(ng)%ObsCount(isUvel).gt.0).or.                    &
+     &      (FOURDVAR(ng)%ObsCount(isVvel).gt.0).or.                    &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj,                    &
+     &                           NghostPoints,                          &
+     &                           EWperiodic(ng), NSperiodic(ng),        &
+     &                           f_ubar)
+          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj,                    &
+     &                           NghostPoints,                          &
+     &                           EWperiodic(ng), NSperiodic(ng),        &
+     &                           f_vbar)
+        END IF
+# endif
 
 # ifdef SOLVE3D
 !
@@ -506,22 +540,6 @@
         END IF
 !
 !-----------------------------------------------------------------------
-!  2D Transport cable observations.
-!-----------------------------------------------------------------------
-!
-#  ifndef IS4DVAR_SENSITIVITY
-        IF (wrtNLmod(ng).and.                                           &
-     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL ad_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          Mstr, Mend, KOUT,                       &
-     &                          rXmin(ng), rXmax(ng),                   &
-     &                          rYmin(ng), rYmax(ng),                   &
-     &                          f_ubar, f_vbar, ADmodVal)
-        END IF
-#  endif
-!
-!-----------------------------------------------------------------------
 !  3D Transport cable observations.
 !-----------------------------------------------------------------------
 !
@@ -537,24 +555,6 @@
         END IF
 #  endif
 #  ifdef DISTRIBUTE
-!
-!  Exchange adjoint barotropic velocity forcing terms, after all
-!  the 2D velocity observations are processed.
-!
-        IF ((FOURDVAR(ng)%ObsCount(isUvel).gt.0).or.                    &
-     &      (FOURDVAR(ng)%ObsCount(isVvel).gt.0).or.                    &
-     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
-     &                           LBi, UBi, LBj, UBj,                    &
-     &                           NghostPoints,                          &
-     &                           EWperiodic(ng), NSperiodic(ng),        &
-     &                           f_ubar)
-          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
-     &                           LBi, UBi, LBj, UBj,                    &
-     &                           NghostPoints,                          &
-     &                           EWperiodic(ng), NSperiodic(ng),        &
-     &                           f_vbar)
-        END IF
 !
 !  Exchange adjoint velocity forcing terms, after all the 3D velocity
 !  observations are processed.

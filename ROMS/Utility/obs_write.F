@@ -348,6 +348,33 @@
      &                        TLmodVal)
         END IF
 # endif
+!
+!-----------------------------------------------------------------------
+!  2D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+#  ifndef IS4DVAR_SENSITIVITY
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          Mstr, Mend, KOUT,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          NLmodVal)
+        END IF
+#  endif
+#  ifdef TLM_OBS
+        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL tl_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          Mstr, Mend, KOUT,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          TLmodVal)
+        END IF
+#  endif
 
 # ifdef SOLVE3D
 !
@@ -784,33 +811,6 @@
 #   endif
             END IF
           END DO
-        END IF
-#  endif
-!
-!-----------------------------------------------------------------------
-!  2D Transport cable observations.
-!-----------------------------------------------------------------------
-!
-#  ifndef IS4DVAR_SENSITIVITY
-        IF (wrtNLmod(ng).and.                                           &
-     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          Mstr, Mend, KOUT,                       &
-     &                          rXmin(ng), rXmax(ng),                   &
-     &                          rYmin(ng), rYmax(ng),                   &
-     &                          NLmodVal)
-        END IF
-#  endif
-#  ifdef TLM_OBS
-        IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
-     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL tl_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          Mstr, Mend, KOUT,                       &
-     &                          rXmin(ng), rXmax(ng),                   &
-     &                          rYmin(ng), rYmax(ng),                   &
-     &                          TLmodVal)
         END IF
 #  endif
 !
