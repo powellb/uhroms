@@ -361,8 +361,8 @@
 !  information from the observation file
 !-----------------------------------------------------------------------
 !
-        IF ((FOURDVAR(ng)%ObsCount(isTransport2d).gt.0).or.
-            (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
+        IF ((FOURDVAR(ng)%ObsCount(isTransport2d).gt.0).or.             &
+     &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
 !
 !  Read in path ID.
 !

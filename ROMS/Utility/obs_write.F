@@ -31,11 +31,15 @@
 # endif
       USE extract_obs_mod, ONLY : extract_obs2d
       USE extract_transport_mod, ONLY : extract_transport_2d
+# ifdef TLM_OBS
       USE tl_extract_transport_mod, ONLY : tl_extract_transport_2d
+# endif
 # ifdef SOLVE3D
       USE extract_obs_mod, ONLY : extract_obs3d
       USE extract_transport_mod, ONLY : extract_transport_3d
+#  ifdef TLM_OBS
       USE tl_extract_transport_mod, ONLY : tl_extract_transport_3d
+#  endif
 # endif
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
       USE nf_fwrite2d_mod, ONLY : nf_fwrite2d

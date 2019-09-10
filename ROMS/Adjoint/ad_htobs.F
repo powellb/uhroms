@@ -91,8 +91,10 @@
 #  endif
 # endif
       USE ad_extract_obs_mod, ONLY : ad_extract_obs2d
+      USE ad_extract_transport_mod, ONLY : ad_extract_transport2d
 # ifdef SOLVE3D
       USE ad_extract_obs_mod, ONLY : ad_extract_obs3d
+      USE ad_extract_transport_mod, ONLY : ad_extract_transport3d
 # endif
 !
 !  Imported variable declarations.
@@ -279,13 +281,6 @@
      &                           umask,                                 &
 # endif
      &                           ADmodVal)
-# ifdef DISTRIBUTE
-          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
-     &                           LBi, UBi, LBj, UBj,                    &
-     &                           NghostPoints,                          &
-     &                           EWperiodic(ng), NSperiodic(ng),        &
-     &                           f_ubar)
-# endif
         END IF
 !
 !  2D v-momentum component.
@@ -310,13 +305,6 @@
      &                           vmask,                                 &
 # endif
      &                           ADmodVal)
-# ifdef DISTRIBUTE
-          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
-     &                           LBi, UBi, LBj, UBj,                    &
-     &                           NghostPoints,                          &
-     &                           EWperiodic(ng), NSperiodic(ng),        &
-     &                           f_vbar)
-# endif
         END IF
 
 # ifdef SOLVE3D
@@ -516,15 +504,65 @@
 #  endif
      &                           ad_uradial)
         END IF
-
+!
+!-----------------------------------------------------------------------
+!  2D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+#  ifndef IS4DVAR_SENSITIVITY
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL ad_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          Mstr, Mend, KOUT,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          f_ubar, f_vbar, ADmodVal)
+        END IF
+#  endif
+!
+!-----------------------------------------------------------------------
+!  3D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+#  if (! defined IS4DVAR_SENSITIVITY) && defined SOLVE3D
+        IF (wrtNLmod(ng).and.                                           &
+     &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
+          CALL ad_extract_transport_3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          Mstr, Mend, NOUT,                       &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          f_u, f_v, ADmodVal)
+        END IF
+#  endif
 #  ifdef DISTRIBUTE
 !
-!  Exchange adjoint velocites forcing terms, after all the 3D velocity
+!  Exchange adjoint barotropic velocity forcing terms, after all
+!  the 2D velocity observations are processed.
+!
+        IF ((FOURDVAR(ng)%ObsCount(isUvel).gt.0).or.                    &
+     &      (FOURDVAR(ng)%ObsCount(isVvel).gt.0).or.                    &
+     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
+          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj,                    &
+     &                           NghostPoints,                          &
+     &                           EWperiodic(ng), NSperiodic(ng),        &
+     &                           f_ubar)
+          CALL ad_mp_exchange2d (ng, tile, iADM, 1,                     &
+     &                           LBi, UBi, LBj, UBj,                    &
+     &                           NghostPoints,                          &
+     &                           EWperiodic(ng), NSperiodic(ng),        &
+     &                           f_vbar)
+        END IF
+!
+!  Exchange adjoint velocity forcing terms, after all the 3D velocity
 !  observations are processed.
 !
         IF ((FOURDVAR(ng)%ObsCount(isUvel).gt.0).or.                    &
      &      (FOURDVAR(ng)%ObsCount(isVvel).gt.0).or.                    &
-     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0)) THEN
+     &      (FOURDVAR(ng)%ObsCount(isRadial).gt.0).or.                  &
+     &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
           CALL ad_mp_exchange3d (ng, tile, iADM, 2,                     &
      &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
      &                           NghostPoints, EWperiodic(ng),          &
@@ -607,6 +645,12 @@
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
               FOURDVAR(ng)%ObsReject(isRadial)=                         &
      &                              FOURDVAR(ng)%ObsReject(isRadial)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport2d)=                    &
+ &                              FOURDVAR(ng)%ObsReject(isTransport2d)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport3d)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport3d)=                    &
+ &                              FOURDVAR(ng)%ObsReject(isTransport3d)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN

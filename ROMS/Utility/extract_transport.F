@@ -108,7 +108,7 @@
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      integer, intent(in) :: ifield, Mobs, Mstr, Mend, Kout
+      integer, intent(in) :: ifield, Mstr, Mend, Kout
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
 !
@@ -246,7 +246,7 @@
 #   ifdef MASKING
      &                        GRID(ng)%vmask,                           &
 #   endif
-     &                        path_v)
+     &                        path_vbar)
 #   ifdef BGQC
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
@@ -316,7 +316,7 @@
      &                     (path_ubar(ic)*SIN(PathAngle(Rstr-1+ic))+    &
      &                      path_vbar(ic)*COS(PathAngle(Rstr-1+ic)))
               END IF
-            END IF
+            END DO
 #   ifdef BGQC
             BgErr(iobs)=MAX(MAXVAL(ubarBgErr), MAXVAL(vbarBgErr))
 #   endif
@@ -339,12 +339,12 @@
             deallocate (path_vetting)
           END IF
 
-          IF (allocated(path_u)) THEN
-            deallocate (path_u)
+          IF (allocated(path_ubar)) THEN
+            deallocate (path_ubar)
           END IF
 
-          IF (allocated(path_v)) THEN
-            deallocate (path_v)
+          IF (allocated(path_vbar)) THEN
+            deallocate (path_vbar)
           END IF
 
           IF (allocated(path_h)) THEN
@@ -515,7 +515,7 @@
 #   endif
 
 !
-!  Get the u-component for transport calculations.
+!  Get the v-component for transport calculations.
 !
           DO k=1,N(ng)
             DO j=Jstr-1,Jend+1
@@ -615,7 +615,7 @@
      &                     (path_u(ic)*SIN(PathAngle(Rstr-1+ic))+       &
      &                      path_v(ic)*COS(PathAngle(Rstr-1+ic)))
               END IF
-            END IF
+            END DO
 #  ifdef BGQC
             BgErr(iobs)=MAX(MAXVAL(uBgErr), MAXVAL(vBgErr))
 #  endif

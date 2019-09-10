@@ -142,12 +142,13 @@ balance(isVvel) =  T                      ! 3D momentum (u, v)
 ! If NextraVar > 1, enter one observation type names per line and
 ! use a backslash as the continuation.
 
-      NextraObs = 2
+      NextraObs = 3
 
      ExtraIndex = 20
 
       ExtraName = radial \
-                  transport
+                  transport-2d \
+                  transport-3d
 
 ! If weak constraint 4DVar, set diffusive relaxation coefficients (m2/s)
 ! used to relax representer tangent linear solution to privious Picard
