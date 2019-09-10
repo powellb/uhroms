@@ -52,8 +52,8 @@
 !
 !***********************************************************************
       SUBROUTINE ad_extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,   &
-     &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
-     &                          ifield, Mstr, Mend, Kout,               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          Mstr, Mend, Kout,                       &
      &                          Xmin, Xmax, Ymin, Ymax,                 &
      &                          f_ubar, f_vbar, Aobs)
 !***********************************************************************

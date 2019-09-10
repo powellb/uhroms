@@ -40,8 +40,8 @@
 !
 !***********************************************************************
       SUBROUTINE tl_extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,   &
-     &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
-     &                          ifield, Mstr, Mend, Kout,               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          Mstr, Mend, Kout,                       &
      &                          Xmin, Xmax, Ymin, Ymax, Aobs)
 !***********************************************************************
 !
@@ -55,8 +55,8 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
-      integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      integer, intent(in) :: ifield, Mstr, Mend, Kout
+      integer, intent(in) :: LBi, UBi, LBj, UBj
+      integer, intent(in) :: Mstr, Mend, Kout
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
 !

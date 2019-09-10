@@ -314,7 +314,7 @@
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
           CALL ad_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          LBi, UBi, LBj, UBj,                     &
      &                          Mstr, Mend, KOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
