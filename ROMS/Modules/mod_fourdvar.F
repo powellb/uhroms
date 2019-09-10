@@ -338,6 +338,10 @@
 !
         integer :: Mobs
 !
+!  Maximum number of observation path points to process.
+!
+        integer :: Mpath
+!
 !  Number of model state variables to process.
 !
         integer, allocatable :: NstateVar(:)

@@ -651,6 +651,5 @@
         END IF OBS_TYPE
       END DO OBS_THREAD
       END SUBROUTINE tl_extract_transport_3d
-#else
-      END MODULE tl_extract_transport_mod
 #endif
+      END MODULE tl_extract_transport_mod

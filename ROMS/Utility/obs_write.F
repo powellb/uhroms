@@ -792,13 +792,9 @@
      &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
           CALL extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          ObsState2Type(isTransport),             &
-     &                          Mobs, Mstr, Mend,                       &
+     &                          Mstr, Mend, KOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
-     &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsVetting,                    &
-     &                          Tobs, Xobs, Yobs,                       &
      &                          NLmodVal)
         END IF
 #  endif
@@ -807,13 +803,9 @@
      &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
           CALL tl_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          ObsState2Type(isTransport),             &
-     &                          Mobs, Mstr, Mend,                       &
+     &                          Mstr, Mend, KOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
-     &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsVetting,                    &
-     &                          Tobs, Xobs, Yobs,                       &
      &                          TLmodVal)
         END IF
 #  endif
@@ -827,13 +819,9 @@
      &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
           CALL extract_transport_3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          ObsState2Type(isTransport),             &
-     &                          Mobs, Mstr, Mend,                       &
+     &                          Mstr, Mend, NOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
-     &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsVetting,                    &
-     &                          Tobs, Xobs, Yobs, Zobs,                 &
      &                          NLmodVal)
         END IF
 #  endif
@@ -842,13 +830,9 @@
      &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
           CALL tl_extract_transport_3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          ObsState2Type(isTransport),             &
-     &                          Mobs, Mstr, Mend,                       &
+     &                          Mstr, Mend, NOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
-     &                          time(ng), dt(ng),                       &
-     &                          ObsType, ObsVetting,                    &
-     &                          Tobs, Xobs, Yobs, Zobs,                 &
      &                          TLmodVal)
         END IF
 #  endif

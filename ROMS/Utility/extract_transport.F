@@ -93,55 +93,35 @@
 !***********************************************************************
       SUBROUTINE extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,      &
      &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
-     &                          ifield, Mobs, NobsSTR, NobsEND,         &
-     &                          Xmin, Xmax, Ymin, Ymax,                 &
-     &                          time, dt, ObsType, ObsVetting,          &
-     &                          Tobs, Xobs, Yobs, Aobs)
+     &                          ifield, Mstr, Mend, Kout,               &
+     &                          Xmin, Xmax, Ymin, Ymax, Aobs)
 !***********************************************************************
 !
-      USE mod_param
-      USE mod_parallel
       USE mod_fourdvar
       USE mod_grid
-      USE mod_iounits
       USE mod_ncparam
-      USE mod_netcdf
       USE mod_ocean
+      USE mod_parallel
       USE mod_scalars
-      USE mod_stepping
 !
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      integer, intent(in) :: ifield, Mobs, NobsSTR, NobsEND
+      integer, intent(in) :: ifield, Mobs, Mstr, Mend, Kout
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
-      real(dp), intent(in) :: time, dt
 !
 #  ifdef ASSUMED_SHAPE
-      integer, intent(in) :: ObsType(:)
-
-      real(dp), intent(in) :: Tobs(:)
-      real(r8), intent(in) :: Xobs(:)
-      real(r8), intent(in) :: Yobs(:)
-      real(r8), intent(inout) :: ObsVetting(:)
       real(r8), intent(inout) :: Aobs(:)
 #  else
-      integer, intent(in) :: ObsType(Mobs)
-
-      real(dp), intent(in) :: Tobs(Mobs)
-      real(r8), intent(in) :: Xobs(Mobs)
-      real(r8), intent(in) :: Yobs(Mobs)
-      real(r8), intent(inout) :: ObsVetting(Mobs)
-      real(r8), intent(inout) :: Zobs(Mobs)
       real(r8), intent(inout) :: Aobs(Mobs)
 #  endif
 !
 !  Local variable declarations.
 !
       logical :: Lwrote
-      integer :: i, j, ic, iobs, Rstr, Rend
+      integer :: i, j, ic, iobs, Rstr, Rend, Robs, Ncollect
       real(dp) :: TimeLB, TimeUB
 
       real(r8), parameter :: IniVal = 0.0_r8
@@ -158,10 +138,10 @@
 !  Find the transport path observations that are available
 !  for the current time.
 !
-      TimeLB=(time-0.5_dp*dt)/86400.0_dp
-      TimeUB=(time+0.5_dp*dt)/86400.0_dp
+      TimeLB=(time(ng)-0.5_dp*dt(ng))/86400.0_dp
+      TimeUB=(time(ng)+0.5_dp*dt(ng))/86400.0_dp
 
-      OBS_THREAD : DO iobs=NobsSTR,NobsEND
+      OBS_THREAD : DO iobs=Mstr,Mend
         OBS_TYPE : IF ((ObsType(iobs).eq.isTransport2d).and.            &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB))) THEN
 
@@ -225,7 +205,7 @@
      &                        path_vetting, path_time,                  &
      &                        PathX(Rstr:Rend)+0.5_r8,                  &
      &                        PathY(Rstr:Rend),                         & 
-     &                        OCEAN(ng)%ubar(:,:,NOUT),                 &
+     &                        OCEAN(ng)%ubar(:,:,Kout),                 &
 #   ifdef MASKING
      &                        GRID(ng)%umask,                           &
 #   endif
@@ -262,7 +242,7 @@
      &                        path_vetting, path_time,                  &
      &                        PathX(Rstr:Rend),                         &
      &                        PathY(Rstr:Rend)+0.5_r8,                  &
-     &                        OCEAN(ng)%vbar(:,:,NOUT),                 &
+     &                        OCEAN(ng)%vbar(:,:,Kout),                 &
 #   ifdef MASKING
      &                        GRID(ng)%vmask,                           &
 #   endif
@@ -279,7 +259,7 @@
      &                        path_vetting, path_time,                  &
      &                        PathX(Rstr:Rend),                         &
      &                        PathY(Rstr:Rend)+0.5_r8,                  &
-     &                        OCEAN(ng)%e_vbar(:,:,NOUT),               &
+     &                        OCEAN(ng)%e_vbar(:,:,1),                  &
 #   ifdef MASKING
      &                        GRID(ng)%vmask,                           &
 #   endif
@@ -310,18 +290,16 @@
 !  Collect the vectors from the tiles
 !
           Ncollect=Robs
-#  ifdef SPHERICAL
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_time)
-#  endif
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_h)
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_u)
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_v)
+          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_ubar)
+          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_vbar)
 #  ifndef IS4DVAR_SENSITIVITY
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_vetting)
 #  endif
 #  ifdef BGQC
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, uBgErr)
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, vBgErr)
+          CALL mp_collect (ng, iNLM, Ncollect, IniVal, ubarBgErr)
+          CALL mp_collect (ng, iNLM, Ncollect, IniVal, vbarBgErr)
 #  endif
 # endif
 !
@@ -332,11 +310,11 @@
             Aobs(iobs)=IniVal
             ObsVetting(iobs)=0.0_r8
             DO ic=1,Robs
-              IF path_vetting(ic).ne.0.0_r8 THEN
+              IF (path_vetting(ic).ne.0.0_r8) THEN
                 Aobs(iobs)=Aobs(iobs)+                                  &
      &                     PathLength(Rstr-1+ic)*path_h(ic)*            &           
      &                     (path_ubar(ic)*SIN(PathAngle(Rstr-1+ic))+    &
-     &                      path_vbar(ic)*COS(PathAngle(Rstr-1+ic))
+     &                      path_vbar(ic)*COS(PathAngle(Rstr-1+ic)))
               END IF
             END IF
 #   ifdef BGQC
@@ -385,55 +363,34 @@
         END IF OBS_TYPE
       END DO OBS_THREAD
       END SUBROUTINE extract_transport_2d
+
+# ifdef SOLVE3D
 !
 !***********************************************************************
       SUBROUTINE extract_transport_3d (ng, Imin, Imax, Jmin, Jmax,      &
      &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
-     &                          ifield, Mobs, NobsSTR, NobsEND,         &
-     &                          Xmin, Xmax, Ymin, Ymax,                 &
-     &                          time, dt,                               &
-     &                          ObsType, ObsVetting,                    &
-     &                          Tobs, Xobs, Yobs, Zobs, Aobs)
+     &                          ifield, Mstr, Mend, Nout,               &
+     &                          Xmin, Xmax, Ymin, Ymax, Aobs)
 !***********************************************************************
 !
-
-      USE mod_param
-      USE mod_parallel
       USE mod_fourdvar
       USE mod_grid
-      USE mod_iounits
       USE mod_ncparam
-      USE mod_netcdf
       USE mod_ocean
+      USE mod_parallel
       USE mod_scalars
-      USE mod_stepping
 !
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      integer, intent(in) :: ifield, Mobs, NobsSTR, NobsEND
+      integer, intent(in) :: ifield, Mstr, Mend, Nout
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
-      real(dp), intent(in) :: time, dt
 !
 #  ifdef ASSUMED_SHAPE
-      integer, intent(in) :: ObsType(:)
-
-      real(dp), intent(in) :: Tobs(:)
-      real(r8), intent(in) :: Xobs(:)
-      real(r8), intent(in) :: Yobs(:)
-      real(r8), intent(inout) :: ObsVetting(:)
-      real(r8), intent(inout) :: Zobs(:)
       real(r8), intent(inout) :: Aobs(:)
 #  else
-      integer, intent(in) :: ObsType(Mobs)
-
-      real(dp), intent(in) :: Tobs(Mobs)
-      real(r8), intent(in) :: Xobs(Mobs)
-      real(r8), intent(in) :: Yobs(Mobs)
-      real(r8), intent(inout) :: ObsVetting(Mobs)
-      real(r8), intent(inout) :: Zobs(Mobs)
       real(r8), intent(inout) :: Aobs(Mobs)
 #  endif
 !
@@ -449,18 +406,18 @@
       real(r8), allocatable, dimension(:) :: path_type, path_vetting
       real(r8), allocatable, dimension(:) :: path_u, path_v, path_hz
       real(r8) :: transport
-# ifdef BGQC
+#  ifdef BGQC
       real(r8), allocatable, dimension(:) :: uBgErr, vBgErr
-# endif
+#  endif
 
 !
 !  Find the transport path observations that are available
 !  for the current time.
 !
-      TimeLB=(time-0.5_dp*dt)/86400.0_dp
-      TimeUB=(time+0.5_dp*dt)/86400.0_dp
+      TimeLB=(time(ng)-0.5_dp*dt(ng))/86400.0_dp
+      TimeUB=(time(ng)+0.5_dp*dt(ng))/86400.0_dp
 
-      OBS_THREAD : DO iobs=NobsSTR,NobsEND
+      OBS_THREAD : DO iobs=Mstr,Mend
         OBS_TYPE : IF ((ObsType(iobs).eq.isTransport3d).and.            &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB))) THEN
 
@@ -502,13 +459,13 @@
           allocate ( path_hz(Robs) )
           path_hz(ic)=IniVal
 
-# ifdef BGQC
+#  ifdef BGQC
           allocate ( uBgErr(Robs) )
           path_hz(ic)=IniVal
 
           allocate ( vBgErr(Robs) )
           path_hz(ic)=IniVal
-# endif
+#  endif
 
 !
 !  Get the u-component for transport calculations.
@@ -516,8 +473,8 @@
           DO k=1,N(ng)
             DO j=Jstr-1,Jend+1
               DO i=IstrU-1,Iend+1
-                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i-1,j,k)+
-     &            &GRID(ng)%z_r(i  ,j,k))
+                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i-1,j,k)+      &
+     &                                      GRID(ng)%z_r(i  ,j,k))
               END DO
             END DO
           END DO
@@ -532,7 +489,7 @@
      &                        path_vetting, path_time,                  &
      &                        PathX(Rstr:Rend)+0.5_r8,                  &
      &                        PathY(Rstr:Rend), PathZ(Rstr:Rend),       &
-     &                        OCEAN(ng)%u(:,:,:,NOUT),                  &
+     &                        OCEAN(ng)%u(:,:,:,Nout),                  &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING
      &                        GRID(ng)%umask,                           &
@@ -563,8 +520,8 @@
           DO k=1,N(ng)
             DO j=Jstr-1,Jend+1
               DO i=IstrU-1,Iend+1
-                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i-1,j,k)+
-     &            &GRID(ng)%z_r(i  ,j,k))
+                GRID(ng)%z_v(i,j,k)=0.5_r8*(GRID(ng)%z_r(i-1,j,k)+      &
+     &                                      GRID(ng)%z_r(i  ,j,k))
               END DO
             END DO
           END DO
@@ -580,7 +537,7 @@
      &                        PathX(Rstr:Rend),                         &
      &                        PathY(Rstr:Rend)+0.5_r8,                  &
      &                        PathZ(Rstr:Rend),                         &
-     &                        OCEAN(ng)%v(:,:,:,NOUT),                  &
+     &                        OCEAN(ng)%v(:,:,:,Nout),                  &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING
      &                        GRID(ng)%vmask,                           &
@@ -599,13 +556,13 @@
      &                        PathX(Rstr:Rend),                         &
      &                        PathY(Rstr:Rend)+0.5_r8,                  &
      &                        PathZ(Rstr:Rend),                         &
-     &                        OCEAN(ng)%e_v(:,:,:,NOUT),                &
+     &                        OCEAN(ng)%e_v(:,:,:,1),                   &
      &                        GRID(ng)%z_v,                             &
 #   ifdef MASKING
      &                        GRID(ng)%vmask,                           &
 #   endif
      &                        vBgErr)
-#   endif
+#  endif
 
 !
 !  Get the thickness-component for transport calculations.
@@ -622,30 +579,28 @@
      &                        PathY(Rstr:Rend), PathZ(Rstr:Rend),       &
      &                        GRID(ng)%Hz,                              &
      &                        GRID(ng)%z_r,                             &
-#   ifdef MASKING
+#  ifdef MASKING
      &                        GRID(ng)%rmask,                           &
-#   endif
+#  endif
      &                        path_hz)
 
-# ifdef DISTRIBUTE
+#  ifdef DISTRIBUTE
 !
 !  Collect the vectors from the tiles
 !
           Ncollect=Robs
-#  ifdef SPHERICAL
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_time)
-#  endif
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_hz)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_u)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_v)
-#  ifndef IS4DVAR_SENSITIVITY
+#   ifndef IS4DVAR_SENSITIVITY
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_vetting)
-#  endif
-#  ifdef BGQC
+#   endif
+#   ifdef BGQC
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, uBgErr)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, vBgErr)
+#   endif
 #  endif
-# endif
 !
 !  Compute NLM transport in the master thread after the fields are
 !  collected.
@@ -654,16 +609,16 @@
             Aobs(iobs)=IniVal
             ObsVetting(iobs)=0.0_r8
             DO ic=1,Robs
-              IF path_vetting(ic).ne.0.0_r8 THEN
+              IF (path_vetting(ic).ne.0.0_r8) THEN
                 Aobs(iobs)=Aobs(iobs)+                                  &
      &                     PathLength(Rstr-1+ic)*path_hz(ic)*           &           
      &                     (path_u(ic)*SIN(PathAngle(Rstr-1+ic))+       &
-     &                      path_v(ic)*COS(PathAngle(Rstr-1+ic))
+     &                      path_v(ic)*COS(PathAngle(Rstr-1+ic)))
               END IF
             END IF
-#   ifdef BGQC
+#  ifdef BGQC
             BgErr(iobs)=MAX(MAXVAL(uBgErr), MAXVAL(vBgErr))
-#   endif
+#  endif
             IF (Aobs(iobs).ne.0.0_r8) THEN
               ObsVetting(iobs)=1.0_r8
             END IF
@@ -695,7 +650,7 @@
             deallocate (path_hz)
           END IF
 
-# ifdef BGQC
+#  ifdef BGQC
           IF (allocated(uBgErr)) THEN
             deallocate (uBgErr)
           END IF
@@ -703,10 +658,10 @@
           IF (allocated(vBgErr)) THEN
             deallocate (vBgErr)
           END IF
-# endif
+#  endif
         END IF OBS_TYPE
       END DO OBS_THREAD
       END SUBROUTINE extract_transport_3d
-#else
-      END MODULE extract_transport_mod
+# endif
 #endif
+      END MODULE extract_transport_mod
