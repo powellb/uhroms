@@ -103,6 +103,10 @@
       USE mod_ocean
       USE mod_parallel
       USE mod_scalars
+# ifdef DISTRIBUTE
+      USE distribute_mod,  ONLY :  mp_collect
+# endif
+      USE extract_obs_mod, ONLY : extract_obs2d
 !
 !  Imported variable declarations.
 !
@@ -126,8 +130,9 @@
 
       real(r8), parameter :: IniVal = 0.0_r8
 
+      integer, allocatable, dimension(:) :: path_type
       real(r8), allocatable, dimension(:) :: path_time, path_h
-      real(r8), allocatable, dimension(:) :: path_type, path_vetting
+      real(r8), allocatable, dimension(:) :: path_vetting
       real(r8), allocatable, dimension(:) :: path_ubar, path_vbar
       real(r8) :: transport
 # ifdef BGQC
@@ -195,9 +200,9 @@
 !  Get the ubar-component for transport calculations.
 !
           CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        LBi, UBi, LBj, UBj,                       &
      &                        ObsState2Type(isTransport2d),             &
-     &                        Mobs, Mstr, Mend,                         &
+     &                        Robs, Rstr, Rend,                         &
      &                        uXmin(ng)+0.5_r8,                         &
      &                        uXmax(ng)+0.5_r8,                         &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -211,30 +216,30 @@
 #   endif
      &                        path_ubar)
 #   ifdef BGQC
-            CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,           &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          ObsState2Type(isTransport2d),           &
-     &                          Mobs, Mstr, Mend,                       &
-     &                          uXmin(ng)+0.5_r8, rXmax(ng)+0.5_r8,     &
-     &                          uYmin(ng), uYmax(ng),                   &
-     &                          time(ng), dt(ng),                       &
-     &                          path_type, path_vetting,                &
-     &                          path_time, PathX(Rstr:Rend)+0.5_r8,     &
-     &                          PathY(Rstr:Rend),                       &
-     &                          OCEAN(ng)%e_ubar(:,:,1),                &
+          CALL extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,             &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        ObsState2Type(isTransport2d),             &
+     &                        Robs, Rstr, Rend,                         &
+     &                        uXmin(ng)+0.5_r8, rXmax(ng)+0.5_r8,       &
+     &                        uYmin(ng), uYmax(ng),                     &
+     &                        time(ng), dt(ng),                         &
+     &                        path_type, path_vetting,                  &
+     &                        path_time, PathX(Rstr:Rend)+0.5_r8,       &
+     &                        PathY(Rstr:Rend),                         &
+     &                        OCEAN(ng)%e_ubar(:,:,1),                  &
 #    ifdef MASKING
-     &                          GRID(ng)%umask,                         &
+     &                        GRID(ng)%umask,                           &
 #    endif
-     &                          ubarBgErr)
+     &                        ubarBgErr)
 #   endif
 
 !
 !  Get the vbar-component for transport calculations.
 !
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        LBi, UBi, LBj, UBj,                       &
      &                        ObsState2Type(isTransport2d),             &
-     &                        Mobs, Mstr, Mend,                         &
+     &                        Robs, Rstr, Rend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng)+0.5_r8,                         &
      &                        uYmax(ng)+0.5_r8,                         &
@@ -249,9 +254,9 @@
      &                        path_vbar)
 #   ifdef BGQC
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,             &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        LBi, UBi, LBj, UBj,                       &
      &                        ObsState2Type(isTransport2d),             &
-     &                        Mobs, Mstr, Mend,                         &
+     &                        Robs, Rstr, Rend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng)+0.5_r8,                         &
      &                        uYmax(ng)+0.5_r8,                         &
@@ -270,9 +275,9 @@
 !  Get the depth-component for transport calculations.
 !
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        LBi, UBi, LBj, UBj,                       &
      &                        ObsState2Type(isTransport2d),             &
-     &                        Mobs, Mstr, Mend,                         &
+     &                        Robs, Rstr, Rend,                         &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng), path_type,              &
@@ -379,6 +384,10 @@
       USE mod_ocean
       USE mod_parallel
       USE mod_scalars
+# ifdef DISTRIBUTE
+      USE distribute_mod,  ONLY :  mp_collect
+# endif
+      USE extract_obs_mod, ONLY : extract_obs3d
 !
 !  Imported variable declarations.
 !
@@ -402,9 +411,10 @@
 
       real(r8), parameter :: IniVal = 0.0_r8
 
+      integer, allocatable, dimension(:) :: path_type
       real(r8), allocatable, dimension(:) :: path_time
-      real(r8), allocatable, dimension(:) :: path_type, path_vetting
-      real(r8), allocatable, dimension(:) :: path_u, path_v, path_hz
+      real(r8), allocatable, dimension(:) :: path_vetting, path_hz
+      real(r8), allocatable, dimension(:) :: path_u, path_v
       real(r8) :: transport
 #  ifdef BGQC
       real(r8), allocatable, dimension(:) :: uBgErr, vBgErr
