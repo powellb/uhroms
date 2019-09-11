@@ -5637,7 +5637,7 @@
   'nondimensional'
   'nulvar'
   'path_datum'
-  'idPathID'
+  'idPatD'
   'nulvar'
   1.0d0
 
@@ -5646,7 +5646,7 @@
   'nondimensional'
   'nulvar'
   'path_datum'
-  'idPathX'
+  'idPatX'
   'nulvar'
   1.0d0
 
@@ -5655,7 +5655,7 @@
   'nondimensional'
   'nulvar'
   'path_datum'
-  'idPathY'
+  'idPatY'
   'nulvar'
   1.0d0
 
@@ -5664,7 +5664,7 @@
   'nondimensional'
   'nulvar'
   'path_datum'
-  'idPathZ'
+  'idPatZ'
   'nulvar'
   1.0d0
 
@@ -5673,7 +5673,7 @@
   'nondimensional'
   'nulvar'
   'path_datum'
-  'idPathL'
+  'idPatL'
   'nulvar'
   1.0d0
 
@@ -5682,6 +5682,6 @@
   'radians'
   'nulvar'
   'path_datum'
-  'idPathL'
+  'idPatA'
   'nulvar'
   1.0d0

@@ -1387,6 +1387,9 @@
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isVbar)) THEN
               FOURDVAR(ng)%ObsReject(isVbar)=                           &
      &                              FOURDVAR(ng)%ObsReject(isVbar)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport2d)=                    &
+&                              FOURDVAR(ng)%ObsReject(isTransport2d)+1
 # ifdef SOLVE3D
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
               FOURDVAR(ng)%ObsReject(isUvel)=                           &
@@ -1397,9 +1400,9 @@
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
               FOURDVAR(ng)%ObsReject(isRadial)=                         &
      &                              FOURDVAR(ng)%ObsReject(isRadial)+1
-            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport)) THEN
-              FOURDVAR(ng)%ObsReject(isTransport)=                         &
-     &                              FOURDVAR(ng)%ObsReject(isTransport)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport3d)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport3d)=                    &
+&                              FOURDVAR(ng)%ObsReject(isTransport3d)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN

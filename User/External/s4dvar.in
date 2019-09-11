@@ -149,8 +149,8 @@ balance(isVvel) =  T                      ! 3D momentum (u, v)
                   22
 
       ExtraName = radial \
-                  transport-2d \
-                  transport-3d
+                  transport2d \
+                  transport3d
 
 ! If weak constraint 4DVar, set diffusive relaxation coefficients (m2/s)
 ! used to relax representer tangent linear solution to privious Picard

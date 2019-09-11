@@ -326,6 +326,10 @@
           ELSE IF (ObsType(iobs).eq.ObsState2Type(isVbar)) THEN
             FOURDVAR(ng)%ObsCount(isVbar)=                              &
      &                           FOURDVAR(ng)%ObsCount(isVbar)+1
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
+            haveObsMeta(ng)=.TRUE.
+            FOURDVAR(ng)%ObsCount(isTransport2d)=                       &
+     &                           FOURDVAR(ng)%ObsCount(isTransport2d)+1
 # ifdef SOLVE3D
           ELSE IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
             FOURDVAR(ng)%ObsCount(isUvel)=                              &
@@ -337,10 +341,6 @@
             haveObsMeta(ng)=.TRUE.
             FOURDVAR(ng)%ObsCount(isRadial)=                            &
      &                           FOURDVAR(ng)%ObsCount(isRadial)+1
-          ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
-            haveObsMeta(ng)=.TRUE.
-            FOURDVAR(ng)%ObsCount(isTransport2d)=                       &
-     &                           FOURDVAR(ng)%ObsCount(isTransport2d)+1
           ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport3d)) THEN
             haveObsMeta(ng)=.TRUE.
             FOURDVAR(ng)%ObsCount(isTransport3d)=                       &
