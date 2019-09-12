@@ -89,11 +89,10 @@
 !
 !  Local variable declarations.
 !
-      logical :: Lwrote
-      integer :: i, j, ic, iobs, Rstr, Rend, Robs, Ncollect
+      integer :: ic, iobs, Rstr, Rend, Robs, Ncollect
       real(dp) :: TimeLB, TimeUB
 
-      real(r8), parameter :: IniVal = 0.0_r8
+      real(r8), parameter :: IniVal = 0.0_r8, Sv=1.0e-6_r8
 
       integer, allocatable, dimension(:) :: path_type
       real(r8), allocatable, dimension(:) :: path_time, path_h
@@ -107,7 +106,8 @@
       TimeUB=(time(ng)+0.5_dp*dt(ng))/86400.0_dp
 
       OBS_THREAD : DO iobs=Mstr,Mend
-        OBS_TYPE : IF ((ObsType(iobs).eq.isTransport2d).and.            &
+        OBS_TYPE : IF ((ObsType(iobs).eq.                               &
+     &                  ObsState2Type(isTransport2d)).and.              &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB))) THEN
 
 !
@@ -137,7 +137,7 @@
           path_type=ObsState2Type(isTransport2d)
 
           allocate ( path_vetting(Robs) )
-          path_vetting(ic)=IniVal
+          path_vetting=IniVal
 
           allocate ( path_ad_ubar(Robs) )
           path_ad_ubar=IniVal
@@ -153,7 +153,7 @@
           CALL ad_extract_obs2d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj,                    &
      &                           ObsState2Type(isTransport2d),          &
-     &                           Robs, Rstr, Rend,                      &
+     &                           Robs, 1, Robs,                         &
      &                           uXmin(ng)+0.5_r8,                      &
      &                           uXmax(ng)+0.5_r8,                      &
      &                           uYmin(ng), uYmax(ng),                  &
@@ -172,7 +172,7 @@
           CALL ad_extract_obs2d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
      &                           LBi, UBi, LBj, UBj,                    &
      &                           ObsState2Type(isTransport2d),          &
-     &                           Robs, Rstr, Rend,                      &
+     &                           Robs, 1, Robs,                         &
      &                           uXmin(ng), uXmax(ng),                  &
      &                           uYmin(ng)+0.5_r8,                      &
      &                           uYmax(ng)+0.5_r8,                      &
@@ -192,7 +192,7 @@
           CALL extract_obs2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj,                       &
      &                        ObsState2Type(isTransport2d),             &
-     &                        Robs, Rstr, Rend,                         &
+     &                        Robs, 1, Robs,                            &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng), path_type,              &
@@ -210,7 +210,6 @@
 !  Collect the vectors from the tiles
 !
           Ncollect=Robs
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_time)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_h)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_ad_ubar)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_ad_vbar)
@@ -224,7 +223,7 @@
             DO ic=1,Robs
               IF (path_vetting(ic).ne.0.0_r8) THEN
                 Aobs(iobs)=Aobs(iobs)+                                  &
-     &                     PathLength(Rstr-1+ic)*path_h(ic)*            &           
+     &                     PathLength(Rstr-1+ic)*path_h(ic)*Sv*         &
      &                     (path_ad_ubar(ic)*SIN(PathAngle(Rstr-1+ic))+ &
      &                      path_ad_vbar(ic)*COS(PathAngle(Rstr-1+ic)))
               END IF
@@ -302,15 +301,14 @@
 !
 !  Local variable declarations.
 !
-      logical :: Lwrote
-      integer :: i, j, k, ic, iobs, Rstr, Rend
+      integer :: ic, iobs, Rstr, Rend, Robs, Ncollect
       real(dp) :: TimeLB, TimeUB
 
-      real(r8), parameter :: IniVal = 0.0_r8
+      real(r8), parameter :: IniVal = 0.0_r8, Sv=1.0e-6_r8
 
       integer, allocatable, dimension(:) :: path_type
-      real(r8), allocatable, dimension(:) :: path_time
-      real(r8), allocatable, dimension(:) :: path_vetting, path_hz
+      real(r8), allocatable, dimension(:) :: path_time, path_hz
+      real(r8), allocatable, dimension(:) :: path_vetting
       real(r8), allocatable, dimension(:) :: path_ad_u, path_ad_v
 !
 !  Find the transport path observations that are available
@@ -320,7 +318,8 @@
       TimeUB=(time(ng)+0.5_dp*dt(ng))/86400.0_dp
 
       OBS_THREAD : DO iobs=Mstr,Mend
-        OBS_TYPE : IF ((ObsType(iobs).eq.isTransport3d).and.            &
+        OBS_TYPE : IF ((ObsType(iobs).eq.                               &
+     &                  ObsState2Type(isTransport2d)).and.              &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB))) THEN
 
 !
@@ -344,22 +343,22 @@
 !  Allocate the arrays of the transport path data
 !
           allocate ( path_time(Robs) )
-          path_time(ic)=Tobs(iobs)
+          path_time=Tobs(iobs)
 
           allocate ( path_type(Robs) )
-          path_type(ic)=ObsState2Type(isTransport3d)
+          path_type=ObsState2Type(isTransport3d)
 
           allocate ( path_vetting(Robs) )
-          path_vetting(ic)=IniVal
+          path_vetting=IniVal
 
           allocate ( path_ad_u(Robs) )
-          path_ad_u(ic)=IniVal
+          path_ad_u=IniVal
 
           allocate ( path_ad_v(Robs) )
-          path_ad_v(ic)=IniVal
+          path_ad_v=IniVal
 
           allocate ( path_hz(Robs) )
-          path_hz(ic)=IniVal
+          path_hz=IniVal
 !
 !  Get the u-component for transport calculations.
 !
@@ -374,7 +373,7 @@
           CALL ad_extract_obs3d (ng, 1, Lm(ng)+1, 0, Mm(ng)+1,          &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
      &                        ObsState2Type(isTransport3d),             &
-     &                        Mobs, Mstr, Mend,                         &
+     &                        Robs, 1, Robs,                            &
      &                        uXmin(ng)+0.5_r8,                         &
      &                        uXmax(ng)+0.5_r8,                         &
      &                        uYmin(ng), uYmax(ng),                     &
@@ -400,23 +399,23 @@
             END DO
           END DO
           CALL ad_extract_obs3d (ng, 0, Lm(ng)+1, 1, Mm(ng)+1,          &
-     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
-     &                        ObsState2Type(isTransport3d),             &
-     &                        Mobs, Mstr, Mend,                         &
-     &                        uXmin(ng), uXmax(ng),                     &
-     &                        uYmin(ng)+0.5_r8,                         &
-     &                        uYmax(ng)+0.5_r8,                         &
-     &                        time(ng), dt(ng), path_type,              &
-     &                        path_vetting, path_time,                  &
-     &                        PathX(Rstr:Rend),                         &
-     &                        PathY(Rstr:Rend)+0.5_r8,                  &
-     &                        PathZ(Rstr:Rend),                         &
-     &                        f_v,                                      &
-     &                        GRID(ng)%z_v,                             &
+     &                           LBi, UBi, LBj, UBj, 1, N(ng),          &
+     &                           ObsState2Type(isTransport3d),          &
+     &                           Robs, 1, Robs,                         &
+     &                           uXmin(ng), uXmax(ng),                  &
+     &                           uYmin(ng)+0.5_r8,                      &
+     &                           uYmax(ng)+0.5_r8,                      &
+     &                           time(ng), dt(ng), path_type,           &
+     &                           path_vetting, path_time,               &
+     &                           PathX(Rstr:Rend),                      &
+     &                           PathY(Rstr:Rend)+0.5_r8,               &
+     &                           PathZ(Rstr:Rend),                      &
+     &                           f_v,                                   &
+     &                           GRID(ng)%z_v,                          &
 #   ifdef MASKING
-     &                        GRID(ng)%vmask,                           &
+     &                           GRID(ng)%vmask,                        &
 #   endif
-     &                        path_ad_v)
+     &                           path_ad_v)
 
 !
 !  Get the thickness-component for transport calculations.
@@ -424,7 +423,7 @@
           CALL extract_obs3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,             &
      &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
      &                        ObsState2Type(isTransport3d),             &
-     &                        Mobs, Mstr, Mend,                         &
+     &                        Robs, 1, Robs,                            &
      &                        uXmin(ng), uXmax(ng),                     &
      &                        uYmin(ng), uYmax(ng),                     &
      &                        time(ng), dt(ng), path_type,              &
@@ -443,7 +442,6 @@
 !  Collect the vectors from the tiles
 !
           Ncollect=Robs
-          CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_time)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_hz)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_ad_u)
           CALL mp_collect (ng, iNLM, Ncollect, IniVal, path_ad_v)
@@ -457,7 +455,7 @@
             DO ic=1,Robs
               IF (path_vetting(ic).ne.0.0_r8) THEN
                 Aobs(iobs)=Aobs(iobs)+                                  &
-     &                     PathLength(Rstr-1+ic)*path_hz(ic)*           &           
+     &                     PathLength(Rstr-1+ic)*path_hz(ic)*Sv*        &
      &                     (path_ad_u(ic)*SIN(PathAngle(Rstr-1+ic))+    &
      &                      path_ad_v(ic)*COS(PathAngle(Rstr-1+ic)))
               END IF
