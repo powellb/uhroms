@@ -392,8 +392,8 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, Imin, Imax, Jmin, Jmax
-      integer, intent(in) :: LBi, UBi, LBj, UBj,
-      integer, intent(in) :: ifield, Mstr, Mend, Nout
+      integer, intent(in) :: LBi, UBi, LBj, UBj
+      integer, intent(in) :: Mstr, Mend, Nout
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
 !
@@ -414,7 +414,6 @@
       real(r8), allocatable, dimension(:) :: path_time
       real(r8), allocatable, dimension(:) :: path_vetting, path_hz
       real(r8), allocatable, dimension(:) :: path_u, path_v
-      real(r8) :: transport
 #  ifdef BGQC
       real(r8), allocatable, dimension(:) :: uBgErr, vBgErr
 #  endif
@@ -428,7 +427,7 @@
 
       OBS_THREAD : DO iobs=Mstr,Mend
         OBS_TYPE : IF ((ObsType(iobs).eq.                               &
-     &                  ObsState2Type(isTransport2d)).and.              &
+     &                  ObsState2Type(isTransport3d)).and.              &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB))) THEN
 
 !

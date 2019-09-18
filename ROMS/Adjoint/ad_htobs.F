@@ -546,8 +546,8 @@
 #  if (! defined IS4DVAR_SENSITIVITY) && defined SOLVE3D
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
-          CALL ad_extract_transport_3d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+          CALL ad_extract_transport_3d (ng, tile, 0, Lm(ng)+1,          &
+     &                          0, Mm(ng)+1, LBi, UBi, LBj, UBj,        &
      &                          Mstr, Mend, NOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &

@@ -441,7 +441,7 @@
 !
 !  Reject observations that lie in the lower most grid box (AMM).
 !
-            IF ((Zobs(iobs).gt.0.0_r8).and.(Zobs(iobs).le.1.0_r8)) THEN
+            IF ((Zobs(iobs).gt.0.0_r8).and.(Zobs(iobs).lt.1.0_r8)) THEN
               ObsVetting(iobs)=0.0_r8
             END IF
           END IF

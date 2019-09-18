@@ -40,9 +40,9 @@
 !
 !***********************************************************************
       SUBROUTINE tl_extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,   &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          Mstr, Mend, Kout,                       &
-     &                          Xmin, Xmax, Ymin, Ymax, Aobs)
+     &                                 LBi, UBi, LBj, UBj,              &
+     &                                 Mstr, Mend, Kout,                &
+     &                                 Xmin, Xmax, Ymin, Ymax, Aobs)
 !***********************************************************************
 !
       USE mod_fourdvar
@@ -52,7 +52,7 @@
       USE mod_parallel
       USE mod_scalars
 # ifdef DISTRIBUTE
-      USE distribute_mod,  ONLY :  mp_collect
+      USE distribute_mod,  ONLY : mp_collect
 # endif
       USE extract_obs_mod, ONLY : extract_obs2d
 !
@@ -246,10 +246,10 @@
 # ifdef SOLVE3D
 !
 !***********************************************************************
-      SUBROUTINE tl_extract_transport_3d (ng, Imin, Imax, Jmin, Jmax,   &
-     &                          LBi, UBi, LBj, UBj, LBk, UBk,           &
-     &                          ifield, Mstr, Mend, Nout,               &
-     &                          Xmin, Xmax, Ymin, Ymax, Aobs)
+      SUBROUTINE tl_extract_transport_3d (ng, tile, Imin, Imax,         &
+     &                                 Jmin, Jmax, LBi, UBi, LBj, UBj,  &
+     &                                 Mstr, Mend, Nout,                &
+     &                                 Xmin, Xmax, Ymin, Ymax, Aobs)
 !***********************************************************************
 !
       USE mod_fourdvar
@@ -265,9 +265,9 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
-      integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      integer, intent(in) :: ifield, Mstr, Mend, Nout
+      integer, intent(in) :: ng, tile, Imin, Imax, Jmin, Jmax
+      integer, intent(in) :: LBi, UBi, LBj, UBj
+      integer, intent(in) :: Mstr, Mend, Nout
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
 !
@@ -279,15 +279,16 @@
 !
 !  Local variable declarations.
 !
-      integer :: ic, iobs, Rstr, Rend, Robs, Ncollect
+      integer :: i, j, k, ic, iobs, Ncollect, Robs, Rstr, Rend
       real(dp) :: TimeLB, TimeUB
 
-      real(r8), parameter :: IniVal = 0.0_r8, Sv=1.0e-6_r8
+      real(r8), parameter :: IniVal = 0.0_r8, Sv = 1.0e-6_r8
 
       integer, allocatable, dimension(:) :: path_type
       real(r8), allocatable, dimension(:) :: path_time
       real(r8), allocatable, dimension(:) :: path_vetting, path_hz
       real(r8), allocatable, dimension(:) :: path_tl_u, path_tl_v
+#  include "set_bounds.h"
 !
 !  Find the transport path observations that are available
 !  for the current time.
@@ -297,7 +298,7 @@
 
       OBS_THREAD : DO iobs=Mstr,Mend
         OBS_TYPE : IF ((ObsType(iobs).eq.                               &
-     &                  ObsState2Type(isTransport2d)).and.              &
+     &                  ObsState2Type(isTransport3d)).and.              &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB))) THEN
 
 !
