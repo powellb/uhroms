@@ -94,8 +94,10 @@
       USE distribute_mod, ONLY : mp_collect
 # endif
       USE ad_extract_obs_mod, ONLY : ad_extract_obs2d
+      USE ad_extract_transport_mod, ONLY : ad_extract_transport2d
 # ifdef SOLVE3D
       USE ad_extract_obs_mod, ONLY : ad_extract_obs3d
+      USE ad_extract_transport_mod, ONLY : ad_extract_transport3d
 # endif
 !
 !  Imported variable declarations.
@@ -285,7 +287,19 @@
 # endif
      &                           ADmodVal)
         END IF
-
+!
+!-----------------------------------------------------------------------
+!  2D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0) THEN
+          CALL ad_extract_transport2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,    &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          Mstr, Mend,                             &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          f_ubar, f_vbar, ADmodVal)
+        END IF
 # ifdef SOLVE3D
 !
 !-----------------------------------------------------------------------
@@ -464,6 +478,19 @@
         END IF
 !
 !-----------------------------------------------------------------------
+!  3D Transport cable observations.
+!-----------------------------------------------------------------------
+!
+        IF (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0) THEN
+          CALL ad_extract_transport3d (ng, tile, 0, Lm(ng)+1,           &
+     &                          0, Mm(ng)+1, LBi, UBi, LBj, UBj,        &
+     &                          Mstr, Mend,                             &
+     &                          rXmin(ng), rXmax(ng),                   &
+     &                          rYmin(ng), rYmax(ng),                   &
+     &                          f_u, f_v, ADmodVal)
+        END IF
+!
+!-----------------------------------------------------------------------
 !  Tracer type variables.
 !-----------------------------------------------------------------------
 !
@@ -524,6 +551,12 @@
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
               FOURDVAR(ng)%ObsReject(isRadial)=                         &
      &                              FOURDVAR(ng)%ObsReject(isRadial)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport2d)=                    &
+     &                         FOURDVAR(ng)%ObsReject(isTransport2d)+1
+            ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport3d)) THEN
+              FOURDVAR(ng)%ObsReject(isTransport3d)=                    &
+     &                         FOURDVAR(ng)%ObsReject(isTransport3d)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN

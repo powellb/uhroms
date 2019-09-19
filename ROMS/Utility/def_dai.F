@@ -290,6 +290,7 @@
         CALL def_info (ng, iNLM, DAI(ng)%ncid, ncname, DimIDs)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
+# ifdef SOLVE3D
 !
 !  Define time independent (unperturb) depths of RHO-points.
 !
@@ -346,6 +347,7 @@
      &                 SetFillVal = .FALSE.)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
+# endif
 !
 !-----------------------------------------------------------------------
 !  Define time-varying variables.

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE ad_forcing_mod
 
-#if defined ADJOINT && defined FORCING_SV
+#if defined ADJOINT && (defined WEAK_CONSTRAINT || defined FORCING_SV)
 !
 !svn $Id: ad_forcing.F 1782 2019-01-28 06:05:46Z arango $
 !================================================== Hernan G. Arango ===

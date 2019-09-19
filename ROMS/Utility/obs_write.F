@@ -30,15 +30,15 @@
       USE distribute_mod,  ONLY :  mp_collect
 # endif
       USE extract_obs_mod, ONLY : extract_obs2d
-      USE extract_transport_mod, ONLY : extract_transport_2d
+      USE extract_transport_mod, ONLY : extract_transport2d
 # ifdef TLM_OBS
-      USE tl_extract_transport_mod, ONLY : tl_extract_transport_2d
+      USE tl_extract_transport_mod, ONLY : tl_extract_transport2d
 # endif
 # ifdef SOLVE3D
       USE extract_obs_mod, ONLY : extract_obs3d
-      USE extract_transport_mod, ONLY : extract_transport_3d
+      USE extract_transport_mod, ONLY : extract_transport3d
 #  ifdef TLM_OBS
-      USE tl_extract_transport_mod, ONLY : tl_extract_transport_3d
+      USE tl_extract_transport_mod, ONLY : tl_extract_transport3d
 #  endif
 # endif
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
@@ -356,7 +356,7 @@
 #  ifndef IS4DVAR_SENSITIVITY
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
+          CALL extract_transport2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,      &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          Mstr, Mend, KOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
@@ -367,7 +367,7 @@
 #  ifdef TLM_OBS
         IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
      &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL tl_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+          CALL tl_extract_transport2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          Mstr, Mend, KOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
@@ -821,7 +821,7 @@
 #  if (! defined IS4DVAR_SENSITIVITY) && defined SOLVE3D
         IF (wrtNLmod(ng).and.                                           &
      &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
-          CALL extract_transport_3d (ng, tile, 0, Lm(ng)+1,             &
+          CALL extract_transport3d (ng, tile, 0, Lm(ng)+1,              &
      &                          0, Mm(ng)+1, LBi, UBi, LBj, UBj,        &
      &                          Mstr, Mend, NOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &
@@ -832,7 +832,7 @@
 #  if defined TLM_OBS && defined SOLVE3D
         IF ((wrtTLmod(ng).or.(wrtRPmod(ng))).and.                       &
      &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
-          CALL tl_extract_transport_3d (ng, tile, 0, Lm(ng)+1,          &
+          CALL tl_extract_transport3d (ng, tile, 0, Lm(ng)+1,           &
      &                          0, Mm(ng)+1, LBi, UBi, LBj, UBj,        &
      &                          Mstr, Mend, NOUT,                       &
      &                          rXmin(ng), rXmax(ng),                   &

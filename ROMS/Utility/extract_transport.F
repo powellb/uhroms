@@ -83,15 +83,15 @@
 
       implicit none
 
-      PUBLIC extract_transport_2d
+      PUBLIC extract_transport2d
 # ifdef SOLVE3D
-      PUBLIC extract_transport_3d
+      PUBLIC extract_transport3d
 # endif
 
       CONTAINS
 !
 !***********************************************************************
-      SUBROUTINE extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,      &
+      SUBROUTINE extract_transport2d (ng, Imin, Imax, Jmin, Jmax,       &
      &                                 LBi, UBi, LBj, UBj,              &
      &                                 Mstr, Mend, Kout,                &
      &                                 Xmin, Xmax, Ymin, Ymax, Aobs)
@@ -367,12 +367,12 @@
 # endif
         END IF OBS_TYPE
       END DO OBS_THREAD
-      END SUBROUTINE extract_transport_2d
+      END SUBROUTINE extract_transport2d
 
 # ifdef SOLVE3D
 !
 !***********************************************************************
-      SUBROUTINE extract_transport_3d (ng, tile, Imin, Imax,            &
+      SUBROUTINE extract_transport3d (ng, tile, Imin, Imax,             &
      &                                 Jmin, Jmax, LBi, UBi, LBj, UBj,  &
      &                                 Mstr, Mend, Nout,                &
      &                                 Xmin, Xmax, Ymin, Ymax, Aobs)
@@ -669,7 +669,7 @@
 #  endif
         END IF OBS_TYPE
       END DO OBS_THREAD
-      END SUBROUTINE extract_transport_3d
+      END SUBROUTINE extract_transport3d
 # endif
 #endif
       END MODULE extract_transport_mod

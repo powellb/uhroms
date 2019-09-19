@@ -311,11 +311,10 @@
 !  2D Transport cable observations.
 !-----------------------------------------------------------------------
 !
-        IF (wrtNLmod(ng).and.                                           &
-     &      (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0)) THEN
-          CALL ad_extract_transport_2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,   &
+        IF (FOURDVAR(ng)%ObsCount(isTransport2d).gt.0) THEN
+          CALL ad_extract_transport2d (ng, 0, Lm(ng)+1, 0, Mm(ng)+1,    &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          Mstr, Mend, KOUT,                       &
+     &                          Mstr, Mend,                             &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
      &                          f_ubar, f_vbar, ADmodVal)
@@ -543,17 +542,14 @@
 !  3D Transport cable observations.
 !-----------------------------------------------------------------------
 !
-#  if (! defined IS4DVAR_SENSITIVITY) && defined SOLVE3D
-        IF (wrtNLmod(ng).and.                                           &
-     &      (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0)) THEN
-          CALL ad_extract_transport_3d (ng, tile, 0, Lm(ng)+1,          &
+        IF (FOURDVAR(ng)%ObsCount(isTransport3d).gt.0) THEN
+          CALL ad_extract_transport3d (ng, tile, 0, Lm(ng)+1,           &
      &                          0, Mm(ng)+1, LBi, UBi, LBj, UBj,        &
-     &                          Mstr, Mend, NOUT,                       &
+     &                          Mstr, Mend,                             &
      &                          rXmin(ng), rXmax(ng),                   &
      &                          rYmin(ng), rYmax(ng),                   &
      &                          f_u, f_v, ADmodVal)
         END IF
-#  endif
 #  ifdef DISTRIBUTE
 !
 !  Exchange adjoint velocity forcing terms, after all the 3D velocity
@@ -647,10 +643,10 @@
      &                              FOURDVAR(ng)%ObsReject(isRadial)+1
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport2d)) THEN
               FOURDVAR(ng)%ObsReject(isTransport2d)=                    &
- &                              FOURDVAR(ng)%ObsReject(isTransport2d)+1
+     &                         FOURDVAR(ng)%ObsReject(isTransport2d)+1
             ELSE IF (ObsType(iobs).eq.ObsState2Type(isTransport3d)) THEN
               FOURDVAR(ng)%ObsReject(isTransport3d)=                    &
- &                              FOURDVAR(ng)%ObsReject(isTransport3d)+1
+     &                         FOURDVAR(ng)%ObsReject(isTransport3d)+1
             ELSE
               DO itrc=1,NT(ng)
                 IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN

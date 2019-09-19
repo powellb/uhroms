@@ -1,16 +1,6 @@
 #include "cppdefs.h"
       MODULE ad_extract_transport_mod
 #if defined ADJOINT && defined FOUR_DVAR && defined OBSERVATIONS
-      USE mod_kinds
-
-      implicit none
-
-      PUBLIC :: ad_extract_transport_2d
-# ifdef SOLVE3D
-      PUBLIC :: ad_extract_transport_3d
-# endif
-
-      CONTAINS
 !svn $Id: ad_extract_transport.F
 !================================================== Brian S. Powell ====
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
@@ -49,19 +39,19 @@
 
       implicit none
 
-      PUBLIC ad_extract_transport_2d
+      PUBLIC ad_extract_transport2d
 # ifdef SOLVE3D
-      PUBLIC ad_extract_transport_3d
+      PUBLIC ad_extract_transport3d
 # endif
 
       CONTAINS
 !
 !***********************************************************************
-      SUBROUTINE ad_extract_transport_2d (ng, Imin, Imax, Jmin, Jmax,   &
+      SUBROUTINE ad_extract_transport2d (ng, Imin, Imax, Jmin, Jmax,    &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          Mstr, Mend, Kout,                       &
+     &                          Mstr, Mend,                             &
      &                          Xmin, Xmax, Ymin, Ymax,                 &
-     &                          f_ubar, f_vbar, ADmodVal)
+     &                          f_ubar, f_vbar, ad_Aobs)
 !***********************************************************************
 !
       USE mod_fourdvar
@@ -78,19 +68,19 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
-      integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      integer, intent(in) :: ifield, Mstr, Mend, Kout
+      integer, intent(in) :: LBi, UBi, LBj, UBj
+      integer, intent(in) :: Mstr, Mend
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
 !
 #  ifdef ASSUMED_SHAPE
       real(r8), intent(inout) :: f_ubar(LBi:,LBj:)
       real(r8), intent(inout) :: f_vbar(LBi:,LBj:)
-      real(r8), intent(inout) :: ADmodVal(:)
+      real(r8), intent(inout) :: ad_Aobs(:)
 #  else
       real(r8), intent(inout) :: f_ubar(LBi:UBi,LBj:UBj)
       real(r8), intent(inout) :: f_vbar(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: ADmodVal(Mobs)
+      real(r8), intent(inout) :: ad_Aobs(Mobs)
 #  endif
 !
 !  Local variable declarations.
@@ -175,14 +165,14 @@
 !
 !  Calculate the adjoint transport
 !
-          ad_transport=ADmodVal(iobs)
-          ADmodVal(iobs)=IniVal
+          ad_transport=ad_Aobs(iobs)
+          ad_Aobs(iobs)=IniVal
           DO ic=1,Robs
             cff1=PathLength(Rstr-1+ic)*path_h(ic)
             path_ad_ubar(ic) = ad_transport *                           &
-     &                          SIN(PathAngle(Rstr-1+ic) * cff1
+     &                          SIN(PathAngle(Rstr-1+ic)) * cff1
             path_ad_vbar(ic) = ad_transport *                           &
-     &                          COS(PathAngle(Rstr-1+ic) * cff1
+     &                          COS(PathAngle(Rstr-1+ic)) * cff1
           END DO
 # ifdef DISTRIBUTE
 !
@@ -260,16 +250,16 @@
 
         END IF OBS_TYPE
       END DO OBS_THREAD
-      END SUBROUTINE ad_extract_transport_2d
+      END SUBROUTINE ad_extract_transport2d
 
 # ifdef SOLVE3D
 !
 !***********************************************************************
-      SUBROUTINE ad_extract_transport_3d (ng, tile Imin, Imax, Jmin,    &
+      SUBROUTINE ad_extract_transport3d (ng, tile Imin, Imax, Jmin,     &
      &                                    Jmax, LBi, UBi, LBj, UBj,     &
-     &                                    Mstr, Mend, Nout,             &
+     &                                    Mstr, Mend,                   &
      &                                    Xmin, Xmax, Ymin, Ymax,       &
-     &                                    f_u, f_v, ADmodVal)
+     &                                    f_u, f_v, ad_Aobs)
 !***********************************************************************
 !
       USE mod_fourdvar
@@ -287,18 +277,18 @@
 !
       integer, intent(in) :: ng, tile, Imin, Imax, Jmin, Jmax
       integer, intent(in) :: LBi, UBi, LBj, UBj
-      integer, intent(in) :: Mstr, Mend, Nout
+      integer, intent(in) :: Mstr, Mend
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
 !
 #  ifdef ASSUMED_SHAPE
       real(r8), intent(inout) :: f_u(LBi:,LBj:,:)
       real(r8), intent(inout) :: f_v(LBi:,LBj:,:)
-      real(r8), intent(inout) :: ADmodVal(:)
+      real(r8), intent(inout) :: ad_Aobs(:)
 #  else
       real(r8), intent(inout) :: f_u(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(inout) :: f_v(LBi:UBi,LBj:UBj,N(ng))
-      real(r8), intent(inout) :: ADmodVal(Mobs)
+      real(r8), intent(inout) :: ad_Aobs(Mobs)
 #  endif
 !
 !  Local variable declarations.
@@ -386,14 +376,14 @@
 !  Compute NLM transport in the master thread after the fields are
 !  collected.
 !
-          ad_transport=ADmodVal(ic)
-          ADmodVal(ic)=IniVal
+          ad_transport=ad_Aobs(ic)
+          ad_Aobs(ic)=IniVal
           DO ic=1,Robs
             cff1=PathLength(Rstr-1+ic)*path_h(ic)
             path_ad_u(ic) = ad_transport *                              &
-     &                          SIN(PathAngle(Rstr-1+ic) * cff1
+     &                          SIN(PathAngle(Rstr-1+ic)) * cff1
             path_ad_v(ic) = ad_transport *                              &
-     &                          COS(PathAngle(Rstr-1+ic) * cff1
+     &                          COS(PathAngle(Rstr-1+ic)) * cff1
           END DO
 #  ifdef DISTRIBUTE
 !
@@ -491,7 +481,7 @@
 
         END IF OBS_TYPE
       END DO OBS_THREAD
-      END SUBROUTINE ad_extract_transport_3d
+      END SUBROUTINE ad_extract_transport3d
 # endif
 #endif
       END MODULE ad_extract_transport_mod

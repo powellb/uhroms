@@ -1179,8 +1179,8 @@
             CALL wrt_frc_AD (ng, Lold(ng), INI(ng)%Rindex)
             IF (FoundError(exit_flag, NoError, __LINE__,                &
      &                     __FILE__)) RETURN
-          END DO
 #  endif
+          END DO
 # endif
 #ifdef RPCG
 !
