@@ -166,7 +166,7 @@
       real(r8), intent(inout) :: ad_v_sol(LBi:,LBj:,:)
 #  else
       real(r8), intent(inout) :: ad_ubar_sol(LBi:,LBj:)
-      real(r8), intent(inout) :: ad_vbar(_solLBi:,LBj:)
+      real(r8), intent(inout) :: ad_vbar_sol(LBi:,LBj:)
 #  endif
       real(r8), intent(inout) :: ad_zeta_sol(LBi:,LBj:)
 # else
