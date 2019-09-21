@@ -59,15 +59,15 @@ variables:
     obs_meta:units = "observational secondary units" ;
   int path_id(path) ;
     path_id:long_name = "identification for the path value" ;
-  int path_Xgrid(path) ;
+  double path_Xgrid(path) ;
     path_Xgrid:long_name = "x-grid path location" ;
     path_Xgrid:left = "INT(path_Xgrid(path))" ;
     path_Xgrid:right = "INT(path_Xgrid(path))+1" ;
-  int path_Ygrid(path) ;
+  double path_Ygrid(path) ;
     path_Ygrid:long_name = "y-grid path location" ;
     path_Ygrid:left = "INT(path_Ygrid(path))" ;
     path_Ygrid:right = "INT(path_Ygrid(path))+1" ;
-  int path_Zgrid(path) ;
+  double path_Zgrid(path) ;
     path_Zgrid:long_name = "z-grid path location" ;
     path_Zgrid:up = "INT(path_Zgrid(path))+1" ;
     path_Zgrid:down = "INT(path_Zgrid(path))" ;
