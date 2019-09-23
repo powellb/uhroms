@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_his (ng, tile)
 !
-!svn $Id: wrt_his.F 1792 2019-02-22 18:28:13Z arango $
+!svn $Id: wrt_his.F 1810 2019-09-20 03:32:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -117,7 +117,7 @@
 !  Set time record index.
 !
       HIS(ng)%Rindex=HIS(ng)%Rindex+1
-      Fcount=HIS(ng)%Fcount
+      Fcount=HIS(ng)%load
       HIS(ng)%Nrec(Fcount)=HIS(ng)%Nrec(Fcount)+1
 !
 !  Write out model time (s).

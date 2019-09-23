@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined ENKF_RESTART
       SUBROUTINE def_dai (ng)
 !
-!svn $Id: def_dai.F 1800 2019-05-09 03:06:49Z arango $
+!svn $Id: def_dai.F 1810 2019-09-20 03:32:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -290,6 +290,8 @@
         CALL def_info (ng, iNLM, DAI(ng)%ncid, ncname, DimIDs)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
+
+# ifdef SOLVE3D
 !
 !  Define time independent (unperturb) depths of RHO-points.
 !
@@ -346,6 +348,7 @@
      &                 SetFillVal = .FALSE.)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
+# endif
 !
 !-----------------------------------------------------------------------
 !  Define time-varying variables.

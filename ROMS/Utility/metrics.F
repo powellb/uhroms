@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE metrics_mod
 !
-!svn $Id: metrics.F 1808 2019-07-31 15:35:51Z arango $
+!svn $Id: metrics.F 1810 2019-09-20 03:32:46Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1205,8 +1205,8 @@
             IF (MOD(NVsteps(rec,is),2).ne.0) THEN
               NVsteps(rec,is)=NVsteps(rec,is)+1
             END IF
-# endif
           END IF
+# endif
         END DO
       END DO
 

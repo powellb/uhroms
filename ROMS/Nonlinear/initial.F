@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE initial
 !
-!svn $Id: initial.F 1806 2019-07-25 15:27:28Z arango $
+!svn $Id: initial.F 1810 2019-09-20 03:32:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -959,6 +959,7 @@
 !
       DO ng=1,Ngrids
         iic(ng)=ntstart(ng)-1
+        INItime(ng)=time(ng)         ! Save NLM initial conditions time
         time(ng)=time(ng)-dt(ng)
       END DO
 

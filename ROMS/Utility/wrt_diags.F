@@ -2,7 +2,7 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE wrt_diags (ng)
 !
-!svn $Id: wrt_diags.F 1800 2019-05-09 03:06:49Z arango $
+!svn $Id: wrt_diags.F 1810 2019-09-20 03:32:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -77,7 +77,7 @@
 !  Set time and time-record index.
 !
       DIA(ng)%Rindex=DIA(ng)%Rindex+1
-      Fcount=DIA(ng)%Fcount
+      Fcount=DIA(ng)%load
       DIA(ng)%Nrec(Fcount)=DIA(ng)%Nrec(Fcount)+1
 !
 !  Write out averaged time.

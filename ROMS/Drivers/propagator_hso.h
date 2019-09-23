@@ -1,6 +1,6 @@
       SUBROUTINE propagator (RunInterval, Iter, state, ad_state)
 !
-!svn $Id: propagator_hso.h 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: propagator_hso.h 1810 2019-09-20 03:32:46Z arango $
 !************************************************** Hernan G. Arango ***
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -152,10 +152,10 @@
               LdefADJ(ng)=.FALSE.
               LdefTLM(ng)=.FALSE.
             END IF
-            Fcount=ADM(ng)%Fcount
+            Fcount=ADM(ng)%load
             ADM(ng)%Nrec(Fcount)=0
             ADM(ng)%Rindex=0
-            Fcount=TLM(ng)%Fcount
+            Fcount=TLM(ng)%load
             TLM(ng)%Nrec(Fcount)=0
             TLM(ng)%Rindex=0
           ELSE                               ! Computing eigenvectors
@@ -166,18 +166,18 @@
             END IF
 #ifdef STOCH_OPT_WHITE
             IF (Interval.le.Nintervals) THEN
-              Fcount=ADM(ng)%Fcount
+              Fcount=ADM(ng)%load
               ADM(ng)%Nrec(Fcount)=0
               ADM(ng)%Rindex=0
             END IF
 #else
-            Fcount=ADM(ng)%Fcount
+            Fcount=ADM(ng)%load
             ADM(ng)%Nrec(Fcount)=0
             ADM(ng)%Rindex=0
 #endif
             IF ((LmultiGST.or.(ABS(Iter).eq.1)).and.                    &
      &          (Interval.eq.1)) THEN
-              Fcount=TLM(ng)%Fcount
+              Fcount=TLM(ng)%load
               TLM(ng)%Nrec(Fcount)=0
               TLM(ng)%Rindex=0
             END IF
