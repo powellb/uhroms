@@ -63,6 +63,7 @@
 # ifdef DISTRIBUTE
       USE distribute_mod,  ONLY : mp_collect
 # endif
+      USE ad_extract_obs_mod, ONLY : ad_extract_obs2d
       USE extract_obs_mod, ONLY : extract_obs2d
 !
 !  Imported variable declarations.
@@ -255,7 +256,7 @@
 # ifdef SOLVE3D
 !
 !***********************************************************************
-      SUBROUTINE ad_extract_transport3d (ng, tile Imin, Imax, Jmin,     &
+      SUBROUTINE ad_extract_transport3d (ng, tile, Imin, Imax, Jmin,    &
      &                                    Jmax, LBi, UBi, LBj, UBj,     &
      &                                    Mstr, Mend,                   &
      &                                    Xmin, Xmax, Ymin, Ymax,       &
@@ -271,6 +272,7 @@
 # ifdef DISTRIBUTE
       USE distribute_mod,  ONLY : mp_collect
 # endif
+      USE ad_extract_obs_mod, ONLY : ad_extract_obs3d
       USE extract_obs_mod, ONLY : extract_obs3d
 !
 !  Imported variable declarations.
@@ -379,7 +381,7 @@
           ad_transport=ad_Aobs(ic)
           ad_Aobs(ic)=IniVal
           DO ic=1,Robs
-            cff1=PathLength(Rstr-1+ic)*path_h(ic)
+            cff1=PathLength(Rstr-1+ic)*path_hz(ic)
             path_ad_u(ic) = ad_transport *                              &
      &                          SIN(PathAngle(Rstr-1+ic)) * cff1
             path_ad_v(ic) = ad_transport *                              &

@@ -256,6 +256,7 @@
         END DO
 
 # else
+#  ifdef FORCING_SV
 !
 !  Adjoint linear 2D momentum.
 !
@@ -270,6 +271,7 @@
           f_vbar(i,j)=f_vbar(i,j)+ad_vbar(i,j,1)+ad_vbar(i,j,2)
         END DO
       END DO
+#  endif
 !
 !  Adjoint linear 3D momentum.
 !
