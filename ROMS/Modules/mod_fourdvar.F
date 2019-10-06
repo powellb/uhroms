@@ -2216,6 +2216,15 @@
             CASE ('TRANSPORT3D')
               isTransport3d=icount
               ObsState2Type(icount)=ExtraIndex(i)
+            CASE ('TOMOGRAPHY')
+              isTmoography=icount
+              ObsState2Type(icount)=ExtraIndex(i)
+            CASE ('ECHOSOUNDER')
+              isEchosound=icount
+              ObsState2Type(icount)=ExtraIndex(i)
+            CASE ('PRESSURE')
+              isPressure=icount
+              ObsState2Type(icount)=ExtraIndex(i)
           END SELECT
         END DO
       END IF
@@ -2241,6 +2250,12 @@
               ObsType2State(icount)=isTransport2d
             CASE ('TRANSPORT3D')
               ObsType2State(icount)=isTransport3d
+            CASE ('TOMOGRAPHY')
+              ObsType2State(icount)=isTomography
+            CASE ('ECHOSOUNDER')
+              ObsType2State(icount)=isEchosound
+            CASE ('PRESSURE')
+              ObsType2State(icount)=isPressure
           END SELECT
         END DO
       END IF
