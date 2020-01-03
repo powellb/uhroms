@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# svn $Id: build_roms.bash 1784 2019-01-31 23:21:17Z arango $
+# svn $Id: build_roms.bash 1813 2019-10-30 19:59:42Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2019 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
@@ -163,6 +163,7 @@ export     MY_PROJECT_DIR=${PWD}
  export        USE_MPIF90=on            # compile with mpif90 script
 #export         which_MPI=mpich         # compile with MPICH library
 #export         which_MPI=mpich2        # compile with MPICH2 library
+#export         which_MPI=mvapich2      # compile with MVAPICH2 library
  export         which_MPI=openmpi       # compile with OpenMPI library
 
 #export        USE_OpenMP=on            # shared-memory parallelism

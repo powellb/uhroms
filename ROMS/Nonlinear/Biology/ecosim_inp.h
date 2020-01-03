@@ -1,6 +1,6 @@
       SUBROUTINE read_BioPar (model, inp, out, Lwrite)
 !
-!svn $Id: ecosim_inp.h 1800 2019-05-09 03:06:49Z arango $
+!svn $Id: ecosim_inp.h 1818 2019-12-18 03:27:30Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -274,7 +274,7 @@
                 DO itrc=1,NBT
                   i=idbio(itrc)
                   ad_tnu4(i,ng)=Rbio(itrc,ng)
-                  ad_tnu4(i,ng)=Rbio(itrc,ng)
+                  tl_tnu4(i,ng)=Rbio(itrc,ng)
                 END DO
               END DO
             CASE ('LtracerSponge')

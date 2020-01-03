@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# svn $Id: build_roms.sh 1784 2019-01-31 23:21:17Z arango $
+# svn $Id: build_roms.sh 1813 2019-10-30 19:59:42Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2019 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
@@ -162,6 +162,7 @@ setenv MY_PROJECT_DIR        ${PWD}
  setenv USE_MPIF90          on          # compile with mpif90 script
 #setenv which_MPI           mpich       # compile with MPICH library
 #setenv which_MPI           mpich2      # compile with MPICH2 library
+#setenv which_MPI           mvapich2    # compile with MVAPICH2 library
  setenv which_MPI           openmpi     # compile with OpenMPI library
 
 #setenv USE_OpenMP          on          # shared-memory parallelism

@@ -1,4 +1,4 @@
-# svn $Id: my_build_paths.sh 1784 2019-01-31 23:21:17Z arango $
+# svn $Id: my_build_paths.sh 1813 2019-10-30 19:59:42Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2019 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
@@ -178,6 +178,7 @@ switch ($FORT)
       setenv NETCDF             /opt/intelsoft/serial/netcdf3
       setenv NETCDF_INCDIR      ${NETCDF}/include
       setenv NETCDF_LIBDIR      ${NETCDF}/lib
+      setenv NETCDF_classic     1
     endif
 
     if ($?USE_HDF5) then
