@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 1810 2019-09-20 03:32:46Z arango $
+!svn $Id: mod_scalars.F 1822 2020-01-10 22:36:29Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -176,7 +176,6 @@
 #  endif
 # endif
 #endif
-
 !
 !-----------------------------------------------------------------------
 !  Time stepping indices, variables, and clocks.
@@ -332,9 +331,20 @@
 
         integer, allocatable :: NrecFrc(:)
 !
+!  HSIMT tracer advection coefficients for the TVD limiter (Wu and Zhu,
+!  2010).
+!
+        real(r8) :: cc1 = 0.25_r8
+        real(r8) :: cc2 = 0.5_r8
+        real(r8) :: cc3 = 1.0_r8/12.0_r8
+!
 !-----------------------------------------------------------------------
 !  Control switches.
 !-----------------------------------------------------------------------
+!
+!  Switch to use three ghost-points in the halo region.
+!
+        logical :: ThreeGhostPoints = .FALSE.
 !
 !  Switch to proccess nudging coefficients for radiation open boundary
 !  conditions.

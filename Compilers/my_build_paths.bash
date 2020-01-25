@@ -1,6 +1,6 @@
-# svn $Id: my_build_paths.bash 1784 2019-01-31 23:21:17Z arango $
+# svn $Id: my_build_paths.bash 1821 2020-01-10 03:54:15Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Copyright (c) 2002-2019 The ROMS/TOMS Group                           :::
+# Copyright (c) 2002-2020 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
 #   See License_ROMS.txt                                                :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::

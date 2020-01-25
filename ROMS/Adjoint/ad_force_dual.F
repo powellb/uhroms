@@ -3,9 +3,9 @@
 
 #if defined ADJOINT && defined WEAK_CONSTRAINT
 !
-!svn $Id: ad_force_dual.F 1782 2019-01-28 06:05:46Z arango $
+!svn $Id: ad_force_dual.F 1821 2020-01-10 03:54:15Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group   Emanuele Di Lorenzo   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group   Emanuele Di Lorenzo   !
 !    Licensed under a MIT/X style license            Andrew M. Moore   !
 !    See License_ROMS.txt                                              !
 !=======================================================================

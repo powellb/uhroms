@@ -2,9 +2,9 @@
       MODULE exchange_4d_mod
 #ifdef SOLVE3D
 !
-!svn $Id: exchange_4d.F 1800 2019-05-09 03:06:49Z arango $
+!svn $Id: exchange_4d.F 1821 2020-01-10 03:54:15Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===

@@ -1,7 +1,7 @@
 /*
-** svn $Id: sed_toy.h 1782 2019-01-28 06:05:46Z arango $
+** svn $Id: sed_toy.h 1822 2020-01-10 22:36:29Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -16,9 +16,6 @@
 #undef  BODYFORCE
 #undef  LOG_PROFILE
 #define DJ_GRADPS
-#undef  TS_U3HADVECTION
-#undef  TS_C2VADVECTION
-#define TS_MPDATA
 #undef  SALINITY
 #define OUT_DOUBLE
 #define ANA_GRID

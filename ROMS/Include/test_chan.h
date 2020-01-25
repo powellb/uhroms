@@ -1,7 +1,7 @@
 /*
-** svn $Id: test_chan.h 1782 2019-01-28 06:05:46Z arango $
+** svn $Id: test_chan.h 1822 2020-01-10 22:36:29Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -29,7 +29,6 @@
 #define ANA_BSFLUX
 #define ANA_SPFLUX
 #define ANA_BPFLUX
-#define TS_U3HADVECTION
 #define ANA_FSOBC
 #define ANA_M2OBC
 #define SEDIMENT

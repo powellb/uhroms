@@ -1,7 +1,7 @@
 /*
-** svn $Id: upwelling.h 1782 2019-01-28 06:05:46Z arango $
+** svn $Id: upwelling.h 1822 2020-01-10 22:36:29Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -20,9 +20,6 @@
 #define MIX_S_UV
 #define SPLINES_VDIFF
 #define SPLINES_VVISC
-#define TS_U3HADVECTION
-#define TS_C4VADVECTION
-#undef  TS_MPDATA
 #define DJ_GRADPS
 #define TS_DIF2
 #undef  TS_DIF4

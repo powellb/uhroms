@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 1817 2019-12-09 03:13:43Z arango $
+!svn $Id: mod_ncparam.F 1823 2020-01-10 22:39:20Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -494,7 +494,7 @@
         real(dp), allocatable :: Tintrp(:,:,:)
         real(dp), allocatable :: Vtime(:,:,:)
 
-        character (len=5  ) :: version = '3.8  '
+        character (len=5  ) :: version = '3.9  '
         character (len=40 ) :: varnam(MV)
         character (len=44 ) :: date_str
         character (len=46 ) :: Tname(0:NV)

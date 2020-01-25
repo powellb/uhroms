@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# svn $Id: submit_i4dvar.bash 1811 2019-10-03 16:23:49Z arango $
+# svn $Id: submit_i4dvar.bash 1821 2020-01-10 03:54:15Z arango $
 #######################################################################
-# Copyright (c) 2002-2019 The ROMS/TOMS Group                         #
+# Copyright (c) 2002-2020 The ROMS/TOMS Group                         #
 #   Licensed under a MIT/X style license                              #
 #   See License_ROMS.txt                                              #
 ################################################## Hernan G. Arango ###

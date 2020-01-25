@@ -1,8 +1,8 @@
 #include "cppdefs.h"
 !!
-!!svn $Id: ocean_control.F 1805 2019-07-17 20:28:24Z arango $
+!!svn $Id: ocean_control.F 1821 2020-01-10 03:54:15Z arango $
 !!================================================= Hernan G. Arango ===
-!! Copyright (c) 2002-2019 The ROMS/TOMS Group       Andrew M. Moore   !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !!======================================================================

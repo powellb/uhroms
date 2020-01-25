@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE edit_multifile (task)
 !
-!svn $Id: edit_multifile.F 1810 2019-09-20 03:32:46Z arango $
+!svn $Id: edit_multifile.F 1824 2020-01-13 22:03:33Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -118,8 +118,8 @@
 !  Save FWD information into the HIS structure so it can be used to
 !  process the NLM background trajectory by the ADM and TLM kernels.
 !  If multi-file, FWD(ng)%head and FWD(ng)%base is overwritten to
-!  default values. The intialized values in "load_s2d" are incorrect
-!  because of the specified input filenames are already split.
+!  default values. The initialized values in "load_s1d" are incorrect
+!  because of specified input filenames are already split.
 !
           CASE ('FWD2HIS')
             Nfiles=FWD(ng)%Nfiles
@@ -146,8 +146,8 @@
               END IF
             ELSE
               HIS(ng)%ncid=FWD(ng)%ncid
-              HIS(ng)%name=TRIM(HIS(ng)%name)
-              HIS(ng)%files(1)=TRIM(HIS(ng)%name)
+              HIS(ng)%files(1)=TRIM(FWD(ng)%files(1))
+              HIS(ng)%name=TRIM(HIS(ng)%files(1))
               Istring=INDEX(HIS(ng)%name,'_outer',BACK=.FALSE.)
               IF (Istring.gt.0) THEN     ! outer loop prefix
                 lstr=Istring-1

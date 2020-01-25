@@ -1,7 +1,7 @@
 /*
-** svn $Id: inlet_test.h 1782 2019-01-28 06:05:46Z arango $
+** svn $Id: inlet_test.h 1822 2020-01-10 22:36:29Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2019 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -22,7 +22,6 @@
 #undef  UV_COR
 #define SPLINES_VDIFF
 #define SPLINES_VVISC
-#define TS_MPDATA
 #define DJ_GRADPS
 #define FSOBC_REDUCED
 #define SOLVE3D

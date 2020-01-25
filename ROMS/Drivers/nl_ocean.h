@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: nl_ocean.h 1816 2019-12-03 03:59:41Z arango $
+!svn $Id: nl_ocean.h 1821 2020-01-10 03:54:15Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

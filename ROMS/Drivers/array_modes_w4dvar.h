@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: array_modes_w4dvar.h 1810 2019-09-20 03:32:46Z arango $
+!svn $Id: array_modes_w4dvar.h 1821 2020-01-10 03:54:15Z arango $
 !=================================================== Andrew M. Moore ===
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

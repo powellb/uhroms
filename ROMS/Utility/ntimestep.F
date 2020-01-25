@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE ntimesteps (model, RunInterval, nl, Nsteps, Rsteps)
 !
-!svn $Id: ntimestep.F 1816 2019-12-03 03:59:41Z arango $
+!svn $Id: ntimestep.F 1821 2020-01-10 03:54:15Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2019 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !================================================== Hernan G. Arango ===
@@ -50,6 +50,11 @@
 !
       integer :: extra, gn, ig, il, ng, ngm1
       integer, dimension(Ngrids) :: WindowSteps, my_Nsteps
+
+#if defined MODEL_COUPLING && !defined MCT_LIB
+!
+      real(dp) :: ENDtime, NEXTtime
+#endif
 !
 !=======================================================================
 !  Set number of time steps to execute for grid "ng".
