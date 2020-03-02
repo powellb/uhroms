@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_phypar.F 1824 2020-01-13 22:03:33Z arango $
+!svn $Id: read_phypar.F 1825 2020-02-06 23:02:30Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -3291,11 +3291,10 @@
 !
 #ifdef UV_VIS4
       ThreeGhostPoints=.TRUE.
-#else
+#endif
       IF (ANY(Hadvection(:,:)%MPDATA)) THEN
         ThreeGhostPoints=.TRUE.
       END IF
-#endif
 !
 !  Check if nesting parameters "NestLayers", "GridsInLayer", and
 !  "GridNumber" have been assigned.  The code below is necessary
