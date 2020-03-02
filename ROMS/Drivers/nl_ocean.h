@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: nl_ocean.h 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: nl_ocean.h 1827 2020-02-25 22:28:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -367,9 +367,9 @@
       IF (exit_flag.eq.1) THEN
         DO ng=1,Ngrids
           IF (LwrtRST(ng)) THEN
-            IF (Master) WRITE (stdout,10)
+            IF (Master) WRITE (stdout,10), TRIM(blowup_string)
  10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
-     &                ' RESTART file',/)
+     &                ' RESTART file',/,'     REASON: ',a,/)
             Fcount=RST(ng)%load
             IF (LcycleRST(ng).and.(RST(ng)%Nrec(Fcount).ge.2)) THEN
               RST(ng)%Rindex=2

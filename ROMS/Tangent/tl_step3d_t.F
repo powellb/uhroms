@@ -3,7 +3,7 @@
       MODULE tl_step3d_t_mod
 #if !defined TS_FIXED && (defined TANGENT && defined SOLVE3D)
 !
-!svn $Id: tl_step3d_t.F 1825 2020-02-06 23:02:30Z arango $
+!svn $Id: tl_step3d_t.F 1826 2020-02-25 16:43:34Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -372,8 +372,7 @@
 !
 !  Compute reciprocal thickness, 1/Hz.
 !
-      IF (ANY(tl_Vadvection(:,ng)%MPDATA).or.                           &
-     &    ANY(tl_Vadvection(:,ng)%HSIMT)) THEN
+      IF (Lmpdata) THEN
         DO k=1,N(ng)
           DO j=Jstrm2,Jendp2
             DO i=Istrm2,Iendp2
