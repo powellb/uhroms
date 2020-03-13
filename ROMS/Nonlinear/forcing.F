@@ -4,7 +4,7 @@
 #if defined NLM_OUTER  || defined SENSITIVITY_4DVAR || \
     defined TL_W4DPSAS || defined W4DPSAS
 !
-!svn $Id: forcing.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: forcing.F 1830 2020-03-04 22:08:41Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -203,22 +203,6 @@
       END DO
 
 # else
-!
-!  Tangent linear 2D momentum.
-!
-      DO j=JstrR,JendR
-        DO i=Istr,IendR
-          ubar(i,j,1)=ubar(i,j,1)+f_ubar(i,j)
-          ubar(i,j,2)=ubar(i,j,2)+f_ubar(i,j)
-        END DO
-      END DO
-!
-      DO j=Jstr,JendR
-        DO i=IstrR,IendR
-          vbar(i,j,1)=vbar(i,j,1)+f_vbar(i,j)
-          vbar(i,j,2)=vbar(i,j,2)+f_vbar(i,j)
-        END DO
-      END DO
 !
 !  3D momentum.
 !

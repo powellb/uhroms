@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_phypar.F 1826 2020-02-25 16:43:34Z arango $
+!svn $Id: read_phypar.F 1831 2020-03-11 01:45:22Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -3307,14 +3307,6 @@
 !  Process input parameters.
 !-----------------------------------------------------------------------
 !
-!  Set switch for three ghost-points in the halo region.
-!
-      ThreeGhostPoints=ANY(Hadvection(:,:)%MPDATA).or.                  &
-     &                 ANY(Hadvection(:,:)%HSIMT)
-#ifdef UV_VIS4
-      ThreeGhostPoints=.TRUE.
-#endif
-!
 !  Check if nesting parameters "NestLayers", "GridsInLayer", and
 !  "GridNumber" have been assigned.  The code below is necessary
 !  for compatability with old "roms.in" input scripts.
@@ -3835,7 +3827,7 @@
     defined HESSIAN_SV        || defined HESSIAN_SO          || \
     defined HESSIAN_FSV
           WRITE (out,120) Ninner, 'Ninner',                             &
-     &          'Maximun number of 4DVAR inner loop iterations.'
+     &          'Maximum number of 4DVAR inner loop iterations.'
 #endif
 #ifdef STOCHASTIC_OPT
           WRITE (out,120) Nintervals, 'Nintervals',                     &

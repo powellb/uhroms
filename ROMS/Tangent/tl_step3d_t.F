@@ -3,7 +3,7 @@
       MODULE tl_step3d_t_mod
 #if !defined TS_FIXED && (defined TANGENT && defined SOLVE3D)
 !
-!svn $Id: tl_step3d_t.F 1826 2020-02-25 16:43:34Z arango $
+!svn $Id: tl_step3d_t.F 1831 2020-03-11 01:45:22Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -264,7 +264,7 @@
 !
 !  Local variable declarations.
 !
-      logical :: LapplySrc, Lmpdata
+      logical :: LapplySrc, Lhsimt, Lmpdata
 !
       integer :: IminT, ImaxT, JminT, JmaxT
       integer :: Isrc, Jsrc
@@ -318,12 +318,16 @@
 !-----------------------------------------------------------------------
 !  Time-step horizontal advection term.
 !-----------------------------------------------------------------------
+!
+      Lhsimt =ANY(tl_Hadvection(:,ng)%HSIMT).and.                       &
+     &        ANY(tl_Vadvection(:,ng)%HSIMT)
+      Lmpdata=ANY(tl_Hadvection(:,ng)%MPDATA).and.                      &
+     &        ANY(tl_Vadvection(:,ng)%MPDATA)
+
 # ifdef TL_SUPPORTED
 !
 !  Allocate local arrays for MPDATA.
 !
-      Lmpdata=ANY(tl_Hadvection(:,ng)%MPDATA).and.                      &
-     &        ANY(tl_Vadvection(:,ng)%MPDATA)
       IF (Lmpdata) THEN
 #  ifdef DIAGNOSTICS_TS
         IF (.not.allocated(Dhadv)) THEN
@@ -372,7 +376,7 @@
 !
 !  Compute reciprocal thickness, 1/Hz.
 !
-      IF (Lmpdata) THEN
+      IF (Lmpdata.or.Lhsimt) THEN
         DO k=1,N(ng)
           DO j=Jstrm2,Jendp2
             DO i=Istrm2,Iendp2

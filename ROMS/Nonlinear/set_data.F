@@ -2,7 +2,7 @@
 #ifdef NONLINEAR
       SUBROUTINE set_data (ng, tile)
 !
-!svn $Id: set_data.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: set_data.F 1830 2020-03-04 22:08:41Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1367,6 +1367,8 @@
      &                       update)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
+
+#  ifndef SOLVE3D
 !
 !  Set 2D momentum forcing.
 !
@@ -1386,7 +1388,7 @@
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
 
-#  ifdef SOLVE3D
+#  else
 !
 !  Set 3D momentum.
 !

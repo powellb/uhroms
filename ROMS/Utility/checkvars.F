@@ -2,7 +2,7 @@
       SUBROUTINE checkvars (ng, model, ncname, ncid, string, Nrec,      &
      &                      Nvar,tvarnam, get_var, have_var)
 !
-!svn $Id: checkvars.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: checkvars.F 1830 2020-03-04 22:08:41Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -126,8 +126,10 @@
         END IF
 #else
         get_var(idFsur)=.TRUE.
-        get_var(idUbar)=.TRUE.
-        get_var(idVbar)=.TRUE.
+        IF (model.ne.7) THEN        ! not needed by impulse forcing
+          get_var(idUbar)=.TRUE.
+          get_var(idVbar)=.TRUE.
+        END IF
 # ifdef SOLVE3D
         get_var(idUvel)=.TRUE.
         get_var(idVvel)=.TRUE.
