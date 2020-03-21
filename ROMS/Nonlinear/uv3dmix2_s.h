@@ -1,8 +1,8 @@
       SUBROUTINE uv3dmix2 (ng, tile)
 !
-!svn $Id: uv3dmix2_s.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: uv3dmix2_s.h 995 2020-01-10 04:01:28Z arango $
 !************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
@@ -50,7 +50,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 30)
+      CALL wclock_on (ng, iNLM, 30, __LINE__, __FILE__)
 #endif
       CALL uv3dmix2_tile (ng, tile,                                     &
      &                    LBi, UBi, LBj, UBj,                           &
@@ -58,6 +58,9 @@
      &                    nrhs(ng), nnew(ng),                           &
 #ifdef MASKING
      &                    GRID(ng) % pmask,                             &
+#endif
+#ifdef WET_DRY
+     &                    GRID(ng) % pmask_wet,                         &
 #endif
      &                    GRID(ng) % Hz,                                &
      &                    GRID(ng) % om_p,                              &
@@ -87,7 +90,7 @@
      &                    OCEAN(ng) % u,                                &
      &                    OCEAN(ng) % v)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 30)
+      CALL wclock_off (ng, iNLM, 30, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE uv3dmix2
@@ -99,6 +102,9 @@
      &                          nrhs, nnew,                             &
 #ifdef MASKING
      &                          pmask,                                  &
+#endif
+#ifdef WET_DRY
+     &                          pmask_wet,                              &
 #endif
      &                          Hz,                                     &
      &                          om_p, om_r, on_p, on_r,                 &
@@ -130,6 +136,9 @@
 # ifdef MASKING
       real(r8), intent(in) :: pmask(LBi:,LBj:)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: pmask_wet(LBi:,LBj:)
+# endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: om_p(LBi:,LBj:)
       real(r8), intent(in) :: om_r(LBi:,LBj:)
@@ -160,6 +169,9 @@
 #else
 # ifdef MASKING
       real(r8), intent(in) :: pmask(LBi:UBi,LBj:UBj)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: pmask_wet(LBi:UBi,LBj:UBj)
 # endif
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: om_p(LBi:UBi,LBj:UBj)
@@ -244,6 +256,9 @@
      &            (pm(i-1,j-1)+pm(i,j-1))*u(i,j-1,k,nrhs)))
 #ifdef MASKING
             cff=cff*pmask(i,j)
+#endif
+#ifdef WET_DRY
+            cff=cff*pmask_wet(i,j)
 #endif
 #ifdef VISC_3DCOEF
             visc_p=0.25_r8*(visc3d_r(i-1,j-1,k)+visc3d_r(i-1,j,k)+      &

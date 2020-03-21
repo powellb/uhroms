@@ -2,9 +2,9 @@
       MODULE rp_ini_fields_mod
 #ifdef TL_IOMS
 !
-!svn $Id: rp_ini_fields.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_ini_fields.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -45,7 +45,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 2)
+      CALL wclock_on (ng, iRPM, 2, __LINE__, __FILE__)
 # endif
       CALL rp_ini_fields_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -75,7 +75,7 @@
      &                         OCEAN(ng) % zeta,                        &
      &                         OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 2)
+      CALL wclock_off (ng, iRPM, 2, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -187,7 +187,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, itrc, j, k
+      integer :: i, ic, itrc, j, k
 
       real(r8) :: cff1
       real(r8) :: tl_cff1, tl_cff2
@@ -709,7 +709,11 @@
 !  Initialize other time levels for tracers.
 !-----------------------------------------------------------------------
 !
+      ic=0
       DO itrc=1,NT(ng)
+        IF (LtracerCLM(itrc,ng).and.LnudgeTCLM(itrc,ng)) THEN
+          ic=ic+1
+        END IF
         DO k=1,N(ng)
           DO j=JstrB,JendB
             DO i=IstrB,IendB
@@ -730,24 +734,24 @@
 !
 !  Apply boundary conditions.
 !
-!>      CALL t3dbc_tile (ng, tile, itrc,                                &
+!>      CALL t3dbc_tile (ng, tile, itrc, ic,                            &
 !>   &                   LBi, UBi, LBj, UBj, N(ng), NT(ng),             &
 !>   &                   IminS, ImaxS, JminS, JmaxS,                    &
 !>   &                   nstp, nstp,                                    &
 !>   &                   t)
 !>
-        CALL rp_t3dbc_tile (ng, tile, itrc,                             &
+        CALL rp_t3dbc_tile (ng, tile, itrc, ic,                         &
      &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nstp,                                 &
      &                      tl_t)
-!>      CALL t3dbc_tile (ng, tile, itrc,                                &
+!>      CALL t3dbc_tile (ng, tile, itrc, ic,                            &
 !>   &                   LBi, UBi, LBj, UBj, N(ng), NT(ng),             &
 !>   &                   IminS, ImaxS, JminS, JmaxS,                    &
 !>   &                   nstp, nnew,                                    &
 !>   &                   t)
 !>
-        CALL rp_t3dbc_tile (ng, tile, itrc,                             &
+        CALL rp_t3dbc_tile (ng, tile, itrc, ic,                         &
      &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nnew,                                 &
@@ -817,7 +821,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 2)
+      CALL wclock_on (ng, iRPM, 2, __LINE__, __FILE__)
 # endif
       CALL rp_ini_zeta_tile (ng, tile, model,                           &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -840,7 +844,7 @@
      &                       OCEAN(ng) % zeta,                          &
      &                       OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 2)
+      CALL wclock_off (ng, iRPM, 2, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -940,7 +944,8 @@
 !-----------------------------------------------------------------------
 !
       IF (.not.(ANY(tl_LBC(:,isFsur,ng)%radiation).or.                  &
-     &          ANY(tl_LBC(:,isFsur,ng)%Chapman))) THEN
+     &          ANY(tl_LBC(:,isFsur,ng)%Chapman_explicit).or.           &
+     &          ANY(tl_LBC(:,isFsur,ng)%Chapman_implicit))) THEN
         Imin=IstrB
         Imax=IendB
         Jmin=JstrB
@@ -979,7 +984,8 @@
 !  Apply boundary conditions.
 !
       IF (.not.(ANY(tl_LBC(:,isFsur,ng)%radiation).or.                  &
-     &          ANY(tl_LBC(:,isFsur,ng)%Chapman))) THEN
+     &          ANY(tl_LBC(:,isFsur,ng)%Chapman_explicit).or.           &
+     &          ANY(tl_LBC(:,isFsur,ng)%Chapman_implicit))) THEN
 !>      CALL zetabc_tile (ng, tile,                                     &
 !>   &                    LBi, UBi, LBj, UBj,                           &
 !>   &                    IminS, ImaxS, JminS, JmaxS,                   &

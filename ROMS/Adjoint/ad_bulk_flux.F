@@ -2,9 +2,9 @@
       MODULE ad_bulk_flux_mod
 #if defined ADJOINT && defined BULK_FLUXES_NOT_YET
 !
-!svn $Id: ad_bulk_flux.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_bulk_flux.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -70,7 +70,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 17)
+      CALL wclock_on (ng, iADM, 17, __LINE__, __FILE__)
 # endif
       CALL ad_bulk_flux_tile (ng, tile,                                 &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -119,7 +119,7 @@
      &                        FORCES(ng) % ad_svstr)
 
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 17)
+      CALL wclock_off (ng, iADM, 17, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE ad_bulk_flux
@@ -1063,7 +1063,7 @@
 !
         DO i=Istr-1,IendR
 !
-!  Compute transfer coefficients for momentun (Cd).
+!  Compute transfer coefficients for momentum (Cd).
 !
           Wspeed=SQRT(Wmag(i)*Wmag(i)+Wgus(i)*Wgus(i))
           Cd=Wstar(i)*Wstar(i)/(Wspeed*Wspeed+eps)
@@ -1219,7 +1219,7 @@
             ad_Hs=0.0_r8
 
 !
-!  Adjoint transfer coefficients for momentun (Cd).
+!  Adjoint transfer coefficients for momentum (Cd).
 !
 !>        tl_Cd=2.0_r8*(tl_Wstar(i)*Wstar(i)/(Wspeed*Wspeed+eps)        &
 !>   &          -tl_Wspeed*Wspeed*Cd/(Wspeed*Wspeed+eps))
@@ -2657,7 +2657,8 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: tl_ZoL, ZoL, pi
+      real(r8), intent(in) :: tl_ZoL, ZoL
+      real(dp), intent(in) :: pi
 !
 !  Local variable declarations.
 !
@@ -2739,7 +2740,8 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: tl_ZoL, ZoL, pi
+      real(r8), intent(in) :: tl_ZoL, ZoL
+      real(dp), intent(in) :: pi
 !
 !  Local variable declarations.
 !

@@ -1,8 +1,8 @@
       SUBROUTINE ana_humid (ng, tile, model)
 !
-!! svn $Id: ana_humid.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_humid.h 995 2020-01-10 04:01:28Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -85,14 +85,14 @@
 !-----------------------------------------------------------------------
 !
 #if defined BENCHMARK
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Hair(i,j)=0.8_r8
         END DO
       END DO
 #elif defined BL_TEST
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Hair(i,j)=0.776_r8
         END DO
       END DO

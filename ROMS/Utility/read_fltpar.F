@@ -2,9 +2,9 @@
 #ifdef FLOATS
       SUBROUTINE read_FltPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_fltpar.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: read_fltpar.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -20,6 +20,10 @@
       USE mod_ncparam
       USE mod_scalars
 !
+      USE inp_decode_mod
+!
+      USE strings_mod, ONLY : FoundError
+!
       implicit none
 !
 !  Imported variable declarations
@@ -29,8 +33,6 @@
 !
 !  Local variable declarations.
 !
-      logical :: find_file
-
       integer :: Npts, Nval
       integer :: i, j, igrid, mc, nc, ng, status
 
@@ -38,11 +40,9 @@
 
       integer, allocatable :: Fcoor(:,:), Fcount(:,:), Ftype(:,:)
 
-      integer :: decode_line, load_i, load_l, load_r
-
       real(r8) :: xfloat, yfloat, zfloat
 
-      real(r8), dimension(100) :: Rval
+      real(dp), dimension(nRval) :: Rval
 
       real(r8), allocatable :: Ft0(:,:), Fx0(:,:), Fy0(:,:), Fz0(:,:)
       real(r8), allocatable :: Fdt(:,:), Fdx(:,:), Fdy(:,:), Fdz(:,:)
@@ -52,7 +52,7 @@
       character (len=35 ) :: frmt
       character (len=40 ) :: KeyWord
       character (len=256) :: fname, line
-      character (len=256), dimension(200) :: Cval
+      character (len=256), dimension(nCval) :: Cval
 !
 !-----------------------------------------------------------------------
 !  Read in initial float locations.
@@ -90,36 +90,47 @@
               IF (Ngrids.gt.1) Npts=MAXVAL(Nfloats)+1
               IF (.not.allocated(Fcoor)) THEN
                 allocate ( Fcoor (Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fcount)) THEN
                 allocate ( Fcount(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Ftype)) THEN
                 allocate ( Ftype (Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Ft0)) THEN
                 allocate ( Ft0(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fx0)) THEN
                 allocate ( Fx0(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fy0)) THEN
                 allocate ( Fy0(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fz0)) THEN
                 allocate ( Fz0(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fdt)) THEN
                 allocate ( Fdt(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fdx)) THEN
                 allocate ( Fdx(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fdy)) THEN
                 allocate ( Fdy(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               IF (.not.allocated(Fdz)) THEN
                 allocate ( Fdz(Npts,Ngrids) )
+                Dmem(1)=Dmem(1)+REAL(Npts*Ngrids,r8)
               END IF
               CALL allocate_floats (.TRUE.) ! allocate DRIFTER structure
               ncount(1:Ngrids)=0
@@ -197,11 +208,19 @@
 
 # ifdef FLOAT_BIOLOGY
       fname=fbionam
-      IF (.not.find_file(1, fname)) GO TO 40
+      IF (.not.find_file(1, fname, 'FBIONAM')) GO TO 40
       GO TO 50
- 40   IF (Master) WRITE (out,110) TRIM(fname)
+ 40   IF (Master) THEN
+        IF (LEN_TRIM(fname).eq.0) THEN
+          WRITE (out,110) ng, 'Oops unassigned file name. '//           &
+     &                        'Check assimilation input script...'
+        ELSE
+          WRITE (out,110) ng, TRIM(fname)
+        END IF
+      END IF
       exit_flag=4
-      RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                       &
+     &               __FILE__)) RETURN
  50   CONTINUE
       IF (Lwrite) WRITE (out,120) 'biological floats behavior File:  ', &
      &                            TRIM(fname)
@@ -313,7 +332,8 @@
      &        15x,'Ft0',5x,'Fx0',5x,'Fy0',5x,'Fz0',                     &
      &        6x,'Fdt',6x,'Fdx',6x,'Fdy',6x,'Fdz',/)
  100  FORMAT (/,1x,i10,2x,a,t30,a)
- 110  FORMAT (/,' READ_FltPar - could not find input file: ', a)
+ 110  FORMAT (/,' READ_FltPar - Grid ', i2.2,                           &
+     &        ', could not find input file: ', a)
  120  FORMAT (/,2x,a,a)
 
       RETURN

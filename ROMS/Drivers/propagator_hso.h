@@ -1,8 +1,8 @@
       SUBROUTINE propagator (RunInterval, Iter, state, ad_state)
 !
-!svn $Id: propagator_hso.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: propagator_hso.h 995 2020-01-10 04:01:28Z arango $
 !************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
@@ -23,25 +23,26 @@
       USE mod_stepping
       USE mod_storage
 !
-      USE dotproduct_mod, ONLY : tl_statenorm
-      USE ini_adjust_mod, ONLY : ad_ini_perturb
-      USE mod_forces, ONLY : initialize_forces
+      USE dotproduct_mod,  ONLY : tl_statenorm
+      USE ini_adjust_mod,  ONLY : ad_ini_perturb
+      USE mod_forces,      ONLY : initialize_forces
       USE inner2state_mod, ONLY : ad_inner2state, tl_inner2state
       USE inner2state_mod, ONLY : ini_C_norm
 #ifdef STOCH_OPT_WHITE
-      USE packing_mod, ONLY : ad_so_pack, ad_unpack, tl_unpack
+      USE packing_mod,     ONLY : ad_so_pack, ad_unpack, tl_unpack
 #else
-      USE packing_mod, ONLY : ad_so_pack_red, ad_unpack, tl_unpack
+      USE packing_mod,     ONLY : ad_so_pack_red, ad_unpack, tl_unpack
 #endif
 #ifdef SOLVE3D
-      USE set_depth_mod, ONLY: set_depth
+      USE set_depth_mod,   ONLY : set_depth
 #endif
+      USE strings_mod,     ONLY : FoundError
 !
 !  Imported variable declarations.
 !
       integer :: Iter
 
-      real(r8), intent(in) :: RunInterval
+      real(dp), intent(in) :: RunInterval
 
       TYPE (T_GST), intent(in) :: state(Ngrids)
       TYPE (T_GST), intent(inout) :: ad_state(Ngrids)
@@ -126,11 +127,11 @@
           nrhs(ng)=1
           nnew(ng)=1
 !
-!$OMP MASTER
           synchro_flag(ng)=.TRUE.
           tdays(ng)=dstart+REAL(ntimes(ng),r8)*REAL(Interval-1,r8)*     &
      &                     dt(ng)*sec2day/REAL(Nintervals,r8)
           time(ng)=tdays(ng)*day2sec
+!$OMP MASTER
           ntstart(ng)=INT((time(ng)-dstart*day2sec)/dt(ng))+1
           ntend(ng)=ntimes(ng)
           ntfirst(ng)=ntstart(ng)
@@ -151,10 +152,10 @@
               LdefADJ(ng)=.FALSE.
               LdefTLM(ng)=.FALSE.
             END IF
-            Fcount=ADM(ng)%Fcount
+            Fcount=ADM(ng)%load
             ADM(ng)%Nrec(Fcount)=0
             ADM(ng)%Rindex=0
-            Fcount=TLM(ng)%Fcount
+            Fcount=TLM(ng)%load
             TLM(ng)%Nrec(Fcount)=0
             TLM(ng)%Rindex=0
           ELSE                               ! Computing eigenvectors
@@ -165,18 +166,18 @@
             END IF
 #ifdef STOCH_OPT_WHITE
             IF (Interval.le.Nintervals) THEN
-              Fcount=ADM(ng)%Fcount
+              Fcount=ADM(ng)%load
               ADM(ng)%Nrec(Fcount)=0
               ADM(ng)%Rindex=0
             END IF
 #else
-            Fcount=ADM(ng)%Fcount
+            Fcount=ADM(ng)%load
             ADM(ng)%Nrec(Fcount)=0
             ADM(ng)%Rindex=0
 #endif
             IF ((LmultiGST.or.(ABS(Iter).eq.1)).and.                    &
      &          (Interval.eq.1)) THEN
-              Fcount=TLM(ng)%Fcount
+              Fcount=TLM(ng)%load
               TLM(ng)%Nrec(Fcount)=0
               TLM(ng)%Rindex=0
             END IF
@@ -206,7 +207,7 @@
 !
         DO ng=1,Ngrids
           DO tile=last_tile(ng),first_tile(ng),-1
-            CALL set_depth (ng, tile)
+            CALL set_depth (ng, tile, iTLM)
           END DO
 !$OMP BARRIER
         END DO
@@ -255,15 +256,16 @@
           DO ng=1,Ngrids
 !$OMP MASTER
             CALL close_inp (ng, iTLM)
-            IF (exit_flag.ne.NoError) RETURN
-#ifdef TIMELESS_DATA
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             CALL tl_get_idata (ng)
-            IF (exit_flag.ne.NoError) RETURN
-#endif
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             CALL tl_get_data (ng)
 !$OMP END MASTER
 !$OMP BARRIER
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END DO
 !
 !-----------------------------------------------------------------------
@@ -287,7 +289,8 @@
           CALL tl_main2d (so_run_time)
 #endif
 !$OMP BARRIER
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
 !
 !-----------------------------------------------------------------------
@@ -315,7 +318,7 @@
 !
         DO ng=1,Ngrids
           DO tile=last_tile(ng),first_tile(ng),-1
-            CALL set_depth (ng, tile)
+            CALL set_depth (ng, tile, iTLM)
           END DO
 !$OMP BARRIER
         END DO
@@ -377,10 +380,10 @@
           nrhs(ng)=1
           nnew(ng)=2
 !
-!$OMP MASTER
           synchro_flag(ng)=.TRUE.
           tdays(ng)=dstart+dt(ng)*REAL(ntimes(ng),r8)*sec2day
           time(ng)=tdays(ng)*day2sec
+!$OMP MASTER
           ntstart(ng)=ntimes(ng)+1
 # ifdef STOCH_OPT_WHITE
           ntend(ng)=1+(Interval-1)*ntimes(ng)/Nintervals
@@ -417,14 +420,15 @@
           DO ng=1,Ngrids
 !$OMP MASTER
             CALL close_inp (ng, iADM)
-            IF (exit_flag.ne.NoError) RETURN
-#ifdef TIMELESS_DATA
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             CALL ad_get_idata (ng)
-            IF (exit_flag.ne.NoError) RETURN
-#endif
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             CALL ad_get_data (ng)
 !$OMP END MASTER
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END DO
 !$OMP BARRIER
 !
@@ -457,7 +461,8 @@
 # endif
 #endif
 !$OMP BARRIER
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 #ifdef STOCH_OPT_WHITE
         END IF
 #endif
@@ -488,7 +493,7 @@
 !
         DO ng=1,Ngrids
           DO tile=last_tile(ng),first_tile(ng),-1
-            CALL set_depth (ng, tile)
+            CALL set_depth (ng, tile, iADM)
           END DO
 !$OMP BARRIER
         END DO
@@ -512,7 +517,8 @@
         END DO
 !
 !$OMP BARRIER
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Clear forcing variables for next iteration.
@@ -541,7 +547,8 @@
       END DO
 !
 !$OMP BARRIER
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
       DO ng=1,Ngrids
         DO tile=last_tile(ng),first_tile(ng),-1
@@ -551,7 +558,8 @@
       END DO
 !
 !$OMP BARRIER
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
  10   FORMAT (/,a,i2.2,a,i3.3,a,i3.3/)
  20   FORMAT (/,a,i2.2)

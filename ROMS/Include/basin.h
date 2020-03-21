@@ -1,7 +1,7 @@
 /*
-** svn $Id: basin.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: basin.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for Big Bad Basin.
 **
 ** Application flag:   BASIN
-** Input script:       ocean_basin.in
+** Input script:       roms_basin.in
 */
 
 #define UV_ADV
@@ -18,14 +18,9 @@
 #define UV_VIS4
 #define MIX_S_UV
 #define DJ_GRADPS
-#define TS_U3HADVECTION
-#define TS_C4VADVECTION
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define SOLVE3D
-#define SPLINES
-#define EASTERN_WALL
-#define WESTERN_WALL
-#define SOUTHERN_WALL
-#define NORTHERN_WALL
 #define BODYFORCE
 #define ANA_GRID
 #define ANA_INITIAL

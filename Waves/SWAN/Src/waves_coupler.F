@@ -3,9 +3,9 @@
 
 #if defined MODEL_COUPLING && defined MCT_LIB
 !
-!svn $Id: waves_coupler.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: waves_coupler.F 995 2020-01-10 04:01:28Z arango $
 !==================================================== John C. Warner ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group      Hernan G. Arango   !
 !   Licensed under a MIT/X style license                               !
 !   See License_ROMS.txt                                               !
 !=======================================================================
@@ -387,7 +387,7 @@
 !!        CALL finalize_wav2ocn_coupling
         END IF
 
-# ifdef AIR_OCEAN
+# ifdef ATM_COUPLING
 !
 !  Schedule receiving fields from atmosphere model.
 !
@@ -520,7 +520,7 @@
                 END DO
               END DO
 
-# ifdef AIR_OCEAN
+# ifdef ATM_COUPLING
 
             CASE ('Uwind')               ! surface wind u-velocity
 
@@ -799,7 +799,7 @@
               COMPDA(INDX,JVX2)=TEMPMCT(IP,3)
               COMPDA(INDX,JVY2)=TEMPMCT(IP,4)
               COMPDA(INDX,JFRC2)=REAL(TEMPMCT(IP,5))
-# ifdef AIR_OCEAN
+# ifdef ATM_COUPLING
               COMPDA(INDX,JWX2)=TEMPMCT(IP,6)
               COMPDA(INDX,JWY2)=TEMPMCT(IP,7)
 # endif

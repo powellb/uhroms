@@ -2,9 +2,9 @@
       MODULE tl_diag_mod
 #ifdef TANGENT
 !
-!svn $Id: tl_diag.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tl_diag.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -38,7 +38,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 7)
+      CALL wclock_on (ng, iTLM, 7, __LINE__, __FILE__)
 # endif
       CALL tl_diag_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
@@ -58,7 +58,7 @@
      &                   OCEAN(ng) % tl_vbar,                           &
      &                   OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 7)
+      CALL wclock_off (ng, iTLM, 7, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE tl_diag
@@ -269,15 +269,36 @@
           avgkp=avgke+avgpe
           IF (first_time(ng).eq.0) THEN
             first_time(ng)=1
-            IF (Master) WRITE (stdout,10) 'STEP', 'Day HH:MM:SS',       &
-     &                                    'KINETIC_ENRG', 'POTEN_ENRG', &
-     &                                    'TOTAL_ENRG', 'NET_VOLUME'
- 10         FORMAT (/,3x,a,3x,a,2x,a,3x,a,4x,a,4x,a,/)
+            IF (Master.and.(ng.eq.1)) THEN
+              WRITE (stdout,10) 'TIME-STEP', 'YYYY-MM-DD hh:mm:ss.ss',  &
+     &                          'KINETIC_ENRG', 'POTEN_ENRG',           &
+# ifdef NESTING
+     &                          'TOTAL_ENRG', 'NET_VOLUME', 'Grid'
+# else
+     &                          'TOTAL_ENRG', 'NET_VOLUME'
+# endif
+# ifdef NESTING
+ 10           FORMAT (/,1x,a,1x,a,2x,a,3x,a,4x,a,4x,a,2x,a)
+# else
+ 10           FORMAT (/,1x,a,1x,a,2x,a,3x,a,4x,a,4x,a)
+# endif
+            END IF
           END IF
-          IF (Master) WRITE (stdout,20) iic(ng)-1, time_code(ng),       &
-     &                                  avgke, avgpe, avgkp, volume
- 20       FORMAT (i7,1x,a,4(1pe14.6))
-          IF (Master) CALL my_flush (stdout)
+          IF (Master) THEN    ! restart counter after 10 billion steps
+            WRITE (stdout,20) INT(MOD(REAL(iic(ng)-1,r8),1.0E+10_r8)),  &
+     &                        time_code(ng),                            &
+# ifdef NESTING
+     &                        avgke, avgpe, avgkp, volume, ng
+# else
+     &                        avgke, avgpe, avgkp, volume
+# endif
+# ifdef NESTING
+ 20         FORMAT (i10,1x,a,4(1pe14.6),2x,i2.2)
+# else
+ 20         FORMAT (i10,1x,a,4(1pe14.6))
+# endif
+            CALL my_flush (stdout)
+          END IF
 !
 !  If blowing-up, set exit_flag to stop computations.
 !

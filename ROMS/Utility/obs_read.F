@@ -2,9 +2,9 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_read (ng, model, backward)
 !
-!svn $Id: obs_read.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: obs_read.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -23,6 +23,9 @@
       USE mod_netcdf
       USE mod_scalars
 !
+      USE dateclock_mod, ONLY : time_string
+      USE strings_mod,   ONLY : FoundError
+!
       implicit none
 !
 !  Imported variable declarations.
@@ -37,8 +40,10 @@
 
       integer :: Mstr, Mend
       integer :: i, iobs, itrc, status
+
+      character (len=22) :: t_code
 !
-      SourceFile='obs_read.F'
+      SourceFile=__FILE__
 !
 !---------------------------------------------------------------------
 !  Read observation variables needed for interpolating the model
@@ -47,7 +52,11 @@
 !
       IF (ProcessObs(ng)) THEN
 # if defined TLM_OBS
+#  if defined IS4DVAR_SENSITIVITY
+        readNLmod=.FALSE.
+#  else
         readNLmod=.TRUE.
+#  endif
         readTLmod=.TRUE.
 # else
         readNLmod=.FALSE.
@@ -56,7 +65,7 @@
 !
 !  Initialize observations processing counters.
 !
-        DO i=1,NstateVar(ng)
+        DO i=1,NobsVar(ng)
           FOURDVAR(ng)%ObsCount(i)=0
           FOURDVAR(ng)%ObsReject(i)=0
         END DO
@@ -100,16 +109,28 @@
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
-!  Read in observation time (days).
+!  Read in observation provenance identifier.
 !
-        CALL netcdf_get_fvar (ng, model, OBS(ng)%name, Vname(1,idObsT), &
-     &                        Tobs(Mstr:),                              &
+        CALL netcdf_get_ivar (ng, model, OBS(ng)%name, Vname(1,idOpro), &
+     &                        ObsProv(Mstr:),                           &
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+!
+!  Read in observation time (days).
+!
+        CALL netcdf_get_time (ng, model, OBS(ng)%name, Vname(1,idObsT), &
+     &                        Rclock%DateNumber, Tobs(Mstr:),           &
+     &                        ncid = OBS(ng)%ncid,                      &
+     &                        start = (/NstrObs(ng)/),                  &
+     &                        total = (/Nobs(ng)/))
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Read in observation X-location (grid units).
 !
@@ -118,7 +139,8 @@
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Read in observation Y-location (grid units).
 !
@@ -127,7 +149,8 @@
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 # ifdef SOLVE3D
 !
@@ -144,7 +167,8 @@
      &                          ncid = OBS(ng)%ncid,                    &
      &                          start = (/NstrObs(ng)/),                &
      &                          total = (/Nobs(ng)/))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         ELSE
           CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
      &                          Vname(1,idObsD),                        &
@@ -152,7 +176,8 @@
      &                          ncid = OBS(ng)%ncid,                    &
      &                          start = (/NstrObs(ng)/),                &
      &                          total = (/Nobs(ng)/))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
         Load_Zobs(ng)=.FALSE.
         IF ((MINVAL(Zobs).lt.0.0_r8).or.                                &
@@ -163,7 +188,7 @@
 #  ifdef DISTRIBUTE
 !
 !  If distributed-memory and Zobs in meters (Zobs < 0),  zero-out
-!  Zobs values in all nodes by itself to facilitate exchages between
+!  Zobs values in all nodes but itself to facilitate exchages between
 !  tiles latter before writting into observation NetCDF file.
 !
         IF (.not.wrote_Zobs(ng)) THEN
@@ -179,7 +204,21 @@
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+!
+!  If appropriate, read in observation meta values.
+!
+        IF (haveObsMeta(ng)) THEN
+          CALL netcdf_get_fvar (ng, model, OBS(ng)%name,                &
+     &                          Vname(1,idOmet),                        &
+     &                          ObsMeta(Mstr:),                         &
+     &                          ncid = OBS(ng)%ncid,                    &
+     &                          start = (/NstrObs(ng)/),                &
+     &                          total = (/Nobs(ng)/))
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 !
 # ifdef WEAK_CONSTRAINT
 !  Read in observation error covariance.
@@ -193,7 +232,8 @@
      &                        ncid = OBS(ng)%ncid,                      &
      &                        start = (/NstrObs(ng)/),                  &
      &                        total = (/Nobs(ng)/))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 # ifndef WEAK_CONSTRAINT
         DO iobs=1,Nobs(ng)
@@ -204,13 +244,43 @@
 !  Read in nonlinear model values at observation locations.
 !
         IF (readNLmod.and.haveNLmod(ng)) THEN
+# ifdef VERIFICATION
           CALL netcdf_get_fvar (ng, model, DAV(ng)%name,                &
      &                          Vname(1,idNLmo),                        &
      &                          NLmodVal(Mstr:),                        &
      &                          ncid = DAV(ng)%ncid,                    &
      &                          start = (/NstrObs(ng)/),                &
      &                          total = (/Nobs(ng)/))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+# else
+          CALL netcdf_get_fvar (ng, model, DAV(ng)%name,                &
+     &                          Vname(1,idNLmo),                        &
+     &                          NLmodVal(Mstr:),                        &
+     &                          ncid = DAV(ng)%ncid,                    &
+     &                          start = (/NstrObs(ng),outer/),          &
+     &                          total = (/Nobs(ng),1/))
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+# endif
+# ifdef BGQC_NOT_NEEDED
+          CALL netcdf_get_fvar (ng, model, DAV(ng)%name,                &
+     &                          Vname(1,idBgEr),                        &
+     &                          BgErr(Mstr:),                           &
+     &                          ncid = DAV(ng)%ncid,                    &
+     &                          start = (/NstrObs(ng)/),                &
+     &                          total = (/Nobs(ng)/))
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+          CALL netcdf_get_fvar (ng, model, DAV(ng)%name,                &
+     &                          Vname(1,idObsS),                        &
+     &                          ObsScale(Mstr:),                        &
+     &                          ncid = DAV(ng)%ncid,                    &
+     &                          start = (/NstrObs(ng)/),                &
+     &                          total = (/Nobs(ng)/))
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+# endif
         END IF
 
 # if defined TLM_OBS && !defined WEAK_CONSTRAINT
@@ -225,7 +295,8 @@
      &                          ncid = DAV(ng)%ncid,                    &
      &                          start = (/NstrObs(ng)/),                &
      &                          total = (/Nobs(ng)/))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
 #  if defined IS4DVAR
 !
@@ -246,25 +317,29 @@
 !-----------------------------------------------------------------------
 !
         DO iobs=Mstr,Mend
-          IF  (ObsType(iobs).eq.isFsur) THEN
+          IF  (ObsType(iobs).eq.ObsState2Type(isFsur)) THEN
             FOURDVAR(ng)%ObsCount(isFsur)=                              &
      &                           FOURDVAR(ng)%ObsCount(isFsur)+1
-          ELSE IF (ObsType(iobs).eq.isUbar) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isUbar)) THEN
             FOURDVAR(ng)%ObsCount(isUbar)=                              &
      &                           FOURDVAR(ng)%ObsCount(isUbar)+1
-          ELSE IF (ObsType(iobs).eq.isVbar) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isVbar)) THEN
             FOURDVAR(ng)%ObsCount(isVbar)=                              &
      &                           FOURDVAR(ng)%ObsCount(isVbar)+1
 # ifdef SOLVE3D
-          ELSE IF (ObsType(iobs).eq.isUvel) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
             FOURDVAR(ng)%ObsCount(isUvel)=                              &
      &                           FOURDVAR(ng)%ObsCount(isUvel)+1
-          ELSE IF (ObsType(iobs).eq.isVvel) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isVvel)) THEN
             FOURDVAR(ng)%ObsCount(isVvel)=                              &
      &                           FOURDVAR(ng)%ObsCount(isVvel)+1
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isRadial)) THEN
+            haveObsMeta(ng)=.TRUE.
+            FOURDVAR(ng)%ObsCount(isRadial)=                            &
+     &                           FOURDVAR(ng)%ObsCount(isRadial)+1
           ELSE
             DO itrc=1,NT(ng)
-              IF (ObsType(iobs).eq.isTvar(itrc)) THEN
+              IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN
                 i=isTvar(itrc)
                 FOURDVAR(ng)%ObsCount(i)=FOURDVAR(ng)%ObsCount(i)+1
               END IF
@@ -278,7 +353,8 @@
 !-----------------------------------------------------------------------
 !
         IF (Master) THEN
-          WRITE (stdout,10) ObsTime(ng)*sec2day
+          CALL time_string (ObsTime(ng), t_code)
+          WRITE (stdout,10) ObsTime(ng)*sec2day, t_code
         END IF
         IF (backward) THEN
           IF ((ObsSurvey(ng)-1).ge.1) THEN
@@ -291,8 +367,8 @@
         END IF
       END IF
 !
-  10  FORMAT (/,' Number of State Observations Processed:',             &
-     &        t58,'ObsTime = ',f12.4,/,/,                               &
+  10  FORMAT (/,' Number of State Observations Processed:',2x,          &
+     &        'ObsTime = ',f12.4,',',t68,a,/,/,                         &
      &        10x,'Variable',10x,'IstrObs',4x,'IendObs',6x,'Count',     &
      &        3x,'Rejected',/)
 

@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: nl_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: nl_ocean.h 1007 2020-02-25 22:29:41Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -44,15 +44,16 @@
 #endif
       USE mod_iounits
       USE mod_scalars
-#ifdef MCT_LIB
 !
-# ifdef AIR_OCEAN
+#ifdef MCT_LIB
+# ifdef ATM_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
 # endif
-# ifdef WAVES_OCEAN
+# ifdef WAV_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2wav_coupling
 # endif
 #endif
+      USE strings_mod,       ONLY : FoundError
 !
 !  Imported variable declarations.
 !
@@ -75,7 +76,7 @@
 #ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-!  Set distribute-memory (MPI) world communictor.
+!  Set distribute-memory (mpi) world communictor.
 !-----------------------------------------------------------------------
 !
       IF (PRESENT(mpiCOMM)) THEN
@@ -107,7 +108,8 @@
 !  grids and dimension parameters are known.
 !
         CALL inp_par (iNLM)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Set domain decomposition tile partition range.  This range is
 !  computed only once since the "first_tile" and "last_tile" values
@@ -140,7 +142,7 @@
         DO ng=1,Ngrids
 !$OMP PARALLEL
           DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iNLM, 0)
+            CALL wclock_on (ng, iNLM, 0, __LINE__, __FILE__)
           END DO
 !$OMP END PARALLEL
         END DO
@@ -159,17 +161,17 @@
 #endif
       END IF
 
-#if defined MCT_LIB && (defined AIR_OCEAN || defined WAVES_OCEAN)
+#if defined MCT_LIB && (defined ATM_COUPLING || defined WAV_COUPLING)
 !
 !-----------------------------------------------------------------------
 !  Initialize coupling streams between model(s).
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
-# ifdef AIR_OCEAN
+# ifdef ATM_COUPLING
         CALL initialize_ocn2atm_coupling (ng, MyRank)
 # endif
-# ifdef WAVES_OCEAN
+# ifdef WAV_COUPLING
         CALL initialize_ocn2wav_coupling (ng, MyRank)
 # endif
       END DO
@@ -180,12 +182,11 @@
 !  if applicable.
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
 !$OMP PARALLEL
-        CALL initial (ng)
+      CALL initial
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
-      END DO
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !  Initialize run or ensemble counter.
 !
@@ -193,15 +194,29 @@
 
 #ifdef VERIFICATION
 !
-!  Create out NetCDF file containing model solution at observation
-!  locations.
+!  Create NetCDF file for model solution at observation locations.
 !
       IF (Nrun.eq.1) THEN
         DO ng=1,Ngrids
           LdefMOD(ng)=.TRUE.
           wrtNLmod(ng)=.TRUE.
+          wrtObsScale(ng)=.TRUE.
           CALL def_mod (ng)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END DO
+      END IF
+#endif
+#ifdef ENKF_RESTART
+!
+!  Create Ensenble Kalman Filter (EnKF) reastart NetCDF file.
+!
+      IF (Nrun.eq.1) THEN
+        DO ng=1,Ngrids
+          LdefDAI(ng)=.TRUE.
+          CALL def_dai (ng)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END DO
       END IF
 #endif
@@ -214,7 +229,8 @@
 !=======================================================================
 !                                                                      !
 !  This routine runs ROMS/TOMS nonlinear model for the specified time  !
-!  interval (seconds), RunInterval.                                    !
+!  interval (seconds), RunInterval.  It RunInterval=0, ROMS advances   !
+!  one single time-step.                                               !
 !                                                                      !
 !=======================================================================
 !
@@ -226,36 +242,65 @@
       USE mod_iounits
       USE mod_scalars
 !
+      USE strings_mod, ONLY : FoundError
+!
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: RunInterval            ! seconds
+      real(dp), intent(in) :: RunInterval            ! seconds
 !
 !  Local variable declarations.
 !
       integer :: ng
+#if defined MODEL_COUPLING && !defined MCT_LIB
+      integer :: NstrStep, NendStep, extra
+!
+      real(dp) :: ENDtime, NEXTtime
+#endif
 !
 !-----------------------------------------------------------------------
-!  Time-step nonlinear model over all nested grids, if applicable.
+!  Time-step nonlinear model over nested grids, if applicable.
+#if defined MODEL_COUPLING && !defined MCT_LIB
+!  Since the ROMS kernel has a delayed output and line diagnostics by
+!  one timestep, subtact an extra value to the report of starting and
+!  ending timestep for clarity. Usually, the model coupling interval
+!  is of the same size as ROMS timestep.
+#endif
 !-----------------------------------------------------------------------
 !
+      MyRunInterval=RunInterval
+      IF (Master) WRITE (stdout,'(1x)')
       DO ng=1,Ngrids
-        IF (Master) THEN
-          WRITE (stdout,10) 'NL', ng, ntstart(ng), ntend(ng)
+#if defined MODEL_COUPLING && !defined MCT_LIB
+        NEXTtime=time(ng)+RunInterval
+        ENDtime=INItime(ng)+(ntimes(ng)-1)*dt(ng)
+        IF ((NEXTtime.eq.ENDtime).and.(ng.eq.1)) THEN
+          extra=0                                   ! last time interval
+        ELSE
+          extra=1
         END IF
+        step_counter(ng)=0
+        NstrStep=iic(ng)
+        NendStep=NstrStep+INT((MyRunInterval)/dt(ng))-extra
+        IF (Master) WRITE (stdout,10) 'NL', ng, NstrStep, NendStep
+#else
+        IF (Master) WRITE (stdout,10) 'NL', ng, ntstart(ng), ntend(ng)
+#endif
       END DO
-
+      IF (Master) WRITE (stdout,'(1x)')
+!
 !$OMP PARALLEL
 #ifdef SOLVE3D
-      CALL main3d (RunInterval)
+      CALL main3d (MyRunInterval)
 #else
-      CALL main2d (RunInterval)
+      CALL main2d (MyRunInterval)
 #endif
 !$OMP END PARALLEL
 
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
- 10   FORMAT (/,1x,a,1x,'ROMS/TOMS: started time-stepping:',            &
-     &        ' (Grid: ',i2.2,' TimeSteps: ',i8.8,' - ',i8.8,')',/)
+ 10   FORMAT (1x,a,1x,'ROMS/TOMS: started time-stepping:',              &
+     &        ' (Grid: ',i2.2,' TimeSteps: ',i12.12,' - ',i12.12,')')
 
       RETURN
       END SUBROUTINE ROMS_run
@@ -277,7 +322,29 @@
 !  Local variable declarations.
 !
       integer :: Fcount, ng, thread
+#ifdef ENKF_RESTART
+      integer :: tile
+#endif
 
+#ifdef ENKF_RESTART
+!
+!-----------------------------------------------------------------------
+!  Write out initial conditions for the next time window of the Ensemble
+!  Kalman (EnKF) filter.
+!-----------------------------------------------------------------------
+!
+# ifdef DISTRIBUTE
+      tile=MyRank
+# else
+      tile=-1
+# endif
+!
+      IF (exit_flag.eq.NoError) THEN
+        DO ng=1,Ngrids
+          CALL wrt_dai (ng, tile)
+        END DO
+      END IF
+#endif
 #ifdef VERIFICATION
 !
 !-----------------------------------------------------------------------
@@ -300,10 +367,10 @@
       IF (exit_flag.eq.1) THEN
         DO ng=1,Ngrids
           IF (LwrtRST(ng)) THEN
-            IF (Master) WRITE (stdout,10)
+            IF (Master) WRITE (stdout,10), TRIM(blowup_string)
  10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
-     &                ' RESTART file',/)
-            Fcount=RST(ng)%Fcount
+     &                ' RESTART file',/,'     REASON: ',a,/)
+            Fcount=RST(ng)%load
             IF (LcycleRST(ng).and.(RST(ng)%Nrec(Fcount).ge.2)) THEN
               RST(ng)%Rindex=2
               LcycleRST(ng)=.FALSE.
@@ -316,7 +383,8 @@
       END IF
 !
 !-----------------------------------------------------------------------
-!  Stop model and time profiling clocks.  Close output NetCDF files.
+!  Stop model and time profiling clocks, report memory requirements, and
+!  close output NetCDF files.
 !-----------------------------------------------------------------------
 !
 !  Stop time clocks.
@@ -329,13 +397,22 @@
       DO ng=1,Ngrids
 !$OMP PARALLEL
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 0)
+          CALL wclock_off (ng, iNLM, 0, __LINE__, __FILE__)
         END DO
 !$OMP END PARALLEL
       END DO
 !
+!  Report dynamic memory and automatic memory requirements.
+!
+!$OMP PARALLEL
+      CALL memory
+!$OMP END PARALLEL
+!
 !  Close IO files.
 !
+      DO ng=1,Ngrids
+        CALL close_inp (ng, iNLM)
+      END DO
       CALL close_out
 
       RETURN

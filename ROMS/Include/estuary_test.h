@@ -1,7 +1,7 @@
 /*
-** svn $Id: estuary_test.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: estuary_test.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,16 +9,16 @@
 ** Options for Estuary with Sediment Transport Test.
 **
 ** Application flag:   ESTUARY_TEST
-** Input script:       ocean_estuary_test.in
+** Input script:       roms_estuary_test.in
 **                     sediment_estuary_test.in
 */
 
 #define UV_ADV
 #define UV_LOGDRAG
-#define TS_U3HADVECTION
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define SALINITY
 #define SOLVE3D
-#define SPLINES
 #define SEDIMENT
 #ifdef SEDIMENT
 # define SUSPLOAD
@@ -30,6 +30,7 @@
 # define KANTHA_CLAYSON
 # undef  CANUTO_A
 # define N2S2_HORAVG
+# define RI_SPLINES
 #endif
 #define ANA_GRID
 #define ANA_INITIAL

@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE nf_fread2d_mod
 !
-!svn $Id: nf_fread2d.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: nf_fread2d.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -34,6 +34,8 @@
 !     Amin       Field minimum value (real)                            !
 !     Amax       Field maximum value (real)                            !
 !     A          Field to read in (real 2D array)                      !
+!     Lregrid    Field regrid interpolation switch (logical; LOGICAL)  !
+!                                                                      !
 !     nf_fread2d Error flag (integer)                                  !
 !                                                                      !
 !=======================================================================
@@ -53,7 +55,7 @@
 # ifdef MASKING
      &                     Amask,                                       &
 # endif
-     &                     A)
+     &                     A, Lregrid)
 !***********************************************************************
 !
       USE mod_param
@@ -65,16 +67,19 @@
       USE mod_scalars
 !
       USE distribute_mod, ONLY : mp_bcasti, mp_collect, mp_reduce
+      USE strings_mod,    ONLY : FoundError
 !
       implicit none
 !
 !  Imported variable declarations.
 !
+      logical, intent(out), optional :: Lregrid
+
       integer, intent(in) :: ng, model, ncid, ncvarid, tindex, gtype
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: Vsize(4)
 
-      real(r8), intent(in)  :: Ascl
+      real(dp), intent(in)  :: Ascl
       real(r8), intent(out) :: Amin
       real(r8), intent(out) :: Amax
 
@@ -196,6 +201,9 @@
         Ilen=Vsize(1)
         Jlen=Vsize(2)
       END IF
+      IF (PRESENT(Lregrid)) THEN
+        Lregrid=interpolate
+      END IF
 !
 !  Check if the following attributes: "scale_factor", "add_offset", and
 !  "_FillValue" are present in the input NetCDF variable:
@@ -217,7 +225,8 @@
       CALL netcdf_get_fatt (ng, model, ncname, ncvarid, AttName,        &
      &                      AttValue, foundit,                          &
      &                      ncid = ncid)
-      IF (exit_flag.ne.NoError) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) THEN
         nf_fread2d=ioerror
         RETURN
       END IF
@@ -279,7 +288,7 @@
           END IF
           IF (.not.allocated(wrk)) THEN
             allocate ( wrk(Npts) )
-            wrk=0.0_r8
+            wrk=IniVal
           END IF
         ELSE
           IF (.not.allocated(wrk)) THEN
@@ -340,6 +349,7 @@
 !  model array.
 !
           IF (interpolate) THEN
+            CALL mp_collect (ng, model, Npts, IniVal, wrk)
             ic=0
             DO j=Jstr,Jend
               DO i=Istr,Iend
@@ -347,7 +357,6 @@
                 Awrk(i,j)=wrk(ic)
               END DO
             END DO
-            CALL mp_collect (ng, model, Npts, IniVal, Awrk)
           ELSE
             ic=0
             DO j=Jmin,Jmax
@@ -487,6 +496,7 @@
      &                   Ilen, Jlen, Awrk, Amin, Amax,                  &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonp,                               &
      &                   GRID(ng) % latp,                               &
      &                   A)
@@ -496,6 +506,7 @@
      &                   Ilen, Jlen, Awrk, Amin, Amax,                  &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonr,                               &
      &                   GRID(ng) % latr,                               &
      &                   A)
@@ -505,6 +516,7 @@
      &                   Ilen, Jlen, Awrk, Amin, Amax,                  &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonu,                               &
      &                   GRID(ng) % latu,                               &
      &                   A)
@@ -514,6 +526,7 @@
      &                   Ilen, Jlen, Awrk, Amin, Amax,                  &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonv,                               &
      &                   GRID(ng) % latv,                               &
      &                   A)
@@ -524,6 +537,7 @@
      &                   Ilen, Jlen, Awrk, Amin, Amax,                  &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonr,                               &
      &                   GRID(ng) % latr,                               &
      &                   A)
@@ -565,7 +579,7 @@
 # ifdef MASKING
      &                     Amask,                                       &
 # endif
-     &                     A)
+     &                     A, Lregrid)
 !***********************************************************************
 !
       USE mod_param
@@ -575,21 +589,23 @@
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
-
-# ifdef DISTRIBUTE
 !
+# ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcastf, mp_bcasti, mp_scatter2d
 # endif
+      USE strings_mod,    ONLY : FoundError
 !
       implicit none
 !
 !  Imported variable declarations.
 !
+      logical, intent(out), optional :: Lregrid
+
       integer, intent(in) :: ng, model, ncid, ncvarid, tindex, gtype
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: Vsize(4)
 
-      real(r8), intent(in)  :: Ascl
+      real(dp), intent(in)  :: Ascl
       real(r8), intent(out) :: Amin
       real(r8), intent(out) :: Amax
 
@@ -703,6 +719,9 @@
         Ilen=Vsize(1)
         Jlen=Vsize(2)
       END IF
+      IF (PRESENT(Lregrid)) THEN
+        Lregrid=interpolate
+      END IF
       IJlen=Ilen*Jlen
 !
 !  Check if the following attributes: "scale_factor", "add_offset", and
@@ -725,7 +744,8 @@
       CALL netcdf_get_fatt (ng, model, ncname, ncvarid, AttName,        &
      &                      AttValue, foundit,                          &
      &                      ncid = ncid)
-      IF (exit_flag.ne.NoError) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) THEN
         nf_fread2d=ioerror
         RETURN
       END IF
@@ -831,7 +851,8 @@
 # ifdef DISTRIBUTE
       CALL mp_bcasti (ng, model, status)
 # endif
-      IF (status.ne.nf90_noerr) THEN
+      IF (FoundError(status, nf90_noerr, __LINE__,                      &
+     &               __FILE__)) THEN
         exit_flag=2
         ioerror=status
         nf_fread2d=status
@@ -894,6 +915,7 @@
      &                   Ilen, Jlen, wrk, Amin, Amax,                   &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonp,                               &
      &                   GRID(ng) % latp,                               &
      &                   A)
@@ -903,6 +925,7 @@
      &                   Ilen, Jlen, wrk, Amin, Amax,                   &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonr,                               &
      &                   GRID(ng) % latr,                               &
      &                   A)
@@ -912,6 +935,7 @@
      &                   Ilen, Jlen, wrk, Amin, Amax,                   &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonu,                               &
      &                   GRID(ng) % latu,                               &
      &                   A)
@@ -921,6 +945,7 @@
      &                   Ilen, Jlen, wrk, Amin, Amax,                   &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonv,                               &
      &                   GRID(ng) % latv,                               &
      &                   A)
@@ -931,6 +956,7 @@
      &                   Ilen, Jlen, wrk, Amin, Amax,                   &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   Imin, Imax, Jmin, Jmax,                        &
+     &                   GRID(ng) % MyLon,                              &
      &                   GRID(ng) % lonr,                               &
      &                   GRID(ng) % latr,                               &
      &                   A)

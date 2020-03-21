@@ -6,8 +6,9 @@
     defined POSTERIOR_ERROR_F)
 
 !
+!svn $Id: random_ic.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -55,7 +56,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 36)
+      CALL wclock_on (ng, model, 45, __LINE__, __FILE__)
 # endif
 !
       CALL random_ic_tile (ng, tile,                                    &
@@ -94,7 +95,7 @@
 # endif
      &                     OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 36)
+      CALL wclock_off (ng, model, 45, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE random_ic
@@ -251,7 +252,7 @@
 
 # include "set_bounds.h"
 !
-      SourceFile='random_ic.F, random_ic_tile'
+      SourceFile=__FILE__
 !
 !-----------------------------------------------------------------------
 !  Generates random initial vectors for computation of the posterior
@@ -260,7 +261,11 @@
 !
 !  Always use Gaussian distribution between -1 and +1, by Zscheme=1.
 !
+# ifdef BEOFS_ONLY
+      Zscheme=0
+# else
       Zscheme=1
+# endif
 !
 !  2D random initialization at RHO-points.
 !

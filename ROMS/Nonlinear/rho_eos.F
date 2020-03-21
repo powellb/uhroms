@@ -2,9 +2,9 @@
       MODULE rho_eos_mod
 #ifdef SOLVE3D
 !
-!svn $Id: rho_eos.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rho_eos.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -44,7 +44,7 @@
       CONTAINS
 !
 !***********************************************************************
-      SUBROUTINE rho_eos (ng, tile)
+      SUBROUTINE rho_eos (ng, tile, model)
 !***********************************************************************
 !
       USE mod_param
@@ -56,16 +56,16 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
 !
 !  Local variable declarations.
 !
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 14)
+      CALL wclock_on (ng, model, 14, __LINE__, __FILE__)
 # endif
-      CALL rho_eos_tile (ng, tile,                                      &
+      CALL rho_eos_tile (ng, tile, model,                               &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   IminS, ImaxS, JminS, JmaxS,                    &
      &                   nrhs(ng),                                      &
@@ -93,12 +93,10 @@
      &                   MIXING(ng) % alfaobeta,                        &
 #  endif
 # endif
-# if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
      &                   OCEAN(ng) % pden,                              &
-# endif
      &                   OCEAN(ng) % rho)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 14)
+      CALL wclock_off (ng, model, 14, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -107,7 +105,7 @@
 # ifdef NONLIN_EOS
 !
 !***********************************************************************
-      SUBROUTINE rho_eos_tile (ng, tile,                                &
+      SUBROUTINE rho_eos_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
      &                         IminS, ImaxS, JminS, JmaxS,              &
      &                         nrhs,                                    &
@@ -131,9 +129,7 @@
      &                         alfaobeta,                               &
 #   endif
 #  endif
-#  if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
      &                         pden,                                    &
-#  endif
      &                         rho)
 !***********************************************************************
 !
@@ -152,7 +148,7 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
       integer, intent(in) :: nrhs
@@ -182,9 +178,7 @@
       real(r8), intent(out) :: alfaobeta(LBi:,LBj:,0:)
 #    endif
 #   endif
-#   if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
       real(r8), intent(out) :: pden(LBi:,LBj:,:)
-#   endif
       real(r8), intent(out) :: rho(LBi:,LBj:,:)
 #  else
 #   ifdef MASKING
@@ -211,9 +205,7 @@
       real(r8), intent(out) :: alfaobeta(LBi:UBi,LBj:UBj,0:N(ng))
 #    endif
 #   endif
-#   if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
       real(r8), intent(out) :: pden(LBi:UBi,LBj:UBj,N(ng))
-#   endif
       real(r8), intent(out) :: rho(LBi:UBi,LBj:UBj,N(ng))
 #  endif
 !
@@ -478,11 +470,9 @@
         DO k=1,N(ng)
           DO i=IstrT,IendT
             rho(i,j,k)=den(i,k)
-#  if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
             pden(i,j,k)=(den1(i,k)-1000.0_r8)
-#   ifdef MASKING
+#  ifdef MASKING
             pden(i,j,k)=pden(i,j,k)*rmask(i,j)
-#   endif
 #  endif
           END DO
         END DO
@@ -496,12 +486,9 @@
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          rho)
-
-#  if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          pden)
-#  endif
 
 #  if defined LMD_SKPP    || defined LMD_BKPP         || \
       defined BULK_FLUXES || defined BALANCE_OPERATOR
@@ -536,30 +523,22 @@
 
 #  ifdef DISTRIBUTE
 !
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    rho)
-
-#   if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
-     &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints,                                 &
-     &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    pden)
-#   endif
+     &                    rho, pden)
 
 #   if defined LMD_SKPP    || defined LMD_BKPP         || \
        defined BULK_FLUXES || defined BALANCE_OPERATOR
 #    ifdef LMD_DDMIX
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    alfaobeta)
 #    endif
-      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
@@ -567,7 +546,7 @@
 #   endif
 
 #   ifdef VAR_RHO_2D
-      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
@@ -575,7 +554,7 @@
 #   endif
 
 #   ifdef BV_FREQUENCY
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
@@ -590,7 +569,7 @@
 # ifndef NONLIN_EOS
 !
 !***********************************************************************
-      SUBROUTINE rho_eos_tile (ng, tile,                                &
+      SUBROUTINE rho_eos_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
      &                         IminS, ImaxS, JminS, JmaxS,              &
      &                         nrhs,                                    &
@@ -614,9 +593,7 @@
      &                         alfaobeta,                               &
 #   endif
 #  endif
-#  if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
      &                         pden,                                    &
-#  endif
      &                         rho)
 !***********************************************************************
 !
@@ -634,7 +611,7 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
       integer, intent(in) :: nrhs
@@ -665,9 +642,7 @@
       real(r8), intent(out) :: alfaobeta(LBi:,LBj:,0:)
 #    endif
 #   endif
-#   if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
       real(r8), intent(out) :: pden(LBi:,LBj:,:)
-#   endif
       real(r8), intent(out) :: rho(LBi:,LBj:,:)
 #  else
 #   ifdef MASKING
@@ -694,9 +669,7 @@
       real(r8), intent(out) :: alfaobeta(LBi:UBi,LBj:UBj,0:N(ng))
 #    endif
 #   endif
-#   if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
       real(r8), intent(out) :: pden(LBi:UBi,LBj:UBj,N(ng))
-#   endif
       real(r8), intent(out) :: rho(LBi:UBi,LBj:UBj,N(ng))
 #  endif
 !
@@ -740,9 +713,7 @@
 #  ifdef MASKING
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #  endif
-#  if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
             pden(i,j,k)=rho(i,j,k)
-#  endif
           END DO
         END DO
 
@@ -831,12 +802,9 @@
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          rho)
-
-#  if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          pden)
-#  endif
 
 #  if defined LMD_SKPP    || defined LMD_BKPP         || \
       defined BULK_FLUXES || defined BALANCE_OPERATOR
@@ -871,30 +839,22 @@
 
 #  ifdef DISTRIBUTE
 !
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    rho)
-
-#   if defined LMD_SKPP || defined LMD_BKPP || defined DIAGNOSTICS
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
-     &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
-     &                    NghostPoints,                                 &
-     &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    pden)
-#   endif
+     &                    rho, pden)
 
 #   if defined LMD_SKPP    || defined LMD_BKPP         || \
        defined BULK_FLUXES || defined BALANCE_OPERATOR
 #    ifdef LMD_DDMIX
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    alfaobeta)
 #    endif
-      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
@@ -902,7 +862,7 @@
 #   endif
 
 #   ifdef VAR_RHO_2D
-      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
+      CALL mp_exchange2d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
@@ -910,7 +870,7 @@
 #   endif
 
 #   ifdef BV_FREQUENCY
-      CALL mp_exchange3d (ng, tile, iNLM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &

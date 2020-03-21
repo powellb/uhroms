@@ -2,9 +2,9 @@
       MODULE set_avg_mod
 #ifdef AVERAGES
 !
-!svn $Id: set_avg.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: set_avg.F 1007 2020-02-25 22:29:41Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -15,7 +15,7 @@
 !  beggining of the next time-step.                                    !
 !                                                                      !
 # if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
-!  It computes leas-squares coefficients to detide time-averaged       !
+!  It computes least-squares coefficients to detide time-averaged      !
 !  fields. Notice that "set_detide" is called last since we need       !
 !  the regular time-averages for those fields to detide.               !
 !                                                                      !
@@ -41,6 +41,7 @@
 # if defined AVERAGES_DETIDE && (defined SSH_TIDES || defined UV_TIDES)
       USE mod_tides
 # endif
+
 # ifdef WET_DRY
 !
       USE set_masks_mod, ONLY : set_avg_masks
@@ -55,7 +56,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 5)
+      CALL wclock_on (ng, iNLM, 5, __LINE__, __FILE__)
 # endif
       CALL set_avg_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
@@ -95,7 +96,7 @@
 # endif
 
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 5)
+      CALL wclock_off (ng, iNLM, 5, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE set_avg
@@ -243,28 +244,28 @@
         DO j=Jstr,JendR
           DO i=Istr,IendR
             GRID(ng)%pmask_avg(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%pmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%pmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=JstrR,JendR
           DO i=IstrR,IendR
             GRID(ng)%rmask_avg(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%rmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%rmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=JstrR,JendR
           DO i=Istr,IendR
             GRID(ng)%umask_avg(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%umask_io(i,j),     &
+     &                                  MIN(GRID(ng)%umask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=Jstr,JendR
           DO i=IstrR,IendR
             GRID(ng)%vmask_avg(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%vmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%vmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -278,7 +279,7 @@
               AVERAGE(ng)%avgzeta(i,j)=OCEAN(ng)%zeta(i,j,Kout)
 # ifdef WET_DRY
               AVERAGE(ng)%avgzeta(i,j)=AVERAGE(ng)%avgzeta(i,j)*        &
-     &                                 GRID(ng)%rmask_io(i,j)
+     &                                 GRID(ng)%rmask_full(i,j)
 # endif
             END DO
           END DO
@@ -290,7 +291,7 @@
               AVERAGE(ng)%avgu2d(i,j)=OCEAN(ng)%ubar(i,j,Kout)
 # ifdef WET_DRY
               AVERAGE(ng)%avgu2d(i,j)=AVERAGE(ng)%avgu2d(i,j)*          &
-     &                                GRID(ng)%umask_io(i,j)
+     &                                GRID(ng)%umask_full(i,j)
 # endif
             END DO
           END DO
@@ -301,7 +302,7 @@
               AVERAGE(ng)%avgv2d(i,j)=OCEAN(ng)%vbar(i,j,Kout)
 # ifdef WET_DRY
               AVERAGE(ng)%avgv2d(i,j)=AVERAGE(ng)%avgv2d(i,j)*          &
-     &                                GRID(ng)%vmask_io(i,j)
+     &                                GRID(ng)%vmask_full(i,j)
 # endif
             END DO
           END DO
@@ -313,7 +314,7 @@
      &                      GRID(ng) % CosAngler,                       &
      &                      GRID(ng) % SinAngler,                       &
 # ifdef MASKING
-     &                      GRID(ng)%rmask_io,                          &
+     &                      GRID(ng)%rmask_full,                        &
 # endif
      &                      OCEAN(ng) % ubar(:,:,Kout),                 &
      &                      OCEAN(ng) % vbar(:,:,Kout),                 &
@@ -329,7 +330,7 @@
                 AVERAGE(ng)%avgu3d(i,j,k)=OCEAN(ng)%u(i,j,k,Nout)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgu3d(i,j,k)=AVERAGE(ng)%avgu3d(i,j,k)*    &
-     &                                    GRID(ng)%umask_io(i,j)
+     &                                    GRID(ng)%umask_full(i,j)
 #  endif
               END DO
             END DO
@@ -342,7 +343,7 @@
                 AVERAGE(ng)%avgv3d(i,j,k)=OCEAN(ng)%v(i,j,k,Nout)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgv3d(i,j,k)=AVERAGE(ng)%avgv3d(i,j,k)*    &
-     &                                    GRID(ng)%vmask_io(i,j)
+     &                                    GRID(ng)%vmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -355,7 +356,7 @@
      &                      GRID(ng) % CosAngler,                       &
      &                      GRID(ng) % SinAngler,                       &
 #  ifdef MASKING
-     &                      GRID(ng)%rmask_io,                          &
+     &                      GRID(ng)%rmask_full,                        &
 #  endif
      &                      OCEAN(ng) % u(:,:,:,Nout),                  &
      &                      OCEAN(ng) % v(:,:,:,Nout),                  &
@@ -372,7 +373,7 @@
      &                                    GRID(ng)%pn(i,j)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgw3d(i,j,k)=AVERAGE(ng)%avgw3d(i,j,k)*    &
-     &                                    GRID(ng)%rmask_io(i,j)
+     &                                    GRID(ng)%rmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -385,7 +386,7 @@
                 AVERAGE(ng)%avgwvel(i,j,k)=OCEAN(ng)%wvel(i,j,k)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgwvel(i,j,k)=AVERAGE(ng)%avgwvel(i,j,k)*  &
-     &                                     GRID(ng)%rmask_io(i,j)
+     &                                     GRID(ng)%rmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -399,7 +400,7 @@
                 AVERAGE(ng)%avgrho(i,j,k)=OCEAN(ng)%rho(i,j,k)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgrho(i,j,k)=AVERAGE(ng)%avgrho(i,j,k)*    &
-     &                                    GRID(ng)%rmask_io(i,j)
+     &                                    GRID(ng)%rmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -413,7 +414,7 @@
                   AVERAGE(ng)%avgt(i,j,k,it)=OCEAN(ng)%t(i,j,k,Nout,it)
 #  ifdef WET_DRY
                   AVERAGE(ng)%avgt(i,j,k,it)=AVERAGE(ng)%avgt(i,j,k,it)*&
-     &                                       GRID(ng)%rmask_io(i,j)
+     &                                       GRID(ng)%rmask_full(i,j)
 #  endif
                 END DO
               END DO
@@ -429,7 +430,7 @@
                 SEDBED(ng)%avgbedldu(i,j,it)=SEDBED(ng)%bedldu(i,j,it)
 #   ifdef WET_DRY
                 SEDBED(ng)%avgbedldu(i,j,it)=SEDBED(ng)%bedldu(i,j,it)* &
-     &                                       GRID(ng)%umask_io(i,j)
+     &                                       GRID(ng)%umask_full(i,j)
 #   endif
               END DO
             END DO
@@ -441,7 +442,7 @@
                 SEDBED(ng)%avgbedldv(i,j,it)=SEDBED(ng)%bedldv(i,j,it)
 #   ifdef WET_DRY
                 SEDBED(ng)%avgbedldv(i,j,it)=SEDBED(ng)%bedldv(i,j,it)* &
-     &                                       GRID(ng)%vmask_io(i,j)
+     &                                       GRID(ng)%vmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -457,7 +458,7 @@
                 AVERAGE(ng)%avgAKv(i,j,k)=MIXING(ng)%Akv(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgAKv(i,j,k)=AVERAGE(ng)%avgAKv(i,j,k)*    &
-     &                                    GRID(ng)%rmask_io(i,j)
+     &                                    GRID(ng)%rmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -470,7 +471,7 @@
                 AVERAGE(ng)%avgAKt(i,j,k)=MIXING(ng)%Akt(i,j,k,itemp)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgAKt(i,j,k)=AVERAGE(ng)%avgAKt(i,j,k)*    &
-     &                                    GRID(ng)%rmask_io(i,j)
+     &                                    GRID(ng)%rmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -483,7 +484,7 @@
                 AVERAGE(ng)%avgAKs(i,j,k)=MIXING(ng)%Akt(i,j,k,isalt)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgAKs(i,j,k)=AVERAGE(ng)%avgAKs(i,j,k)*    &
-     &                                    GRID(ng)%rmask_io(i,j)
+     &                                    GRID(ng)%rmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -497,7 +498,7 @@
               AVERAGE(ng)%avghsbl(i,j)=MIXING(ng)%hsbl(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avghsbl(i,j)=AVERAGE(ng)%avghsbl(i,j)*        &
-     &                                 GRID(ng)%rmask_io(i,j)
+     &                                 GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -510,7 +511,7 @@
               AVERAGE(ng)%avghbbl(i,j)=MIXING(ng)%hbbl(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avghbbl(i,j)=AVERAGE(ng)%avghbbl(i,j)*        &
-     &                                 GRID(ng)%rmask_io(i,j)
+     &                                 GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -528,7 +529,7 @@
               AVERAGE(ng)%avgDU_avg1(i,j)=COUPLING(ng)%DU_avg1(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgDU_avg1(i,j)=AVERAGE(ng)%avgDU_avg1(i,j)*  &
-     &                                    GRID(ng)%umask_io(i,j)
+     &                                    GRID(ng)%umask_full(i,j)
 #  endif
             END DO
           END DO
@@ -539,7 +540,7 @@
               AVERAGE(ng)%avgDU_avg2(i,j)=COUPLING(ng)%DU_avg2(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgDU_avg2(i,j)=AVERAGE(ng)%avgDU_avg2(i,j)*  &
-     &                                    GRID(ng)%umask_io(i,j)
+     &                                    GRID(ng)%umask_full(i,j)
 #  endif
             END DO
           END DO
@@ -551,7 +552,7 @@
               AVERAGE(ng)%avgDV_avg1(i,j)=COUPLING(ng)%DV_avg1(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgDV_avg1(i,j)=AVERAGE(ng)%avgDV_avg1(i,j)*  &
-     &                                    GRID(ng)%vmask_io(i,j)
+     &                                    GRID(ng)%vmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -562,7 +563,7 @@
               AVERAGE(ng)%avgDV_avg2(i,j)=COUPLING(ng)%DV_avg2(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgDV_avg2(i,j)=AVERAGE(ng)%avgDV_avg2(i,j)*  &
-     &                                    GRID(ng)%vmask_io(i,j)
+     &                                    GRID(ng)%vmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -577,7 +578,7 @@
               AVERAGE(ng)%avgsus(i,j)=FORCES(ng)%sustr(i,j)
 # ifdef WET_DRY
               AVERAGE(ng)%avgsus(i,j)=AVERAGE(ng)%avgsus(i,j)*          &
-     &                                GRID(ng)%umask_io(i,j)
+     &                                GRID(ng)%umask_full(i,j)
 # endif
             END DO
           END DO
@@ -588,7 +589,7 @@
               AVERAGE(ng)%avgsvs(i,j)=FORCES(ng)%svstr(i,j)
 # ifdef WET_DRY
               AVERAGE(ng)%avgsvs(i,j)=AVERAGE(ng)%avgsvs(i,j)*          &
-     &                                GRID(ng)%vmask_io(i,j)
+     &                                GRID(ng)%vmask_full(i,j)
 # endif
             END DO
           END DO
@@ -600,7 +601,7 @@
               AVERAGE(ng)%avgbus(i,j)=FORCES(ng)%bustr(i,j)
 # ifdef WET_DRY
               AVERAGE(ng)%avgbus(i,j)=AVERAGE(ng)%avgbus(i,j)*          &
-     &                                GRID(ng)%umask_io(i,j)
+     &                                GRID(ng)%umask_full(i,j)
 # endif
             END DO
           END DO
@@ -611,7 +612,7 @@
               AVERAGE(ng)%avgbvs(i,j)=FORCES(ng)%bvstr(i,j)
 # ifdef WET_DRY
               AVERAGE(ng)%avgbvs(i,j)=AVERAGE(ng)%avgbvs(i,j)*          &
-     &                                GRID(ng)%vmask_io(i,j)
+     &                                GRID(ng)%vmask_full(i,j)
 # endif
             END DO
           END DO
@@ -625,7 +626,20 @@
               AVERAGE(ng)%avgPair(i,j)=FORCES(ng)%Pair(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avgPair(i,j)=AVERAGE(ng)%avgPair(i,j)*        &
-     &                                 GRID(ng)%rmask_io(i,j)
+     &                                 GRID(ng)%rmask_full(i,j)
+#   endif
+            END DO
+          END DO
+        END IF
+#  endif
+#  if defined BULK_FLUXES
+        IF (Aout(idTair,ng)) THEN
+          DO j=JstrR,JendR
+            DO i=IstrR,IendR
+              AVERAGE(ng)%avgTair(i,j)=FORCES(ng)%Tair(i,j)
+#   ifdef WET_DRY
+              AVERAGE(ng)%avgTair(i,j)=AVERAGE(ng)%avgTair(i,j)*        &
+     &                                 GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -638,7 +652,7 @@
               AVERAGE(ng)%avgUwind(i,j)=FORCES(ng)%Uwind(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avgUwind(i,j)=AVERAGE(ng)%avgUwind(i,j)*      &
-     &                                  GRID(ng)%rmask_io(i,j)
+     &                                  GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -650,7 +664,7 @@
               AVERAGE(ng)%avgVwind(i,j)=FORCES(ng)%Vwind(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avgVwind(i,j)=AVERAGE(ng)%avgVwind(i,j)*      &
-     &                                  GRID(ng)%rmask_io(i,j)
+     &                                  GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -663,7 +677,7 @@
               AVERAGE(ng)%avgstf(i,j)=FORCES(ng)%stflx(i,j,itemp)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgstf(i,j)=AVERAGE(ng)%avgstf(i,j)*          &
-     &                                GRID(ng)%rmask_io(i,j)
+     &                                GRID(ng)%rmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -674,7 +688,7 @@
               AVERAGE(ng)%avgswf(i,j)=FORCES(ng)%stflx(i,j,isalt)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgswf(i,j)=AVERAGE(ng)%avgswf(i,j)*          &
-     &                                GRID(ng)%rmask_io(i,j)
+     &                                GRID(ng)%rmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -686,7 +700,7 @@
               AVERAGE(ng)%avgsrf(i,j)=FORCES(ng)%srflx(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avgsrf(i,j)=AVERAGE(ng)%avgsrf(i,j)*          &
-     &                                GRID(ng)%rmask_io(i,j)
+     &                                GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -699,7 +713,7 @@
               AVERAGE(ng)%avglhf(i,j)=FORCES(ng)%lhflx(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avglhf(i,j)=AVERAGE(ng)%avglhf(i,j)*          &
-     &                                GRID(ng)%rmask_io(i,j)
+     &                                GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -710,7 +724,7 @@
               AVERAGE(ng)%avglrf(i,j)=FORCES(ng)%lrflx(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avglrf(i,j)=AVERAGE(ng)%avglrf(i,j)*          &
-     &                                GRID(ng)%rmask_io(i,j)
+     &                                GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -721,7 +735,7 @@
               AVERAGE(ng)%avgshf(i,j)=FORCES(ng)%shflx(i,j)
 #   ifdef WET_DRY
               AVERAGE(ng)%avgshf(i,j)=AVERAGE(ng)%avgshf(i,j)*          &
-     &                                GRID(ng)%rmask_io(i,j)
+     &                                GRID(ng)%rmask_full(i,j)
 #   endif
             END DO
           END DO
@@ -733,7 +747,7 @@
               AVERAGE(ng)%avgevap(i,j)=FORCES(ng)%evap(i,j)
 #    ifdef WET_DRY
               AVERAGE(ng)%avgevap(i,j)=AVERAGE(ng)%avgevap(i,j)*        &
-     &                                 GRID(ng)%rmask_io(i,j)
+     &                                 GRID(ng)%rmask_full(i,j)
 #    endif
             END DO
           END DO
@@ -744,7 +758,7 @@
               AVERAGE(ng)%avgrain(i,j)=FORCES(ng)%rain(i,j)
 #    ifdef WET_DRY
               AVERAGE(ng)%avgrain(i,j)=AVERAGE(ng)%avgrain(i,j)*        &
-     &                                 GRID(ng)%rmask_io(i,j)
+     &                                 GRID(ng)%rmask_full(i,j)
 #    endif
             END DO
           END DO
@@ -763,7 +777,7 @@
               AVERAGE(ng)%avgu2Sd(i,j)=OCEAN(ng)%ubar_stokes(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgu2Sd(i,j)=AVERAGE(ng)%avgu2Sd(i,j)*        &
-     &                                 GRID(ng)%umask_io(i,j)
+     &                                 GRID(ng)%umask_full(i,j)
 #  endif
             END DO
           END DO
@@ -774,7 +788,7 @@
               AVERAGE(ng)%avgv2Sd(i,j)=OCEAN(ng)%vbar_stokes(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgv2Sd(i,j)=AVERAGE(ng)%avgv2Sd(i,j)*        &
-     &                                 GRID(ng)%vmask_io(i,j)
+     &                                 GRID(ng)%vmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -786,7 +800,7 @@
               AVERAGE(ng)%avgu2RS(i,j)=MIXING(ng)%rustr2d(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgu2RS(i,j)=AVERAGE(ng)%avgu2RS(i,j)*        &
-     &                                 GRID(ng)%umask_io(i,j)
+     &                                 GRID(ng)%umask_full(i,j)
 #  endif
             END DO
           END DO
@@ -797,7 +811,7 @@
               AVERAGE(ng)%avgv2RS(i,j)=MIXING(ng)%rvstr2d(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgv2RS(i,j)=AVERAGE(ng)%avgv2RS(i,j)*        &
-     &                                 GRID(ng)%vmask_io(i,j)
+     &                                 GRID(ng)%vmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -809,7 +823,7 @@
               AVERAGE(ng)%avgSxx2d(i,j)=MIXING(ng)%Sxx_bar(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgSxx2d(i,j)=AVERAGE(ng)%avgSxx2d(i,j)*      &
-     &                                  GRID(ng)%rmask_io(i,j)
+     &                                  GRID(ng)%rmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -820,7 +834,7 @@
               AVERAGE(ng)%avgSxy2d(i,j)=MIXING(ng)%Sxy_bar(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgSxy2d(i,j)=AVERAGE(ng)%avgSxy2d(i,j)*      &
-     &                                  GRID(ng)%rmask_io(i,j)
+     &                                  GRID(ng)%rmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -831,7 +845,7 @@
               AVERAGE(ng)%avgSyy2d(i,j)=MIXING(ng)%Syy_bar(i,j)
 #  ifdef WET_DRY
               AVERAGE(ng)%avgSyy2d(i,j)=AVERAGE(ng)%avgSyy2d(i,j)*      &
-     &                                  GRID(ng)%rmask_io(i,j)
+     &                                  GRID(ng)%rmask_full(i,j)
 #  endif
             END DO
           END DO
@@ -845,7 +859,7 @@
                 AVERAGE(ng)%avgu3Sd(i,j,k)=OCEAN(ng)%u_stokes(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgu3Sd(i,j,k)=AVERAGE(ng)%avgu3Sd(i,j,k)*  &
-     &                                     GRID(ng)%umask_io(i,j)
+     &                                     GRID(ng)%umask_full(i,j)
 #   endif
               END DO
             END DO
@@ -858,7 +872,7 @@
                 AVERAGE(ng)%avgv3Sd(i,j,k)=OCEAN(ng)%v_stokes(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgv3Sd(i,j,k)=AVERAGE(ng)%avgv3Sd(i,j,k)*  &
-     &                                     GRID(ng)%vmask_io(i,j)
+     &                                     GRID(ng)%vmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -872,7 +886,7 @@
                 AVERAGE(ng)%avgu3RS(i,j,k)=MIXING(ng)%rustr3d(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgu3RS(i,j,k)=AVERAGE(ng)%avgu3RS(i,j,k)*  &
-     &                                     GRID(ng)%umask_io(i,j)
+     &                                     GRID(ng)%umask_full(i,j)
 #   endif
               END DO
             END DO
@@ -885,7 +899,7 @@
                 AVERAGE(ng)%avgv3RS(i,j,k)=MIXING(ng)%rvstr3d(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgv3RS(i,j,k)=AVERAGE(ng)%avgv3RS(i,j,k)*  &
-     &                                     GRID(ng)%vmask_io(i,j)
+     &                                     GRID(ng)%vmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -899,7 +913,7 @@
                 AVERAGE(ng)%avgSxx3d(i,j,k)=MIXING(ng)%Sxx(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgSxx3d(i,j,k)=AVERAGE(ng)%avgSxx3d(i,j,k)*&
-     &                                      GRID(ng)%rmask_io(i,j)
+     &                                      GRID(ng)%rmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -912,7 +926,7 @@
                 AVERAGE(ng)%avgSxy3d(i,j,k)=MIXING(ng)%Sxy(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgSxy3d(i,j,k)=AVERAGE(ng)%avgSxy3d(i,j,k)*&
-     &                                      GRID(ng)%rmask_io(i,j)
+     &                                      GRID(ng)%rmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -925,7 +939,7 @@
                 AVERAGE(ng)%avgSyy3d(i,j,k)=MIXING(ng)%Syy(i,j,k)
 #   ifdef WET_DRY
                 AVERAGE(ng)%avgSyy3d(i,j,k)=AVERAGE(ng)%avgSyy3d(i,j,k)*&
-     &                                      GRID(ng)%rmask_io(i,j)
+     &                                      GRID(ng)%rmask_full(i,j)
 #   endif
               END DO
             END DO
@@ -939,7 +953,7 @@
                 AVERAGE(ng)%avgSzx3d(i,j,k)=MIXING(ng)%Szx(i,j,k)
 #    ifdef WET_DRY
                 AVERAGE(ng)%avgSzx3d(i,j,k)=AVERAGE(ng)%avgSzx3d(i,j,k)*&
-     &                                      GRID(ng)%rmask_io(i,j)
+     &                                      GRID(ng)%rmask_full(i,j)
 #    endif
               END DO
             END DO
@@ -952,7 +966,7 @@
                 AVERAGE(ng)%avgSzy3d(i,j,k)=MIXING(ng)%Szy(i,j,k)
 #    ifdef WET_DRY
                 AVERAGE(ng)%avgSzy3d(i,j,k)=AVERAGE(ng)%avgSzy3d(i,j,k)*&
-     &                                      GRID(ng)%rmask_io(i,j)
+     &                                      GRID(ng)%rmask_full(i,j)
 #    endif
               END DO
             END DO
@@ -970,7 +984,7 @@
               AVERAGE(ng)%avgpvor2d(i,j)=potvor_bar(i,j)
 # ifdef WET_DRY
               AVERAGE(ng)%avgpvor2d(i,j)=AVERAGE(ng)%avgpvor2d(i,j)*    &
-     &                                   GRID(ng)%pmask_io(i,j)
+     &                                   GRID(ng)%pmask_full(i,j)
 # endif
             END DO
           END DO
@@ -981,7 +995,7 @@
               AVERAGE(ng)%avgrvor2d(i,j)=relvor_bar(i,j)
 # ifdef WET_DRY
               AVERAGE(ng)%avgrvor2d(i,j)=AVERAGE(ng)%avgrvor2d(i,j)*    &
-     &                                   GRID(ng)%pmask_io(i,j)
+     &                                   GRID(ng)%pmask_full(i,j)
 # endif
             END DO
           END DO
@@ -995,7 +1009,7 @@
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgpvor3d(i,j,k)=AVERAGE(ng)%avgpvor3d(i,j, &
      &                                                             k)*  &
-     &                                       GRID(ng)%pmask_io(i,j)
+     &                                       GRID(ng)%pmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1009,7 +1023,7 @@
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgrvor3d(i,j,k)=AVERAGE(ng)%avgrvor3d(i,j, &
      &                                                             k)*  &
-     &                                       GRID(ng)%pmask_io(i,j)
+     &                                       GRID(ng)%pmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1026,7 +1040,7 @@
      &                               OCEAN(ng)%zeta(i,j,Kout)
 # ifdef WET_DRY
               AVERAGE(ng)%avgZZ(i,j)=AVERAGE(ng)%avgZZ(i,j)*            &
-     &                               GRID(ng)%rmask_io(i,j)
+     &                               GRID(ng)%rmask_full(i,j)
 # endif
             END DO
           END DO
@@ -1038,7 +1052,7 @@
      &                               OCEAN(ng)%ubar(i,j,Kout)
 # ifdef WET_DRY
               AVERAGE(ng)%avgU2(i,j)=AVERAGE(ng)%avgU2(i,j)*            &
-     &                               GRID(ng)%umask_io(i,j)
+     &                               GRID(ng)%umask_full(i,j)
 # endif
             END DO
           END DO
@@ -1050,7 +1064,7 @@
      &                               OCEAN(ng)%vbar(i,j,Kout)
 # ifdef WET_DRY
               AVERAGE(ng)%avgV2(i,j)=AVERAGE(ng)%avgV2(i,j)*            &
-     &                               GRID(ng)%vmask_io(i,j)
+     &                               GRID(ng)%vmask_full(i,j)
 # endif
             END DO
           END DO
@@ -1065,7 +1079,7 @@
      &                                   OCEAN(ng)%u(i,j,k,Nout)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgUU(i,j,k)=AVERAGE(ng)%avgUU(i,j,k)*      &
-     &                                   GRID(ng)%umask_io(i,j)
+     &                                   GRID(ng)%umask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1079,7 +1093,7 @@
      &                                   OCEAN(ng)%v(i,j,k,Nout)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgVV(i,j,k)=AVERAGE(ng)%avgVV(i,j,k)*      &
-     &                                   GRID(ng)%vmask_io(i,j)
+     &                                   GRID(ng)%vmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1096,7 +1110,7 @@
      &                                    OCEAN(ng)%v(i  ,j+1,k,Nout))
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgUV(i,j,k)=AVERAGE(ng)%avgUV(i,j,k)*      &
-     &                                   GRID(ng)%rmask_io(i,j)
+     &                                   GRID(ng)%rmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1110,7 +1124,7 @@
                 AVERAGE(ng)%avgHuon(i,j,k)=GRID(ng)%Huon(i,j,k)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgHuon(i,j,k)=AVERAGE(ng)%avgHuon(i,j,k)*  &
-     &                                     GRID(ng)%umask_io(i,j)
+     &                                     GRID(ng)%umask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1123,7 +1137,7 @@
                 AVERAGE(ng)%avgHvom(i,j,k)=GRID(ng)%Hvom(i,j,k)
 #  ifdef WET_DRY
                 AVERAGE(ng)%avgHvom(i,j,k)=AVERAGE(ng)%avgHvom(i,j,k)*  &
-     &                                     GRID(ng)%vmask_io(i,j)
+     &                                     GRID(ng)%vmask_full(i,j)
 #  endif
               END DO
             END DO
@@ -1142,7 +1156,7 @@
 #  ifdef WET_DRY
                   AVERAGE(ng)%avgTT(i,j,k,it)=AVERAGE(ng)%avgTT(i,j,k,  &
      &                                                          it)*    &
-     &                                        GRID(ng)%rmask_io(i,j)
+     &                                        GRID(ng)%rmask_full(i,j)
 #  endif
                 END DO
               END DO
@@ -1161,7 +1175,7 @@
 #  ifdef WET_DRY
                   AVERAGE(ng)%avgUT(i,j,k,it)=AVERAGE(ng)%avgUT(i,j,k,  &
      &                                                          it)*    &
-     &                                        GRID(ng)%umask_io(i,j)
+     &                                        GRID(ng)%umask_full(i,j)
 #  endif
                 END DO
               END DO
@@ -1180,7 +1194,7 @@
 #  ifdef WET_DRY
                   AVERAGE(ng)%avgVT(i,j,k,it)=AVERAGE(ng)%avgVT(i,j,k,  &
      &                                                          it)*    &
-     &                                        GRID(ng)%vmask_io(i,j)
+     &                                        GRID(ng)%vmask_full(i,j)
 #  endif
                 END DO
               END DO
@@ -1200,7 +1214,8 @@
 #  ifdef WET_DRY
                   AVERAGE(ng)%avgHuonT(i,j,k,it)=AVERAGE(ng)%avgHuonT   &
      &                                                      (i,j,k,it)* &
-     &                                           GRID(ng)%umask_io(i,j)
+     &                                           GRID(ng)%umask_full(i, &
+     &                                                               j)
 #  endif
                 END DO
               END DO
@@ -1219,7 +1234,8 @@
 #  ifdef WET_DRY
                   AVERAGE(ng)%avgHvomT(i,j,k,it)=AVERAGE(ng)%avgHvomT   &
      &                                                      (i,j,k,it)* &
-     &                                           GRID(ng)%vmask_io(i,j)
+     &                                           GRID(ng)%vmask_full(i, &
+     &                                                               j)
 #  endif
                 END DO
               END DO
@@ -1244,7 +1260,7 @@
           DO i=Istr,IendR
             GRID(ng)%pmask_avg(i,j)=GRID(ng)%pmask_avg(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%pmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%pmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -1252,7 +1268,7 @@
           DO i=IstrR,IendR
             GRID(ng)%rmask_avg(i,j)=GRID(ng)%rmask_avg(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%rmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%rmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -1260,7 +1276,7 @@
           DO i=Istr,IendR
             GRID(ng)%umask_avg(i,j)=GRID(ng)%umask_avg(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%umask_io(i,j),     &
+     &                                  MIN(GRID(ng)%umask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -1268,7 +1284,7 @@
           DO i=IstrR,IendR
             GRID(ng)%vmask_avg(i,j)=GRID(ng)%vmask_avg(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%vmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%vmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -1281,7 +1297,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgzeta(i,j)=AVERAGE(ng)%avgzeta(i,j)+        &
 # ifdef WET_DRY
-     &                                 GRID(ng)%rmask_io(i,j)*          &
+     &                                 GRID(ng)%rmask_full(i,j)*        &
 # endif
      &                                 OCEAN(ng)%zeta(i,j,Kout)
             END DO
@@ -1293,7 +1309,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgu2d(i,j)=AVERAGE(ng)%avgu2d(i,j)+          &
 # ifdef WET_DRY
-     &                                GRID(ng)%umask_io(i,j)*           &
+     &                                GRID(ng)%umask_full(i,j)*         &
 # endif
      &                                OCEAN(ng)%ubar(i,j,Kout)
             END DO
@@ -1304,7 +1320,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgv2d(i,j)=AVERAGE(ng)%avgv2d(i,j)+          &
 # ifdef WET_DRY
-     &                                GRID(ng)%vmask_io(i,j)*           &
+     &                                GRID(ng)%vmask_full(i,j)*         &
 # endif
      &                                OCEAN(ng)%vbar(i,j,Kout)
             END DO
@@ -1317,7 +1333,7 @@
      &                      GRID(ng) % CosAngler,                       &
      &                      GRID(ng) % SinAngler,                       &
 # ifdef MASKING
-     &                      GRID(ng)%rmask_io,                          &
+     &                      GRID(ng)%rmask_full,                        &
 # endif
      &                      OCEAN(ng) % ubar(:,:,Kout),                 &
      &                      OCEAN(ng) % vbar(:,:,Kout),                 &
@@ -1332,7 +1348,7 @@
               DO i=Istr,IendR
                 AVERAGE(ng)%avgu3d(i,j,k)=AVERAGE(ng)%avgu3d(i,j,k)+    &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                                    GRID(ng)%umask_full(i,j)*     &
 #  endif
      &                                    OCEAN(ng)%u(i,j,k,Nout)
               END DO
@@ -1345,7 +1361,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgv3d(i,j,k)=AVERAGE(ng)%avgv3d(i,j,k)+    &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                                    GRID(ng)%vmask_full(i,j)*     &
 #  endif
      &                                    OCEAN(ng)%v(i,j,k,Nout)
               END DO
@@ -1359,7 +1375,7 @@
      &                      GRID(ng) % CosAngler,                       &
      &                      GRID(ng) % SinAngler,                       &
 #  ifdef MASKING
-     &                      GRID(ng)%rmask_io,                          &
+     &                      GRID(ng)%rmask_full,                        &
 #  endif
      &                      OCEAN(ng) % u(:,:,:,Nout),                  &
      &                      OCEAN(ng) % v(:,:,:,Nout),                  &
@@ -1373,7 +1389,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgw3d(i,j,k)=AVERAGE(ng)%avgw3d(i,j,k)+    &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%rmask_io(i,j)*       &
+     &                                    GRID(ng)%rmask_full(i,j)*     &
 #  endif
      &                                    OCEAN(ng)%W(i,j,k)*           &
      &                                    GRID(ng)%pm(i,j)*             &
@@ -1388,7 +1404,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgwvel(i,j,k)=AVERAGE(ng)%avgwvel(i,j,k)+  &
 #  ifdef WET_DRY
-     &                                     GRID(ng)%rmask_io(i,j)*      &
+     &                                     GRID(ng)%rmask_full(i,j)*    &
 #  endif
      &                                     OCEAN(ng)%wvel(i,j,k)
               END DO
@@ -1402,7 +1418,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgrho(i,j,k)=AVERAGE(ng)%avgrho(i,j,k)+    &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%rmask_io(i,j)*       &
+     &                                    GRID(ng)%rmask_full(i,j)*     &
 #  endif
      &                                    OCEAN(ng)%rho(i,j,k)
               END DO
@@ -1416,7 +1432,7 @@
                 DO i=IstrR,IendR
                   AVERAGE(ng)%avgt(i,j,k,it)=AVERAGE(ng)%avgt(i,j,k,it)+&
 #  ifdef WET_DRY
-     &                                       GRID(ng)%rmask_io(i,j)*    &
+     &                                       GRID(ng)%rmask_full(i,j)*  &
 #  endif
      &                                       OCEAN(ng)%t(i,j,k,Nout,it)
                 END DO
@@ -1433,7 +1449,7 @@
                 SEDBED(ng)%avgbedldu(i,j,it)=SEDBED(ng)%avgbedldu(i,j,  &
      &                                                            it)+  &
 #   ifdef WET_DRY
-     &                                       GRID(ng)%umask_io(i,j)*    &
+     &                                       GRID(ng)%umask_full(i,j)*  &
 #   endif
      &                                       SEDBED(ng)%bedldu(i,j,it)
               END DO
@@ -1446,7 +1462,7 @@
                 SEDBED(ng)%avgbedldv(i,j,it)=SEDBED(ng)%avgbedldv(i,j,  &
      &                                                            it)+  &
 #   ifdef WET_DRY
-     &                                       GRID(ng)%vmask_io(i,j)*    &
+     &                                       GRID(ng)%vmask_full(i,j)*  &
 #   endif
      &                                       SEDBED(ng)%bedldv(i,j,it)
               END DO
@@ -1462,7 +1478,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgAKv(i,j,k)=AVERAGE(ng)%avgAKv(i,j,k)+    &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%rmask_io(i,j)*       &
+     &                                    GRID(ng)%rmask_full(i,j)*     &
 #   endif
      &                                    MIXING(ng)%Akv(i,j,k)
               END DO
@@ -1475,7 +1491,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgAKt(i,j,k)=AVERAGE(ng)%avgAKt(i,j,k)+    &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%rmask_io(i,j)*       &
+     &                                    GRID(ng)%rmask_full(i,j)*     &
 #   endif
      &                                    MIXING(ng)%Akt(i,j,k,itemp)
               END DO
@@ -1488,7 +1504,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgAKs(i,j,k)=AVERAGE(ng)%avgAKs(i,j,k)+    &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%rmask_io(i,j)*       &
+     &                                    GRID(ng)%rmask_full(i,j)*     &
 #   endif
      &                                    MIXING(ng)%Akt(i,j,k,isalt)
               END DO
@@ -1502,7 +1518,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avghsbl(i,j)=AVERAGE(ng)%avghsbl(i,j)+        &
 #   ifdef WET_DRY
-     &                                 GRID(ng)%rmask_io(i,j)*          &
+     &                                 GRID(ng)%rmask_full(i,j)*        &
 #   endif
      &                                 MIXING(ng)%hsbl(i,j)
             END DO
@@ -1515,7 +1531,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avghbbl(i,j)=AVERAGE(ng)%avghbbl(i,j)+        &
 #   ifdef WET_DRY
-     &                                 GRID(ng)%rmask_io(i,j)*          &
+     &                                 GRID(ng)%rmask_full(i,j)*        &
 #   endif
      &                                 MIXING(ng)%hbbl(i,j)
             END DO
@@ -1533,7 +1549,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgDU_avg1(i,j)=AVERAGE(ng)%avgDU_avg1(i,j)+  &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                                    GRID(ng)%umask_full(i,j)*     &
 #  endif
      &                                    COUPLING(ng)%DU_avg1(i,j)
             END DO
@@ -1544,7 +1560,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgDU_avg2(i,j)=AVERAGE(ng)%avgDU_avg2(i,j)+  &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                                    GRID(ng)%umask_full(i,j)*     &
 #  endif
      &                                    COUPLING(ng)%DU_avg2(i,j)
             END DO
@@ -1556,7 +1572,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgDV_avg1(i,j)=AVERAGE(ng)%avgDV_avg1(i,j)+  &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                                    GRID(ng)%vmask_full(i,j)*     &
 #  endif
      &                                    COUPLING(ng)%DV_avg1(i,j)
             END DO
@@ -1567,7 +1583,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgDV_avg2(i,j)=AVERAGE(ng)%avgDV_avg2(i,j)+  &
 #  ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                                    GRID(ng)%vmask_full(i,j)*     &
 #  endif
      &                                    COUPLING(ng)%DV_avg2(i,j)
             END DO
@@ -1582,7 +1598,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgsus(i,j)=AVERAGE(ng)%avgsus(i,j)+          &
 # ifdef WET_DRY
-     &                                GRID(ng)%umask_io(i,j)*           &
+     &                                GRID(ng)%umask_full(i,j)*         &
 # endif
      &                                FORCES(ng)%sustr(i,j)
             END DO
@@ -1593,7 +1609,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgsvs(i,j)=AVERAGE(ng)%avgsvs(i,j)+          &
 # ifdef WET_DRY
-     &                                GRID(ng)%vmask_io(i,j)*           &
+     &                                GRID(ng)%vmask_full(i,j)*         &
 # endif
      &                                FORCES(ng)%svstr(i,j)
             END DO
@@ -1605,7 +1621,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgbus(i,j)=AVERAGE(ng)%avgbus(i,j)+          &
 # ifdef WET_DRY
-     &                                GRID(ng)%umask_io(i,j)*           &
+     &                                GRID(ng)%umask_full(i,j)*         &
 # endif
      &                                FORCES(ng)%bustr(i,j)
             END DO
@@ -1616,7 +1632,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgbvs(i,j)=AVERAGE(ng)%avgbvs(i,j)+          &
 # ifdef WET_DRY
-     &                                GRID(ng)%vmask_io(i,j)*           &
+     &                                GRID(ng)%vmask_full(i,j)*         &
 # endif
      &                                FORCES(ng)%bvstr(i,j)
             END DO
@@ -1631,9 +1647,22 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgPair(i,j)=AVERAGE(ng)%avgPair(i,j)+        &
 #   ifdef WET_DRY
-     &                                 GRID(ng)%rmask_io(i,j)*          &
+     &                                 GRID(ng)%rmask_full(i,j)*        &
 #   endif
      &                                 FORCES(ng)%Pair(i,j)
+            END DO
+          END DO
+        END IF
+#  endif
+#  if defined BULK_FLUXES
+        IF (Aout(idTair,ng)) THEN
+          DO j=JstrR,JendR
+            DO i=IstrR,IendR
+              AVERAGE(ng)%avgTair(i,j)=AVERAGE(ng)%avgTair(i,j)+        &
+#   ifdef WET_DRY
+     &                                 GRID(ng)%rmask_full(i,j)*        &
+#   endif
+     &                                 FORCES(ng)%Tair(i,j)
             END DO
           END DO
         END IF
@@ -1644,7 +1673,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgUwind(i,j)=AVERAGE(ng)%avgUwind(i,j)+      &
 #   ifdef WET_DRY
-     &                                  GRID(ng)%rmask_io(i,j)*         &
+     &                                  GRID(ng)%rmask_full(i,j)*       &
 #   endif
      &                                  FORCES(ng)%Uwind(i,j)
             END DO
@@ -1656,7 +1685,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgVwind(i,j)=AVERAGE(ng)%avgVwind(i,j)+      &
 #   ifdef WET_DRY
-     &                                  GRID(ng)%rmask_io(i,j)*         &
+     &                                  GRID(ng)%rmask_full(i,j)*       &
 #   endif
      &                                  FORCES(ng)%Vwind(i,j)
             END DO
@@ -1669,7 +1698,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgstf(i,j)=AVERAGE(ng)%avgstf(i,j)+          &
 #  ifdef WET_DRY
-     &                                GRID(ng)%rmask_io(i,j)*           &
+     &                                GRID(ng)%rmask_full(i,j)*         &
 #  endif
      &                                FORCES(ng)%stflx(i,j,itemp)
             END DO
@@ -1680,7 +1709,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgswf(i,j)=AVERAGE(ng)%avgswf(i,j)+          &
 #  ifdef WET_DRY
-     &                                GRID(ng)%rmask_io(i,j)*           &
+     &                                GRID(ng)%rmask_full(i,j)*         &
 #  endif
      &                                FORCES(ng)%stflx(i,j,isalt)
             END DO
@@ -1692,7 +1721,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgsrf(i,j)=AVERAGE(ng)%avgsrf(i,j)+          &
 #   ifdef WET_DRY
-     &                                GRID(ng)%rmask_io(i,j)*           &
+     &                                GRID(ng)%rmask_full(i,j)*         &
 #   endif
      &                                FORCES(ng)%srflx(i,j)
             END DO
@@ -1705,7 +1734,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avglhf(i,j)=AVERAGE(ng)%avglhf(i,j)+          &
 #   ifdef WET_DRY
-     &                                GRID(ng)%rmask_io(i,j)*           &
+     &                                GRID(ng)%rmask_full(i,j)*         &
 #   endif
      &                                FORCES(ng)%lhflx(i,j)
             END DO
@@ -1716,7 +1745,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgshf(i,j)=AVERAGE(ng)%avgshf(i,j)+          &
 #   ifdef WET_DRY
-     &                                GRID(ng)%rmask_io(i,j)*           &
+     &                                GRID(ng)%rmask_full(i,j)*         &
 #   endif
      &                                FORCES(ng)%shflx(i,j)
             END DO
@@ -1727,7 +1756,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avglrf(i,j)=AVERAGE(ng)%avglrf(i,j)+          &
 #   ifdef WET_DRY
-     &                                GRID(ng)%rmask_io(i,j)*           &
+     &                                GRID(ng)%rmask_full(i,j)*         &
 #   endif
      &                                FORCES(ng)%lrflx(i,j)
             END DO
@@ -1739,7 +1768,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgevap(i,j)=AVERAGE(ng)%avgevap(i,j)+        &
 #    ifdef WET_DRY
-     &                                 GRID(ng)%rmask_io(i,j)*          &
+     &                                 GRID(ng)%rmask_full(i,j)*        &
 #    endif
      &                                 FORCES(ng)%evap(i,j)
             END DO
@@ -1750,7 +1779,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgrain(i,j)=AVERAGE(ng)%avgrain(i,j)+        &
 #    ifdef WET_DRY
-     &                                 GRID(ng)%rmask_io(i,j)*          &
+     &                                 GRID(ng)%rmask_full(i,j)*        &
 #    endif
      &                                 FORCES(ng)%rain(i,j)
             END DO
@@ -1769,7 +1798,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgu2Sd(i,j)=AVERAGE(ng)%avgu2Sd(i,j)+        &
 #  ifdef WET_DRY
-     &                                 GRID(ng)%umask_io(i,j)*          &
+     &                                 GRID(ng)%umask_full(i,j)*        &
 #  endif
      &                                 OCEAN(ng)%ubar_stokes(i,j)
             END DO
@@ -1780,7 +1809,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgv2Sd(i,j)=AVERAGE(ng)%avgv2Sd(i,j)+        &
 #  ifdef WET_DRY
-     &                                 GRID(ng)%vmask_io(i,j)*          &
+     &                                 GRID(ng)%vmask_full(i,j)*        &
 #  endif
      &                                 OCEAN(ng)%vbar_stokes(i,j)
             END DO
@@ -1792,7 +1821,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgu2RS(i,j)=AVERAGE(ng)%avgu2RS(i,j)+        &
 #  ifdef WET_DRY
-     &                                 GRID(ng)%umask_io(i,j)*          &
+     &                                 GRID(ng)%umask_full(i,j)*        &
 #  endif
      &                                 MIXING(ng)%rustr2d(i,j)
             END DO
@@ -1803,7 +1832,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgv2RS(i,j)=AVERAGE(ng)%avgv2RS(i,j)+        &
 #  ifdef WET_DRY
-     &                                 GRID(ng)%vmask_io(i,j)*          &
+     &                                 GRID(ng)%vmask_full(i,j)*        &
 #  endif
      &                                 MIXING(ng)%rvstr2d(i,j)
             END DO
@@ -1815,7 +1844,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgSxx2d(i,j)=AVERAGE(ng)%avgSxx2d(i,j)+      &
 #  ifdef WET_DRY
-     &                                  GRID(ng)%rmask_io(i,j)*         &
+     &                                  GRID(ng)%rmask_full(i,j)*       &
 #  endif
      &                                  MIXING(ng)%Sxx_bar(i,j)
             END DO
@@ -1826,7 +1855,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgSxy2d(i,j)=AVERAGE(ng)%avgSxy2d(i,j)+      &
 #  ifdef WET_DRY
-     &                                  GRID(ng)%rmask_io(i,j)*         &
+     &                                  GRID(ng)%rmask_full(i,j)*       &
 #  endif
      &                                  MIXING(ng)%Sxy_bar(i,j)
             END DO
@@ -1837,7 +1866,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgSyy2d(i,j)=AVERAGE(ng)%avgSyy2d(i,j)+      &
 #  ifdef WET_DRY
-     &                                  GRID(ng)%rmask_io(i,j)*         &
+     &                                  GRID(ng)%rmask_full(i,j)*       &
 #  endif
      &                                  MIXING(ng)%Syy_bar(i,j)
             END DO
@@ -1851,7 +1880,7 @@
               DO i=Istr,IendR
                 AVERAGE(ng)%avgu3Sd(i,j,k)=AVERAGE(ng)%avgu3Sd(i,j,k)+  &
 #   ifdef WET_DRY
-     &                                     GRID(ng)%umask_io(i,j)*      &
+     &                                     GRID(ng)%umask_full(i,j)*    &
 #   endif
      &                                     OCEAN(ng)%u_stokes(i,j,k)
               END DO
@@ -1864,7 +1893,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgv3Sd(i,j,k)=AVERAGE(ng)%avgv3Sd(i,j,k)+  &
 #   ifdef WET_DRY
-     &                                     GRID(ng)%vmask_io(i,j)*      &
+     &                                     GRID(ng)%vmask_full(i,j)*    &
 #   endif
      &                                     OCEAN(ng)%v_stokes(i,j,k)
               END DO
@@ -1878,7 +1907,7 @@
               DO i=Istr,IendR
                 AVERAGE(ng)%avgu3RS(i,j,k)=AVERAGE(ng)%avgu3RS(i,j,k)+  &
 #   ifdef WET_DRY
-     &                                     GRID(ng)%umask_io(i,j)*      &
+     &                                     GRID(ng)%umask_full(i,j)*    &
 #   endif
      &                                     MIXING(ng)%rustr3d(i,j,k)
               END DO
@@ -1891,7 +1920,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgv3RS(i,j,k)=AVERAGE(ng)%avgv3RS(i,j,k)+  &
 #   ifdef WET_DRY
-     &                                     GRID(ng)%vmask_io(i,j)*      &
+     &                                     GRID(ng)%vmask_full(i,j)*    &
 #   endif
      &                                     MIXING(ng)%rvstr3d(i,j,k)
               END DO
@@ -1905,7 +1934,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgSxx3d(i,j,k)=AVERAGE(ng)%avgSxx3d(i,j,k)+&
 #   ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #   endif
      &                                      MIXING(ng)%Sxx(i,j,k)
               END DO
@@ -1918,7 +1947,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgSxy3d(i,j,k)=AVERAGE(ng)%avgSxy3d(i,j,k)+&
 #   ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #   endif
      &                                      MIXING(ng)%Sxy(i,j,k)
               END DO
@@ -1931,7 +1960,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgSyy3d(i,j,k)=AVERAGE(ng)%avgSyy3d(i,j,k)+&
 #   ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #   endif
      &                                      MIXING(ng)%Syy(i,j,k)
               END DO
@@ -1945,7 +1974,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgSzx3d(i,j,k)=AVERAGE(ng)%avgSzx3d(i,j,k)+&
 #    ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #    endif
      &                                      MIXING(ng)%Szx(i,j,k)
               END DO
@@ -1958,7 +1987,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgSzy3d(i,j,k)=AVERAGE(ng)%avgSzy3d(i,j,k)+&
 #    ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #    endif
      &                                      MIXING(ng)%Szy(i,j,k)
               END DO
@@ -1976,7 +2005,7 @@
             DO i=Istr,Iend
               AVERAGE(ng)%avgpvor2d(i,j)=AVERAGE(ng)%avgpvor2d(i,j)+    &
 # ifdef WET_DRY
-     &                                   GRID(ng)%pmask_io(i,j)*        &
+     &                                   GRID(ng)%pmask_full(i,j)*      &
 # endif
      &                                   potvor_bar(i,j)
             END DO
@@ -1987,7 +2016,7 @@
             DO i=Istr,Iend
               AVERAGE(ng)%avgrvor2d(i,j)=AVERAGE(ng)%avgrvor2d(i,j)+    &
 # ifdef WET_DRY
-     &                                   GRID(ng)%pmask_io(i,j)*        &
+     &                                   GRID(ng)%pmask_full(i,j)*      &
 # endif
      &                                   relvor_bar(i,j)
             END DO
@@ -2001,7 +2030,7 @@
                 AVERAGE(ng)%avgpvor3d(i,j,k)=AVERAGE(ng)%avgpvor3d(i,j, &
      &                                                             k)+  &
 #  ifdef WET_DRY
-     &                                       GRID(ng)%pmask_io(i,j)*    &
+     &                                       GRID(ng)%pmask_full(i,j)*  &
 #  endif
      &                                       potvor(i,j,k)
               END DO
@@ -2015,7 +2044,7 @@
                 AVERAGE(ng)%avgrvor3d(i,j,k)=AVERAGE(ng)%avgrvor3d(i,j, &
      &                                                             k)+  &
 #  ifdef WET_DRY
-     &                                       GRID(ng)%pmask_io(i,j)*    &
+     &                                       GRID(ng)%pmask_full(i,j)*  &
 #  endif
      &                                       relvor(i,j,k)
               END DO
@@ -2031,7 +2060,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgZZ(i,j)=AVERAGE(ng)%avgZZ(i,j)+            &
 # ifdef WET_DRY
-     &                               GRID(ng)%rmask_io(i,j)*            &
+     &                               GRID(ng)%rmask_full(i,j)*          &
 # endif
      &                               OCEAN(ng)%zeta(i,j,Kout)*          &
      &                               OCEAN(ng)%zeta(i,j,Kout)
@@ -2043,7 +2072,7 @@
             DO i=Istr,IendR
               AVERAGE(ng)%avgU2(i,j)=AVERAGE(ng)%avgU2(i,j)+            &
 # ifdef WET_DRY
-     &                               GRID(ng)%umask_io(i,j)*            &
+     &                               GRID(ng)%umask_full(i,j)*          &
 # endif
      &                               OCEAN(ng)%ubar(i,j,Kout)*          &
      &                               OCEAN(ng)%ubar(i,j,Kout)
@@ -2055,7 +2084,7 @@
             DO i=IstrR,IendR
               AVERAGE(ng)%avgV2(i,j)=AVERAGE(ng)%avgV2(i,j)+            &
 # ifdef WET_DRY
-     &                               GRID(ng)%vmask_io(i,j)*            &
+     &                               GRID(ng)%vmask_full(i,j)*          &
 # endif
      &                               OCEAN(ng)%vbar(i,j,Kout)*          &
      &                               OCEAN(ng)%vbar(i,j,Kout)
@@ -2070,7 +2099,7 @@
               DO i=Istr,IendR
                 AVERAGE(ng)%avgUU(i,j,k)=AVERAGE(ng)%avgUU(i,j,k)+      &
 #  ifdef WET_DRY
-     &                                   GRID(ng)%umask_io(i,j)*        &
+     &                                   GRID(ng)%umask_full(i,j)*      &
 #  endif
      &                                   OCEAN(ng)%u(i,j,k,Nout)*       &
      &                                   OCEAN(ng)%u(i,j,k,Nout)
@@ -2084,7 +2113,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgVV(i,j,k)=AVERAGE(ng)%avgVV(i,j,k)+      &
 #  ifdef WET_DRY
-     &                                   GRID(ng)%vmask_io(i,j)*        &
+     &                                   GRID(ng)%vmask_full(i,j)*      &
 #  endif
      &                                   OCEAN(ng)%v(i,j,k,Nout)*       &
      &                                   OCEAN(ng)%v(i,j,k,Nout)
@@ -2098,7 +2127,7 @@
               DO i=Istr,Iend
                 AVERAGE(ng)%avgUV(i,j,k)=AVERAGE(ng)%avgUV(i,j,k)+      &
 #  ifdef WET_DRY
-     &                                   GRID(ng)%rmask_io(i,j)*        &
+     &                                   GRID(ng)%rmask_full(i,j)*      &
 #  endif
      &                                   0.25_r8*                       &
      &                                   (OCEAN(ng)%u(i  ,j  ,k,Nout)+  &
@@ -2116,7 +2145,7 @@
               DO i=Istr,IendR
                 AVERAGE(ng)%avgHuon(i,j,k)=AVERAGE(ng)%avgHuon(i,j,k)+  &
 #  ifdef WET_DRY
-     &                                     GRID(ng)%umask_io(i,j)*      &
+     &                                     GRID(ng)%umask_full(i,j)*    &
 #  endif
      &                                     GRID(ng)%Huon(i,j,k)
               END DO
@@ -2129,7 +2158,7 @@
               DO i=IstrR,IendR
                 AVERAGE(ng)%avgHvom(i,j,k)=AVERAGE(ng)%avgHvom(i,j,k)+  &
 #  ifdef WET_DRY
-     &                                     GRID(ng)%vmask_io(i,j)*      &
+     &                                     GRID(ng)%vmask_full(i,j)*    &
 #  endif
      &                                     GRID(ng)%Hvom(i,j,k)
               END DO
@@ -2145,7 +2174,7 @@
                   AVERAGE(ng)%avgTT(i,j,k,it)=AVERAGE(ng)%avgTT(i,j,k,  &
      &                                                          it)+    &
 #  ifdef WET_DRY
-     &                                        GRID(ng)%rmask_io(i,j)*   &
+     &                                        GRID(ng)%rmask_full(i,j)* &
 #  endif
      &                                        OCEAN(ng)%t(i,j,k,        &
      &                                                    Nout,it)*     &
@@ -2162,7 +2191,7 @@
                   AVERAGE(ng)%avgUT(i,j,k,it)=AVERAGE(ng)%avgUT(i,j,k,  &
      &                                                          it)+    &
 #  ifdef WET_DRY
-     &                                        GRID(ng)%umask_io(i,j)*   &
+     &                                        GRID(ng)%umask_full(i,j)* &
 #  endif
      &                                        0.5_r8*                   &
      &                                        OCEAN(ng)%u(i,j,k,Nout)*  &
@@ -2181,7 +2210,7 @@
                   AVERAGE(ng)%avgVT(i,j,k,it)=AVERAGE(ng)%avgVT(i,j,k,  &
      &                                                          it)+    &
 #  ifdef WET_DRY
-     &                                        GRID(ng)%vmask_io(i,j)*   &
+     &                                        GRID(ng)%vmask_full(i,j)* &
 #  endif
      &                                        0.5_r8*                   &
      &                                        OCEAN(ng)%v(i,j,k,Nout)*  &
@@ -2201,7 +2230,8 @@
                   AVERAGE(ng)%avgHuonT(i,j,k,it)=AVERAGE(ng)%avgHuonT(i,&
      &                                                       j,k,it)+   &
 #  ifdef WET_DRY
-     &                                           GRID(ng)%umask_io(i,j)*&
+     &                                           GRID(ng)%umask_full(i, &
+     &                                                            j)*   &
 #  endif
      &                                           0.5_r8*                &
      &                                           GRID(ng)%Huon(i,j,k)*  &
@@ -2220,7 +2250,8 @@
                   AVERAGE(ng)%avgHvomT(i,j,k,it)=AVERAGE(ng)%avgHvomT(i,&
      &                                                       j,k,it)+   &
 #  ifdef WET_DRY
-     &                                           GRID(ng)%vmask_io(i,j)*&
+     &                                           GRID(ng)%vmask_full(i, &
+     &                                                            j)*   &
 #  endif
      &                                           0.5_r8*                &
      &                                           GRID(ng)%Hvom(i,j,k)*  &
@@ -2904,6 +2935,29 @@
      &                          NghostPoints,                           &
      &                          EWperiodic(ng), NSperiodic(ng),         &
      &                          AVERAGE(ng)%avgPair)
+#   endif
+          END IF
+        END IF
+#  endif
+
+#  if defined BULK_FLUXES
+        IF (Aout(idTair,ng)) THEN
+          DO j=JstrR,JendR
+            DO i=IstrR,IendR
+              AVERAGE(ng)%avgTair(i,j)=rfac(i,j)*                       &
+     &                                 AVERAGE(ng)%avgTair(i,j)
+            END DO
+          END DO
+          IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
+            CALL exchange_r2d_tile (ng, tile,                           &
+     &                              LBi, UBi, LBj, UBj,                 &
+     &                              AVERAGE(ng)%avgTair)
+#   ifdef DISTRIBUTE
+            CALL mp_exchange2d (ng, tile, iNLM, 1,                      &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          NghostPoints,                           &
+     &                          EWperiodic(ng), NSperiodic(ng),         &
+     &                          AVERAGE(ng)%avgTair)
 #   endif
           END IF
         END IF
@@ -3905,6 +3959,9 @@
       USE mod_param
       USE mod_ncparam
       USE mod_average
+#  ifdef WET_DRY
+      USE mod_grid
+#  endif
       USE mod_ocean
       USE mod_scalars
       USE mod_tides
@@ -4016,7 +4073,7 @@
                 TIDES(ng)%zeta_tide(i,j,nk)=TIDES(ng)%zeta_tide(i,j,    &
      &                                                          nk)+    &
 #  ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #  endif
      &                                      OCEAN(ng)%zeta(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
@@ -4032,7 +4089,7 @@
                 TIDES(ng)%ubar_tide(i,j,nk)=TIDES(ng)%ubar_tide(i,j,    &
      &                                                          nk)+    &
 #  ifdef WET_DRY
-     &                                      GRID(ng)%umask_io(i,j)*     &
+     &                                      GRID(ng)%umask_full(i,j)*   &
 #  endif
      &                                      OCEAN(ng)%ubar(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
@@ -4048,7 +4105,7 @@
                 TIDES(ng)%vbar_tide(i,j,nk)=TIDES(ng)%vbar_tide(i,j,    &
      &                                                          nk)+    &
 #  ifdef WET_DRY
-     &                                      GRID(ng)%vmask_io(i,j)*     &
+     &                                      GRID(ng)%vmask_full(i,j)*   &
 #  endif
      &                                      OCEAN(ng)%vbar(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
@@ -4066,7 +4123,7 @@
                   TIDES(ng)%u_tide(i,j,k,nk)=TIDES(ng)%u_tide(i,j,k,    &
      &                                                        nk)+      &
 #   ifdef WET_DRY
-     &                                       GRID(ng)%umask_io(i,j)*    &
+     &                                       GRID(ng)%umask_full(i,j)*  &
 #   endif
      &                                       OCEAN(ng)%u(i,j,k,Nout)*   &
      &                                       tide_harmonics(nk)
@@ -4084,7 +4141,7 @@
                   TIDES(ng)%v_tide(i,j,k,nk)=TIDES(ng)%v_tide(i,j,k,    &
      &                                                        nk)+      &
 #   ifdef WET_DRY
-     &                                       GRID(ng)%vmask_io(i,j)*    &
+     &                                       GRID(ng)%vmask_full(i,j)*  &
 #   endif
      &                                       OCEAN(ng)%v(i,j,k,Nout)*   &
      &                                       tide_harmonics(nk)
@@ -4103,7 +4160,7 @@
                     TIDES(ng)%t_tide(i,j,k,nk,it)=TIDES(ng)%t_tide(i,j, &
      &                                                        k,nk,it)+ &
 #   ifdef WET_DRY
-     &                                          GRID(ng)%rmask_io(i,j)* &
+     &                                        GRID(ng)%rmask_full(i,j)* &
 #   endif
      &                                            OCEAN(ng)%t(i,j,k,    &
      &                                                        Nout,it)* &
@@ -4154,7 +4211,7 @@
                 TIDES(ng)%zeta_tide(i,j,nk)=TIDES(ng)%zeta_tide(i,j,    &
      &                                                          nk)+    &
 #  ifdef WET_DRY
-     &                                      GRID(ng)%rmask_io(i,j)*     &
+     &                                      GRID(ng)%rmask_full(i,j)*   &
 #  endif
      &                                      OCEAN(ng)%zeta(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
@@ -4170,7 +4227,7 @@
                 TIDES(ng)%ubar_tide(i,j,nk)=TIDES(ng)%ubar_tide(i,j,    &
      &                                                          nk)+    &
 #  ifdef WET_DRY
-     &                                      GRID(ng)%umask_io(i,j)*     &
+     &                                      GRID(ng)%umask_full(i,j)*   &
 #  endif
      &                                      OCEAN(ng)%ubar(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
@@ -4186,7 +4243,7 @@
                 TIDES(ng)%vbar_tide(i,j,nk)=TIDES(ng)%vbar_tide(i,j,    &
      &                                                          nk)+    &
 #  ifdef WET_DRY
-     &                                      GRID(ng)%vmask_io(i,j)*     &
+     &                                      GRID(ng)%vmask_full(i,j)*   &
 #  endif
      &                                      OCEAN(ng)%vbar(i,j,Kout)*   &
      &                                      tide_harmonics(nk)
@@ -4204,7 +4261,7 @@
                   TIDES(ng)%u_tide(i,j,k,nk)=TIDES(ng)%u_tide(i,j,k,    &
      &                                                        nk)+      &
 #   ifdef WET_DRY
-     &                                       GRID(ng)%umask_io(i,j)*    &
+     &                                       GRID(ng)%umask_full(i,j)*  &
 #   endif
      &                                       OCEAN(ng)%u(i,j,k,Nout)*   &
      &                                       tide_harmonics(nk)
@@ -4222,7 +4279,7 @@
                   TIDES(ng)%v_tide(i,j,k,nk)=TIDES(ng)%v_tide(i,j,k,    &
      &                                                        nk)+      &
 #   ifdef WET_DRY
-     &                                       GRID(ng)%vmask_io(i,j)*    &
+     &                                       GRID(ng)%vmask_full(i,j)*  &
 #   endif
      &                                       OCEAN(ng)%v(i,j,k,Nout)*   &
      &                                       tide_harmonics(nk)
@@ -4241,7 +4298,7 @@
                     TIDES(ng)%t_tide(i,j,k,nk,it)=TIDES(ng)%t_tide(i,j, &
      &                                                        k,nk,it)+ &
 #   ifdef WET_DRY
-     &                                          GRID(ng)%umask_io(i,j)* &
+     &                                        GRID(ng)%umask_full(i,j)* &
 #   endif
      &                                            OCEAN(ng)%t(i,j,k,    &
      &                                                        Nout,it)* &

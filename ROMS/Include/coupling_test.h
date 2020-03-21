@@ -1,7 +1,7 @@
 /*
-** svn $Id: coupling_test.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: coupling_test.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,23 +9,21 @@
 ** Options for Atmosphere-Ocean Two-Way Coupling Test (WRF/ROMS).
 **
 ** Application flag:   COUPLING_TEST
-** Input script:       ocean_coupling_test.in
+** Input script:       roms_coupling_test.in
 */
 
 #define UV_ADV
 #define UV_COR
 #define UV_QDRAG
 #undef  UV_VIS2
-#define TS_U3HADVECTION
-#define TS_C4VADVECTION
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define DJ_GRADPS
 #undef  TS_DIF2
 #undef  MIX_GEO_TS
 #define SALINITY
 #define SOLVE3D
-#define SPLINES
 #define AVERAGES
-#define AIR_OCEAN
 #define ANA_GRID
 #define ANA_INITIAL
 #define ANA_STFLUX

@@ -1,7 +1,7 @@
 /*
-** svn $Id: channel.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: channel.h 995 2020-01-10 04:01:28Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for periodic uniform channel
 **
 ** Application flag:   CHANNEL
-** Input script:       ocean_channel.in
+** Input script:       roms_channel.in
 **
 **
 ** Available Driver options:  choose only one and activate it in the

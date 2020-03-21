@@ -3,9 +3,9 @@
 
 #if defined TL_IOMS && defined SOLVE3D
 !
-!svn $Id: rp_set_massflux.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_set_massflux.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -27,7 +27,7 @@
       CONTAINS
 !
 !***********************************************************************
-      SUBROUTINE rp_set_massflux (ng, tile)
+      SUBROUTINE rp_set_massflux (ng, tile, model)
 !***********************************************************************
 !
       USE mod_param
@@ -37,16 +37,16 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
 !
 !  Local variable declarations.
 !
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 12)
+      CALL wclock_on (ng, model, 12, __LINE__, __FILE__)
 # endif
-      CALL rp_set_massflux_tile (ng, tile,                              &
+      CALL rp_set_massflux_tile (ng, tile, model,                       &
      &                           LBi, UBi, LBj, UBj,                    &
      &                           IminS, ImaxS, JminS, JmaxS,            &
      &                           nrhs(ng),                              &
@@ -67,14 +67,14 @@
      &                           GRID(ng) % tl_Huon,                    &
      &                           GRID(ng) % tl_Hvom)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 12)
+      CALL wclock_off (ng, model, 12, __LINE__, __FILE__)
 # endif
 
       RETURN
       END SUBROUTINE rp_set_massflux
 !
 !***********************************************************************
-      SUBROUTINE rp_set_massflux_tile (ng, tile,                        &
+      SUBROUTINE rp_set_massflux_tile (ng, tile, model,                 &
      &                                 LBi, UBi, LBj, UBj,              &
      &                                 IminS, ImaxS, JminS, JmaxS,      &
      &                                 nrhs,                            &
@@ -99,7 +99,7 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
       integer, intent(in) :: nrhs
@@ -144,8 +144,6 @@
 !
 !  Local variable declarations.
 !
-      integer :: IminU, IminV, ImaxU, ImaxV
-      integer :: JminU, JminV, JmaxU, JmaxV
       integer :: i, j, k
 
 # include "set_bounds.h"
@@ -154,51 +152,11 @@
 !  Compute horizontal mass fluxes, Hz*u/n and Hz*v/m.
 !-----------------------------------------------------------------------
 !
-!  Set local I- and J-ranges.
-!
-      IF (EWperiodic(ng)) THEN
-        IminU=Istr
-        ImaxU=Iend
-        IminV=Istr
-        ImaxV=Iend
-      ELSE
-        IF (ComposedGrid(ng).or.RefinedGrid(ng)) THEN
-          IminU=IstrP+1
-          ImaxU=IendT
-          IminV=IstrT
-          ImaxV=IendT
-        ELSE
-          IminU=Istr
-          ImaxU=IendR
-          IminV=IstrR
-          ImaxV=IendR
-        END IF
-      END IF
-
-      IF (NSperiodic(ng)) THEN
-        JminU=Jstr
-        JmaxU=Jend
-        JminV=Jstr
-        JmaxV=Jend
-      ELSE
-        IF (ComposedGrid(ng).or.RefinedGrid(ng)) THEN
-          JminU=JstrT
-          JmaxU=JendT
-          JminV=JstrP+1
-          JmaxV=JendT
-        ELSE
-          JminU=JstrR
-          JmaxU=JendR
-          JminV=Jstr
-          JmaxV=JendR
-        END IF
-      END IF
-!
 !  Compute horizontal mass fluxes.
 !
       DO k=1,N(ng)
-        DO j=JminU,JmaxU
-          DO i=IminU,ImaxU
+        DO j=JstrT,JendT
+          DO i=IstrP,IendT
 !>          Huon(i,j,k)=0.5_r8*(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nrhs)*   &
 !>   &                  on_u(i,j)
 !>
@@ -229,8 +187,8 @@
 # endif
           END DO
         END DO
-        DO j=JminV,JmaxV
-          DO i=IminV,ImaxV
+        DO j=JstrP,JendT
+          DO i=IstrT,IendT
 !>          Hvom(i,j,k)=0.5_r8*(Hz(i,j,k)+Hz(i,j-1,k))*v(i,j,k,nrhs)*   &
 !>   &                  om_v(i,j)
 !>
@@ -283,13 +241,13 @@
       END IF
 
 # ifdef DISTRIBUTE
-!>    CALL mp_exchange3d (ng, tile, iNLM, 2,                            &
+!>    CALL mp_exchange3d (ng, tile, model, 2,                           &
 !>   &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
 !>   &                    NghostPoints,                                 &
 !>   &                    EWperiodic(ng), NSperiodic(ng),               &
 !>   &                    Huon, Hvom)
 !>
-      CALL mp_exchange3d (ng, tile, iRPM, 2,                            &
+      CALL mp_exchange3d (ng, tile, model, 2,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
@@ -300,4 +258,3 @@
       END SUBROUTINE rp_set_massflux_tile
 #endif
       END MODULE rp_set_massflux_mod
-

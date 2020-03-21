@@ -1,10 +1,10 @@
 #include "cppdefs.h"
       MODULE ad_extract_obs_mod
-#if defined ADJOINT && defined FOUR_DVAR
+#if defined ADJOINT && defined FOUR_DVAR && defined OBSERVATIONS
 !
-!svn $Id: ad_extract_obs.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_extract_obs.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -53,7 +53,7 @@
 !                                                                      !
 !  On Output:                                                          !
 !                                                                      !
-!     ObsScale   Observation screenning flag.                          !
+!     ObsVetting Observation screenning flag, 0: reject or 1: accept.  !
 !     ad_A       Adjoint equations forcing array (2D or 3D).           !
 !     ad_Aobs    Adjoint forcing term at observations locations.       !
 !     Zobs       Observations Z-locations (grid coordinates).          !
@@ -129,7 +129,7 @@
      &                             ifield, Mobs, NobsSTR, NobsEND,      &
      &                             Xmin, Xmax, Ymin, Ymax,              &
      &                             time, dt,                            &
-     &                             ObsType, ObsScale,                   &
+     &                             ObsType, ObsVetting,                 &
      &                             Tobs, Xobs, Yobs,                    &
      &                             ad_A,                                &
 # ifdef MASKING
@@ -138,6 +138,9 @@
      &                             ad_Aobs)
 !***********************************************************************
 !
+      USE mod_ncparam,  ONLY : isUbar, isVbar
+      USE mod_fourdvar, ONLY : ObsState2Type
+!
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
@@ -145,31 +148,31 @@
       integer, intent(in) :: ifield, Mobs, NobsSTR, NobsEND
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
-      real(r8), intent(in) :: time, dt
+      real(dp), intent(in) :: time, dt
 !
 # ifdef ASSUMED_SHAPE
       integer, intent(in) :: ObsType(:)
 
-      real(r8), intent(in) :: Tobs(:)
+      real(dp), intent(in) :: Tobs(:)
       real(r8), intent(in) :: Xobs(:)
       real(r8), intent(in) :: Yobs(:)
 #  ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:,LBj:)
 #  endif
-      real(r8), intent(inout) :: ObsScale(:)
+      real(r8), intent(inout) :: ObsVetting(:)
       real(r8), intent(inout) :: ad_Aobs(:)
       real(r8), intent(inout) :: ad_A(LBi:,LBj:)
 
 # else
       integer, intent(in) :: ObsType(Mobs)
 
-      real(r8), intent(in) :: Tobs(Mobs)
+      real(dp), intent(in) :: Tobs(Mobs)
       real(r8), intent(in) :: Xobs(Mobs)
       real(r8), intent(in) :: Yobs(Mobs)
 #  ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
 #  endif
-      real(r8), intent(inout) :: ObsScale(Mobs)
+      real(r8), intent(inout) :: ObsVetting(Mobs)
       real(r8), intent(inout) :: ad_Aobs(Mobs)
       real(r8), intent(inout) :: ad_A(LBi:UBi,LBj:UBj)
 # endif
@@ -177,7 +180,10 @@
 !  Local variable declarations.
 !
       integer :: ic, iobs, i1, i2, j1, j2
-      real(r8) :: TimeLB, TimeUB, p1, p2, q1, q2, wsum
+
+      real(dp) :: TimeLB, TimeUB
+
+      real(r8) ::  p1, p2, q1, q2, wsum
 
       real(r8), dimension(8) :: Hmat
 !
@@ -185,18 +191,18 @@
 !  Interpolate from requested 2D state field when appropriate.
 !-----------------------------------------------------------------------
 !
-      TimeLB=(time-0.5_r8*dt)/86400.0_r8
-      TimeUB=(time+0.5_r8*dt)/86400.0_r8
+      TimeLB=(time-0.5_dp*dt)/86400.0_dp
+      TimeUB=(time+0.5_dp*dt)/86400.0_dp
 !
       DO iobs=NobsSTR,NobsEND
         IF ((ObsType(iobs).eq.ifield).and.                              &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB)).and.    &
      &      ((Xmin.le.Xobs(iobs)).and.(Xobs(iobs).lt.Xmax)).and.        &
      &      ((Ymin.le.Yobs(iobs)).and.(Yobs(iobs).lt.Ymax))) THEN
-          IF (ObsType(iobs).eq.2) THEN
+          IF (ObsType(iobs).eq.ObsState2Type(isUbar)) THEN
             i1=INT(Xobs(iobs)+0.5_r8)        ! 2D U-grid type variable
             j1=INT(Yobs(iobs))
-          ELSE IF (ObsType(iobs).eq.3) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isVbar)) THEN
             i1=INT(Xobs(iobs))               ! 2D V-grid type variable
             j1=INT(Yobs(iobs)+0.5_r8)
           ELSE
@@ -246,9 +252,9 @@
           ad_A(i1,j2)=ad_A(i1,j2)+Hmat(4)*ad_Aobs(iobs)
           ad_Aobs(iobs)=0.0_r8
 # ifdef MASKING
-          IF (wsum.gt.0.0_r8) ObsScale(iobs)=1.0_r8
+          IF (wsum.gt.0.0_r8) ObsVetting(iobs)=1.0_r8
 # else
-          ObsScale(iobs)=1.0_r8
+          ObsVetting(iobs)=1.0_r8
 # endif
         END IF
       END DO
@@ -264,7 +270,7 @@
      &                             ifield, Mobs, NobsSTR, NobsEND,      &
      &                             Xmin, Xmax, Ymin, Ymax,              &
      &                             time, dt,                            &
-     &                             ObsType, ObsScale,                   &
+     &                             ObsType, ObsVetting,                 &
      &                             Tobs, Xobs, Yobs, Zobs,              &
      &                             ad_A, Adepth,                        &
 #  ifdef MASKING
@@ -275,6 +281,9 @@
 !
       USE mod_param
 !
+      USE mod_ncparam,  ONLY : isUvel, isVvel
+      USE mod_fourdvar, ONLY : ObsState2Type
+!
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, Imin, Imax, Jmin, Jmax
@@ -282,33 +291,33 @@
       integer, intent(in) :: ifield, Mobs, NobsSTR, NobsEND
 !
       real(r8), intent(in) :: Xmin, Xmax, Ymin, Ymax
-      real(r8), intent(in) :: time, dt
+      real(dp), intent(in) :: time, dt
 !
 #  ifdef ASSUMED_SHAPE
       integer, intent(in) :: ObsType(:)
 
-      real(r8), intent(in) :: Tobs(:)
+      real(dp), intent(in) :: Tobs(:)
       real(r8), intent(in) :: Xobs(:)
       real(r8), intent(in) :: Yobs(:)
       real(r8), intent(in) :: Adepth(LBi:,LBj:,LBk:)
 #   ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:,LBj:)
 #   endif
-      real(r8), intent(inout) :: ObsScale(:)
+      real(r8), intent(inout) :: ObsVetting(:)
       real(r8), intent(inout) :: ad_Aobs(:)
       real(r8), intent(inout) :: Zobs(:)
       real(r8), intent(inout) :: ad_A(LBi:,LBj:,LBk:)
 #  else
       integer, intent(in) :: ObsType(Mobs)
 
-      real(r8), intent(in) :: Tobs(Mobs)
+      real(dp), intent(in) :: Tobs(Mobs)
       real(r8), intent(in) :: Xobs(Mobs)
       real(r8), intent(in) :: Yobs(Mobs)
       real(r8), intent(in) :: Adepth(LBi:UBi,LBj:UBj,LBk:UBk)
 #   ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
 #   endif
-      real(r8), intent(inout) :: ObsScale(Mobs)
+      real(r8), intent(inout) :: ObsVetting(Mobs)
       real(r8), intent(inout) :: ad_Aobs(Mobs)
       real(r8), intent(inout) :: Zobs(Mobs)
       real(r8), intent(inout) :: ad_A(LBi:UBi,LBj:UBj,LBk:UBk)
@@ -318,7 +327,9 @@
 !
       integer :: i, ic, iobs, i1, i2, j1, j2, k, k1, k2
 
-      real(r8) :: TimeLB, TimeUB, Zbot, Ztop, dz, p1, p2, q1, q2, r1, r2
+      real(dp) :: TimeLB, TimeUB
+
+      real(r8) :: Zbot, Ztop, dz, p1, p2, q1, q2, r1, r2
       real(r8) :: w11, w12, w21, w22, wsum
 
       real(r8), dimension(8) :: Hmat
@@ -327,18 +338,18 @@
 !  Interpolate from requested 3D state field.
 !-----------------------------------------------------------------------
 !
-      TimeLB=(time-0.5_r8*dt)/86400.0_r8
-      TimeUB=(time+0.5_r8*dt)/86400.0_r8
+      TimeLB=(time-0.5_dp*dt)/86400.0_dp
+      TimeUB=(time+0.5_dp*dt)/86400.0_dp
 !
       DO iobs=NobsSTR,NobsEND
         IF ((ObsType(iobs).eq.ifield).and.                              &
      &      ((TimeLB.le.Tobs(iobs)).and.(Tobs(iobs).lt.TimeUB)).and.    &
      &      ((Xmin.le.Xobs(iobs)).and.(Xobs(iobs).lt.Xmax)).and.        &
      &      ((Ymin.le.Yobs(iobs)).and.(Yobs(iobs).lt.Ymax))) THEN
-          IF (ObsType(iobs).eq.4) THEN
+          IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
             i1=INT(Xobs(iobs)+0.5_r8)        ! 3D U-grid type variable
             j1=INT(Yobs(iobs))
-          ELSE IF (ObsType(iobs).eq.5) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isVvel)) THEN
             i1=INT(Xobs(iobs))               ! 3D V-grid type variable
             j1=INT(Yobs(iobs)+0.5_r8)
           ELSE
@@ -362,7 +373,7 @@
           w22=p2*q2
           w12=p1*q2
           IF (Zobs(iobs).gt.0.0_r8) THEN
-            k1=INT(Zobs(iobs))                 ! Positions in fractional
+            k1=MAX(1,INT(Zobs(iobs)))          ! Positions in fractional
             k2=MIN(k1+1,N(ng))                 ! levels
             r2=REAL(k2-k1,r8)*(Zobs(iobs)-REAL(k1,r8))
             r1=1.0_r8-r2
@@ -372,11 +383,11 @@
             IF (Zobs(iobs).ge.Ztop) THEN
               r1=0.0_r8                        ! If shallower, ignore.
               r2=0.0_r8
-              ObsScale(iobs)=0.0_r8
+              ObsVetting(iobs)=0.0_r8
             ELSE IF (Zbot.ge.Zobs(iobs)) THEN
               r1=0.0_r8                        ! If deeper, ignore.
               r2=0.0_r8
-              ObsScale(iobs)=0.0_r8
+              ObsVetting(iobs)=0.0_r8
             ELSE
               DO k=N(ng),2,-1                  ! Otherwise, interpolate
                 Ztop=Adepth(i1,j1,k  )         ! to fractional level
@@ -440,9 +451,9 @@
             ad_A(i1,j2,k2)=ad_A(i1,j2,k2)+Hmat(8)*ad_Aobs(iobs)
             ad_Aobs(iobs)=0.0_r8
 #  ifdef MASKING
-            IF (wsum.gt.0.0_r8) ObsScale(iobs)=1.0_r8
+            IF (wsum.gt.0.0_r8) ObsVetting(iobs)=1.0_r8
 #  else
-            ObsScale(iobs)=1.0_r8
+            ObsVetting(iobs)=1.0_r8
 #  endif
           END IF
         END IF

@@ -3,9 +3,9 @@
 
 #ifdef ADJUST_BOUNDARY
 !
-!svn $Id: rp_obc_adjust.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_obc_adjust.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -47,14 +47,14 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 7)
+      CALL wclock_on (ng, iRPM, 7, __LINE__, __FILE__)
 # endif
       CALL rp_obc_adjust_tile (ng, tile,                                &
      &                         LBi, UBi, LBj, UBj, LBij, UBij,          &
      &                         IminS, ImaxS, JminS, JmaxS,              &
      &                         Linp)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 7)
+      CALL wclock_off (ng, iRPM, 7, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -101,7 +101,11 @@
         fac1=1.0_r8
         fac2=0.0_r8
       ELSE
+# ifdef GENERIC_DSTART
+        it1=MAX(0,(iic(ng)-ntstart(ng))/nOBC(ng))+1
+# else
         it1=MAX(0,(iic(ng)-1)/nOBC(ng))+1
+# endif
         it2=MIN(it1+1,Nbrec(ng))
         fac1=OBC_time(it2,ng)-(time(ng)+dt(ng))
         fac2=(time(ng)+dt(ng))-OBC_time(it1,ng)
@@ -515,7 +519,7 @@
 #  include "tile.h"
 !
 #  ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 7)
+      CALL wclock_on (ng, iRPM, 7, __LINE__, __FILE__)
 #  endif
       CALL rp_obc2d_adjust_tile (ng, tile,                              &
      &                           LBi, UBi, LBj, UBj, LBij, UBij,        &
@@ -530,7 +534,7 @@
      &                           GRID(ng) % tl_Hz,                      &
      &                           GRID(ng) % tl_Hz_bry)
 #  ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 7)
+      CALL wclock_off (ng, iRPM, 7, __LINE__, __FILE__)
 #  endif
 
       RETURN
@@ -609,7 +613,11 @@
         fac1=1.0_r8
         fac2=0.0_r8
       ELSE
+# ifdef GENERIC_DSTART
+        it1=MAX(0,(iic(ng)-ntstart(ng))/nOBC(ng))+1
+# else
         it1=MAX(0,(iic(ng)-1)/nOBC(ng))+1
+# endif
         it2=MIN(it1+1,Nbrec(ng))
         fac1=OBC_time(it2,ng)-(time(ng)+dt(ng))
         fac2=(time(ng)+dt(ng))-OBC_time(it1,ng)

@@ -4,9 +4,9 @@
 #if defined NLM_OUTER  || defined SENSITIVITY_4DVAR || \
     defined TL_W4DPSAS || defined W4DPSAS
 !
-!svn $Id: forcing.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: forcing.F 1012 2020-03-04 22:09:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -49,19 +49,17 @@
      &                   OCEAN(ng) % f_t,                               &
      &                   OCEAN(ng) % f_u,                               &
      &                   OCEAN(ng) % f_v,                               &
-# else
+# endif
      &                   OCEAN(ng) % f_ubar,                            &
      &                   OCEAN(ng) % f_vbar,                            &
-# endif
      &                   OCEAN(ng) % f_zeta,                            &
 # ifdef SOLVE3D
      &                   OCEAN(ng) % t,                                 &
      &                   OCEAN(ng) % u,                                 &
      &                   OCEAN(ng) % v,                                 &
-# else
+# endif
      &                   OCEAN(ng) % ubar,                              &
      &                   OCEAN(ng) % vbar,                              &
-# endif
 # ifdef SOLVE3D
      &                   COUPLING(ng) % Zt_avg1,                        &
 # endif
@@ -77,15 +75,13 @@
      &                         Kfrc, Nfrc,                              &
 # ifdef SOLVE3D
      &                         f_t, f_u, f_v,                           &
-# else
-     &                         f_ubar, f_vbar,                          &
 # endif
+     &                         f_ubar, f_vbar,                          &
      &                         f_zeta,                                  &
 # ifdef SOLVE3D
      &                         t, u, v,                                 &
-# else
-     &                         ubar, vbar,                              &
 # endif
+     &                         ubar, vbar,                              &
 # ifdef SOLVE3D
      &                         Zt_avg1,                                 &
 # endif
@@ -110,19 +106,17 @@
       real(r8), intent(in) :: f_t(LBi:,LBj:,:,:)
       real(r8), intent(in) :: f_u(LBi:,LBj:,:)
       real(r8), intent(in) :: f_v(LBi:,LBj:,:)
-#  else
+#  endif
       real(r8), intent(in) :: f_ubar(LBi:,LBj:)
       real(r8), intent(in) :: f_vbar(LBi:,LBj:)
-#  endif
       real(r8), intent(in) :: f_zeta(LBi:,LBj:)
 #  ifdef SOLVE3D
       real(r8), intent(inout) :: t(LBi:,LBj:,:,:,:)
       real(r8), intent(inout) :: u(LBi:,LBj:,:,:)
       real(r8), intent(inout) :: v(LBi:,LBj:,:,:)
-#  else
+#  endif
       real(r8), intent(inout) :: ubar(LBi:,LBj:,:)
       real(r8), intent(inout) :: vbar(LBi:,LBj:,:)
-#  endif
 #  ifdef SOLVE3D
       real(r8), intent(inout) :: Zt_avg1(LBi:,LBj:)
 #  endif
@@ -132,19 +126,17 @@
       real(r8), intent(in) :: f_t(LBi:UBi,LBj:UBj,N(ng),NT(ng))
       real(r8), intent(in) :: f_u(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: f_v(LBi:UBi,LBj:UBj,N(ng))
-#  else
+#  endif
       real(r8), intent(in) :: f_ubar(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: f_vbar(LBi:UBi,LBj:UBj)
-#  endif
       real(r8), intent(in) :: f_zeta(LBi:UBi,LBj:UBj)
 #  ifdef SOLVE3D
       real(r8), intent(inout) :: t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(inout) :: u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(inout) :: v(LBi:UBi,LBj:UBj,N(ng),2)
-#  else
+#  endif
       real(r8), intent(inout) :: ubar(LBi:UBi,LBj:UBj,3)
       real(r8), intent(inout) :: vbar(LBi:UBi,LBj:UBj,3)
-#  endif
 #  ifdef SOLVE3D
       real(r8), intent(inout) :: Zt_avg1(LBi:UBi,LBj:UBj)
 #  endif

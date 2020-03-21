@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE get_data (ng)
 !
-!svn $Id: get_data.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: get_data.F 1012 2020-03-04 22:09:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -19,23 +19,26 @@
 !=======================================================================
 !
       USE mod_param
-      USE mod_boundary
-#ifdef CLIMATOLOGY
-      USE mod_clima
+#if defined HYPOXIA_SRM || defined RED_TIDE
+      USE mod_biology
 #endif
+      USE mod_boundary
+      USE mod_clima
       USE mod_forces
       USE mod_grid
       USE mod_iounits
       USE mod_ncparam
-#if defined NLM_OUTER || defined TLM_CHECK || defined TL_W4DPSAS || \
-    defined W4DPSAS   || defined W4DPSAS_SENSITIVITY
+#if defined HYPOXIA_SRM         || defined NLM_OUTER               ||\
+    defined RED_TIDE            || defined TLM_CHECK               ||\
+    defined TL_W4DPSAS          || defined W4DPSAS                 ||\
+    defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
       USE mod_ocean
 #endif
       USE mod_scalars
-#if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
       USE mod_sources
-#endif
       USE mod_stepping
+!
+      USE strings_mod, ONLY : FoundError
 !
       implicit none
 !
@@ -73,50 +76,49 @@
 !  Turn on input data time wall clock.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, iNLM, 3)
+      CALL wclock_on (ng, iNLM, 3, __LINE__, __FILE__)
 #endif
-#ifdef FRC_FILE
 !
 !=======================================================================
 !  Read in forcing data from FORCING NetCDF file.
 !=======================================================================
-!
-#endif
-#if !defined ANA_PSOURCE && (defined UV_PSOURCE || \
-                             defined TS_PSOURCE || defined Q_PSOURCE)
+
+#ifndef ANA_PSOURCE
 !
 !-----------------------------------------------------------------------
 !  Point Sources/Sinks time dependent data.
 !-----------------------------------------------------------------------
 !
-# if defined UV_PSOURCE || defined Q_PSOURCE
-!
 !  Point Source/Sink vertically integrated mass transport.
 !
-      CALL get_ngfld (ng, iNLM, idRtra, ncFRCid(idRtra,ng),             &
-     &                nFfiles(ng), FRC(1,ng), update(1),                &
-     &                1, Nsrc(ng), 1, 2, 1, Nsrc(ng), 1,                &
-     &                SOURCES(ng) % QbarG(:,1))
-      IF (exit_flag.ne.NoError) RETURN
-# endif
+      IF (LuvSrc(ng).or.LwSrc(ng)) THEN
+        CALL get_ngfld (ng, iNLM, idRtra, SSF(ng)%ncid,                 &
+     &                  1, SSF(ng), update(1),                          &
+     &                  1, Nsrc(ng), 1, 2, 1, Nsrc(ng), 1,              &
+     &                  SOURCES(ng) % QbarG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+      END IF
 
-# if defined TS_PSOURCE && defined SOLVE3D
+# ifdef SOLVE3D
 !
 !  Tracer Sources/Sinks.
 !
       DO i=1,NT(ng)
         IF (LtracerSrc(i,ng)) THEN
-          CALL get_ngfld (ng, iNLM, idRtrc(i), ncFRCid(idRtrc(i),ng),   &
-     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+          CALL get_ngfld (ng, iNLM, idRtrc(i), SSF(ng)%ncid,            &
+     &                    1, SSF(ng), update(1),                        &
      &                    1, Nsrc(ng), N(ng), 2, 1, Nsrc(ng), N(ng),    &
      &                    SOURCES(ng) % TsrcG(:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END DO
 # endif
 #endif
 
-#if !defined ANA_WINDS && (defined BULK_FLUXES || defined ECOSIM)
+#if !(defined ANA_WINDS   || defined FRC_COUPLING) && \
+     (defined BULK_FLUXES || defined ECOSIM)
 !
 !-----------------------------------------------------------------------
 !  Surface wind components.
@@ -129,7 +131,8 @@
      &                GRID(ng) % rmask,                                 &
 # endif
      &                FORCES(ng) % UwindG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 
       CALL get_2dfld (ng , iNLM, idVair, ncFRCid(idVair,ng),            &
      &                nFfiles(ng), FRC(1,ng), update(1),                &
@@ -138,11 +141,11 @@
      &                GRID(ng) % rmask,                                 &
 # endif
      &                FORCES(ng) % VwindG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 #endif
 
-#ifndef AIR_OCEAN
-# if !defined ANA_SMFLUX && !defined BULK_FLUXES
+#if !(defined ANA_SMFLUX || defined FRC_COUPLING || defined BULK_FLUXES)
 !
 !-----------------------------------------------------------------------
 !  Surface wind stress components.
@@ -151,23 +154,25 @@
       CALL get_2dfld (ng, iNLM, idUsms, ncFRCid(idUsms,ng),             &
      &                nFfiles(ng), FRC(1,ng), update(1),                &
      &                LBi, UBi, LBj, UBj, 2, 1,                         &
-#  ifdef MASKING
+# ifdef MASKING
      &                GRID(ng) % umask,                                 &
-#  endif
+# endif
      &                FORCES(ng) % sustrG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 
       CALL get_2dfld (ng, iNLM, idVsms, ncFRCid(idVsms,ng),             &
      &                nFfiles(ng), FRC(1,ng), update(1),                &
      &                LBi, UBi, LBj, UBj, 2, 1,                         &
-#  ifdef MASKING
+# ifdef MASKING
      &                GRID(ng) % vmask,                                 &
-#  endif
-     &                FORCES(ng) % svstrG)
-      IF (exit_flag.ne.NoError) RETURN
 # endif
+     &                FORCES(ng) % svstrG)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+#endif
 
-# if defined FOUR_DVAR && defined BULK_FLUXES && defined NL_BULK_FLUXES
+#if defined FOUR_DVAR && defined BULK_FLUXES && defined NL_BULK_FLUXES
 !
 !-----------------------------------------------------------------------
 !  If not first NLM run, get surface wind stress components from initial
@@ -178,26 +183,27 @@
         CALL get_2dfld (ng, iNLM, idUsms, BLK(ng)%ncid,                 &
      &                  1, BLK(ng), update(1),                          &
      &                  LBi, UBi, LBj, UBj, 2, 1,                       &
-#  ifdef MASKING
+# ifdef MASKING
      &                  GRID(ng) % umask,                               &
-#  endif
+# endif
      &                  FORCES(ng) % sustrG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         CALL get_2dfld (ng, iNLM, idVsms, BLK(ng)%ncid,                 &
      &                  1, BLK(ng), update(1),                          &
      &                  LBi, UBi, LBj, UBj, 2, 1,                       &
-#  ifdef MASKING
+# ifdef MASKING
      &                  GRID(ng) % vmask,                               &
-#  endif
-     &                  FORCES(ng) % svstrG)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
 # endif
+     &                  FORCES(ng) % svstrG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+      END IF
 #endif
 
-#if !defined ANA_PAIR && (defined BULK_FLUXES || defined ECOSIM || \
-                          defined ATM_PRESS)
+#if !(defined ANA_PAIR    || defined FRC_COUPLING) && \
+     (defined BULK_FLUXES || defined ECOSIM        || defined ATM_PRESS)
 !
 !-----------------------------------------------------------------------
 !  Surface air pressure.
@@ -210,7 +216,8 @@
      &                GRID(ng) % rmask,                                 &
 # endif
      &                FORCES(ng) % PairG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 #endif
 
 #if !defined ANA_WWAVE && defined WAVE_DATA
@@ -227,7 +234,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % DwaveG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # ifdef WAVES_HEIGHT
@@ -238,7 +246,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % HwaveG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # ifdef WAVES_LENGTH
@@ -249,7 +258,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % LwaveG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # ifdef WAVES_TOP_PERIOD
@@ -260,7 +270,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % Pwave_topG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # ifdef WAVES_BOT_PERIOD
@@ -271,7 +282,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % Pwave_botG(:,:,1))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # if defined WAVES_UB
@@ -282,7 +294,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % Ub_swanG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # if defined TKE_WAVEDISS
@@ -293,7 +306,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % Wave_dissipG(:,:,1))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # if defined SVENDSEN_ROLLER
@@ -304,13 +318,14 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % Wave_breakG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 #endif
 
 #ifdef SOLVE3D
 
-# if !defined ANA_CLOUD && defined CLOUDS
+# if !(defined ANA_CLOUD || defined FRC_COUPLING) && defined CLOUDS
 !
 !-----------------------------------------------------------------------
 !  Cloud fraction.
@@ -323,10 +338,11 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % cloudG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if !defined ANA_SRFLUX && defined SHORTWAVE
+# if !(defined ANA_SRFLUX || defined FRC_COUPLING) && defined SHORTWAVE
 !
 !-----------------------------------------------------------------------
 !  Surface solar shortwave radiation.
@@ -339,10 +355,29 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % srflxG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if defined BULK_FLUXES && !defined LONGWAVE && !defined LONGWAVE_OUT
+# if defined RED_TIDE && defined DAILY_SHORTWAVE
+!
+!-----------------------------------------------------------------------
+!  Daily-averaged Surface solar shortwave radiation.
+!-----------------------------------------------------------------------
+!
+      CALL get_2dfld (ng, iNLM, idAsrf, ncFRCid(idAsrf,ng),             &
+     &                nFfiles(ng), FRC(1,ng), update(1),                &
+     &                LBi, UBi, LBj, UBj, 2, 1,                         &
+#  ifdef MASKING
+     &                GRID(ng) % rmask,                                 &
+#  endif
+     &                FORCES(ng) % srflxG_avg)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+# endif
+
+# if defined BULK_FLUXES  && \
+   !(defined FRC_COUPLING || defined LONGWAVE || defined LONGWAVE_OUT)
 !
 !-----------------------------------------------------------------------
 !  Surface net longwave radiation.
@@ -352,13 +387,15 @@
      &                nFfiles(ng), FRC(1,ng), update(1),                &
      &                LBi, UBi, LBj, UBj, 2, 1,                         &
 #  ifdef MASKING
-     &                GRID(ng) % rmask,                      &
+     &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % lrflxG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if defined BULK_FLUXES && defined LONGWAVE_OUT
+# if defined BULK_FLUXES  && defined LONGWAVE_OUT && \
+    !defined FRC_COUPLING
 !
 !-----------------------------------------------------------------------
 !  Surface downwelling longwave radiation.
@@ -371,12 +408,13 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % lrflxG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if !defined ANA_TAIR && \
-    ( defined BULK_FLUXES || defined ECOSIM || \
-     (defined SHORTWAVE && defined ANA_SRFLUX && defined ALBEDO) )
+# if !(defined ANA_TAIR   || defined FRC_COUPLING) && \
+    ( defined BULK_FLUXES || defined ECOSIM        || \
+     (defined SHORTWAVE   && defined ANA_SRFLUX    && defined ALBEDO) )
 !
 !-----------------------------------------------------------------------
 !  Surface air temperature.
@@ -389,10 +427,12 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % TairG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if !defined ANA_HUMIDITY && (defined BULK_FLUXES || defined ECOSIM)
+# if !(defined ANA_HUMIDITY || defined FRC_COUPLING) && \
+      (defined BULK_FLUXES  || defined ECOSIM)
 !
 !-----------------------------------------------------------------------
 !  Surface air humidity.
@@ -405,10 +445,11 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % HairG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if !defined ANA_RAIN && defined BULK_FLUXES
+# if !(defined ANA_RAIN || defined FRC_COUPLING) && defined BULK_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Rain fall rate.
@@ -421,10 +462,12 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % rainG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
-# if !defined ANA_STFLUX && !defined BULK_FLUXES
+# if !(defined ANA_STFLUX || defined FRC_COUPLING || \
+       defined BULK_FLUXES)
 !
 !-----------------------------------------------------------------------
 !  Surface net heat flux.
@@ -438,7 +481,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % stflxG(:,:,:,itemp))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # if !defined ANA_STFLUX  && defined FOUR_DVAR      && \
@@ -456,7 +500,8 @@
      &                  GRID(ng) % rmask,                               &
 #  endif
      &                  FORCES(ng) % stflxG(:,:,:,itemp))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END IF
 # endif
 
@@ -464,7 +509,7 @@
 !
 !-----------------------------------------------------------------------
 !  Surface net heat flux correction fields: sea surface temperature
-!  (SST) and heat flux sensitivity to SST (dQdSST).
+!  (SST).
 !-----------------------------------------------------------------------
 !
       CALL get_2dfld (ng, iNLM, idSSTc, ncFRCid(idSSTc,ng),             &
@@ -474,8 +519,17 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % sstG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+# endif
 
+# if !defined ANA_DQDSST && defined QCORRECTION
+!
+!-----------------------------------------------------------------------
+!  Surface net heat flux correction fields: heat flux sensitivity to
+!  SST (dQdSST).
+!-----------------------------------------------------------------------
+!
       CALL get_2dfld (ng, iNLM, iddQdT, ncFRCid(iddQdT,ng),             &
      &                nFfiles(ng), FRC(1,ng), update(1),                &
      &                LBi, UBi, LBj, UBj, 2, 1,                         &
@@ -483,7 +537,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % dqdtG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # ifndef ANA_BTFLUX
@@ -500,7 +555,8 @@
      &                GRID(ng) % rmask,                                 &
 #  endif
      &                FORCES(ng) % btflxG(:,:,:,itemp))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 # endif
 
 # ifdef SALINITY
@@ -517,9 +573,11 @@
      &                GRID(ng) % rmask,                                 &
 #   endif
      &                FORCES(ng) % stflxG(:,:,:,isalt))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 
-#  elif !(defined ANA_SSFLUX || defined EMINUSP || defined SRELAXATION)
+#  elif !(defined ANA_SSFLUX || defined FRC_COUPLING || \
+          defined EMINUSP    || defined SRELAXATION)
 !
 !-----------------------------------------------------------------------
 !  Surface net freshwater flux: E-P.
@@ -532,7 +590,8 @@
      &                GRID(ng) % rmask,                                 &
 #   endif
      &                FORCES(ng) % stflxG(:,:,:,isalt))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 #  endif
 
 #  if !defined ANA_STFLUX  && defined FOUR_DVAR      && \
@@ -551,7 +610,8 @@
      &                  GRID(ng) % rmask,                               &
 #   endif
      &                  FORCES(ng) % stflxG(:,:,:,isalt))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END IF
 #  endif
 
@@ -568,7 +628,8 @@
      &                GRID(ng) % rmask,                                 &
 #   endif
      &                FORCES(ng) % sssG)
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 #  endif
 
 #  ifndef ANA_BSFLUX
@@ -585,7 +646,8 @@
      &                GRID(ng) % rmask,                                 &
 #   endif
      &                FORCES(ng) % btflxG(:,:,:,isalt))
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 #  endif
 # endif
 
@@ -604,7 +666,8 @@
      &                  GRID(ng) % rmask,                               &
 #   endif
      &                  FORCES(ng) % stflxG(:,:,:,i))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 #  endif
 
@@ -622,10 +685,45 @@
      &                  GRID(ng) % rmask,                               &
 #   endif
      &                  FORCES(ng) % btflxG(:,:,:,i))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 #  endif
 # endif
+#endif
+
+#if !defined ANA_RESPIRATION && defined HYPOXIA_SRM
+!
+!-----------------------------------------------------------------------
+!  Total respiration rate for hypoxia.
+!-----------------------------------------------------------------------
+!
+      CALL get_3dfld (ng, iNLM, idResR, ncFRCid(idResR,ng),             &
+     &                nFfiles(ng), FRC(1,ng), update(1),                &
+     &                LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,               &
+#  ifdef MASKING
+     &                GRID(ng) % rmask,                                 &
+#  endif
+     &                OCEAN(ng) % respirationG)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+#endif
+
+#ifdef RED_TIDE
+!
+!-----------------------------------------------------------------------
+!  Red tide Observed Dissolved Inorganic Nutrient.
+!-----------------------------------------------------------------------
+!
+      CALL get_3dfld (ng, iNLM, idODIN, ncFRCid(idODIN,ng),             &
+     &                nFfiles(ng), FRC(1,ng), update(1),                &
+     &                LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,               &
+#  ifdef MASKING
+     &                GRID(ng) % rmask,                                 &
+#  endif
+     &                OCEAN(ng) % DIN_obsG)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 #endif
 !
 !=======================================================================
@@ -634,257 +732,327 @@
 
 #ifndef ANA_FSOBC
 !
-      IF (LBC(iwest,isFsur,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idZbry(iwest), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % zetaG_west)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+      IF (LprocessOBC(ng)) THEN
+        IF (LBC(iwest,isFsur,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idZbry(iwest), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % zetaG_west)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(ieast,isFsur,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idZbry(ieast), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % zetaG_east)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(ieast,isFsur,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idZbry(ieast), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % zetaG_east)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(isouth,isFsur,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idZbry(isouth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % zetaG_south)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(isouth,isFsur,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idZbry(isouth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % zetaG_south)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(inorth,isFsur,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idZbry(inorth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % zetaG_north)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (LBC(inorth,isFsur,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idZbry(inorth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % zetaG_north)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
       END IF
 #endif
 
 #ifndef ANA_M2OBC
 !
-      IF (LBC(iwest,isUbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU2bc(iwest), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % ubarG_west)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+      IF (LprocessOBC(ng)) THEN
+        IF (LBC(iwest,isUbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU2bc(iwest), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % ubarG_west)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(iwest,isVbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV2bc(iwest), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, 1, 2, 1, Mm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % vbarG_west)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(iwest,isVbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV2bc(iwest), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, 1, 2, 1, Mm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % vbarG_west)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(ieast,isUbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU2bc(ieast), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % ubarG_east)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(ieast,isUbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU2bc(ieast), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, 1, 2, 0, Mm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % ubarG_east)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(ieast,isVbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV2bc(ieast), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, 1, 2, 1, Mm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % vbarG_east)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(ieast,isVbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV2bc(ieast), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, 1, 2, 1, Mm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % vbarG_east)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(isouth,isUbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU2bc(isouth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, 1, 2, 1, Lm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % ubarG_south)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(isouth,isUbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU2bc(isouth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, 1, 2, 1, Lm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % ubarG_south)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(isouth,isVbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV2bc(isouth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % vbarG_south)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(isouth,isVbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV2bc(isouth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % vbarG_south)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(inorth,isUbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU2bc(inorth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, 1, 2, 1, Lm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % ubarG_north)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(inorth,isUbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU2bc(inorth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, 1, 2, 1, Lm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % ubarG_north)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(inorth,isVbar,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV2bc(inorth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,                 &
-     &                  BOUNDARY(ng) % vbarG_north)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (LBC(inorth,isVbar,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV2bc(inorth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, 1, 2, 0, Lm(ng)+1, 1,               &
+     &                    BOUNDARY(ng) % vbarG_north)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
       END IF
 #endif
 
 #ifdef SOLVE3D
 # ifndef ANA_M3OBC
 !
-      IF (LBC(iwest,isUvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU3bc(iwest), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % uG_west)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+      IF (LprocessOBC(ng)) THEN
+        IF (LBC(iwest,isUvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU3bc(iwest), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % uG_west)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(iwest,isVvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV3bc(iwest), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, N(ng), 2, 1, Mm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % vG_west)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(iwest,isVvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV3bc(iwest), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, N(ng), 2, 1, Mm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % vG_west)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(ieast,isUvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU3bc(ieast), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % uG_east)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(ieast,isUvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU3bc(ieast), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % uG_east)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(ieast,isVvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV3bc(ieast), BRY(ng)%ncid,          &
-     &                  1, BRY(ng), update(1),                          &
-     &                  JLB, JUB, N(ng), 2, 1, Mm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % vG_east)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(ieast,isVvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV3bc(ieast), BRY(ng)%ncid,        &
+     &                    1, BRY(ng), update(1),                        &
+     &                    JLB, JUB, N(ng), 2, 1, Mm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % vG_east)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(isouth,isUvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU3bc(isouth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, N(ng), 2, 1, Lm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % uG_south)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(isouth,isUvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU3bc(isouth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, N(ng), 2, 1, Lm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % uG_south)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(isouth,isVvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV3bc(isouth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % vG_south)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(isouth,isVvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV3bc(isouth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % vG_south)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(inorth,isUvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idU3bc(inorth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, N(ng), 2, 1, Lm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % uG_north)
-        IF (exit_flag.ne.NoError) RETURN
-      END IF
+        IF (LBC(inorth,isUvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idU3bc(inorth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, N(ng), 2, 1, Lm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % uG_north)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 
-      IF (LBC(inorth,isVvel,ng)%acquire) THEN
-        CALL get_ngfld (ng, iNLM, idV3bc(inorth), BRY(ng)%ncid,         &
-     &                  1, BRY(ng), update(1),                          &
-     &                  ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),         &
-     &                  BOUNDARY(ng) % vG_north)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (LBC(inorth,isVvel,ng)%acquire) THEN
+          CALL get_ngfld (ng, iNLM, idV3bc(inorth), BRY(ng)%ncid,       &
+     &                    1, BRY(ng), update(1),                        &
+     &                    ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),       &
+     &                    BOUNDARY(ng) % vG_north)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
       END IF
 # endif
 
 # ifndef ANA_TOBC
 !
-      DO i=1,NT(ng)
-        IF (LBC(iwest,isTvar(i),ng)%acquire) THEN
-          CALL get_ngfld (ng, iNLM, idTbry(iwest,i), BRY(ng)%ncid,      &
-     &                    1, BRY(ng), update(1),                        &
-     &                    JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),       &
-     &                    BOUNDARY(ng) % tG_west(:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
-        END IF
-      END DO
+      IF (LprocessOBC(ng)) THEN
+        DO i=1,NT(ng)
+          IF (LBC(iwest,isTvar(i),ng)%acquire) THEN
+            CALL get_ngfld (ng, iNLM, idTbry(iwest,i), BRY(ng)%ncid,    &
+     &                      1, BRY(ng), update(1),                      &
+     &                      JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),     &
+     &                      BOUNDARY(ng) % tG_west(:,:,:,i))
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
+          END IF
+        END DO
 
-      DO i=1,NT(ng)
-        IF (LBC(ieast,isTvar(i),ng)%acquire) THEN
-          CALL get_ngfld (ng, iNLM, idTbry(ieast,i), BRY(ng)%ncid,      &
-     &                    1, BRY(ng), update(1),                        &
-     &                    JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),       &
-     &                    BOUNDARY(ng) % tG_east(:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
-        END IF
-      END DO
+        DO i=1,NT(ng)
+          IF (LBC(ieast,isTvar(i),ng)%acquire) THEN
+            CALL get_ngfld (ng, iNLM, idTbry(ieast,i), BRY(ng)%ncid,    &
+     &                      1, BRY(ng), update(1),                      &
+     &                      JLB, JUB, N(ng), 2, 0, Mm(ng)+1, N(ng),     &
+     &                      BOUNDARY(ng) % tG_east(:,:,:,i))
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
+          END IF
+        END DO
 
-      DO i=1,NT(ng)
-        IF (LBC(isouth,isTvar(i),ng)%acquire) THEN
-          CALL get_ngfld (ng, iNLM, idTbry(isouth,i), BRY(ng)%ncid,     &
-     &                    1, BRY(ng), update(1),                        &
-     &                    ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),       &
-     &                    BOUNDARY(ng) % tG_south(:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
-        END IF
-      END DO
+        DO i=1,NT(ng)
+          IF (LBC(isouth,isTvar(i),ng)%acquire) THEN
+            CALL get_ngfld (ng, iNLM, idTbry(isouth,i), BRY(ng)%ncid,   &
+     &                      1, BRY(ng), update(1),                      &
+     &                      ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),     &
+     &                      BOUNDARY(ng) % tG_south(:,:,:,i))
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
+          END IF
+        END DO
 
-      DO i=1,NT(ng)
-        IF (LBC(inorth,isTvar(i),ng)%acquire) THEN
-          CALL get_ngfld (ng, iNLM, idTbry(inorth,i), BRY(ng)%ncid,     &
-     &                    1, BRY(ng), update(1),                        &
-     &                    ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),       &
-     &                    BOUNDARY(ng) % tG_north(:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
-        END IF
-      END DO
+        DO i=1,NT(ng)
+          IF (LBC(inorth,isTvar(i),ng)%acquire) THEN
+            CALL get_ngfld (ng, iNLM, idTbry(inorth,i), BRY(ng)%ncid,   &
+     &                      1, BRY(ng), update(1),                      &
+     &                      ILB, IUB, N(ng), 2, 0, Lm(ng)+1, N(ng),     &
+     &                      BOUNDARY(ng) % tG_north(:,:,:,i))
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
+          END IF
+        END DO
+      END IF
 # endif
 #endif
-
-#ifdef CLM_FILE
 !
 !=======================================================================
-!  Read in climatology data from CLIMATOLOGY NetCDF file.
+!  Read in data from Climatology NetCDF file.
 !=======================================================================
+
+#ifndef ANA_SSH
 !
-# if !defined ANA_SSH && defined ZCLIMATOLOGY
-      CALL get_2dfld (ng, iNLM, idSSHc, CLM(ng)%ncid,                   &
-     &                1, CLM(ng), update(1),                            &
-     &                LBi, UBi, LBj, UBj, 2, 1,                         &
-#  ifdef MASKING
-     &                GRID(ng) % rmask,                                 &
-#  endif
-     &                CLIMA(ng) % sshG)
-      IF (exit_flag.ne.NoError) RETURN
+!  Free-surface.
+!
+      IF (LsshCLM(ng)) THEN
+        CALL get_2dfld (ng, iNLM, idSSHc, CLM(ng)%ncid,                 &
+     &                  1, CLM(ng), update(1),                          &
+     &                  LBi, UBi, LBj, UBj, 2, 1,                       &
+# ifdef MASKING
+     &                  GRID(ng) % rmask,                               &
 # endif
-
-# if !defined ANA_M2CLIMA && defined M2CLIMATOLOGY
-      CALL get_2dfld (ng, iNLM, idUbcl, CLM(ng)%ncid,                   &
-     &                1, CLM(ng), update(1),                            &
-     &                LBi, UBi, LBj, UBj, 2, 1,                         &
-#  ifdef MASKING
-     &                GRID(ng) % umask,                                 &
-#  endif
-     &                CLIMA(ng) % ubarclmG)
-      IF (exit_flag.ne.NoError) RETURN
-
-      CALL get_2dfld (ng, iNLM, idVbcl, CLM(ng)%ncid,                   &
-     &                1, CLM(ng), update(1),                            &
-     &                LBi, UBi, LBj, UBj, 2, 1,                         &
-#  ifdef MASKING
-     &                GRID(ng) % vmask,                                 &
-#  endif
-     &                CLIMA(ng) % vbarclmG)
-      IF (exit_flag.ne.NoError) RETURN
+     &                  CLIMA(ng) % sshG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+      END IF
+#endif
+#ifndef ANA_M2CLIMA
+!
+!  2D momentum.
+!
+      IF (Lm2CLM(ng)) THEN
+        CALL get_2dfld (ng, iNLM, idUbcl, CLM(ng)%ncid,                 &
+     &                  1, CLM(ng), update(1),                          &
+     &                  LBi, UBi, LBj, UBj, 2, 1,                       &
+# ifdef MASKING
+     &                  GRID(ng) % umask,                               &
 # endif
-
-# ifdef SOLVE3D
-#  if !defined ANA_TCLIMA && defined TCLIMATOLOGY
+     &                  CLIMA(ng) % ubarclmG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+!
+        CALL get_2dfld (ng, iNLM, idVbcl, CLM(ng)%ncid,                 &
+     &                  1, CLM(ng), update(1),                          &
+     &                  LBi, UBi, LBj, UBj, 2, 1,                       &
+# ifdef MASKING
+     &                  GRID(ng) % vmask,                               &
+# endif
+     &                  CLIMA(ng) % vbarclmG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+      END IF
+#endif
+#ifdef SOLVE3D
+# ifndef ANA_M3CLIMA
+!
+!  3D momentum.
+!
+      IF (Lm3CLM(ng)) THEN
+        CALL get_3dfld (ng, iNLM, idUclm, CLM(ng)%ncid,                 &
+     &                  1, CLM(ng), update(1),                          &
+     &                  LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,             &
+#  ifdef MASKING
+     &                  GRID(ng) % umask,                               &
+#  endif
+     &                  CLIMA(ng) % uclmG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+!
+        CALL get_3dfld (ng, iNLM, idVclm, CLM(ng)%ncid,                 &
+     &                  1, CLM(ng), update(1),                          &
+     &                  LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,             &
+#  ifdef MASKING
+     &                  GRID(ng) % vmask,                               &
+#  endif
+     &                  CLIMA(ng) % vclmG)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+      END IF
+# endif
+# ifndef ANA_TCLIMA
+!
+!  Tracers.
+!
       ic=0
       DO i=1,NT(ng)
         IF (LtracerCLM(i,ng)) THEN
@@ -892,34 +1060,14 @@
           CALL get_3dfld (ng, iNLM, idTclm(i), CLM(ng)%ncid,            &
      &                    1, CLM(ng), update(1),                        &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,           &
-#   ifdef MASKING
+#  ifdef MASKING
      &                    GRID(ng) % rmask,                             &
-#   endif
+#  endif
      &                    CLIMA(ng) % tclmG(:,:,:,:,ic))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END DO
-#  endif
-
-#  if !defined ANA_M3CLIMA && defined M3CLIMATOLOGY
-      CALL get_3dfld (ng, iNLM, idUclm, CLM(ng)%ncid,                   &
-     &                1, CLM(ng), update(1),                            &
-     &                LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,               &
-#   ifdef MASKING
-     &                GRID(ng) % umask,                                 &
-#   endif
-     &                CLIMA(ng) % uclmG)
-      IF (exit_flag.ne.NoError) RETURN
-
-      CALL get_3dfld (ng, iNLM, idVclm, CLM(ng)%ncid,                   &
-     &                1, CLM(ng), update(1),                            &
-     &                LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,               &
-#   ifdef MASKING
-     &                GRID(ng) % vmask,                                 &
-#   endif
-     &                CLIMA(ng) % vclmG)
-      IF (exit_flag.ne.NoError) RETURN
-#  endif
 # endif
 #endif
 
@@ -943,7 +1091,8 @@
      &                  GRID(ng) % rmask,                               &
 # endif
      &                  OCEAN(ng) % zetaG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Read 2D momentum.
 !
@@ -954,7 +1103,8 @@
      &                  GRID(ng) % umask,                               &
 # endif
      &                  OCEAN(ng) % ubarG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         CALL get_2dfld (ng, iNLM, idVbar, FWD(ng)%ncid,                 &
      &                  1, FWD(ng), update(1),                          &
@@ -963,7 +1113,8 @@
      &                  GRID(ng) % vmask,                               &
 # endif
      &                  OCEAN(ng) % vbarG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 # ifdef SOLVE3D
 !
 !  Read in 3D momentum.
@@ -975,7 +1126,8 @@
      &                  GRID(ng) % umask,                               &
 #  endif
      &                  OCEAN(ng) % uG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         CALL get_3dfld (ng, iNLM, idVvel, FWD(ng)%ncid,                 &
      &                  1, FWD(ng), update(1),                          &
@@ -984,7 +1136,8 @@
      &                  GRID(ng) % vmask,                               &
 #  endif
      &                  OCEAN(ng) % vG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Read in 3D tracers.
 !
@@ -996,14 +1149,16 @@
      &                    GRID(ng) % rmask,                             &
 #  endif
      &                    OCEAN(ng) % tG(:,:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END DO
 # endif
       END IF
 #endif
 
-#if defined NLM_OUTER || defined TL_W4DPSAS           || \
-    defined W4DPSAS   || defined W4DPSAS_SENSITIVITY
+#if defined NLM_OUTER               || defined TL_W4DPSAS          ||\
+    defined W4DPSAS                 || defined W4DPSAS_SENSITIVITY ||\
+    defined W4DPSAS_FCT_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  Read weak contraint forcing snapshots. Notice that the forward
@@ -1021,7 +1176,9 @@
      &                  GRID(ng) % rmask,                               &
 # endif
      &                  OCEAN(ng) % zetaG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+
 # ifndef SOLVE3D
 !
 !  Read 2D momentum.
@@ -1033,7 +1190,8 @@
      &                  GRID(ng) % umask,                               &
 #  endif
      &                  OCEAN(ng) % ubarG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         CALL get_2dfld (ng, iNLM, idVbar, TLF(ng)%ncid,                 &
      &                  1, TLF(ng), update(1),                          &
@@ -1042,9 +1200,9 @@
      &                  GRID(ng) % vmask,                               &
 #  endif
      &                  OCEAN(ng) % vbarG)
-        IF (exit_flag.ne.NoError) RETURN
-# endif
-# ifdef SOLVE3D
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+# else
 !
 !  Read in 3D momentum.
 !
@@ -1055,7 +1213,8 @@
      &                  GRID(ng) % umask,                               &
 #  endif
      &                  OCEAN(ng) % uG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         CALL get_3dfld (ng, iNLM, idVvel, TLF(ng)%ncid,                 &
      &                  1, TLF(ng), update(1),                          &
@@ -1064,7 +1223,8 @@
      &                  GRID(ng) % vmask,                               &
 #  endif
      &                  OCEAN(ng) % vG)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Read in 3D tracers.
 !
@@ -1076,7 +1236,8 @@
      &                    GRID(ng) % rmask,                             &
 #  endif
      &                    OCEAN(ng) % tG(:,:,:,:,i))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END DO
 # endif
       END IF
@@ -1088,7 +1249,7 @@
 !  Turn off input data time wall clock.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, iNLM, 3)
+      CALL wclock_off (ng, iNLM, 3, __LINE__, __FILE__)
 #endif
 
       RETURN

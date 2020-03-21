@@ -1,9 +1,9 @@
 !
 !  ROMS/TOMS IO NetCDF variables.
 !
-!svn $Id: varinfo.dat 654 2013-03-12 17:11:03Z arango $
+!svn $Id: varinfo.dat 995 2020-01-10 04:01:28Z arango $
 !========================================================= Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                                !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
 !    See License_ROMS.txt                                                     !
 !==============================================================================
@@ -30,6 +30,8 @@
 !                       'v3dvar' => 3D V-variable.                            !
 !                       'w3dvar' => 3D W-variable.                            !
 !                       'b3dvar' => 3D BED-sediment.                          !
+!                       'l3dvar' => 3D spectral light variable.               !
+!                       'l4dvar' => 4D spectral light variable.               !
 !       scale         Scale to convert input data to model units.             !
 !                                                                             !
 !  Enclose Vinfo variables with single quotes so this file can be read with   !
@@ -62,7 +64,7 @@
 !------------------------------------------------------------------------------
 !
 
-'$URL: https://www.myroms.org/svn/src/tags/roms-3.6/ROMS/External/varinfo.dat $'
+'$URL: https://www.myroms.org/svn/src/trunk/ROMS/External/varinfo.dat $'
 
 !
 !------------------------------------------------------------------------------
@@ -169,6 +171,42 @@
   'r3dvar'
   1.0d0
 
+'u_sur'                                            ! Output
+  'surface u-momentum component'
+  'meter second-1'                                 ! [m/s]
+  'u_sur, scalar, series'
+  'ocean_time'
+  'idUsur'
+  'u2dvar'
+  1.0d0
+
+'v_sur'                                            ! Output
+  'surface v-momentum component'
+  'meter second-1'                                 ! [m/s]
+  'v_sur, scalar, series'
+  'ocean_time'
+  'idVsur'
+  'v2dvar'
+  1.0d0
+
+'u_sur_eastward'                                   ! Output
+  'surface eastward momentum component at RHO-points'
+  'meter second-1'                                 ! [m/s]
+  'u_sur_eastward, scalar, series'
+  'ocean_time'
+  'idUsuE'
+  'r2dvar'
+  1.0d0
+
+'v_sur_northward'                                  ! Output
+  'surface northward momentum component at RHO-points'
+  'meter second-1'                                 ! [m/s]
+  'v_sur_northward, scalar, series'
+  'ocean_time'
+  'idVsuN'
+  'r2dvar'
+  1.0d0
+
 'w'                                                ! Output
   'vertical momentum component'
   'meter second-1'                                 ! [m/s]
@@ -214,11 +252,74 @@
   'r3dvar'
   1.0d0
 
+'temp_sur'                                         ! Output
+  'surface potential temperature'
+  'Celsius'                                        ! [Celsius]
+  'temp_sur, scalar, series'
+  'ocean_time'
+  'idsurT(itemp)'
+  'r2dvar'
+  1.0d0
+
+'salt_sur'                                         ! Output
+  'surface salinity'
+  'nondimensional'                                 ! [PSU]
+  'salinity, scalar, series'
+  'ocean_time'
+  'idsurT(isalt)'
+  'r2dvar'
+  1.0d0
+
+'z_rho'                                            ! Output
+  'depth of RHO-points'
+  'meter'                                          ! [meter]
+  'z_rho, scalar, series'
+  'ocean_time'
+  'idpthR'
+  'r3dvar'
+  1.0d0
+
+'z_u'                                              ! Output
+  'depth of U-points'
+  'meter'                                          ! [meter]
+  'z_u, scalar, series'
+  'ocean_time'
+  'idpthU'
+  'u3dvar'
+  1.0d0
+
+'z_v'                                              ! Output
+  'depth of V-points'
+  'meter'                                          ! [meter]
+  'z_v, scalar, series'
+  'ocean_time'
+  'idpthV'
+  'v3dvar'
+  1.0d0
+
+'z_w'                                              ! Output
+  'depth of W-points'
+  'meter'                                          ! [meter]
+  'z_w, scalar, series'
+  'ocean_time'
+  'idpthW'
+  'w3dvar'
+  1.0d0
+
 !
 !------------------------------------------------------------------------------
 !  Wet/dry masks.
 !------------------------------------------------------------------------------
 !
+
+'wetdry_mask_psi'                                  ! Input/Output
+  'wet/dry mask on PSI-points'
+  'nondimensional'
+  'wetdry_mask_psi, scalar, series'
+  'ocean_time'
+  'idPwet'
+  'p2dvar'
+  1.0d0
 
 'wetdry_mask_rho'                                  ! Input/Output
   'wet/dry mask on RHO-points'
@@ -640,7 +741,7 @@
   'bwf_time'
   'idTbot(isalt)'
   'r2dvar'
-  1.157407d-7                                     ! 0.01/86400
+  1.157407d-7                                      ! 0.01/86400
 
 !
 !------------------------------------------------------------------------------
@@ -722,7 +823,7 @@
 
 'tisrf'
   'temperature of ice surface'
-  'degrees Kelvin'
+  'degrees Celcius'
   'surface temperature, scalar, series'
   'ocean_time'
   'idTice'
@@ -749,7 +850,7 @@
 
 'chu_iw'
   'ice-water momentum transfer coefficient'
-  'metre second-1'
+  'meter second-1'
   'transfer coefficient, scalar, series'
   'ocean_time'
   'idChuiw'
@@ -785,7 +886,7 @@
 
 'iomflx'
   'ice-ocean mass flux'
-  'metre/sec'
+  'meter second-1'
   'ice-ocean mass flux, scalar, series'
   'ocean_time'
   'idIomflx'
@@ -1323,18 +1424,18 @@
   'r2dvar'
   1.0d0
 
-'latent'                                           ! Input/Output
+'latent'                                           ! Output
   'net latent heat flux'
-  'watt meter-2'                                   ! Input:  [Watt/m2]
+  'watt meter-2'
   'latent heat flux, scalar, series'               ! [Celsius m/s]
   'lhf_time'                                       ! Output: [Watt/m2]
   'idLhea'
   'r2dvar'
   1.0d0
 
-'sensible'                                         ! Input/Output
+'sensible'                                         ! Output
   'net sensible heat flux'
-  'watt meter-2'                                   ! Input:  [Watt/m2]
+  'watt meter-2'
   'sensible heat flux, scalar, series'             ! [Celsius m/s]
   'shf_time'                                       ! Output: [Watt/m2]
   'idShea'
@@ -1405,7 +1506,7 @@
   1.0
 
 'Pwave_top'                                        ! Input
-  'wind-induced surface wave Period'
+  'wind-induced peak surface wave period'
   'second'                                         ! [s]
   'Pwave_top, scalar, series'
   'wave_time'
@@ -1962,6 +2063,42 @@
 
 !
 !------------------------------------------------------------------------------
+!  Nudging to climatology time scales. We can have a generic variable for all
+!  tracer nudging time scales or individual variables for each active and
+!  passive tracer. The metadata for the individual variables is set internally
+!  in "mod_ncparam".
+!------------------------------------------------------------------------------
+!
+
+'M2_NudgeCoef'                                     ! Input
+  '2D momentum inverse nudging coefficients'
+  'day-1'                                          ! [1/s]
+  'M2_NudgeCoef, scalar'
+  'nulvar'
+  'idM2nc'
+  'r2dvar'
+  1.157407d-5                                      ! 1/86400
+
+'M3_NudgeCoef'                                     ! Input
+  '3D momentum inverse nudging coefficients'
+  'day-1'                                          ! [1/s]
+  'M3_NudgeCoef, scalar'
+  'nulvar'
+  'idM3nc'
+  'r3dvar'
+  1.157407d-5                                      ! 1/86400
+
+'tracer_NudgeCoef'                                 ! Input
+  'generic tracer inverse nudging coefficients'
+  'day-1'                                          ! [1/s]
+  'tracer_NudgeCoef, scalar'
+  'nulvar'
+  'idgTnc'
+  'r3dvar'
+  1.157407d-5                                      ! 1/86400
+
+!
+!------------------------------------------------------------------------------
 !  Adjoint sensitivy variables.  The units below are the same as the state.
 !  However, the input functional can have squared, energy, nondimensional,
 !  or other units.
@@ -2011,6 +2148,15 @@
   'v3d_time'
   'idVads'
   'v3dvar'
+  1.0d0
+
+'w'                                                ! Input
+  'w-momentum component functional'
+  'meter second-1'                                 ! [m/s]
+  'w-velocity, scalar, series'
+  'v3d_time'
+  'idWads'
+  'w3dvar'
   1.0d0
 
 'temp'                                             ! Input
@@ -2102,138 +2248,6 @@
   'salt_time, scalar, series'
   'salt_time'
   'idTtlf(isalt)'
-  'r3dvar'
-  1.0d0
-
-!
-!------------------------------------------------------------------------------
-!  Observation variables: Optimal Interpolation and Nudging.
-!------------------------------------------------------------------------------
-!
-
-'SSH'                                              ! Input
-  'sea surface height observations'
-  'meter'                                          ! [m]
-  'SSHobs, scalar, series'
-  'SSHobs_time'
-  'idSSHo'
-  'r2dvar'
-  1.0d0
-
-'SSH_err'                                          ! Input
-  'sea surface height error variance'
-  'nondimensional'                                 ! [nondimenisional]
-  'SSH_err, scalar, series'
-  'SSHobs_time'
-  'idSSHe'
-  'r2dvar'
-  1.0d0
-
-'u'                                                ! Input
-  'u-momentum component observations'
-  'meter second-1'                                 ! [m/s]
-  'Uobs, scalar, series'
-  'Vobs_time'
-  'idUobs'
-  'u3dvar'
-  1.0d0
-
-'v'                                                ! Input
-  'v-momentum component observations'
-  'meter second-1'                                 ! [m/s]
-  'Vobs, scalar, series'
-  'Vobs_time'
-  'idVobs'
-  'v3dvar'
-  1.0d0
-
-'Evel'                                             ! Input
-  'horizontal velocity error variance'
-  'nondimensional'                                 ! [nondimensional]
-  'Evel, scalar, series'
-  'Vobs_time'
-  'idUVer'
-  'r3dvar'
-  1.0d0
-
-'Usur'                                             ! Input
-  'surface u-momentum component observations'
-  'meter second-1'                                 ! [m/s]
-  'Usur, scalar, series'
-  'Vsur_time'
-  'idUsur'
-  'u2dvar'
-  1.0d0
-
-'Vsur'                                             ! Input
-  'surface v-momentum component observations'
-  'meter second-1'                                 ! [m/s]
-  'Vsur, scalar, series'
-  'Vsur_time'
-  'idVsur'
-  'v2dvar'
-  1.0d0
-
-'Esur'                                             ! Input
-  'surface velocity error variance'
-  'nondimensional'                                 ! [nondimensional]
-  'Esur, scalar, series'
-  'Vsur_time'
-  'idUVse'
-  'r2dvar'
-  1.0d0
-
-'SST'                                              ! Input
-  'sea surface temperature observations'
-  'Celsius'                                        ! [Celsius]
-  'SSTobs, scalar, series'
-  'SSTobs_time'
-  'idSSTo'
-  'r2dvar'
-  1.0d0
-
-'SST_err'                                          ! Input
-  'sea surface temperature error variance'
-  'nondimensional'                                 ! [nondimensional]
-  'SST_err, scalar, series'
-  'SSTobs_time'
-  'idSSTe'
-  'r2dvar'
-  1.0d0
-
-'temp'                                             ! Input
-  'potential temperature observations'
-  'Celsius'                                        ! [nondimensional]
-  'Tobs, scalar, series'
-  'Tobs_time'
-  'idTobs(itemp)'
-  'r3dvar'
-  1.0d0
-
-'temp_err'                                         ! Input
-  'potential temperature error variance'
-  'nondimensional'                                 ! [nondimensional]
-  'temp_err, scalar, series'
-  'Tobs_time'
-  'idTerr(itemp)'
-  'r3dvar'
-  1.0d0
-
-'salt'                                             ! Input
-  'salinity observations'
-  'nondimensional'                                 ! [PSU]
-  'Sobs, scalar, series'
-  'Sobs_time'
-  'idTobs(isalt)'
-  'r3dvar'
-  1.0d0
-
-'salt_err'                                         ! Input
-  'salinity error variance'
-  'nondimensional'                                 ! [nondimensional]
-  'salt_err, scalar, series'
-  'Sobs_time'
-  'idTerr(isalt)'
   'r3dvar'
   1.0d0
 
@@ -2849,7 +2863,7 @@
 !
 !---------------------------------------------------------------------
 !  Define names of variables associated with Fennel et al (2006),
-!  NEMURO or NPZD ecosystem models.
+!  NEMURO, NPZD or Hypoxia ecosystem models.
 !---------------------------------------------------------------------
 !
 
@@ -3201,6 +3215,15 @@
   'Oxygen, scalar, series'
   'ocean_time'
   'idTads(iOxyg)'
+  'r3dvar'
+  1.0d0
+
+'respiration'                                      ! Input
+  'total respiration rate'
+  'millimole_oxygen meter-3 day-1'                 ! [millimoe/m3/day]
+  'respiration, scalar, series'
+  'respiration_time'
+  'idResR'
   'r3dvar'
   1.0d0
 
@@ -4123,10 +4146,92 @@
 
 'SdeC_north'                                       ! Input
   'small fraction carbon detritus northern boundary condition'
-  'millimole_carbon meter-3'
-  'SdeC_north, scalar, series'                     ! [millimole/m3]
+  'millimole_carbon meter-3'                       ! [millimole/m3]
+  'SdeC_north, scalar, series'
   'SdeC_time'
   'idTbry(inorth,iSDeC)'
+  'nulvar'
+  1.0d0
+
+!
+!-----------------------------------------------------------------------
+!  Define names of variables associated with Red Tide module.
+!-----------------------------------------------------------------------
+!
+
+'dinoflagellate'                                   ! Input/Output
+  'red tide dinoflagellate concentration'
+  'cell meter-3'                                   ! [cell/m3]
+  'dinoflagellate, scalar, series'
+  'ocean_time'
+  'idTvar(iDino)'
+  'r3dvar'
+  1.0d0
+
+'cyst_bottom'                                      ! Input
+  'red tide dinoflagellate bottom cyst concentration'
+  'cell meter-2'                                   ! [cell/m2]
+  'cyst_bottom, scalar, series'
+  'cyst_time'
+  'idCyst'
+  'r2dvar'
+  1.0d0
+
+'swrad_avg'                                        ! Input/Output
+  'averaged solar shortwave radiation flux'
+  'watt meter-2'                                   ! Input:  [Watt/m2]
+  'averaged shortwave radiation, scalar, series'   ! [Celsius m/s]
+  'srf_time'                                       ! Output: [Watt/m2]
+  'idAsrf'
+  'r2dvar'
+  1.0d0
+
+'DIN_obs'                                          ! Input
+  'observed dissolved inorganic nutrient'
+  'millimole meter-3'                              ! [millimole/m3]
+  'DIN_obs, scalar, series'
+  'DIN_time'
+  'idODIN'
+  'r3dvar'
+  1.0d0
+
+!
+!  Boundary variables.
+!
+
+'dinoflagellate_east'                              ! Input
+  'red tide dinoflagellate eastern boundary condition'
+  'cells meter-3'                                  ! [cell/m3]
+  'dinoflagellate_east, scalar, series'
+  'dinoflagellate_time'
+  'idTbry(ieast,iDino)'
+  'nulvar'
+  1.0d0
+
+'dinoflagellate_west'                              ! Input
+  'red tide dinoflagellate western boundary condition'
+  'cells meter-3'                                  ! [cell/m3]
+  'dinoflagellate_west, scalar, series'
+  'dinoflagellate_time'
+  'idTbry(iwest,iDino)'
+  'nulvar'
+  1.0d0
+
+'dinoflagellate_south'                             ! Input
+  'red tide dinoflagellate southern boundary condition'
+  'cells meter-3'                                  ! [cell/m3]
+  'dinoflagellate_south, scalar, series'
+  'dinoflagellate_time'
+  'idTbry(isouth,iDino)'
+  'nulvar'
+  1.0d0
+
+'dinoflagellate_north'                             ! Input
+  'red tide dinoflagellate northern boundary condition'
+  'cells meter-3'                                  ! [cell/m3]
+  'dinoflagellate_north, scalar, series'
+  'dinoflagellate_time'
+  'idTbry(inorth,iDino)'
   'nulvar'
   1.0d0
 
@@ -4359,6 +4464,118 @@
   'ocean_time'
   'idTvar(iPigs)'
   'r3dvar'
+  1.0d0
+
+!
+!  Diagnostic Ecosim variables.
+!
+
+'surface_irradiance'                               ! Output
+  'surface spectral light irradiance'
+  'micromole meter-2 s-1 nm-1'                     ! [micromole/m2/s/nm]
+  'surface_irradiance, scalar, series'
+  'ocean_time'
+  'iDbio3(idSpIr)'
+  'l3dvar'
+  1.0d0
+
+'downward_irradiance'                              ! Output
+  'spectral downward light irradiance'
+  'micromole meter-2 s-1 nm-1'                     ! [micromole/m2/s/nm]
+  'downward_irradiance, scalar, series'
+  'ocean_time'
+  'iDbio4(iddIrr)'
+  'l4dvar'
+  1.0d0
+
+'scalar_irradiance'                                ! Output
+  'scalar spectral light irradiance'
+  'micromole meter-2 s-1 nm-1'                     ! [micromole/m2/s/nm]
+  'scalar_irradiance, scalar, series'
+  'ocean_time'
+  'iDbio4(idsIrr)'
+  'l4dvar'
+  1.0d0
+
+'light_cosine'                                     ! Output
+  'underwater light spectral average cosine of zenith angle'
+  'nondimensional'                                 ! [nondimensional]
+  'light_cosine, scalar, series'
+  'ocean_time'
+  'iDbio4(idAcos)'
+  'l4dvar'
+  1.0d0
+
+'light_attenuation'                                ! Output
+  'diffuse light attenuation'
+  'meter-1'                                        ! [1/m]
+  'light_attenuation, scalar, series'
+  'ocean_time'
+  'iDbio4(idLatt)'
+  'l4dvar'
+  1.0d0
+
+'Phy_absorption'                                   ! Output
+  'phytoplankton optical absorption'
+  'meter-1'                                        ! [1/m]
+  'Phy_absorption, scalar, series'
+  'ocean_time'
+  'iDbio4(idaPHY)'
+  'l4dvar'
+  1.0d0
+
+'detrital_absorption'                              ! Output
+  'detrital optical absorption'
+  'meter-1'                                        ! [1/m]
+  'Det_absorption, scalar, series'
+  'ocean_time'
+  'iDbio4(idaDET)'
+  'l4dvar'
+  1.0d0
+
+'CDC_absorption'                                   ! Output
+  'color degradational matter optical absorption'
+  'meter-1'                                        ! [1/m]
+  'CDC_absorption, scalar, series'
+  'ocean_time'
+  'iDbio4(idaCDC)'
+  'l4dvar'
+  1.0d0
+
+'Phy_scattering'                                   ! Output
+  'phytoplankton optical scattering'
+  'meter-1'                                        ! [1/m]
+  'Phy_scattering, scalar, series'
+  'ocean_time'
+  'iDbio4(idsPHY)'
+  'l4dvar'
+  1.0d0
+
+'Phy_backscattering'                               ! Output
+  'phytoplankton optical backscattering'
+  'meter-1'                                        ! [1/m]
+  'Phy_backscattering, scalar, series'
+  'ocean_time'
+  'iDbio4(idbPHY)'
+  'l4dvar'
+  1.0d0
+
+'total_scattering'                                 ! Output
+  'total optical scattering'
+  'meter-1'                                        ! [1/m]
+  'total_scattering, scalar, series'
+  'ocean_time'
+  'iDbio4(idsTOT)'
+  'l4dvar'
+  1.0d0
+
+'total_backscattering'                             ! Output
+  'total optical backscattering'
+  'meter-1'                                        ! [1/m]
+  'total_backscattering, scalar, series'
+  'ocean_time'
+  'iDbio4(idbTOT)'
+  'l4dvar'
   1.0d0
 
 !
@@ -5209,11 +5426,20 @@
   1.0d0
 
 'obs_type'                                         ! Input
-  'associated model state variable type'
+  'model state variable associated with observation'
   'nondimensional'                                 ! [nondimensional]
   'nulvar'
   'datum'
   'idOtyp'
+  'nulvar'
+  1.0d0
+
+'obs_provenance'                                   ! Input
+  'observation origin'
+  'nondimensional'                                 ! [nondimensional]
+  'nulvar'
+  'datum'
+  'idOpro'
   'nulvar'
   1.0d0
 
@@ -5223,6 +5449,24 @@
   'nulvar'
   'datum'
   'idObsT'
+  'nulvar'
+  1.0d0
+
+'obs_lon'                                         ! Input
+  'observation longitude'
+  'degrees_east'                                  ! [degrees_east]
+  'nulvar'
+  'datum'
+  'idOlon'
+  'nulvar'
+  1.0d0
+
+'obs_lat'                                         ! Input
+  'observation latitude'
+  'degrees_north'                                 ! [degrees_north]
+  'nulvar'
+  'datum'
+  'idOlat'
   'nulvar'
   1.0d0
 
@@ -5271,18 +5515,18 @@
   'nulvar'
   1.0d0
 
-'obs_variance'                                     ! Input
-  'observation global variance'
-  'squared state variable units'                   ! [squared state units]
+'obs_meta'                                         ! Input
+  'observation meta value'
+  'nondimensional'                                 ! [Meta units]
   'nulvar'
   'datum'
-  'idOvar'
+  'idOmet'
   'nulvar'
   1.0d0
 
 'obs_error'                                        ! Input
-  'observation error, assigned weight'
-  'inverse squared state variable units'           ! [1/(squared state units)]
+  'observation error covariance'
+  'squared state variable units'                   ! [squared state units]
   'nulvar'
   'datum'
   'idOerr'
@@ -5318,7 +5562,7 @@
 
 'NLmodel_initial'                                  ! Output
   'initial nonlinear model at observation locations'
-  'nulvar'
+  'state variable units'
   'nulvar'
   'datum'
   'idNLmi'
@@ -5327,7 +5571,7 @@
 
 'NLmodel_value'                                    ! Output
   'nonlinear model at observation locations'
-  'nulvar'
+  'state variable units'
   'nulvar'
   'datum'
   'idNLmo'
@@ -5343,9 +5587,27 @@
   'nulvar'
   1.0d0
 
+'increment '                                       ! Output
+  '4D-Var increment: analysis minus background, dx_a = H(x_a) - H(x_b)'
+  'state variable units'                           ! [state units]
+  'nulvar'
+  'datum'
+  'idIncr'
+  'nulvar'
+  1.0d0
+
+'innovation'                                       ! Output
+  '4D-Var innovation: observation minus background, d_b = y - H(x_b)'
+  'state variable units'                           ! [state units]
+  'nulvar'
+  'datum'
+  'idInno'
+  'nulvar'
+  1.0d0
+
 'misfit_initial'                                   ! Output
   'initial model-observation misfit'
-  'nulvar'
+  'nondimensional'
   'nulvar'
   'datum'
   'idMOMi'
@@ -5354,9 +5616,36 @@
 
 'misfit_final'                                     ! Output
   'final model-observation misfit'
-  'nulvar'
+  'nondimensional'
   'nulvar'
   'datum'
   'idMOMf'
+  'nulvar'
+  1.0d0
+
+'residual'                                       ! Output
+  '4D-Var residual: observation minus analysis, d_a = y - H(x_b + dx_a)'
+  'state variable units'                           ! [state units]
+  'nulvar'
+  'datum'
+  'idResi'
+  'nulvar'
+  1.0d0
+
+'BgError_value'                                    ! Output
+  'Background error standard deviation at observation locations'
+  'state variable units'                           ! [state units]
+  'nulvar'
+  'datum'
+  'idBgEr'
+  'nulvar'
+  1.0d0
+
+'BgThresh_value'                                   ! Output
+  'Threshold number of standard deviations for background quality control of observations'
+  'nondimensional'
+  'nulvar'
+  'datum'
+  'idBgTh'
   'nulvar'
   1.0d0

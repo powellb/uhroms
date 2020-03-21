@@ -1,8 +1,8 @@
       SUBROUTINE tl_uv3dmix2 (ng, tile)
 !
-!svn $Id: tl_uv3dmix2_s.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tl_uv3dmix2_s.h 995 2020-01-10 04:01:28Z arango $
 !************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
@@ -20,8 +20,8 @@
 !                                                                      !
 !      Sadourny, R. and K. Maynard, 1997: Formulations of              !
 !         lateral diffusion in geophysical fluid dynamics              !
-!         models, In "Numerical Methods of Atmospheric and             !
-!         Oceanic Modelling". Lin, Laprise, and Ritchie,               !
+!         models, In Numerical Methods of Atmospheric and              !
+!         Oceanic Modelling. Lin, Laprise, and Ritchie,                !
 !         Eds., NRC Research Press, 547-556.                           !
 !                                                                      !
 !      Griffies, S.M. and R.W. Hallberg, 2000: Biharmonic              !
@@ -52,7 +52,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 30)
+      CALL wclock_on (ng, iTLM, 30, __LINE__, __FILE__)
 #endif
       CALL tl_uv3dmix2_tile (ng, tile,                                  &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -88,7 +88,7 @@
      &                       OCEAN(ng) % tl_u,                          &
      &                       OCEAN(ng) % tl_v)
 #ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 30)
+      CALL wclock_off (ng, iTLM, 30, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE tl_uv3dmix2

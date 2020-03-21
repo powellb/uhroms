@@ -1,10 +1,10 @@
 #include "cppdefs.h"
-      SUBROUTINE checkvars (ng, model, ncname, string, Nrec, Nvar,      &
-     &                      tvarnam, get_var, have_var)
+      SUBROUTINE checkvars (ng, model, ncname, ncid, string, Nrec,      &
+     &                      Nvar,tvarnam, get_var, have_var)
 !
-!svn $Id: checkvars.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: checkvars.F 1012 2020-03-04 22:09:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -17,6 +17,7 @@
 !     ng         Nested grid number.                                   !
 !     model      Calling model identifier.                             !
 !     ncname     NetCDF file name.                                     !
+!     ncid       NetCDF file ID.                                       !
 !     string     Identification string.                                !
 !     Nvar       Size of logical switches arrays.                      !
 !                                                                      !
@@ -45,9 +46,11 @@
 #endif
       USE mod_scalars
 !
+      USE strings_mod, ONLY : FoundError
+!
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, model, Nvar
+      integer, intent(in) :: ng, model, ncid, Nvar
       integer, intent(inout) :: Nrec
 
       character (len=*), intent(in) :: ncname
@@ -62,7 +65,7 @@
 !
       integer :: IDmod, i, itrc
 !
-      SourceFile='checkvars.F'
+      SourceFile=__FILE__
 !
 !-----------------------------------------------------------------------
 !  Determine state variables needed and check if they are available in
@@ -80,14 +83,18 @@
 !
 !  Inquire about the dimensions and check for consistency.
 !
-      CALL netcdf_check_dim (ng, IDmod, ncname)
-      IF (exit_flag.ne.NoError) RETURN
+      CALL netcdf_check_dim (ng, IDmod, ncname,                         &
+     &                       ncid = ncid)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
       Nrec=rec_size
 !
 !  Inquire about the variables.
 !
-      CALL netcdf_check_var (ng, model, ncname)
-      IF (exit_flag.ne.NoError) RETURN
+      CALL netcdf_check_var (ng, IDmod, ncname,                         &
+     &                       ncid = ncid)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !  Initialize logical switches.
 !
@@ -97,11 +104,13 @@
       END DO
 !
 !  Determine state variables to read from input NetCDF file.  Notice
-!  that these state variable are only assigned if input flag model < 8.
-!  Higher values are used to process only boundary condition or
-!  surface forcing in the variational data assimilation algorithms.
+!  that these state variable are only assigned if input flag model < 12,
+!  model = 14, or model = 15. That is, all the state variables associated
+!  with ROMS prognostic equations.  The remaining values are used to
+!  process open boundary condition or surface forcing variable in the
+!  4D-Var control vector.
 !
-      IF (model.lt.8) THEN
+      IF ((model.le.11).or.(model.eq.14).or.(model.eq.15)) THEN
 #ifdef ANA_INITIAL
         IF (nrrec(ng).ne.0) THEN
           get_var(idFsur)=.TRUE.
@@ -117,8 +126,10 @@
         END IF
 #else
         get_var(idFsur)=.TRUE.
-        get_var(idUbar)=.TRUE.
-        get_var(idVbar)=.TRUE.
+        IF (model.ne.7) THEN        ! not needed by impulse forcing
+          get_var(idUbar)=.TRUE.
+          get_var(idVbar)=.TRUE.
+        END IF
 # ifdef SOLVE3D
         get_var(idUvel)=.TRUE.
         get_var(idVvel)=.TRUE.
@@ -224,11 +235,11 @@
       END IF
 #ifdef ADJUST_BOUNDARY
 !
-!  Determine 4DVar surface forcing variables to adjust.
+!  Determine 4DVar boundary variables to adjust.
 !
       IF ((model.eq.iADM).or.(model.eq.iTLM).or.(model.eq.iNLM).or.     &
-     &    (model.eq.iRPM).or.(model.eq.8).or.(model.eq.10).or.          &
-     &    (model.eq.12)) THEN
+     &    (model.eq.iRPM).or.(model.eq.5).or.(model.eq.12).or.          &
+     &    (model.eq.16)) THEN
         IF (ANY(Lobc(:,isFsur,ng))) THEN
           get_var(idSbry(isFsur))=.TRUE.
         END IF
@@ -258,8 +269,8 @@
 !  Determine 4DVar surface forcing variables to adjust.
 !
       IF ((model.eq.iADM).or.(model.eq.iTLM).or.(model.eq.iNLM).or.     &
-     &    (model.eq.iRPM).or.(model.eq.9).or.(model.eq.11).or.          &
-     &    (model.eq.12)) THEN
+     &    (model.eq.iRPM).or.(model.eq.5).or.(model.eq.13).or.          &
+     &    (model.eq.17)) THEN
 # ifdef ADJUST_STFLUX
         DO itrc=1,NT(ng)
           IF (Lstflux(itrc,ng)) THEN

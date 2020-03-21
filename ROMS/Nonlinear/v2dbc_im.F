@@ -2,9 +2,9 @@
 
       MODULE v2dbc_mod
 !
-!svn $Id: v2dbc_im.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: v2dbc_im.F 995 2020-01-10 04:01:28Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -58,9 +58,13 @@
 !
       USE mod_param
       USE mod_boundary
+      USE mod_clima
       USE mod_forces
       USE mod_grid
       USE mod_ncparam
+#ifdef NESTING
+      USE mod_nesting
+#endif
       USE mod_scalars
 !
 !  Imported variable declarations.
@@ -86,12 +90,19 @@
 !
       integer :: Jmin, Jmax
       integer :: i, j, know
+#ifdef NESTING
+      integer :: Idg, Jdg, cr, dg, m, rg, tnew, told
+#endif
 
       real(r8), parameter :: eps = 1.0E-20_r8
 
-      real(r8) :: Ce, Cx
+      real(r8) :: Ce, Cx, Ze
       real(r8) :: bry_pgr, bry_cor, bry_str, bry_val
-      real(r8):: cff, cff1, cff2, dt2d, dVde, dVdt, dVdx, tau
+      real(r8) :: cff, cff1, cff2, cff3, dt2d, dVde, dVdt, dVdx
+      real(r8) :: obc_in, obc_out, phi, tau
+#if defined ATM_PRESS && defined PRESS_COMPENSATE
+      real(r8) :: OneAtm, fac
+#endif
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: grad
 
@@ -111,6 +122,10 @@
         know=kstp
         dt2d=dtfast(ng)
       END IF
+#if defined ATM_PRESS && defined PRESS_COMPENSATE
+      OneAtm=1013.25_r8                  ! 1 atm = 1013.25 mb
+      fac=100.0_r8/(g*rho0)
+#endif
 !
 !-----------------------------------------------------------------------
 !  Lateral boundary conditions at the southern edge.
@@ -133,12 +148,25 @@
               dVde=vbar(i,Jstr+1,kout)-vbar(i,Jstr+2,kout)
 
               IF (LBC(isouth,isVbar,ng)%nudging) THEN
-                IF ((dVdt*dVde).lt.0.0_r8) THEN
-                  tau=M2obc_in(ng,isouth)
+                IF (LnudgeM2CLM(ng)) THEN
+                  obc_out=0.5_r8*                                       &
+     &                    (CLIMA(ng)%M2nudgcof(i,Jstr-1)+               &
+     &                     CLIMA(ng)%M2nudgcof(i,Jstr  ))
+                  obc_in =obcfac(ng)*obc_out
                 ELSE
-                  tau=M2obc_out(ng,isouth)
+                  obc_out=M2obc_out(ng,isouth)
+                  obc_in =M2obc_in (ng,isouth)
                 END IF
+                IF ((dVdt*dVde).lt.0.0_r8) THEN
+                  tau=obc_in
+                ELSE
+                  tau=obc_out
+                END IF
+#ifdef IMPLICIT_NUDGING
+                IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+#else
                 tau=tau*dt2d
+#endif
               END IF
 
               IF ((dVdt*dVde).lt.0.0_r8) dVdt=0.0_r8
@@ -167,9 +195,16 @@
      &                          (cff+Ce)
 
               IF (LBC(isouth,isVbar,ng)%nudging) THEN
+#ifdef IMPLICIT_NUDGING
+                phi=dt(ng)/(tau+dt(ng))
+                vbar(i,Jstr,kout)=(1.0_r8-phi)*vbar(i,Jstr,kout)+       &
+     &                            phi*BOUNDARY(ng)%vbar_south(i)
+
+#else
                 vbar(i,Jstr,kout)=vbar(i,Jstr,kout)+                    &
      &                            tau*(BOUNDARY(ng)%vbar_south(i)-      &
      &                                 vbar(i,Jstr,know))
+#endif
               END IF
 #ifdef MASKING
               vbar(i,Jstr,kout)=vbar(i,Jstr,kout)*                      &
@@ -228,10 +263,92 @@
      &                            GRID(ng)%h(i,Jstr  )+                 &
      &                            zeta(i,Jstr  ,know)))
               Ce=SQRT(g*cff)
+#if defined ATM_PRESS && defined PRESS_COMPENSATE
+              vbar(i,Jstr,kout)=bry_val-                                &
+     &                          Ce*(0.5_r8*                             &
+     &                              (zeta(i,Jstr-1,know)+               &
+     &                               zeta(i,Jstr  ,know)+               &
+     &                               fac*(FORCES(ng)%Pair(i,Jstr-1)+    &
+     &                                    FORCES(ng)%Pair(i,Jstr  )-    &
+     &                                    2.0_r8*OneAtm))-              &
+     &                              BOUNDARY(ng)%zeta_south(i))
+#else
               vbar(i,Jstr,kout)=bry_val-                                &
      &                          Ce*(0.5_r8*(zeta(i,Jstr-1,know)+        &
      &                                      zeta(i,Jstr  ,know))-       &
      &                              BOUNDARY(ng)%zeta_south(i))
+#endif
+#ifdef MASKING
+              vbar(i,Jstr,kout)=vbar(i,Jstr,kout)*                      &
+     &                          GRID(ng)%vmask(i,Jstr)
+#endif
+            END IF
+          END DO
+!
+!  Southern edge, Shchepetkin boundary condition (Maison et al., 2010).
+!
+        ELSE IF (LBC(isouth,isVbar,ng)%Shchepetkin) THEN
+          DO i=Istr,Iend
+            IF (LBC_apply(ng)%south(i)) THEN
+#if defined SSH_TIDES && !defined UV_TIDES
+              IF (LBC(isouth,isFsur,ng)%acquire) THEN
+                bry_pgr=-g*(zeta(i,Jstr,know)-                          &
+     &                      BOUNDARY(ng)%zeta_south(i))*                &
+     &                  0.5_r8*GRID(ng)%pn(i,Jstr)
+              ELSE
+                bry_pgr=-g*(zeta(i,Jstr  ,know)-                        &
+     &                      zeta(i,Jstr-1,know))*                       &
+     &                  0.5_r8*(GRID(ng)%pn(i,Jstr-1)+                  &
+     &                          GRID(ng)%pn(i,Jstr  ))
+              END IF
+# ifdef UV_COR
+              bry_cor=-0.125_r8*(ubar(i  ,Jstr-1,know)+                 &
+     &                           ubar(i+1,Jstr-1,know)+                 &
+     &                           ubar(i  ,Jstr  ,know)+                 &
+     &                           ubar(i+1,Jstr  ,know))*                &
+     &                          (GRID(ng)%f(i,Jstr-1)+                  &
+     &                           GRID(ng)%f(i,Jstr  ))
+# else
+              bry_cor=0.0_r8
+# endif
+              cff1=1.0_r8/(0.5_r8*(GRID(ng)%h(i,Jstr-1)+                &
+     &                             zeta(i,Jstr-1,know)+                 &
+     &                             GRID(ng)%h(i,Jstr  )+                &
+     &                             zeta(i,Jstr  ,know)))
+              bry_str=cff1*(FORCES(ng)%svstr(i,Jstr)-                   &
+     &                      FORCES(ng)%bvstr(i,Jstr))
+              Ce=1.0_r8/SQRT(g*0.5_r8*(GRID(ng)%h(i,Jstr-1)+            &
+     &                                 zeta(i,Jstr-1,know)+             &
+     &                                 GRID(ng)%h(i,Jstr  )+            &
+     &                                 zeta(i,Jstr  ,know)))
+              cff2=GRID(ng)%on_v(i,Jstr)*Ce
+!!            cff2=dt2d
+              bry_val=vbar(i,Jstr+1,know)+                              &
+     &                cff2*(bry_pgr+                                    &
+     &                      bry_cor+                                    &
+     &                      bry_str)
+#else
+              bry_val=BOUNDARY(ng)%vbar_south(i)
+#endif
+              cff=0.5_r8*(GRID(ng)%h(i,Jstr-1)+                         &
+     &                    GRID(ng)%h(i,Jstr  ))
+              cff1=SQRT(g/cff)
+              Ce=dt2d*cff1*cff*0.5_r8*(GRID(ng)%pn(i,Jstr-1)+           &
+     &                                 GRID(ng)%pn(i,Jstr  ))
+              Ze=(0.5_r8+Ce)*zeta(i,Jstr  ,know)+                       &
+     &           (0.5_r8-Ce)*zeta(i,Jstr-1,know)
+              IF (Ce.gt.Co) THEN
+                cff2=(1.0_r8-Co/Ce)**2
+                cff3=zeta(i,Jstr,kout)+                                 &
+     &               Ce*zeta(i,Jstr-1,know)-                            &
+     &               (1.0_r8+Ce)*zeta(i,Jstr,know)
+                Ze=Ze+cff2*cff3
+              END IF
+              vbar(i,Jstr,kout)=0.5_r8*                                 &
+     &                          ((1.0_r8-Ce)*vbar(i,Jstr,know)+         &
+     &                           Ce*vbar(i,Jstr+1,know)+                &
+     &                           bry_val-                               &
+     &                           cff1*(Ze-BOUNDARY(ng)%zeta_south(i)))
 #ifdef MASKING
               vbar(i,Jstr,kout)=vbar(i,Jstr,kout)*                      &
      &                          GRID(ng)%vmask(i,Jstr)
@@ -315,6 +432,40 @@
               vbar(i,Jstr,kout)=0.0_r8
             END IF
           END DO
+
+#ifdef NESTING
+!
+!  If refinement grid and southern edge, impose mass flux from donor
+!  coaser grid for volume and mass conservation.
+!
+        ELSE IF (LBC(isouth,isVbar,ng)%nested) THEN
+          DO cr=1,Ncontact
+            dg=Vcontact(cr)%donor_grid
+            rg=Vcontact(cr)%receiver_grid
+            IF (RefinedGrid(ng).and.                                    &
+     &          (rg.eq.ng).and.(DXmax(dg).gt.DXmax(rg))) THEN
+              told=3-RollingIndex(cr)
+              tnew=RollingIndex(cr)
+              DO i=Istr,Iend
+                m=BRY_CONTACT(isouth,cr)%C2Bindex(i)
+                Idg=Vcontact(cr)%Idg(m)             ! for debugging
+                Jdg=Vcontact(cr)%Jdg(m)             ! purposes
+                cff=0.5_r8*GRID(ng)%om_v(i,Jstr)*                       &
+     &              (GRID(ng)%h(i,Jstr-1)+zeta(i,Jstr-1,kout)+          &
+     &               GRID(ng)%h(i,Jstr  )+zeta(i,Jstr  ,kout))
+                cff1=GRID(ng)%om_v(i,Jstr)/REFINED(cr)%om_v(m)
+                bry_val=cff1*REFINED(cr)%DV_avg2(1,m,tnew)/cff
+# ifdef MASKING
+                bry_val=bry_val*GRID(ng)%vmask(i,Jstr)
+# endif
+# ifdef NESTING_DEBUG
+                BRY_CONTACT(isouth,cr)%Mflux(i)=cff*bry_val
+# endif
+                vbar(i,Jstr,kout)=bry_val
+              END DO
+            END IF
+          END DO
+#endif
         END IF
       END IF
 !
@@ -339,12 +490,25 @@
               dVde=vbar(i,Jend,kout)-vbar(i,Jend-1,kout)
 
               IF (LBC(inorth,isVbar,ng)%nudging) THEN
-                IF ((dVdt*dVde).lt.0.0_r8) THEN
-                  tau=M2obc_in(ng,inorth)
+                IF (LnudgeM2CLM(ng)) THEN
+                  obc_out=0.5_r8*                                       &
+     &                    (CLIMA(ng)%M2nudgcof(i,Jend  )+               &
+     &                     CLIMA(ng)%M2nudgcof(i,Jend+1))
+                  obc_in =obcfac(ng)*obc_out
                 ELSE
-                  tau=M2obc_out(ng,inorth)
+                  obc_out=M2obc_out(ng,inorth)
+                  obc_in =M2obc_in (ng,inorth)
                 END IF
+                IF ((dVdt*dVde).lt.0.0_r8) THEN
+                  tau=obc_in
+                ELSE
+                  tau=obc_out
+                END IF
+#ifdef IMPLICIT_NUDGING
+                IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+#else
                 tau=tau*dt2d
+#endif
               END IF
 
               IF ((dVdt*dVde).lt.0.0_r8) dVdt=0.0_r8
@@ -373,9 +537,16 @@
      &                            (cff+Ce)
 
               IF (LBC(inorth,isVbar,ng)%nudging) THEN
+#ifdef IMPLICIT_NUDGING
+                phi=dt(ng)/(tau+dt(ng))
+                vbar(i,Jend+1,kout)=(1.0_r8-phi)*vbar(i,Jend+1,kout)+   &
+     &                              phi*BOUNDARY(ng)%vbar_north(i)
+
+#else
                 vbar(i,Jend+1,kout)=vbar(i,Jend+1,kout)+                &
      &                              tau*(BOUNDARY(ng)%vbar_north(i)-    &
      &                                   vbar(i,Jend+1,know))
+#endif
               END IF
 #ifdef MASKING
               vbar(i,Jend+1,kout)=vbar(i,Jend+1,kout)*                  &
@@ -434,10 +605,92 @@
      &                            GRID(ng)%h(i,Jend+1)+                 &
      &                            zeta(i,Jend+1,know)))
               Ce=SQRT(g*cff)
+#if defined ATM_PRESS && defined PRESS_COMPENSATE
+            vbar(i,Jend+1,kout)=bry_val+                                &
+     &                          Ce*(0.5_r8*                             &
+     &                              (zeta(i,Jend  ,know)+               &
+     &                               zeta(i,Jend+1,know)+               &
+     &                               fac*(FORCES(ng)%Pair(i,Jend  )+    &
+     &                                    FORCES(ng)%Pair(i,Jend+1)-    &
+     &                                    2.0_r8*OneAtm))-              &
+     &                              BOUNDARY(ng)%zeta_north(i))
+#else
               vbar(i,Jend+1,kout)=bry_val+                              &
      &                            Ce*(0.5_r8*(zeta(i,Jend  ,know)+      &
      &                                        zeta(i,Jend+1,know))-     &
      &                                BOUNDARY(ng)%zeta_north(i))
+#endif
+#ifdef MASKING
+              vbar(i,Jend+1,kout)=vbar(i,Jend+1,kout)*                  &
+     &                            GRID(ng)%vmask(i,Jend+1)
+#endif
+            END IF
+          END DO
+!
+!  Northern edge, Shchepetkin boundary condition (Maison et al., 2010).
+!
+        ELSE IF (LBC(inorth,isVbar,ng)%Shchepetkin) THEN
+          DO i=Istr,Iend
+            IF (LBC_apply(ng)%north(i)) THEN
+#if defined SSH_TIDES && !defined UV_TIDES
+              IF (LBC(inorth,isFsur,ng)%acquire) THEN
+                bry_pgr=-g*(BOUNDARY(ng)%zeta_north(i)-                 &
+     &                      zeta(i,Jend,know))*                         &
+     &                  0.5_r8*GRID(ng)%pn(i,Jend)
+              ELSE
+                bry_pgr=-g*(zeta(i,Jend+1,know)-                        &
+     &                      zeta(i,Jend  ,know))*                       &
+     &                  0.5_r8*(GRID(ng)%pn(i,Jend  )+                  &
+     &                          GRID(ng)%pn(i,Jend+1))
+              END IF
+# ifdef UV_COR
+              bry_cor=-0.125_r8*(ubar(i  ,Jend  ,know)+                 &
+     &                           ubar(i+1,Jend  ,know)+                 &
+     &                           ubar(i  ,Jend+1,know)+                 &
+     &                           ubar(i+1,Jend+1,know))*                &
+     &                          (GRID(ng)%f(i,Jend  )+                  &
+     &                           GRID(ng)%f(i,Jend+1))
+# else
+              bry_cor=0.0_r8
+# endif
+              cff1=1.0_r8/(0.5_r8*(GRID(ng)%h(i,Jend  )+                &
+     &                             zeta(i,Jend  ,know)+                 &
+     &                             GRID(ng)%h(i,Jend+1)+                &
+     &                             zeta(i,Jend+1,know)))
+              bry_str=cff1*(FORCES(ng)%svstr(i,Jend+1)-                 &
+     &                      FORCES(ng)%bvstr(i,Jend+1))
+              Ce=1.0_r8/SQRT(g*0.5_r8*(GRID(ng)%h(i,Jend+1)+            &
+     &                                 zeta(i,Jend+1,know)+             &
+     &                                 GRID(ng)%h(i,Jend  )+            &
+     &                                 zeta(i,Jend  ,know)))
+              cff2=GRID(ng)%on_v(i,Jend+1)*Ce
+!!            cff2=dt2d
+              bry_val=vbar(i,Jend,know)+                                &
+     &                cff2*(bry_pgr+                                    &
+     &                      bry_cor+                                    &
+     &                      bry_str)
+#else
+              bry_val=BOUNDARY(ng)%vbar_north(i)
+#endif
+              cff=0.5_r8*(GRID(ng)%h(i,Jend  )+                         &
+     &                    GRID(ng)%h(i,Jend+1))
+              cff1=SQRT(g/cff)
+              Ce=dt2d*cff1*cff*0.5_r8*(GRID(ng)%pn(i,Jend  )+           &
+     &                                 GRID(ng)%pn(i,Jend+1))
+              Ze=(0.5_r8+Ce)*zeta(i,Jend  ,know)+                       &
+     &           (0.5_r8-Ce)*zeta(i,Jend+1,know)
+              IF (Ce.gt.Co) THEN
+                cff2=(1.0_r8-Co/Ce)**2
+                cff3=zeta(i,Jend,kout)+                                 &
+     &               Ce*zeta(i,Jend+1,know)-                            &
+     &               (1.0_r8+Ce)*zeta(i,Jend,know)
+                Ze=Ze+cff2*cff3
+              END IF
+              vbar(i,Jend+1,kout)=0.5_r8*                               &
+     &                            ((1.0_r8-Ce)*vbar(i,Jend+1,know)+     &
+     &                             Ce*vbar(i,Jend,know)+                &
+     &                             bry_val+                             &
+     &                             cff1*(Ze-BOUNDARY(ng)%zeta_north(i)))
 #ifdef MASKING
               vbar(i,Jend+1,kout)=vbar(i,Jend+1,kout)*                  &
      &                            GRID(ng)%vmask(i,Jend+1)
@@ -521,6 +774,40 @@
               vbar(i,Jend+1,kout)=0.0_r8
             END IF
           END DO
+
+#ifdef NESTING
+!
+!  If refinement grid and northern edge, impose mass flux from donor
+!  coaser grid for volume and mass conservation.
+!
+        ELSE IF (LBC(inorth,isVbar,ng)%nested) THEN
+          DO cr=1,Ncontact
+            dg=Vcontact(cr)%donor_grid
+            rg=Vcontact(cr)%receiver_grid
+            IF (RefinedGrid(ng).and.                                    &
+     &          (rg.eq.ng).and.(DXmax(dg).gt.DXmax(rg))) THEN
+              told=3-RollingIndex(cr)
+              tnew=RollingIndex(cr)
+              DO i=Istr,Iend
+                m=BRY_CONTACT(inorth,cr)%C2Bindex(i)
+                Idg=Vcontact(cr)%Idg(m)             ! for debugging
+                Jdg=Vcontact(cr)%Jdg(m)             ! purposes
+                cff=0.5_r8*GRID(ng)%om_v(i,Jend+1)*                     &
+     &              (GRID(ng)%h(i,Jend+1)+zeta(i,Jend+1,kout)+          &
+     &               GRID(ng)%h(i,Jend  )+zeta(i,Jend  ,kout))
+                cff1=GRID(ng)%om_v(i,Jend+1)/REFINED(cr)%om_v(m)
+                bry_val=cff1*REFINED(cr)%DV_avg2(1,m,tnew)/cff
+# ifdef MASKING
+                bry_val=bry_val*GRID(ng)%vmask(i,Jend+1)
+# endif
+# ifdef NESTING_DEBUG
+                BRY_CONTACT(inorth,cr)%Mflux(i)=cff*bry_val
+# endif
+                vbar(i,Jend+1,kout)=bry_val
+              END DO
+            END IF
+          END DO
+#endif
         END IF
       END IF
 !
@@ -545,12 +832,25 @@
               dVdx=vbar(Istr,j,kout)-vbar(Istr+1,j,kout)
 
               IF (LBC(iwest,isVbar,ng)%nudging) THEN
-                IF ((dVdt*dVdx).lt.0.0_r8) THEN
-                  tau=M2obc_in(ng,iwest)
+                IF (LnudgeM2CLM(ng)) THEN
+                  obc_out=0.5_r8*                                       &
+     &                    (CLIMA(ng)%M2nudgcof(Istr-1,j-1)+             &
+     &                     CLIMA(ng)%M2nudgcof(Istr-1,j  ))
+                  obc_in =obcfac(ng)*obc_out
                 ELSE
-                  tau=M2obc_out(ng,iwest)
+                  obc_out=M2obc_out(ng,iwest)
+                  obc_in =M2obc_in (ng,iwest)
                 END IF
+                IF ((dVdt*dVdx).lt.0.0_r8) THEN
+                  tau=obc_in
+                ELSE
+                  tau=obc_out
+                END IF
+#ifdef IMPLICIT_NUDGING
+                IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+#else
                 tau=tau*dt2d
+#endif
               END IF
 
               IF ((dVdt*dVdx).lt.0.0_r8) dVdt=0.0_r8
@@ -579,9 +879,15 @@
      &                            (cff+Cx)
 
               IF (LBC(iwest,isVbar,ng)%nudging) THEN
+#ifdef IMPLICIT_NUDGING
+                phi=dt(ng)/(tau+dt(ng))
+                vbar(Istr-1,j,kout)=(1.0_r8-phi)*vbar(Istr-1,j,kout)+   &
+     &                              phi*BOUNDARY(ng)%vbar_west(j)
+#else
                 vbar(Istr-1,j,kout)=vbar(Istr-1,j,kout)+                &
      &                              tau*(BOUNDARY(ng)%vbar_west(j)-     &
      &                                   vbar(Istr-1,j,know))
+#endif
               END IF
 #ifdef MASKING
               vbar(Istr-1,j,kout)=vbar(Istr-1,j,kout)*                  &
@@ -593,7 +899,8 @@
 !  Western edge, Chapman boundary condition.
 !
         ELSE IF (LBC(iwest,isVbar,ng)%Flather.or.                       &
-     &           LBC(iwest,isVbar,ng)%reduced) THEN
+     &           LBC(iwest,isVbar,ng)%reduced.or.                       &
+     &           LBC(iwest,isVbar,ng)%Shchepetkin) THEN
           DO j=JstrV,Jend
             IF (LBC_apply(ng)%west(j)) THEN
               cff=dt2d*0.5_r8*(GRID(ng)%pm(Istr,j-1)+                   &
@@ -683,10 +990,19 @@
               dVdx=vbar(Iend,j,kout)-vbar(Iend-1,j,kout)
 
               IF (LBC(ieast,isVbar,ng)%nudging) THEN
-                IF ((dVdt*dVdx).lt.0.0_r8) THEN
-                  tau=M2obc_in(ng,ieast)
+                IF (LnudgeM2CLM(ng)) THEN
+                  obc_out=0.5_r8*                                       &
+     &                    (CLIMA(ng)%M2nudgcof(Iend+1,j-1)+             &
+     &                     CLIMA(ng)%M2nudgcof(Iend+1,j  ))
+                  obc_in =obcfac(ng)*obc_out
                 ELSE
-                  tau=M2obc_out(ng,ieast)
+                  obc_out=M2obc_out(ng,ieast)
+                  obc_in =M2obc_in (ng,ieast)
+                END IF
+                IF ((dVdt*dVdx).lt.0.0_r8) THEN
+                  tau=obc_in
+                ELSE
+                  tau=obc_out
                 END IF
                 tau=tau*dt2d
               END IF
@@ -731,7 +1047,8 @@
 !  Eastern edge, Chapman boundary condition.
 !
         ELSE IF (LBC(ieast,isVbar,ng)%Flather.or.                       &
-     &           LBC(ieast,isVbar,ng)%reduced) THEN
+     &           LBC(ieast,isVbar,ng)%reduced.or.                       &
+     &           LBC(ieast,isVbar,ng)%Shchepetkin) THEN
           DO j=JstrV,Jend
             IF (LBC_apply(ng)%east(j)) THEN
               cff=dt2d*0.5_r8*(GRID(ng)%pm(Iend,j-1)+                   &

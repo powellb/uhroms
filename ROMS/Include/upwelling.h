@@ -1,7 +1,7 @@
 /*
-** svn $Id: upwelling.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: upwelling.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for Upwelling Test.
 **
 ** Application flag:   UPWELLING
-** Input script:       ocean_upwelling.in
+** Input script:       roms_upwelling.in
 */
 
 #define UV_ADV
@@ -18,9 +18,8 @@
 #define UV_VIS2
 #undef  MIX_GEO_UV
 #define MIX_S_UV
-#define TS_U3HADVECTION
-#define TS_C4VADVECTION
-#undef  TS_MPDATA
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define DJ_GRADPS
 #define TS_DIF2
 #undef  TS_DIF4
@@ -29,7 +28,6 @@
 
 #define SALINITY
 #define SOLVE3D
-#define SPLINES
 #define AVERAGES
 #define DIAGNOSTICS_TS
 #define DIAGNOSTICS_UV
@@ -45,6 +43,7 @@
 #if defined GLS_MIXING || defined MY25_MIXING
 # define KANTHA_CLAYSON
 # define N2S2_HORAVG
+# define RI_SPLINES
 #else
 # define ANA_VMIX
 #endif

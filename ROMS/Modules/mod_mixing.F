@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_mixing
 !
-!svn $Id: mod_mixing.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_mixing.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -20,24 +20,30 @@
 !  Hviscosity   Time invariant, horizontal viscosity (harmonic or      !
 !                 (biharmonic) term at RHO-points.                     !
 #endif
+#ifdef SOLVE3D
 !  dAktdz       Vertical gradient in mixing coefficient (m/s) for      !
 !                 tracer 1, used in float random walk calculations     !
 !  diff2        Horizontal, time invariant harmonic coefficient        !
 !                 (m2/s) for tracers.                                  !
 !  diff4        Horizontal, time invariant biharmonic coefficient      !
-#ifdef DIFF_3DCOEF
+# ifdef DIFF_3DCOEF
 !                 (m4/s) for tracers.                                  !
-#else
+# else
 !                 SQRT(m4/s) for tracers.                              !
-#endif
-#ifdef DIFF_3DCOEF
+# endif
+# ifdef DIFF_3DCOEF
 !  diff3d_r     Horizontal, time-dependent 3D diffusion coefficient at !
 !                 RHO-points.                                          !
-# ifdef TS_U3ADV_SPLIT
+#  ifdef TS_U3ADV_SPLIT
 !  diff3d_u     Horizontal, time-dependent 3D diffusion coefficient at !
 !                 U-points.                                            !
 !  diff3d_v     Horizontal, time-dependent 3D diffusiob coefficient at !
 !                 V-points.                                            !
+#  endif
+# endif
+# ifndef ANA_SPONGE
+!  diff_factor  Horizontal diffusivity factor (nondimensional) for     !
+!                 increasing mixing sponge areas at RHO-points.        !
 # endif
 #endif
 !  visc2_r      Horizontal, time invariant harmonic viscosity          !
@@ -65,6 +71,10 @@
 !  Vvis3d_r     Horizontal, time-dependent 3D V-viscosity coefficient  !
 !                 at RHO-points.                                       !
 # endif
+#endif
+#ifndef ANA_SPONGE
+!  visc_factor  Horizontal viscosity factor (nondimensional) for       !
+!                 increasing mixing in sponge areas at RHO-points.     !
 #endif
 !                                                                      !
 #ifdef FOUR_DVAR
@@ -135,14 +145,14 @@
 !  Nonlinear model state.
 !
 #ifdef SOLVE3D
-# if defined LMD_SKPP || defined SOLAR_SOURCE
-          integer,  pointer :: Jwtype(:,:)
-# endif
 # if defined LMD_SKPP || defined LMD_BKPP
           integer,  pointer :: ksbl(:,:)
 #  ifdef LMD_BKPP
           integer,  pointer :: kbbl(:,:)
 #  endif
+# endif
+# if defined LMD_SKPP || defined SOLAR_SOURCE
+          real(r8),  pointer :: Jwtype(:,:)
 # endif
 #endif
 #if defined DIFF_3DCOEF && defined SOLVE3D
@@ -151,7 +161,10 @@
 #if defined VISC_3DCOEF && defined SOLVE3D
           real(r8), pointer :: Hviscosity(:,:)
 #endif
-#if defined UV_VIS2 || !defined SOLVE3D
+#ifndef ANA_SPONGE
+          real(r8), pointer :: visc_factor(:,:)
+#endif
+#if defined UV_VIS2
           real(r8), pointer :: visc2_p(:,:)
           real(r8), pointer :: visc2_r(:,:)
 #endif
@@ -159,14 +172,14 @@
           real(r8), pointer :: visc4_p(:,:)
           real(r8), pointer :: visc4_r(:,:)
 #endif
-# ifdef VISC_3DCOEF
-#  ifdef UV_U3ADV_SPLIT
+#ifdef VISC_3DCOEF
+# ifdef UV_U3ADV_SPLIT
           real(r8), pointer :: Uvis3d_r(:,:,:)
           real(r8), pointer :: Vvis3d_r(:,:,:)
-#  else
+# else
           real(r8), pointer :: visc3d_r(:,:,:)
-#  endif
 # endif
+#endif
 #ifdef NEARSHORE_MELLOR
           real(r8), pointer :: Sxx_bar(:,:)
           real(r8), pointer :: Sxy_bar(:,:)
@@ -186,6 +199,9 @@
 # endif
 #endif
 #ifdef SOLVE3D
+# ifndef ANA_SPONGE
+          real(r8), pointer :: diff_factor(:,:)
+# endif
 # ifdef TS_DIF2
           real(r8), pointer :: diff2(:,:,:)
 # endif
@@ -212,9 +228,6 @@
 # endif
 # ifdef BV_FREQUENCY
           real(r8), pointer :: bvf(:,:,:)
-# endif
-# if defined MIX_ISO_TS || defined GENT_McWILLIAMS
-          real(r8), pointer :: neutral(:,:,:)
 # endif
 # if defined GLS_MIXING || defined MY25_MIXING
           real(r8), pointer :: tke(:,:,:,:)
@@ -379,10 +392,15 @@
 !=======================================================================
 !
       USE mod_param
+      USE mod_scalars
 !
 !  Local variable declarations.
 !
       integer, intent(in) :: ng, LBi, UBi, LBj, UBj
+!
+!  Local variable declarations.
+!
+      real(r8) :: size2d
 !
 !-----------------------------------------------------------------------
 !  Allocate module variables.
@@ -390,117 +408,198 @@
 !
       IF (ng.eq.1) allocate ( MIXING(Ngrids) )
 !
+!  Set horizontal array size.
+!
+      size2d=REAL((UBi-LBi+1)*(UBj-LBj+1),r8)
+!
 !  Nonlinear model state.
 !
-#if defined UV_VIS2 || !defined SOLVE3D
+#ifndef ANA_SPONGE
+      IF (LuvSponge(ng)) THEN
+        allocate ( MIXING(ng) % visc_factor(LBi:UBi,LBj:UBj) )
+        Dmem(ng)=Dmem(ng)+size2d
+      END IF
+#endif
+#if defined UV_VIS2
       allocate ( MIXING(ng) % visc2_p(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % visc2_r(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 #endif
 
 #ifdef UV_VIS4
       allocate ( MIXING(ng) % visc4_p(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % visc4_r(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 #endif
 
 # ifdef VISC_3DCOEF
       allocate ( MIXING(ng) % Hviscosity(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
 #  ifdef UV_U3ADV_SPLIT
       allocate ( MIXING(ng) % Uvis3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( MIXING(ng) % Vvis3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  else
       allocate ( MIXING(ng) % visc3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  endif
 # endif
 
 #ifdef NEARSHORE_MELLOR
       allocate ( MIXING(ng) % Sxx_bar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % Sxy_bar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % Syy_bar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % rustr2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % rvstr2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
 # ifdef SOLVE3D
-      allocate ( MIXING(ng) % Sxx(LBi:UBi,LBj:UBj,1:N(ng)) )
-      allocate ( MIXING(ng) % Sxy(LBi:UBi,LBj:UBj,1:N(ng)) )
-      allocate ( MIXING(ng) % Syy(LBi:UBi,LBj:UBj,1:N(ng)) )
+      allocate ( MIXING(ng) % Sxx(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+      allocate ( MIXING(ng) % Sxy(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+      allocate ( MIXING(ng) % Syy(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
 #  ifdef NEARSHORE_MELLOR05
-      allocate ( MIXING(ng) % Szx(LBi:UBi,LBj:UBj,1:N(ng)) )
-      allocate ( MIXING(ng) % Szy(LBi:UBi,LBj:UBj,1:N(ng)) )
+      allocate ( MIXING(ng) % Szx(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+      allocate ( MIXING(ng) % Szy(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  endif
-      allocate ( MIXING(ng) % rustr3d(LBi:UBi,LBj:UBj,1:N(ng)) )
-      allocate ( MIXING(ng) % rvstr3d(LBi:UBi,LBj:UBj,1:N(ng)) )
+
+      allocate ( MIXING(ng) % rustr3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+      allocate ( MIXING(ng) % rvstr3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 # endif
 #endif
 
 #ifdef SOLVE3D
+# ifndef ANA_SPONGE
+      IF (ANY(LtracerSponge(:,ng))) THEN
+        allocate ( MIXING(ng) % diff_factor(LBi:UBi,LBj:UBj) )
+        Dmem(ng)=Dmem(ng)+size2d
+      END IF
+# endif
+
 # ifdef TS_DIF2
       allocate ( MIXING(ng) % diff2(LBi:UBi,LBj:UBj,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(NT(ng),r8)*size2d
 # endif
 
 # ifdef TS_DIF4
       allocate ( MIXING(ng) % diff4(LBi:UBi,LBj:UBj,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(NT(ng),r8)*size2d
 # endif
 
 # ifdef DIFF_3DCOEF
       allocate ( MIXING(ng) % Hdiffusion(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
 #  ifdef TS_U3ADV_SPLIT
       allocate ( MIXING(ng) % diff3d_u(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( MIXING(ng) % diff3d_v(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  else
       allocate ( MIXING(ng) % diff3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  endif
 # endif
 
       allocate ( MIXING(ng) % Akv(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT) )
+      Dmem(ng)=Dmem(ng)+REAL((N(ng)+1)*NAT,r8)*size2d
 
 # ifdef FLOAT_VWALK
       allocate ( MIXING(ng) % dAktdz(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 # endif
 
 # if defined LMD_SKPP    || defined LMD_BKPP         || \
      defined BULK_FLUXES || defined BALANCE_OPERATOR
       allocate ( MIXING(ng) % alpha(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % beta(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 # endif
 
 # ifdef BV_FREQUENCY
       allocate ( MIXING(ng) % bvf(LBi:UBi,LBj:UBj,0:N(ng)) )
-# endif
-
-# if defined MIX_ISO_TS || defined GENT_McWILLIAMS
-      allocate ( MIXING(ng) % neutral(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 # endif
 
 # if defined GLS_MIXING || defined MY25_MIXING
       allocate ( MIXING(ng) % tke(LBi:UBi,LBj:UBj,0:N(ng),3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % gls(LBi:UBi,LBj:UBj,0:N(ng),3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % Lscale(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % Akk(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 
 #  ifdef GLS_MIXING
       allocate ( MIXING(ng) % Akp(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 #  endif
 # endif
 
 # if defined LMD_MIXING && defined LMD_DDMIX
       allocate ( MIXING(ng) % alfaobeta(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 # endif
 
 # if defined LMD_SKPP || defined SOLAR_SOURCE
       allocate ( MIXING(ng) % Jwtype(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 # endif
 
 # if defined LMD_SKPP || defined LMD_BKPP
       allocate ( MIXING(ng) % ksbl(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % hsbl(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 
 #  ifdef LMD_BKPP
       allocate ( MIXING(ng) % kbbl(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % hbbl(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 #  endif
 
 #  ifdef LMD_NONLOCAL
       allocate ( MIXING(ng) % ghats(LBi:UBi,LBj:UBj,0:N(ng),NAT) )
+      Dmem(ng)=Dmem(ng)+REAL((N(ng)+1)*NAT,r8)*size2d
 #  endif
 
 # endif
@@ -511,8 +610,11 @@
 !  Spatial convolution diffusion coefficients.
 !
       allocate ( MIXING(ng) % Kh(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
 # ifdef SOLVE3D
       allocate ( MIXING(ng) % Kv(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 # endif
 #endif
 
@@ -524,27 +626,41 @@
 #  ifdef DIFF_3DCOEF
 #   ifdef TS_U3ADV_SPLIT
       allocate ( MIXING(ng) % tl_diff3d_u(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( MIXING(ng) % tl_diff3d_v(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   else
       allocate ( MIXING(ng) % tl_diff3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   endif
 #  endif
 
 #  ifdef VISC_3DCOEF
 #   ifdef UV_U3ADV_SPLIT
       allocate ( MIXING(ng) % tl_Uvis3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( MIXING(ng) % tl_Vvis3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   else
       allocate ( MIXING(ng) % tl_visc3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   endif
 #  endif
 
       allocate ( MIXING(ng) % tl_Akv(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % tl_Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT) )
+      Dmem(ng)=Dmem(ng)+REAL((N(ng)+1)*NAT,r8)*size2d
 
 #  if defined LMD_SKPP || defined LMD_BKPP || defined BULK_FLUXES
       allocate ( MIXING(ng) % tl_alpha(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % tl_beta(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 #  endif
 
 #  ifdef BV_FREQUENCY
@@ -553,12 +669,21 @@
 
 #  if defined GLS_MIXING_NOT_YET || defined MY25_MIXING_NOT_YET
       allocate ( MIXING(ng) % tl_tke(LBi:UBi,LBj:UBj,0:N(ng),3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % tl_gls(LBi:UBi,LBj:UBj,0:N(ng),3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % tl_Lscale(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % tl_Akk(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 #  endif
+
 #  ifdef GLS_MIXING_NOT_YET
       allocate ( MIXING(ng) % tl_Akp(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 #  endif
 # endif
 #endif
@@ -571,41 +696,65 @@
 #  ifdef DIFF_3DCOEF
 #   ifdef TS_U3ADV_SPLIT
       allocate ( MIXING(ng) % ad_diff3d_u(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( MIXING(ng) % ad_diff3d_v(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   else
       allocate ( MIXING(ng) % ad_diff3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   endif
 #  endif
 
 #  ifdef VISC_3DCOEF
 #   ifdef UV_U3ADV_SPLIT
       allocate ( MIXING(ng) % ad_Uvis3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( MIXING(ng) % ad_Vvis3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   else
       allocate ( MIXING(ng) % ad_visc3d_r(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #   endif
 #  endif
 
       allocate ( MIXING(ng) % ad_Akv(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % ad_Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT) )
+      Dmem(ng)=Dmem(ng)+REAL((N(ng)+1)*NAT,r8)*size2d
 
 #  if defined LMD_SKPP || defined LMD_BKPP || defined BULK_FLUXES
       allocate ( MIXING(ng) % ad_alpha(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( MIXING(ng) % ad_beta(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 #  endif
 
 #  ifdef BV_FREQUENCY
       allocate ( MIXING(ng) % ad_bvf(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 #  endif
 
 #  if defined GLS_MIXING_NOT_YET || defined MY25_MIXING_NOT_YET
       allocate ( MIXING(ng) % ad_tke(LBi:UBi,LBj:UBj,0:N(ng),3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % ad_gls(LBi:UBi,LBj:UBj,0:N(ng),3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % ad_Lscale(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % ad_Akk(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 #  endif
+
 #  ifdef GLS_MIXING_NOT_YET
       allocate ( MIXING(ng) % ad_Akp(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 #  endif
 # endif
 #endif
@@ -618,28 +767,43 @@
 !  the background state in the tangent linear and adjoint models.
 !
       allocate ( MIXING(ng) % AkvG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % AktG(LBi:UBi,LBj:UBj,0:N(ng),2,NAT) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL((N(ng)+1)*NAT,r8)*size2d
 # endif
 
 # if defined LMD_MIXING_NOT_YET
       allocate ( MIXING(ng) % hsblG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 # endif
 
 # if defined LMD_BKPP_NOT_YET
       allocate ( MIXING(ng) % hbblG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 # endif
 
 # if defined LMD_NONLOCAL_NOT_YET
       allocate ( MIXING(ng) % ghatsG(LBi:UBi,LBj:UBj,0:N(ng),2,NAT) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL((N(ng)+1)*NAT,r8)*size2d
 # endif
 
 # if defined GLS_MIXING_NOT_YET || defined MY25_MIXING_NOT_YET
       allocate ( MIXING(ng) % tkeG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % glsG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % LscaleG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( MIXING(ng) % AkkG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
 #  ifdef GLS_MIXING_NOT_YET
       allocate ( MIXING(ng) % AkpG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
 #  endif
 # endif
 #endif
@@ -714,7 +878,14 @@
 !
       IF ((model.eq.0).or.(model.eq.iNLM)) THEN
         DO j=Jmin,Jmax
-#if defined UV_VIS2 || !defined SOLVE3D
+#ifndef ANA_SPONGE
+          IF (LuvSponge(ng)) THEN
+            DO i=Imin,Imax
+              MIXING(ng) % visc_factor(i,j) = IniVal
+            END DO
+          END IF
+#endif
+#if defined UV_VIS2
           DO i=Imin,Imax
             MIXING(ng) % visc2_p(i,j) = IniVal
             MIXING(ng) % visc2_r(i,j) = IniVal
@@ -764,6 +935,13 @@
           END DO
 #endif
 #ifdef SOLVE3D
+# ifndef ANA_SPONGE
+          IF (ANY(LtracerSponge(:,ng))) THEN
+            DO i=Imin,Imax
+              MIXING(ng) % diff_factor(i,j) = IniVal
+            END DO
+          END IF
+# endif
 # ifdef TS_DIF2
           DO itrc=1,NT(ng)
             DO i=Imin,Imax
@@ -832,13 +1010,6 @@
             END DO
           END DO
 # endif
-# if defined MIX_ISO_TS || defined GENT_McWILLIAMS
-          DO k=1,N(ng)
-            DO i=Imin,Imax
-              MIXING(ng) % neutral(i,j,k) = IniVal
-            END DO
-          END DO
-# endif
 # if defined GLS_MIXING || defined MY25_MIXING
           DO k=0,N(ng)
             DO i=Imin,Imax
@@ -877,7 +1048,7 @@
 # endif
 # if defined LMD_SKPP || defined SOLAR_SOURCE
           DO i=Imin,Imax
-            MIXING(ng) % Jwtype(i,j) = lmd_Jwt(ng)
+            MIXING(ng) % Jwtype(i,j) = REAL(lmd_Jwt(ng),r8)
           END DO
 # endif
 # if defined LMD_SKPP || defined LMD_BKPP
@@ -1104,7 +1275,7 @@
 # endif
 #endif
 
-#if defined FORWARD_READ && defined FOWARD_MIXING && defined SOLVE3D && \
+#if defined FORWARD_READ && defined FORWARD_MIXING && defined SOLVE3D && \
    (defined TANGENT || defined TL_IOMS || defined ADJOINT)
 !
 !  Latest two records of the nonlinear trajectory used to interpolate

@@ -2,9 +2,9 @@
       MODULE my25_prestep_mod
 #if defined NONLINEAR && defined MY25_MIXING && defined SOLVE3D
 !
-!svn $Id: my25_prestep.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: my25_prestep.F 995 2020-01-10 04:01:28Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -44,7 +44,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 20)
+      CALL wclock_on (ng, iNLM, 20, __LINE__, __FILE__)
 # endif
       CALL my25_prestep_tile (ng, tile,                                 &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -63,7 +63,7 @@
      &                        MIXING(ng) % gls,                         &
      &                        MIXING(ng) % tke)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 20)
+      CALL wclock_off (ng, iNLM, 20, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE my25_prestep
@@ -214,20 +214,20 @@
 #  endif
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.EWperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-              DO j=Jstr,Jend
-                grad (Istr-1,j)=grad (Istr,j)
-                gradL(Istr-1,j)=gradL(Istr,j)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-              DO j=Jstr,Jend
-                grad (Iend+2,j)=grad (Iend+1,j)
-                gradL(Iend+2,j)=gradL(Iend+1,j)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+            DO j=Jstr,Jend
+              grad (Istr-1,j)=grad (Istr,j)
+              gradL(Istr-1,j)=gradL(Istr,j)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+            DO j=Jstr,Jend
+              grad (Iend+2,j)=grad (Iend+1,j)
+              gradL(Iend+2,j)=gradL(Iend+1,j)
+            END DO
           END IF
         END IF
         cff=1.0_r8/6.0_r8
@@ -255,20 +255,20 @@
 #  endif
           END DO
         END DO
-        IF (.not.ComposedGrid(ng)) THEN
-          IF (.not.NSperiodic(ng)) THEN
-            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-              DO i=Istr,Iend
-                grad (i,Jstr-1)=grad (i,Jstr)
-                gradL(i,Jstr-1)=gradL(i,Jstr)
-              END DO
-            END IF
-            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-              DO i=Istr,Iend
-                grad (i,Jend+2)=grad (i,Jend+1)
-                gradL(i,Jend+2)=gradL(i,Jend+1)
-              END DO
-            END IF
+        IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+            DO i=Istr,Iend
+              grad (i,Jstr-1)=grad (i,Jstr)
+              gradL(i,Jstr-1)=gradL(i,Jstr)
+            END DO
+          END IF
+        END IF
+        IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+            DO i=Istr,Iend
+              grad (i,Jend+2)=grad (i,Jend+1)
+              gradL(i,Jend+2)=gradL(i,Jend+1)
+            END DO
           END IF
         END IF
         cff=1.0_r8/6.0_r8

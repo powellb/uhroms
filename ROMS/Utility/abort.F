@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE abort (status)
 !
-!svn $Id: abort.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: abort.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -14,7 +14,7 @@
 !=======================================================================
 !
 #ifdef ESMF_LIB
-      USE ESMF_Mod
+      USE ESMF
 #endif
       USE ocean_control_mod, ONLY : ROMS_finalize
 !
@@ -36,7 +36,7 @@
 !
 !  Finalize ESMF and flush buffers.
 !
-      CALL ESMF_Finalize (terminationflag=ESMF_ABORT)
+      CALL ESMF_Finalize (endflag=ESMF_END_ABORT)
 #endif
 !
 !  Stop execution.

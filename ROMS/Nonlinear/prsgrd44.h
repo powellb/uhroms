@@ -1,9 +1,9 @@
 # undef NEUMANN
       SUBROUTINE prsgrd (ng, tile)
 !
-!svn $Id: prsgrd44.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: prsgrd44.h 995 2020-01-10 04:01:28Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !****************************************** Alexander F. Shchepetkin ***
@@ -51,12 +51,16 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 23)
+      CALL wclock_on (ng, iNLM, 23, __LINE__, __FILE__)
 # endif
       CALL prsgrd_tile (ng, tile,                                       &
      &                  LBi, UBi, LBj, UBj,                             &
      &                  IminS, ImaxS, JminS, JmaxS,                     &
      &                  nrhs(ng),                                       &
+# ifdef WET_DRY
+     &                  GRID(ng)%umask_wet,                             &
+     &                  GRID(ng)%vmask_wet,                             &
+# endif
      &                  GRID(ng) % Hz,                                  &
      &                  GRID(ng) % om_v,                                &
      &                  GRID(ng) % on_u,                                &
@@ -72,7 +76,7 @@
      &                  OCEAN(ng) % ru,                                 &
      &                  OCEAN(ng) % rv)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 23)
+      CALL wclock_off (ng, iNLM, 23, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE prsgrd
@@ -82,6 +86,9 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        IminS, ImaxS, JminS, JmaxS,               &
      &                        nrhs,                                     &
+# ifdef WET_DRY
+     &                        umask_wet, vmask_wet,                     &
+# endif
      &                        Hz, om_v, on_u, z_w,                      &
      &                        rho,                                      &
 # ifdef ATM_PRESS
@@ -104,6 +111,10 @@
       integer, intent(in) :: nrhs
 !
 # ifdef ASSUMED_SHAPE
+#  ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+#  endif
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: om_v(LBi:,LBj:)
       real(r8), intent(in) :: on_u(LBi:,LBj:)
@@ -119,6 +130,10 @@
       real(r8), intent(inout) :: ru(LBi:,LBj:,0:,:)
       real(r8), intent(inout) :: rv(LBi:,LBj:,0:,:)
 # else
+#  ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
+#  endif
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: om_v(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: on_u(LBi:UBi,LBj:UBj)
@@ -142,7 +157,7 @@
       real(r8), parameter :: eps = 1.0E-8_r8
 
       real(r8) :: Ampl, Hdd, cff, cff1, cff2, cff3, cffL, cffR
-      real(r8) :: deltaL, deltaR, dh, dP, limtr, rr
+      real(r8) :: deltaL, deltaR, dh, delP, limtr, rr
 #ifdef ATM_PRESS
       real(r8) :: OneAtm, fac
 #endif
@@ -376,11 +391,11 @@
           DO k=N(ng),1,-1
             DO i=IstrU,Iend
               dh=z_w(i,j,k-1)-z_w(i-1,j,k-1)
-              dP=P(i-1,j,k-1)-P(i,j,k-1)
+              delP=P(i-1,j,k-1)-P(i,j,k-1)
               rr=0.5_r8*dh*(r(i,j,k-1)+r(i-1,j,k-1)-                    &
      &                      cff2*dh*(d(i,j,k-1)-d(i-1,j,k-1)))
-              limtr=2.0_r8*dP*rr
-              rr=rr*rr+dP*dP
+              limtr=2.0_r8*delP*rr
+              rr=rr*rr+delP*delP
               IF (limtr.gt.eps*rr) THEN
                 limtr=limtr/rr
               ELSE
@@ -395,6 +410,9 @@
      &                            (z_w(i-1,j,N(ng))-z_w(i,j,N(ng)))+    &
      &                        cff1*(FX(i-1,j,k)-FX(i,j,k)+              &
      &                              FC(i,k)-FC(i,k-1)))*on_u(i,j)
+# ifdef WET_DRY
+              ru(i,j,k,nrhs)=ru(i,j,k,nrhs)*umask_wet(i,j)
+# endif
 # ifdef DIAGNOSTICS_UV
               DiaRU(i,j,k,nrhs,M3pgrd)=ru(i,j,k,nrhs)
 # endif
@@ -413,11 +431,11 @@
           DO k=N(ng),1,-1
             DO i=Istr,Iend
               dh=z_w(i,j,k-1)-z_w(i,j-1,k-1)
-              dP=P(i,j-1,k-1)-P(i,j,k-1)
+              delP=P(i,j-1,k-1)-P(i,j,k-1)
               rr=0.5_r8*dh*(r(i,j,k-1)+r(i,j-1,k-1)-                    &
      &                      cff2*dh*(d(i,j,k-1)-d(i,j-1,k-1)))
-              limtr=2.0_r8*dP*rr
-              rr=rr*rr+dP*dP
+              limtr=2.0_r8*delP*rr
+              rr=rr*rr+delP*delP
               IF (limtr.gt.eps*rr) THEN
                 limtr=limtr/rr
               ELSE
@@ -432,6 +450,9 @@
      &                            (z_w(i,j-1,N(ng))-z_w(i,j,N(ng)))+    &
      &                        cff1*(FX(i,j-1,k)-FX(i,j,k)+              &
      &                              FC(i,k)-FC(i,k-1)))*om_v(i,j)
+# ifdef WET_DRY
+              rv(i,j,k,nrhs)=rv(i,j,k,nrhs)*vmask_wet(i,j)
+# endif
 # ifdef DIAGNOSTICS_UV
               DiaRV(i,j,k,nrhs,M3pgrd)=rv(i,j,k,nrhs)
 # endif

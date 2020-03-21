@@ -1,7 +1,7 @@
 /*
-** svn $Id: lake_signell.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: lake_signell.h 995 2020-01-10 04:01:28Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for Closed Basin (Lake) forced with wind.
 **
 ** Application flag:   LAKE_SIGNELL
-** Input script:       ocean_lake_signell.in
+** Input script:       roms_lake_signell.in
 **                     floats_lake_signell.in
 **                     sediment_lake_signell.in
 */
@@ -17,10 +17,11 @@
 #define UV_ADV
 #undef  UV_COR
 #define DJ_GRADPS
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_MPDATA
 #define SALINITY
 #define SOLVE3D
-#define SPLINES
 #define MASKING
 #define AVERAGES
 #define FLOATS
@@ -83,6 +84,7 @@
 #if defined GLS_MIXING || defined MY25_MIXING
 # define KANTHA_CLAYSON
 # define N2S2_HORAVG
+# define RI_SPLINES
 # undef CRAIG_BANNER
 # undef CHARNOK
 #endif

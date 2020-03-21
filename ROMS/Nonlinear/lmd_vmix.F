@@ -2,9 +2,9 @@
       MODULE lmd_vmix_mod
 #if defined NONLINEAR && defined LMD_MIXING && defined SOLVE3D
 !
-!svn $Id: lmd_vmix.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: lmd_vmix.F 995 2020-01-10 04:01:28Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -56,7 +56,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 18)
+      CALL wclock_on (ng, iNLM, 18, __LINE__, __FILE__)
 # endif
       IF (.not.PerfectRST(ng).or.iic(ng).ne.ntstart(ng)) THEN
         CALL lmd_vmix_tile (ng, tile,                                   &
@@ -64,7 +64,7 @@
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp(ng),                                   &
      &                      GRID(ng) % Hz,                              &
-# ifndef SPLINES
+# ifndef RI_SPLINES
      &                      GRID(ng) % z_r,                             &
 # endif
      &                      OCEAN(ng) % rho,                            &
@@ -86,7 +86,7 @@
         CALL lmd_finish (ng, tile)
       END IF
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 18)
+      CALL wclock_off (ng, iNLM, 18, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE lmd_vmix
@@ -97,7 +97,7 @@
      &                          IminS, ImaxS, JminS, JmaxS,             &
      &                          nstp,                                   &
      &                          Hz,                                     &
-# ifndef SPLINES
+# ifndef RI_SPLINES
      &                          z_r,                                    &
 # endif
      &                          rho, u, v,                              &
@@ -119,7 +119,7 @@
 !
 # ifdef ASSUMED_SHAPE
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
-#  ifndef SPLINES
+#  ifndef RI_SPLINES
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
 #  endif
       real(r8), intent(in) :: rho(LBi:,LBj:,:)
@@ -135,7 +135,7 @@
       real(r8), intent(inout) :: Akv(LBi:,LBj:,0:)
 # else
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
-#  ifndef SPLINES
+#  ifndef RI_SPLINES
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
 #  endif
       real(r8), intent(in) :: rho(LBi:UBi,LBj:UBj,N(ng))
@@ -181,7 +181,7 @@
 !  vertical W-points.  If zero or very small velocity shear, bound
 !  computation by a large negative value.
 !
-#  ifdef SPLINES
+#  ifdef RI_SPLINES
       DO j=MAX(1,Jstr-1),MIN(Jend+1,Mm(ng))
         DO i=MAX(1,Istr-1),MIN(Iend+1,Lm(ng))
           FC(i,0)=0.0_r8
@@ -451,9 +451,6 @@
      &                      LBi, UBi, LBj, UBj,                         &
      &                      nstp(ng),                                   &
      &                      GRID(ng) % Hz,                              &
-# ifndef SPLINES
-     &                      GRID(ng) % z_r,                             &
-# endif
      &                      MIXING(ng) % bvf,                           &
      &                      MIXING(ng) % Akt,                           &
      &                      MIXING(ng) % Akv)
@@ -465,9 +462,6 @@
      &                            LBi, UBi, LBj, UBj,                   &
      &                            nstp,                                 &
      &                            Hz,                                   &
-# ifndef SPLINES
-     &                            z_r,                                  &
-# endif
      &                            bvf, Akt, Akv)
 !***********************************************************************
 !
@@ -487,18 +481,12 @@
 !
 # ifdef ASSUMED_SHAPE
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
-#  ifndef SPLINES
-      real(r8), intent(in) :: z_r(LBi:,LBj:,:)
-#  endif
       real(r8), intent(in) :: bvf(LBi:,LBj:,0:)
 
       real(r8), intent(inout) :: Akt(LBi:,LBj:,0:,:)
       real(r8), intent(inout) :: Akv(LBi:,LBj:,0:)
 # else
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
-#  ifndef SPLINES
-      real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
-#  endif
       real(r8), intent(in) :: bvf(LBi:UBi,LBj:UBj,0:N(ng))
 
       real(r8), intent(inout) :: Akt(LBi:UBi,LBj:UBj,0:N(ng),NAT)
@@ -545,6 +533,23 @@
             Akt(i,j,k,itemp)=Akt(i,j,k,itemp)+lmd_nu0c*nu_sxc
 # ifdef SALINITY
             Akt(i,j,k,isalt)=Akt(i,j,k,isalt)+lmd_nu0c*nu_sxc
+# endif
+# if defined LIMIT_VDIFF || defined LIMIT_VVISC
+!
+!  Limit vertical mixing coefficients with the upper threshold value.
+!  This is an engineering fix but it can be based on the fact that
+!  vertical mixing in the ocean from indirect observations is not
+!  higher than the threshold value.
+!
+#  ifdef LIMIT_VVISC
+            Akv(i,j,k)=MIN(Akv_limit(ng), Akv(i,j,k))
+#  endif
+#  ifdef LIMIT_VDIFF
+            Akt(i,j,k,itemp)=MIN(Akt_limit(itemp,ng), Akt(i,j,k,itemp))
+#   ifdef SALINITY
+            Akt(i,j,k,isalt)=MIN(Akt_limit(isalt,ng), Akt(i,j,k,isalt))
+#   endif
+#  endif
 # endif
           END DO
         END DO

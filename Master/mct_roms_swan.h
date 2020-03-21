@@ -1,7 +1,7 @@
 /*
-** svn $Id: mct_roms_swan.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: mct_roms_swan.h 995 2020-01-10 04:01:28Z arango $
 ***************************************************** John C. Warner ***
-** Copyright (c) 2002-2013 The ROMS/TOMS Group      Hernan G. Arango  **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group      Hernan G. Arango  **
 **   Licensed under a MIT/X style license                             **
 **   See License_ROMS.txt                                             **
 ************************************************************************
@@ -183,12 +183,12 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 48)
+      CALL wclock_on (ng, iNLM, 41, __LINE__, __FILE__)
 #endif
       CALL ocn2wav_coupling_tile (ng, tile,                             &
      &                            LBi, UBi, LBj, UBj)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 48)
+      CALL wclock_off (ng, iNLM, 41, __LINE__, __FILE__)
 #endif
 
       RETURN

@@ -1,7 +1,7 @@
 /*
-** svn $Id: sw06_fine.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: sw06_fine.h 995 2020-01-10 04:01:28Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -44,17 +44,15 @@
 # define TS_DIF2
 # define MIX_GEO_TS
 # define DJ_GRADPS
+# define SPLINES_VDIFF
+# define SPLINES_VVISC
 # define TS_U3HADVECTION
 # define SOLVE3D
 # define SALINITY
 # define NONLIN_EOS
 # define CURVGRID
-# define SPONGE
 # undef  AVERAGES
 # define MASKING
-# define SPLINES
-# undef  UV_PSOURCE
-# undef  TS_PSOURCE
 # define SOLAR_SOURCE
 
 # define GLS_MIXING
@@ -62,6 +60,7 @@
 #  define KANTHA_CLAYSON
 #  undef  CANUTO_A
 #  define N2S2_HORAVG
+#  define RI_SPLINES
 # endif
 
 # define BULK_FLUXES
@@ -81,10 +80,6 @@
 # if defined UV_TIDES || defined SSH_TIDES
 #  define ADD_M2OBC
 # endif
-
-# undef  TCLIMATOLOGY
-# undef  TCLM_NUDGING
-# undef  M3CLM_NUDGING
 
 # define ANA_BSFLUX
 # define ANA_BTFLUX
@@ -108,17 +103,15 @@
 # define TS_DIF2
 # define MIX_GEO_TS
 # define DJ_GRADPS
+# define SPLINES_VDIFF
+# define SPLINES_VVISC
 # define TS_U3HADVECTION
 # define SOLVE3D
 # define SALINITY
 # define NONLIN_EOS
 # define CURVGRID
-# define SPONGE
 # undef  AVERAGES
 # define MASKING
-# define SPLINES
-# undef  UV_PSOURCE
-# undef  TS_PSOURCE
 # define SOLAR_SOURCE
 
 # define GLS_MIXING
@@ -126,6 +119,7 @@
 #  define KANTHA_CLAYSON
 #  undef  CANUTO_A
 #  define N2S2_HORAVG
+#  define RI_SPLINES
 # endif
 
 # undef  RAMP_TIDES
@@ -138,10 +132,6 @@
 # if defined UV_TIDES || defined SSH_TIDES
 #  define ADD_M2OBC
 # endif
-
-# undef  TCLIMATOLOGY
-# undef  TCLM_NUDGING
-# undef  M3CLM_NUDGING
 
 # define ANA_BSFLUX
 # define ANA_BTFLUX

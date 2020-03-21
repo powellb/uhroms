@@ -2,9 +2,9 @@
       MODULE step_floats_mod
 #if defined NONLINEAR && defined FLOATS
 !
-!svn $Id: step_floats.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: step_floats.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group        John M. Klinck   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group        John M. Klinck   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -51,7 +51,7 @@
       integer, intent(in) :: ng, Lstr, Lend
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 10)
+      CALL wclock_on (ng, iNLM, 10, __LINE__, __FILE__)
 # endif
       CALL step_floats_tile (ng, Lstr, Lend,                            &
      &                       knew(ng), nnew(ng), nfm3(ng), nfm2(ng),    &
@@ -65,7 +65,7 @@
 # endif
      &                       DRIFTER(ng) % track)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 10)
+      CALL wclock_off (ng, iNLM, 10, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE step_floats

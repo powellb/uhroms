@@ -1,8 +1,8 @@
       SUBROUTINE ana_vmix (ng, tile, model)
 !
-!! svn $Id: ana_vmix.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_vmix.h 995 2020-01-10 04:01:28Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -100,8 +100,8 @@
 !
 #if defined MY_APPLICATION
       DO k=1,N(ng)-1
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
+        DO j=JstrT,JendT
+          DO i=IstrT,IendT
             Akv(i,j,k)=???
           END DO
         END DO
@@ -132,8 +132,8 @@
 !
 #if defined MY_APPLICATION
       DO k=1,N(ng)-1
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
+        DO j=JstrT,JendT
+          DO i=IstrT,IendT
             Akt(i,j,k,itemp)=???
           END DO
         END DO

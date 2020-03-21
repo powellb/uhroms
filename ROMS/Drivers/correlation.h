@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: correlation.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: correlation.h 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -71,6 +71,7 @@
       USE mod_scalars
 !
       USE normalization_mod, ONLY : normalization
+      USE strings_mod,       ONLY : FoundError
 !
 !  Imported variable declarations.
 !
@@ -94,7 +95,7 @@
 #ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-!  Set distribute-memory (MPI) world communicator.
+!  Set distribute-memory (mpi) world communicator.
 !-----------------------------------------------------------------------
 !
       IF (PRESENT(mpiCOMM)) THEN
@@ -126,7 +127,8 @@
 !  grids and dimension parameters are known.
 !
         CALL inp_par (iNLM)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Set domain decomposition tile partition range.  This range is
 !  computed only once since the "first_tile" and "last_tile" values
@@ -159,7 +161,7 @@
         DO ng=1,Ngrids
 !$OMP PARALLEL
           DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iNLM, 0)
+            CALL wclock_on (ng, iNLM, 0, __LINE__, __FILE__)
           END DO
 !$OMP END PARALLEL
         END DO
@@ -180,12 +182,16 @@
 !  Initialize metrics over all nested grids, if applicable.
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
 !$OMP PARALLEL
-        CALL initial (ng)
+      CALL initial
 !$OMP END PARALLEL
-        time(ng)=time(ng)+dt(ng)            ! because no time-stepping
-        IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+!
+!  Adjust "time" variable since we are not time-stepping.
+!
+      DO ng=1,Ngrids
+        time(ng)=time(ng)+dt(ng)
       END DO
 !
 !  Initialize run or ensemble counter.
@@ -203,8 +209,9 @@
       Tindex=1
       DO ng=1,Ngrids
         IF (LdefNRM(1,ng).or.LwrtNRM(1,ng)) THEN
-          CALL get_state (ng, 6, 6, STD(1,ng)%name, STDrec, Tindex)
-          IF (exit_flag.ne.NoError) RETURN
+          CALL get_state (ng, 10, 10, STD(1,ng)%name, STDrec, Tindex)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END DO
 !
@@ -215,8 +222,9 @@
       Tindex=2
       DO ng=1,Ngrids
         IF ((LdefNRM(2,ng).or.LwrtNRM(2,ng)).and.(NSA.eq.2)) THEN
-          CALL get_state (ng, 6, 6, STD(2,ng)%name, STDrec, Tindex)
-          IF (exit_flag.ne.NoError) RETURN
+          CALL get_state (ng, 11, 11, STD(2,ng)%name, STDrec, Tindex)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END DO
 
@@ -228,8 +236,9 @@
       Tindex=1
       DO ng=1,Ngrids
         IF (LdefNRM(3,ng).or.LwrtNRM(3,ng)) THEN
-          CALL get_state (ng, 8, 8, STD(3,ng)%name, STDrec, Tindex)
-          IF (exit_flag.ne.NoError) RETURN
+          CALL get_state (ng, 12, 12, STD(3,ng)%name, STDrec, Tindex)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END DO
 #endif
@@ -241,8 +250,9 @@
       Tindex=1
       DO ng=1,Ngrids
         IF (LdefNRM(4,ng).or.LwrtNRM(4,ng)) THEN
-          CALL get_state (ng, 9, 9, STD(4,ng)%name, STDrec, Tindex)
-          IF (exit_flag.ne.NoError) RETURN
+          CALL get_state (ng, 13, 13, STD(4,ng)%name, STDrec, Tindex)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END DO
 #endif
@@ -259,26 +269,31 @@
         IF (ANY(LwrtNRM(:,ng))) THEN
           IF (LdefNRM(1,ng).or.LwrtNRM(1,ng)) THEN
             CALL def_norm (ng, iNLM, 1)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
 
           IF ((LdefNRM(2,ng).or.LwrtNRM(2,ng)).and.(NSA.eq.2)) THEN
             CALL def_norm (ng, iNLM, 2)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
           END IF
 #ifdef ADJUST_BOUNDARY
           IF (LdefNRM(3,ng).or.LwrtNRM(3,ng)) THEN
             CALL def_norm (ng, iNLM, 3)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
 #endif
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
           IF (LdefNRM(4,ng).or.LwrtNRM(4,ng)) THEN
             CALL def_norm (ng, iNLM, 4)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
 #endif
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 !$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL normalization (ng, tile, 2)
@@ -308,25 +323,26 @@
       USE mod_stepping
 !
 #ifdef BALANCE_OPERATOR
-      USE ad_balance_mod, ONLY: ad_balance
+      USE ad_balance_mod,     ONLY : ad_balance
 #endif
       USE ad_convolution_mod, ONLY : ad_convolution
       USE ad_variability_mod, ONLY : ad_variability
-      USE analytical_mod, ONLY : ana_perturb
-      USE ini_adjust_mod, ONLY : load_ADtoTL
-      USE ini_adjust_mod, ONLY : load_TLtoAD
+      USE analytical_mod,     ONLY : ana_perturb
+      USE ini_adjust_mod,     ONLY : load_ADtoTL
+      USE ini_adjust_mod,     ONLY : load_TLtoAD
 #ifdef BALANCE_OPERATOR
-      USE tl_balance_mod, ONLY: tl_balance
+      USE tl_balance_mod,     ONLY : tl_balance
 #endif
       USE tl_convolution_mod, ONLY : tl_convolution
       USE tl_variability_mod, ONLY : tl_variability
 #if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
-      USE zeta_balance_mod, ONLY: balance_ref, biconj
+      USE zeta_balance_mod,   ONLY : balance_ref, biconj
 #endif
+      USE strings_mod,        ONLY : FoundError
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: RunInterval            ! seconds
+      real(dp), intent(in) :: RunInterval            ! seconds
 !
 !  Local variable declarations.
 !
@@ -346,7 +362,8 @@
 !
       DO ng=1,Ngrids
         CALL get_state (ng, iNLM, 9, INI(ng)%name, Lbck, Lbck)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 
 # ifdef ZETA_ELLIPTIC
@@ -420,12 +437,14 @@
         LwrtADJ(ng)=.TRUE.
         LwrtState2d(ng)=.TRUE.
         CALL ad_def_his (ng, LdefADJ(ng))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
         Ladjusted(ng)=.TRUE.
 #endif
         CALL ad_wrt_his (ng)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
         Ladjusted(ng)=.FALSE.
 #endif
@@ -464,7 +483,7 @@
             IF (Master) WRITE (stdout,10)
  10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
      &                ' RESTART file',/)
-            Fcount=RST(ng)%Fcount
+            Fcount=RST(ng)%load
             IF (LcycleRST(ng).and.(RST(ng)%Nrec(Fcount).ge.2)) THEN
               RST(ng)%Rindex=2
               LcycleRST(ng)=.FALSE.
@@ -477,7 +496,8 @@
       END IF
 !
 !-----------------------------------------------------------------------
-!  Stop model and time profiling clocks.  Close output NetCDF files.
+!  Stop model and time profiling clocks, report memory requirements, and
+!  close output NetCDF files.
 !-----------------------------------------------------------------------
 !
 !  Stop time clocks.
@@ -486,17 +506,26 @@
         WRITE (stdout,20)
  20     FORMAT (/,'Elapsed CPU time (seconds):',/)
       END IF
-
+!
       DO ng=1,Ngrids
 !$OMP PARALLEL
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 0)
+          CALL wclock_off (ng, iNLM, 0, __LINE__, __FILE__)
         END DO
 !$OMP END PARALLEL
       END DO
 !
+!  Report dynamic memory and automatic memory requirements.
+!
+!$OMP PARALLEL
+      CALL memory
+!$OMP END PARALLEL
+!
 !  Close IO files.
 !
+      DO ng=1,Ngrids
+        CALL close_inp (ng, iNLM)
+      END DO
       CALL close_out
 
       RETURN

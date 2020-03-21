@@ -1,8 +1,8 @@
       SUBROUTINE ana_fsobc (ng, tile, model)
 !
-!! svn $Id: ana_fsobc.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_fsobc.h 995 2020-01-10 04:01:28Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -69,28 +69,28 @@
 #if defined MY_APPLICATION
       IF (LBC(ieast,isFsur,ng)%acquire.and.                             &
      &    DOMAIN(ng)%Eastern_Edge(tile)) THEN
-        DO j=JstrR,JendR
+        DO j=JstrT,JendT
           BOUNDARY(ng)%zeta_east(j)=0.0_r8
         END DO
       END IF
 
       IF (LBC(iwest,isFsur,ng)%acquire.and.                             &
      &    DOMAIN(ng)%Western_Edge(tile)) THEN
-        DO j=JstrR,JendR
+        DO j=JstrT,JendT
           BOUNDARY(ng)%zeta_west(j)=0.0_r8
         END DO
       END IF
 
       IF (LBC(isouth,isFsur,ng)%acquire.and.                            &
      &    DOMAIN(ng)%Southern_Edge(tile)) THEN
-        DO i=IstrR,IendR
+        DO i=IstrT,IendT
           BOUNDARY(ng)%zeta_south(i)=0.0_r8
         END DO
       END IF
 
       IF (LBC(inorth,isFsur,ng)%acquire.and.                            &
      &    DOMAIN(ng)%Northern_Edge(tile)) THEN
-        DO i=IstrR,IendR
+        DO i=IstrT,IendT
           BOUNDARY(ng)%zeta_north(i)=0.0_r8
         END DO
       END IF

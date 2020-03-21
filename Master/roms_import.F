@@ -3,9 +3,9 @@
 
 #ifdef MODEL_COUPLING
 !
-!svn $Id: roms_import.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: roms_import.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -80,8 +80,6 @@
 !  Local variable declarations.
 !
       integer :: i, ij, j
-
-      real(r8), parameter :: Large = 1.0E+20_r8
 
       real(r8), dimension(2) :: range
 # ifdef DISTRIBUTE

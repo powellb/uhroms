@@ -2,9 +2,9 @@
       MODULE rp_omega_mod
 #if defined TL_IOMS && defined SOLVE3D
 !
-!svn $Id: rp_omega.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_omega.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -31,7 +31,7 @@
       CONTAINS
 !
 !***********************************************************************
-      SUBROUTINE rp_omega (ng, tile)
+      SUBROUTINE rp_omega (ng, tile, model)
 !***********************************************************************
 !
       USE mod_param
@@ -39,39 +39,25 @@
       USE mod_ocean
 # if defined SEDIMENT && defined SED_MORPH
       USE mod_sedbed
-# endif
-# ifdef Q_PSOURCE
-      USE mod_sources
-# endif
-# if defined Q_PSOURCE || (defined SEDIMENT && defined SED_MORPH)
       USE mod_stepping
 # endif
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
 !
 !  Local variable declarations.
 !
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 13)
+      CALL wclock_on (ng, model, 13, __LINE__, __FILE__)
 # endif
-      CALL rp_omega_tile (ng, tile,                                     &
+      CALL rp_omega_tile (ng, tile, model,                              &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    IminS, ImaxS, JminS, JmaxS,                   &
 # if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
      &                    nstp(ng), nnew(ng),                           &
-# endif
-# ifdef Q_PSOURCE
-     &                    Msrc(ng), Nsrc(ng),                           &
-     &                    SOURCES(ng) % Isrc,                           &
-     &                    SOURCES(ng) % Jsrc,                           &
-     &                    SOURCES(ng) % Dsrc,                           &
-     &                    SOURCES(ng) % Qsrc,                           &
-# endif
-# if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
      &                    GRID(ng) % omn,                               &
      &                    SEDBED(ng) % bed_thick,                       &
      &                    SEDBED(ng) % tl_bed_thick,                    &
@@ -85,24 +71,18 @@
      &                    OCEAN(ng) % W,                                &
      &                    OCEAN(ng) % tl_W)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 13)
+      CALL wclock_off (ng, model, 13, __LINE__, __FILE__)
 # endif
 
       RETURN
       END SUBROUTINE rp_omega
 !
 !***********************************************************************
-      SUBROUTINE rp_omega_tile (ng, tile,                               &
+      SUBROUTINE rp_omega_tile (ng, tile, model,                        &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          IminS, ImaxS, JminS, JmaxS,             &
 # if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
      &                          nstp, nnew,                             &
-# endif
-# ifdef Q_PSOURCE
-     &                          Msrc, Nsrc,                             &
-     &                          Isrc, Jsrc, Dsrc, Qsrc,                 &
-# endif
-# if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
      &                          omn,
      &                          bed_thick, tl_bed_thick,                &
 # endif
@@ -113,6 +93,7 @@
 !
       USE mod_param
       USE mod_scalars
+      USE mod_sources
 !
       USE bc_3d_mod, ONLY : bc_w3d_tile
 # ifdef DISTRIBUTE
@@ -121,24 +102,14 @@
 !
 !  Imported variable declarations.
 !
-      integer, intent(in) :: ng, tile
+      integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
 # if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
       integer, intent(in) :: nstp, nnew
 # endif
-# ifdef Q_PSOURCE
-      integer, intent(in) :: Msrc, Nsrc
-# endif
 !
 # ifdef ASSUMED_SHAPE
-#  ifdef Q_PSOURCE
-      integer, intent(in) :: Isrc(:)
-      integer, intent(in) :: Jsrc(:)
-
-      real(r8), intent(in) :: Dsrc(:)
-      real(r8), intent(in) :: Qsrc(:,:)
-#  endif
 #  if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
       real(r8), intent(in) :: omn(LBi:,LBj:)
       real(r8), intent(in):: bed_thick(LBi:,LBj:,:)
@@ -156,13 +127,6 @@
 
 # else
 
-#  ifdef Q_PSOURCE
-      integer, intent(in) :: Isrc(Msrc)
-      integer, intent(in) :: Jsrc(Msrc)
-
-      real(r8), intent(in) :: Dsrc(Msrc)
-      real(r8), intent(in) :: Qsrc(Msrc,N(ng))
-#  endif
 #  if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
       real(r8), intent(in) :: omn(LBi:UBi,LBj:UBj)
       real(r8), intent(in):: bed_thick(LBi:UBi,LBj:UBj,2)
@@ -181,10 +145,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, j, k
-# ifdef Q_PSOURCE
-      integer :: ii, jj, is
-# endif
+      integer :: i, ii, is, j, jj, k
       real(r8) :: cff, tl_cff
 # if defined SEDIMENT_NOT_YET && defined SED_MORPH_NOT_YET
       real(r8) :: cff1
@@ -236,23 +197,23 @@
      &                   tl_Hvom(i,j+1,k)-tl_Hvom(i,j,k))
           END DO
         END DO
-# ifdef Q_PSOURCE
 !
-!  Apply mass point sources - Volume influx.
+!  Apply mass point sources (volume vertical influx), if any.
 !
-        DO is=1,Nsrc
-          ii=Isrc(is)
-          jj=Jsrc(is)
-          IF (((IstrR.le.ii).and.(ii.le.IendR)).and.                    &
-     &        ((JstrR.le.jj).and.(jj.le.JendR)).and.                    &
-     &        (j.eq.jj)) THEN
-            DO k=1,N(ng)
-              W(ii,jj,k)=W(ii,jj,k)+Qsrc(is,k)
-!!            tl_W(ii,jj,k)=tl_W(ii,jj,k)+0.0_r8
-            END DO
-          END IF
-        END DO
-# endif
+        IF (LwSrc(ng)) THEN
+          DO is=1,Nsrc(ng)
+            ii=SOURCES(ng)%Isrc(is)
+            jj=SOURCES(ng)%Jsrc(is)
+            IF (((IstrR.le.ii).and.(ii.le.IendR)).and.                  &
+     &          ((JstrR.le.jj).and.(jj.le.JendR)).and.                  &
+     &          (j.eq.jj)) THEN
+              DO k=1,N(ng)
+                W(ii,jj,k)=W(ii,jj,k)+SOURCES(ng)%Qsrc(is,k)
+!!              tl_W(ii,jj,k)=tl_W(ii,jj,k)+0.0_r8
+              END DO
+            END IF
+          END DO
+        END IF
 !
         DO i=Istr,Iend
           cff=1.0_r8/(z_w(i,j,N(ng))-z_w(i,j,0))
@@ -302,12 +263,12 @@
      &                  tl_W)
 
 # ifdef DISTRIBUTE
-      CALL mp_exchange3d (ng, tile, iRPM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    W)
-      CALL mp_exchange3d (ng, tile, iRPM, 1,                            &
+      CALL mp_exchange3d (ng, tile, model, 1,                           &
      &                    LBi, UBi, LBj, UBj, 0, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &

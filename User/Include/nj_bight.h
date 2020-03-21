@@ -1,7 +1,7 @@
 /*
-** svn $Id: nj_bight.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: nj_bight.h 995 2020-01-10 04:01:28Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -16,8 +16,9 @@
 #define UV_SADVECTION
 #define UV_QDRAG
 #define UV_COR
-#undef  UV_PSOURCE
 #define DJ_GRADPS
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_U3HADVECTION
 #define TS_C4VADVECTION
 #undef  TS_SVADVECTION
@@ -25,7 +26,6 @@
 #undef  TS_A4VADVECTION
 #undef  TS_DIF2
 #undef  MIX_GEO_TS
-#undef  TS_PSOURCE
 #define SOLAR_SOURCE
 
 #define NONLIN_EOS
@@ -33,7 +33,6 @@
 #define CURVGRID
 #define SOLVE3D
 #define MASKING
-#define SPLINES
 #define AVERAGES
 #define STATIONS
 #undef  FLOATS
@@ -46,11 +45,13 @@
 
 #ifdef GLS_MIXING
 # define N2S2_HORAVG
+# define RI_SPLINES
 # undef  KANTHA_CLAYSON
 #endif
 
 #ifdef MY25_MIXING
 # define N2S2_HORAVG
+# define RI_SPLINES
 # define KANTHA_CLAYSON
 #endif
 
@@ -60,6 +61,7 @@
 # define LMD_SKPP
 # undef  LMD_BKPP
 # define LMD_NONLOCAL
+# define RI_SPLINES
 #endif
 
 #define BULK_FLUXES

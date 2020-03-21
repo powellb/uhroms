@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_parallel
 !
-!svn $Id: mod_parallel.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_parallel.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -32,6 +32,8 @@
 !
       logical :: InpThread
       logical :: OutThread
+
+!$OMP THREADPRIVATE (InpThread, OutThread)
 !
 !  Number of shared-memory parallel threads or distributed-memory
 !  parallel nodes.
@@ -45,14 +47,14 @@
 
 !$OMP THREADPRIVATE (first_tile, last_tile)
 
-#ifdef AIR_OCEAN
+#if defined ATM_COUPLING && defined MCT_LIB
 !
 !  Parallel nodes assined to the atmosphere model.
 !
       integer :: peATM_frst            ! first atmosphere parallel node
       integer :: peATM_last            ! last  atmosphere parallel node
 #endif
-#ifdef WAVES_OCEAN
+#if defined WAV_COUPLING && defined MCT_LIB
 !
 !  Parallel nodes assined to the wave model.
 !
@@ -77,8 +79,12 @@
 !    Cstr          Starting time for program region.
 !    Cend          Ending time for program region.
 !    Csum          Accumulated time for progam region.
+!    Ctotal        Total time profiled
+!    total_cpu     Total elapsed CPU
 !
       integer, allocatable :: proc(:,:,:)
+
+      real(r8) :: Ctotal, total_cpu, total_model(4)
 
       real(r8), allocatable :: Cstr(:,:,:)
       real(r8), allocatable :: Cend(:,:,:)
@@ -98,7 +104,7 @@
 !
 !  Distributed-memory master process.
 !
-      integer, parameter :: MyMaster = 0
+      integer :: MyMaster = 0
 !
 !  Rank of the parallel local process.
 !
@@ -132,6 +138,9 @@
 !!    integer, parameter :: MP_FLOAT = MPI_REAL4
 #  endif
 # endif
+# ifdef MPI
+      integer, parameter :: MP_DOUBLE = MPI_DOUBLE_PRECISION
+# endif
 #endif
 !
       CONTAINS
@@ -154,22 +163,41 @@
 !$OMP PARALLEL
 !  First and last tile to process in a tiled application.
 !
-      allocate ( first_tile(Ngrids) )
-      allocate ( last_tile (Ngrids) )
+      IF (.not.allocated(first_tile)) THEN
+        allocate ( first_tile(Ngrids) )
+      END IF
+      IF (.not.allocated(last_tile)) THEN
+        allocate ( last_tile(Ngrids) )
+      END IF
 !
 !  Time profiling variables.
 !
-      allocate ( proc(0:1,4,Ngrids) )
-      proc(0:1,1:4,1:Ngrids)=0
+      IF (.not.allocated(proc)) THEN
+        allocate ( proc(0:1,4,Ngrids) )
+        proc(0:1,1:4,1:Ngrids)=0
+      END IF
 
-      allocate ( Cstr(0:Nregion,4,Ngrids) )
-      Cstr(0:Nregion,1:4,1:Ngrids)=0.0_r8
+      IF (.not.allocated(Cstr)) THEN
+        allocate ( Cstr(0:Nregion,4,Ngrids) )
+        Cstr(0:Nregion,1:4,1:Ngrids)=0.0_r8
+      END IF
 
-      allocate ( Cend(0:Nregion,4,Ngrids) )
-      Cend(0:Nregion,1:4,1:Ngrids)=0.0_r8
+      IF (.not.allocated(Cend)) THEN
+        allocate ( Cend(0:Nregion,4,Ngrids) )
+        Cend(0:Nregion,1:4,1:Ngrids)=0.0_r8
+      END IF
 !$OMP END PARALLEL
-      allocate ( Csum(0:Nregion,4,Ngrids) )
-      Csum(0:Nregion,1:4,1:Ngrids)=0.0_r8
+
+      IF (.not.allocated(Csum)) THEN
+        allocate ( Csum(0:Nregion,4,Ngrids) )
+        Csum(0:Nregion,1:4,1:Ngrids)=0.0_r8
+      END IF
+!
+! Initialize other profiling variables.
+!
+      Ctotal=0.0_r8
+      total_cpu=0.0_r8
+      total_model=0.0_r8
 
 #if defined DISTRIBUTE && defined PROFILE
 !
@@ -201,30 +229,34 @@
 #ifdef DISTRIBUTE
       integer :: MyError
 #else
-      integer :: my_numthreads
+      integer :: my_numthreads, my_threadnum
 #endif
+
+#if defined _OPENMP
 !
 !-----------------------------------------------------------------------
-!  Initialize shared-memory (OpenMP) or serial configuration.
+!  Initialize shared-memory (OpenMP) configuration.
 !-----------------------------------------------------------------------
-
-#ifdef _OPENMP
 !
 !  Disable dynamic adjustment, by the run-time environment, of the
 !  number of threads available to execute parallel regions.
 !
       CALL omp_set_dynamic (.FALSE.)
-#endif
-#ifndef DISTRIBUTE
 !
-!  Inquire number of threads in parallel region.
+!  Inquire number of threads in parallel region.  Set master and I/O
+!  switches.
 !
       numthreads=my_numthreads()
+      IF (my_threadnum().eq.0) THEN
+        InpThread=.TRUE.
+        OutThread=.TRUE.
+      ELSE
+        InpThread=.FALSE.
+        OutThread=.FALSE.
+      END IF
       Master=.TRUE.
-      InpThread=.TRUE.
-      OutThread=.TRUE.
-#endif
-#ifdef DISTRIBUTE
+
+#elif defined DISTRIBUTE
 # ifdef MPI
 !
 !-----------------------------------------------------------------------
@@ -263,6 +295,16 @@
       END IF
 #  endif
 # endif
+#else
+!
+!-----------------------------------------------------------------------
+!  Initialize serial configuration.
+!-----------------------------------------------------------------------
+!
+      numthreads=my_numthreads()
+      Master=.TRUE.
+      InpThread=.TRUE.
+      OutThread=.TRUE.
 #endif
 
       RETURN

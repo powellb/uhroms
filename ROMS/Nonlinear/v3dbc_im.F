@@ -2,9 +2,9 @@
       MODULE v3dbc_mod
 #ifdef SOLVE3D
 !
-!svn $Id: v3dbc_im.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: v3dbc_im.F 995 2020-01-10 04:01:28Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -56,6 +56,7 @@
 !
       USE mod_param
       USE mod_boundary
+      USE mod_clima
       USE mod_grid
       USE mod_ncparam
       USE mod_scalars
@@ -80,7 +81,8 @@
 
       real(r8), parameter :: eps = 1.0E-20_r8
 
-      real(r8) :: Ce, Cx, cff, dVde, dVdt, dVdx, tau
+      real(r8) :: Ce, Cx, cff, dVde, dVdt, dVdx
+      real(r8) :: obc_in, obc_out, phi, tau
 
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: grad
 
@@ -108,12 +110,25 @@
                 dVde=v(i,Jstr+1,k,nout)-v(i,Jstr+2,k,nout)
 
                 IF (LBC(isouth,isVvel,ng)%nudging) THEN
-                  IF ((dVdt*dVde).lt.0.0_r8) THEN
-                    tau=M3obc_in(ng,isouth)
+                  IF (LnudgeM3CLM(ng)) THEN
+                    obc_out=0.5_r8*                                     &
+     &                      (CLIMA(ng)%M3nudgcof(i,Jstr-1,k)+           &
+     &                       CLIMA(ng)%M3nudgcof(i,Jstr  ,k))
+                    obc_in =obcfac(ng)*obc_out
                   ELSE
-                    tau=M3obc_out(ng,isouth)
+                    obc_out=M3obc_out(ng,isouth)
+                    obc_in =M3obc_in (ng,isouth)
                   END IF
+                  IF ((dVdt*dVde).lt.0.0_r8) THEN
+                    tau=obc_in
+                  ELSE
+                    tau=obc_out
+                  END IF
+# ifdef IMPLICIT_NUDGING
+                  IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+# else
                   tau=tau*dt(ng)
+# endif
                 END IF
 
                 IF ((dVdt*dVde).lt.0.0_r8) dVdt=0.0_r8
@@ -142,9 +157,15 @@
      &                           (cff+Ce)
 
                 IF (LBC(isouth,isVvel,ng)%nudging) THEN
+# ifdef IMPLICIT_NUDGING
+                  phi=dt(ng)/(tau+dt(ng))
+                  v(i,Jstr,k,nout)=(1.0_r8-phi)*v(i,Jstr,k,nout)+       &
+     &                             phi*BOUNDARY(ng)%v_south(i,k)
+# else
                   v(i,Jstr,k,nout)=v(i,Jstr,k,nout)+                    &
      &                             tau*(BOUNDARY(ng)%v_south(i,k)-      &
      &                                  v(i,Jstr,k,nstp))
+# endif
                 END IF
 # ifdef MASKING
                 v(i,Jstr,k,nout)=v(i,Jstr,k,nout)*                      &
@@ -231,12 +252,25 @@
                 dVde=v(i,Jend,k,nout)-v(i,Jend-1,k,nout)
 
                 IF (LBC(inorth,isVvel,ng)%nudging) THEN
-                  IF ((dVdt*dVde).lt.0.0_r8) THEN
-                    tau=M3obc_in(ng,inorth)
+                  IF (LnudgeM3CLM(ng)) THEN
+                    obc_out=0.5_r8*                                     &
+     &                      (CLIMA(ng)%M3nudgcof(i,Jend  ,k)+           &
+     &                       CLIMA(ng)%M3nudgcof(i,Jend+1,k))
+                    obc_in =obcfac(ng)*obc_out
                   ELSE
-                    tau=M3obc_out(ng,inorth)
+                    obc_out=M3obc_out(ng,inorth)
+                    obc_in =M3obc_in (ng,inorth)
                   END IF
+                  IF ((dVdt*dVde).lt.0.0_r8) THEN
+                    tau=obc_in
+                  ELSE
+                    tau=obc_out
+                  END IF
+# ifdef IMPLICIT_NUDGING
+                  IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+# else
                   tau=tau*dt(ng)
+# endif
                 END IF
 
                 IF ((dVdt*dVde).lt.0.0_r8) dVdt=0.0_r8
@@ -265,9 +299,15 @@
      &                             (cff+Ce)
 
                 IF (LBC(inorth,isVvel,ng)%nudging) THEN
+# ifdef IMPLICIT_NUDGING
+                  phi=dt(ng)/(tau+dt(ng))
+                  v(i,Jend+1,k,nout)=(1.0_r8-phi)*v(i,Jend+1,k,nout)+   &
+     &                               phi*BOUNDARY(ng)%v_north(i,k)
+# else
                   v(i,Jend+1,k,nout)=v(i,Jend+1,k,nout)+                &
      &                               tau*(BOUNDARY(ng)%v_north(i,k)-    &
      &                                    v(i,Jend+1,k,nstp))
+# endif
                 END IF
 # ifdef MASKING
                 v(i,Jend+1,k,nout)=v(i,Jend+1,k,nout)*                  &
@@ -354,12 +394,25 @@
                 dVdx=v(Istr,j,k,nout)-v(Istr+1,j,k,nout)
 
                 IF (LBC(iwest,isVvel,ng)%nudging) THEN
-                  IF ((dVdt*dVdx).lt.0.0_r8) THEN
-                    tau=M3obc_in(ng,iwest)
+                  IF (LnudgeM3CLM(ng)) THEN
+                    obc_out=0.5_r8*                                     &
+     &                      (CLIMA(ng)%M3nudgcof(Istr-1,j-1,k)+         &
+     &                       CLIMA(ng)%M3nudgcof(Istr-1,j  ,k))
+                    obc_in =obcfac(ng)*obc_out
                   ELSE
-                    tau=M3obc_out(ng,iwest)
+                    obc_out=M3obc_out(ng,iwest)
+                    obc_in =M3obc_in (ng,iwest)
                   END IF
+                  IF ((dVdt*dVdx).lt.0.0_r8) THEN
+                    tau=obc_in
+                  ELSE
+                    tau=obc_out
+                  END IF
+# ifdef IMPLICIT_NUDGING
+                  IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+# else
                   tau=tau*dt(ng)
+# endif
                 END IF
 
                 IF ((dVdt*dVdx).lt.0.0_r8) dVdt=0.0_r8
@@ -388,9 +441,15 @@
      &                             (cff+Cx)
 
                 IF (LBC(iwest,isVvel,ng)%nudging) THEN
+# ifdef IMPLICIT_NUDGING
+                  phi=dt(ng)/(tau+dt(ng))
+                  v(Istr-1,j,k,nout)=(1.0_r8-phi)*v(Istr-1,j,k,nout)+   &
+     &                               phi*BOUNDARY(ng)%v_west(j,k)
+# else
                   v(Istr-1,j,k,nout)=v(Istr-1,j,k,nout)+                &
      &                               tau*(BOUNDARY(ng)%v_west(j,k)-     &
      &                                    v(Istr-1,j,k,nstp))
+# endif
                 END IF
 # ifdef MASKING
                 v(Istr-1,j,k,nout)=v(Istr-1,j,k,nout)*                  &
@@ -493,12 +552,25 @@
                 dVdx=v(Iend,j,k,nout)-v(Iend-1,j,k,nout)
 
                 IF (LBC(ieast,isVvel,ng)%nudging) THEN
-                  IF ((dVdt*dVdx).lt.0.0_r8) THEN
-                    tau=M3obc_in(ng,ieast)
+                  IF (LnudgeM3CLM(ng)) THEN
+                    obc_out=0.5_r8*                                     &
+     &                      (CLIMA(ng)%M3nudgcof(Iend+1,j-1,k)+         &
+     &                       CLIMA(ng)%M3nudgcof(Iend+1,j  ,k))
+                    obc_in =obcfac(ng)*obc_out
                   ELSE
-                    tau=M3obc_out(ng,ieast)
+                    obc_out=M3obc_out(ng,ieast)
+                    obc_in =M3obc_in (ng,ieast)
                   END IF
+                  IF ((dVdt*dVdx).lt.0.0_r8) THEN
+                    tau=obc_in
+                  ELSE
+                    tau=obc_out
+                  END IF
+# ifdef IMPLICIT_NUDGING
+                  IF (tau.gt.0.0_r8) tau=1.0_r8/tau
+# else
                   tau=tau*dt(ng)
+# endif
                 END IF
 
                 IF ((dVdt*dVdx).lt.0.0_r8) dVdt=0.0_r8
@@ -527,9 +599,15 @@
      &                             (cff+Cx)
 
                 IF (LBC(ieast,isVvel,ng)%nudging) THEN
+# ifdef IMPLICIT_NUDGING
+                  phi=dt(ng)/(tau+dt(ng))
+                  v(Iend+1,j,k,nout)=(1.0_r8-phi)*v(Iend+1,j,k,nout)+   &
+     &                               phi*BOUNDARY(ng)%v_east(j,k)
+# else
                   v(Iend+1,j,k,nout)=v(Iend+1,j,k,nout)+                &
      &                               tau*(BOUNDARY(ng)%v_east(j,k)-     &
      &                                    v(Iend+1,j,k,nstp))
+# endif
                 END IF
 # ifdef MASKING
                 v(Iend+1,j,k,nout)=v(Iend+1,j,k,nout)*                  &

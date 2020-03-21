@@ -2,9 +2,9 @@
       MODULE mp_exchange_mod
 #ifdef DISTRIBUTE
 !
-!svn $Id: mp_exchange.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mp_exchange.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -356,13 +356,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 40)
+      CALL wclock_on (ng, model, 60, __LINE__,                          &
+     &                __FILE__//":mp_exchange2d")
 # endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -886,7 +892,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 40)
+      CALL wclock_off (ng, model, 60, __LINE__,                         &
+     &                 __FILE__//":mp_exchange2d")
 # endif
 
       RETURN
@@ -962,13 +969,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 43)
+      CALL wclock_on (ng, model, 63, __LINE__,                          &
+     &                __FILE__//":mp_exchange2d_bry")
 # endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -1386,7 +1399,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 43)
+      CALL wclock_off (ng, model, 63, __LINE__,                         &
+     &                 __FILE__//":mp_exchange2d_bry")
 # endif
 
       RETURN
@@ -1466,13 +1480,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 41)
+      CALL wclock_on (ng, model, 61, __LINE__,                          &
+     &                __FILE__//":mp_exchange3d")
 # endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -2095,7 +2115,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 41)
+      CALL wclock_off (ng, model, 61, __LINE__,                         &
+     &                 __FILE__//":mp_exchange3d")
 # endif
 
       RETURN
@@ -2171,13 +2192,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 43)
+      CALL wclock_on (ng, model, 63, __LINE__,                          &
+     &                __FILE__//":mp_exchange3d_bry")
 # endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -2708,7 +2735,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 43)
+      CALL wclock_off (ng, model, 63, __LINE__,                         &
+     &                 __FILE__//":mp_exchange3d_bry")
 # endif
 
       RETURN
@@ -2791,13 +2819,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 42)
+      CALL wclock_on (ng, model, 62, __LINE__,                          &
+     &                __FILE__//":mp_exchange4d")
 # endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -3379,7 +3413,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 42)
+      CALL wclock_off (ng, model, 62, __LINE__,                         &
+     &                 __FILE__//":mp_exchange4d")
 # endif
 
       RETURN
@@ -3456,13 +3491,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 40)
+      CALL wclock_on (ng, model, 60, __LINE__,                          &
+     &                __FILE__//":ad_mp_exchange2d")
 #  endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(ad_A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -4120,7 +4161,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 40)
+      CALL wclock_off (ng, model, 60, __LINE__,                         &
+     &                 __FILE__//":ad_mp_exchange2d")
 #  endif
 
       RETURN
@@ -4196,13 +4238,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 43)
+      CALL wclock_on (ng, model, 63, __LINE__,                          &
+     &                __FILE__//":ad_mp_exchange2d_bry")
 #  endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(ad_A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -4754,7 +4802,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 43)
+      CALL wclock_off (ng, model, 63, __LINE__,                         &
+     &                 __FILE__//":ad_mp_exchange2d_bry")
 #  endif
 
       RETURN
@@ -4834,13 +4883,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 41)
+      CALL wclock_on (ng, model, 61, __LINE__,                          &
+     &                __FILE__//":ad_mp_exchange3d")
 #  endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(ad_A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -5597,7 +5652,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 41)
+      CALL wclock_off (ng, model, 61, __LINE__,                         &
+     &                 __FILE__//":ad_mp_exchange3d")
 #  endif
 
       RETURN
@@ -5672,13 +5728,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 43)
+      CALL wclock_on (ng, model, 63, __LINE__,                          &
+     &                __FILE__//":ad_mp_exchange3d_bry")
 #  endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(ad_A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -6343,7 +6405,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 43)
+      CALL wclock_off (ng, model, 63, __LINE__,                         &
+     &                 __FILE__//":ad_mp_exchange3d_bry")
 #  endif
 
       RETURN
@@ -6424,13 +6487,19 @@
 !  Turn on time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, model, 42)
+      CALL wclock_on (ng, model, 62, __LINE__,                          &
+     &                __FILE__//":ad_mp_exchange4d")
 #  endif
 !
 !-----------------------------------------------------------------------
 !  Determine rank of tile neighbors and number of ghost-points to
 !  exchange.
 !-----------------------------------------------------------------------
+!
+!  Maximum automatic buffer memory size in bytes.
+!
+      BmemMax(ng)=MAX(BmemMax(ng), REAL((4*SIZE(SendW)+                 &
+     &                                   4*SIZE(SendS))*KIND(ad_A),r8))
 !
       CALL tile_neighbors (ng, Nghost, EW_periodic, NS_periodic,        &
      &                     GrecvW, GsendW, Wtile, Wexchange,            &
@@ -7122,7 +7191,8 @@
 !  Turn off time clocks.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, model, 42)
+      CALL wclock_off (ng, model, 62, __LINE__,                         &
+     &                __FILE__//":ad_mp_exchange4d")
 #  endif
 
       RETURN

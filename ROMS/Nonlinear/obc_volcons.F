@@ -1,9 +1,10 @@
+#undef DEBUG_VOLCONS
 #include "cppdefs.h"
       MODULE obc_volcons_mod
 !
-!svn $Id: obc_volcons.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: obc_volcons.F 995 2020-01-10 04:01:28Z arango $
 !=======================================================================
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !========================================== Alexander F. Shchepetkin ===
@@ -214,6 +215,12 @@
           op_handle(1)='SUM'
           op_handle(2)='SUM'
           CALL mp_reduce (ng, iNLM, 2, buffer, op_handle)
+# ifdef DEBUG_VOLCONS
+          WRITE (150,10) MyRank, iic(ng), iif(ng), bc_area, buffer(1),  &
+                         bc_flux, buffer(2), buffer(2)/buffer(1)
+  10      FORMAT (i3,1x,i3.3,1x,i3.3,5(1x,1pe23.15))
+          CALL my_flush (150)
+# endif
           bc_area=buffer(1)
           bc_flux=buffer(2)
 #endif

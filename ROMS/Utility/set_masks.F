@@ -2,9 +2,9 @@
       MODULE set_masks_mod
 #ifdef MASKING
 !
-!svn $Id: set_masks.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: set_masks.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -14,10 +14,8 @@
 !  are replaced by the _FillValue in the output files to  facilitate   !
 !  post-processing with generic tools.                                 !
 !                                                                      !
-# ifdef UV_PSOURCE
 !  If point sources, insure that masks at point source locations are   !
 !  set to water to avoid masking with _FillValue at those locations.   !
-# endif
 # ifdef WET_DRY
 !
 !  If wetting and drying, masks array are time dependent and changed   !
@@ -47,9 +45,6 @@
 !
       USE mod_param
       USE mod_grid
-# ifdef UV_PSOURCE
-      USE mod_sources
-# endif
 !
 !  Imported variable declarations.
 !
@@ -60,17 +55,11 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 2)
+      CALL wclock_on (ng, model, 2, __LINE__, __FILE__)
 # endif
       CALL set_masks_tile (ng, tile, model,                             &
      &                     LBi, UBi, LBj, UBj,                          &
      &                     IminS, ImaxS, JminS, JmaxS,                  &
-# ifdef UV_PSOURCE
-     &                     Msrc(ng), Nsrc(ng),                          &
-     &                     SOURCES(ng) % Isrc,                          &
-     &                     SOURCES(ng) % Jsrc,                          &
-     &                     SOURCES(ng) % Dsrc,                          &
-# endif
      &                     GRID(ng) % pmask,                            &
      &                     GRID(ng) % rmask,                            &
      &                     GRID(ng) % umask,                            &
@@ -90,12 +79,12 @@
      &                     GRID(ng) % umask_dia,                        &
      &                     GRID(ng) % vmask_dia,                        &
 # endif
-     &                     GRID(ng) % pmask_io,                         &
-     &                     GRID(ng) % rmask_io,                         &
-     &                     GRID(ng) % umask_io,                         &
-     &                     GRID(ng) % vmask_io)
+     &                     GRID(ng) % pmask_full,                       &
+     &                     GRID(ng) % rmask_full,                       &
+     &                     GRID(ng) % umask_full,                       &
+     &                     GRID(ng) % vmask_full)
 # ifdef PROFILE
-      CALL wclock_off (ng, model, 2)
+      CALL wclock_off (ng, model, 2, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -105,10 +94,6 @@
       SUBROUTINE set_masks_tile (ng, tile, model,                       &
      &                           LBi, UBi, LBj, UBj,                    &
      &                           IminS, ImaxS, JminS, JmaxS,            &
-# ifdef UV_PSOURCE
-     &                           Msrc, Nsrc,                            &
-     &                           Isrc, Jsrc, Dsrc,                      &
-# endif
      &                           pmask, rmask,                          &
      &                           umask, vmask,                          &
 # if defined AVERAGES    || \
@@ -122,12 +107,13 @@
      &                           pmask_dia, rmask_dia,                  &
      &                           umask_dia, vmask_dia,                  &
 # endif
-     &                           pmask_io, rmask_io,                    &
-     &                           umask_io, vmask_io)
+     &                           pmask_full, rmask_full,                &
+     &                           umask_full, vmask_full)
 !***********************************************************************
 !
       USE mod_param
       USE mod_scalars
+      USE mod_sources
 !
       USE exchange_2d_mod
 # ifdef DISTRIBUTE
@@ -139,17 +125,8 @@
       integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
-# ifdef UV_PSOURCE
-      integer, intent(in) :: Msrc, Nsrc
-# endif
 !
 # ifdef ASSUMED_SHAPE
-#  ifdef UV_PSOURCE
-      integer, intent(in) :: Isrc(:)
-      integer, intent(in) :: Jsrc(:)
-
-      real(r8), intent(in) :: Dsrc(:)
-#  endif
       real(r8), intent(in) :: pmask(LBi:,LBj:)
       real(r8), intent(in) :: rmask(LBi:,LBj:)
       real(r8), intent(in) :: umask(LBi:,LBj:)
@@ -169,17 +146,11 @@
       real(r8), intent(inout) :: umask_dia(LBi:,LBj:)
       real(r8), intent(inout) :: vmask_dia(LBi:,LBj:)
 #  endif
-      real(r8), intent(inout) :: pmask_io(LBi:,LBj:)
-      real(r8), intent(inout) :: rmask_io(LBi:,LBj:)
-      real(r8), intent(inout) :: umask_io(LBi:,LBj:)
-      real(r8), intent(inout) :: vmask_io(LBi:,LBj:)
+      real(r8), intent(inout) :: pmask_full(LBi:,LBj:)
+      real(r8), intent(inout) :: rmask_full(LBi:,LBj:)
+      real(r8), intent(inout) :: umask_full(LBi:,LBj:)
+      real(r8), intent(inout) :: vmask_full(LBi:,LBj:)
 # else
-#  ifdef UV_PSOURCE
-      integer, intent(in) :: Isrc(Msrc)
-      integer, intent(in) :: Jsrc(Msrc)
-
-      real(r8), intent(in) :: Dsrc(Msrc)
-#  endif
       real(r8), intent(in) :: pmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
@@ -199,79 +170,78 @@
       real(r8), intent(inout) :: umask_dia(LBi:UBi,LBj:UBj)
       real(r8), intent(inout) :: vmask_dia(LBi:UBi,LBj:UBj)
 #  endif
-      real(r8), intent(inout) :: pmask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: rmask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: umask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: vmask_io(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: pmask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: rmask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: umask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(inout) :: vmask_full(LBi:UBi,LBj:UBj)
 # endif
 !
 !  Local variable declarations.
 !
-      integer :: i, j
-# ifdef UV_PSOURCE
-      integer :: is
-# endif
+      integer :: i, is, j
 
 # include "set_bounds.h"
 !
 !-----------------------------------------------------------------------
-!  Initialize internal history files Land/Sea masks with its respective
-!  application grid mask.
+!  Initialize internal full Land/Sea masks with its respective
+!  application time-indrpendent values.
 !-----------------------------------------------------------------------
 !
-      DO j=Jstr,JendR
-        DO i=Istr,IendR
-          pmask_io(i,j)=pmask(i,j)
+!  The full mask values are updated with time-dependent values in
+!  file "wetdry.F" if wetting and drying is activated.
+!
+      DO j=JstrP,JendP
+        DO i=IstrP,IendP
+          pmask_full(i,j)=pmask(i,j)
         END DO
       END DO
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
-          rmask_io(i,j)=rmask(i,j)
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
+          rmask_full(i,j)=rmask(i,j)
         END DO
       END DO
-      DO j=JstrR,JendR
-        DO i=Istr,IendR
-          umask_io(i,j)=umask(i,j)
+      DO j=JstrT,JendT
+        DO i=IstrP,IendT
+          umask_full(i,j)=umask(i,j)
         END DO
       END DO
-      DO j=Jstr,JendR
-        DO i=IstrR,IendR
-          vmask_io(i,j)=vmask(i,j)
+      DO j=JstrP,JendT
+        DO i=IstrT,IendT
+          vmask_full(i,j)=vmask(i,j)
         END DO
       END DO
-
-# ifdef UV_PSOURCE
 !
 !  Insure that masks at mass point source locations are set to water
 !  to avoid masking with _FillValue at those locations.
 !
-      DO is=1,Nsrc
-        i=Isrc(is)
-        j=Jsrc(is)
-        IF (((IstrR.le.i).and.(i.le.IendR)).and.                        &
-     &      ((JstrR.le.j).and.(j.le.JendR))) THEN
-          IF (INT(Dsrc(is)).eq.0) THEN
-            umask_io(i,j)=1.0_r8
-          ELSE
-            vmask_io(i,j)=1.0_r8
+      IF (LuvSrc(ng)) THEN
+        DO is=1,Nsrc(ng)
+          i=SOURCES(ng)%Isrc(is)
+          j=SOURCES(ng)%Jsrc(is)
+          IF (((IstrT.le.i).and.(i.le.IendT)).and.                        &
+     &        ((JstrT.le.j).and.(j.le.JendT))) THEN
+            IF (INT(SOURCES(ng)%Dsrc(is)).eq.0) THEN
+              umask_full(i,j)=1.0_r8
+            ELSE
+              vmask_full(i,j)=1.0_r8
+            END IF
           END IF
-        END IF
-      END DO
-# endif
+        END DO
+      END IF
 !
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
         CALL exchange_p2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          pmask_io)
+     &                          pmask_full)
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          rmask_io)
+     &                          rmask_full)
         CALL exchange_u2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          umask_io)
+     &                          umask_full)
         CALL exchange_v2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          vmask_io)
+     &                          vmask_full)
       END IF
 
 # ifdef DISTRIBUTE
@@ -279,7 +249,7 @@
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    pmask_io, rmask_io, umask_io, vmask_io)
+     &                    pmask_full, rmask_full, umask_full, vmask_full)
 # endif
 
 # if defined AVERAGES    || \
@@ -291,42 +261,42 @@
 !  Initialize average file Land/Sea masks for time-averaged fields.
 !-----------------------------------------------------------------------
 !
-      DO j=Jstr,JendR
-        DO i=Istr,IendR
+      DO j=JstrP,JendP
+        DO i=IstrP,IendP
 #  ifdef WET_DRY
           pmask_avg(i,j)=0.0_r8
 #  else
-          pmask_avg(i,j)=pmask_io(i,j)
+          pmask_avg(i,j)=pmask_full(i,j)
 #  endif
         END DO
       END DO
 
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
 #  ifdef WET_DRY
           rmask_avg(i,j)=0.0_r8
 #  else
-          rmask_avg(i,j)=rmask_io(i,j)
+          rmask_avg(i,j)=rmask_full(i,j)
 #  endif
         END DO
       END DO
 
-      DO j=JstrR,JendR
-        DO i=Istr,IendR
+      DO j=JstrT,JendT
+        DO i=IstrP,IendT
 #  ifdef WET_DRY
           umask_avg(i,j)=0.0_r8
 #  else
-          umask_avg(i,j)=umask_io(i,j)
+          umask_avg(i,j)=umask_full(i,j)
 #  endif
         END DO
       END DO
 
-      DO j=Jstr,JendR
-        DO i=IstrR,IendR
+      DO j=JstrP,JendT
+        DO i=IstrT,IendT
 #  ifdef WET_DRY
           vmask_avg(i,j)=0.0_r8
 #  else
-          vmask_avg(i,j)=vmask_io(i,j)
+          vmask_avg(i,j)=vmask_full(i,j)
 #  endif
         END DO
       END DO
@@ -361,42 +331,42 @@
 !  Initialize diagnostic file Land/Sea masks for time-averaged fields.
 !-----------------------------------------------------------------------
 !
-      DO j=Jstr,JendR
-        DO i=Istr,IendR
+      DO j=JstrP,JendP
+        DO i=IstrP,IendP
 #  ifdef WET_DRY
           pmask_dia(i,j)=0.0_r8
 #  else
-          pmask_dia(i,j)=pmask_io(i,j)
+          pmask_dia(i,j)=pmask_full(i,j)
 #  endif
         END DO
       END DO
 
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
 #  ifdef WET_DRY
           rmask_dia(i,j)=0.0_r8
 #  else
-          rmask_dia(i,j)=rmask_io(i,j)
+          rmask_dia(i,j)=rmask_full(i,j)
 #  endif
         END DO
       END DO
 
-      DO j=JstrR,JendR
-        DO i=Istr,IendR
+      DO j=JstrT,JendT
+        DO i=IstrP,IendT
 #  ifdef WET_DRY
           umask_dia(i,j)=0.0_r8
 #  else
-          umask_dia(i,j)=umask_io(i,j)
+          umask_dia(i,j)=umask_full(i,j)
 #  endif
         END DO
       END DO
 
-      DO j=Jstr,JendR
-        DO i=IstrR,IendR
+      DO j=JstrP,JendT
+        DO i=IstrT,IendT
 #  ifdef WET_DRY
           vmask_dia(i,j)=0.0_r8
 #  else
-          vmask_dia(i,j)=vmask_io(i,j)
+          vmask_dia(i,j)=vmask_full(i,j)
 #  endif
         END DO
       END DO
@@ -494,23 +464,23 @@
      &    (MOD(iic(ng)-1,nAVG(ng)).eq.0).and.                           &
      &    ((iic(ng).ne.ntstart(ng)).or.(nrrec(ng).eq.0))) THEN
 
-        DO j=Jstr,JendR
-          DO i=Istr,IendR
+        DO j=JstrP,JendP
+          DO i=IstrP,IendP
             pmask_avg(i,j)=MIN(1.0_r8, pmask_avg(i,j))
           END DO
         END DO
-        DO j=JstrR,JendR
-          DO i=IstrR,IendR
+        DO j=JstrT,JendT
+          DO i=IstrT,IendT
             rmask_avg(i,j)=MIN(1.0_r8, rmask_avg(i,j))
           END DO
         END DO
-        DO j=JstrR,JendR
-          DO i=Istr,IendR
+        DO j=JstrT,JendT
+          DO i=IstrP,IendT
             umask_avg(i,j)=MIN(1.0_r8, umask_avg(i,j))
           END DO
         END DO
-        DO j=Jstr,JendR
-          DO i=IstrR,IendR
+        DO j=JstrP,JendT
+          DO i=IstrT,IendT
             vmask_avg(i,j)=MIN(1.0_r8, vmask_avg(i,j))
           END DO
         END DO

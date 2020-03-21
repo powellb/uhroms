@@ -16,9 +16,9 @@
 #if defined PROPAGATOR || \
    (defined MASKING && (defined READ_WATER || defined WRITE_WATER))
 !
-!svn $Id: wpoints.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: wpoints.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -56,10 +56,10 @@
      &                   LBi, UBi, LBj, UBj,                            &
      &                   IminS, ImaxS, JminS, JmaxS,                    &
 # ifdef MASKING
-     &                   GRID(ng) % pmask_io,                           &
-     &                   GRID(ng) % rmask_io,                           &
-     &                   GRID(ng) % umask_io,                           &
-     &                   GRID(ng) % vmask_io,                           &
+     &                   GRID(ng) % pmask_full,                         &
+     &                   GRID(ng) % rmask_full,                         &
+     &                   GRID(ng) % umask_full,                         &
+     &                   GRID(ng) % vmask_full,                         &
 #  ifdef PROPAGATOR
      &                   GRID(ng) % IJwaterR,                           &
      &                   GRID(ng) % IJwaterU,                           &
@@ -76,7 +76,8 @@
      &                         LBi, UBi, LBj, UBj,                      &
      &                         IminS, ImaxS, JminS, JmaxS,              &
 # ifdef MASKING
-     &                         pmask_io, rmask_io, umask_io, vmask_io,  &
+     &                         pmask_full, rmask_full,                  &
+     &                         umask_full, vmask_full,                  &
 #  ifdef PROPAGATOR
      &                         IJwaterR, IJwaterU, IJwaterV,            &
 #  endif
@@ -112,10 +113,10 @@
       integer, intent(out) :: IJwaterU(LBi:,LBj:)
       integer, intent(out) :: IJwaterV(LBi:,LBj:)
 #   endif
-      real(r8), intent(in) :: rmask_io(LBi:,LBj:)
-      real(r8), intent(in) :: pmask_io(LBi:,LBj:)
-      real(r8), intent(in) :: umask_io(LBi:,LBj:)
-      real(r8), intent(in) :: vmask_io(LBi:,LBj:)
+      real(r8), intent(in) :: rmask_full(LBi:,LBj:)
+      real(r8), intent(in) :: pmask_full(LBi:,LBj:)
+      real(r8), intent(in) :: umask_full(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_full(LBi:,LBj:)
 #  endif
       real(r8), intent(in) :: h(LBi:,LBj:)
 # else
@@ -125,10 +126,10 @@
       integer, intent(out) :: IJwaterU(LBi:UBi,LBj:UBj)
       integer, intent(out) :: IJwaterV(LBi:UBi,LBj:UBj)
 #   endif
-      real(r8), intent(in) :: rmask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(in) :: pmask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(in) :: umask_io(LBi:UBi,LBj:UBj)
-      real(r8), intent(in) :: vmask_io(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: rmask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: pmask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: umask_full(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_full(LBi:UBi,LBj:UBj)
 #  endif
       real(r8), intent(in) :: h(LBi:UBi,LBj:UBj)
 # endif
@@ -178,10 +179,10 @@
 
       DO j=Jstr,Jend
         DO i=Istr,Iend
-          IF (pmask_io(i,j).gt.0.0_r8) my_Nxyp=my_Nxyp+1
-          IF (rmask_io(i,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-          IF (umask_io(i,j).gt.0.0_r8) my_Nxyu=my_Nxyu+1
-          IF (vmask_io(i,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
+          IF (pmask_full(i,j).gt.0.0_r8) my_Nxyp=my_Nxyp+1
+          IF (rmask_full(i,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+          IF (umask_full(i,j).gt.0.0_r8) my_Nxyu=my_Nxyu+1
+          IF (vmask_full(i,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END DO
 !
@@ -190,48 +191,48 @@
 !
       IF (DOMAIN(ng)%Western_Edge(tile)) THEN
         DO j=Jstr,Jend
-          IF (rmask_io(Istr-1,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-          IF (vmask_io(Istr-1,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
+          IF (rmask_full(Istr-1,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+          IF (vmask_full(Istr-1,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END IF
       IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
         DO j=Jstr,Jend
-          IF (pmask_io(Iend+1,j).gt.0.0_r8) my_Nxyp=my_Nxyp+1
-          IF (rmask_io(Iend+1,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-          IF (umask_io(Iend+1,j).gt.0.0_r8) my_Nxyu=my_Nxyu+1
-          IF (vmask_io(Iend+1,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
+          IF (pmask_full(Iend+1,j).gt.0.0_r8) my_Nxyp=my_Nxyp+1
+          IF (rmask_full(Iend+1,j).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+          IF (umask_full(Iend+1,j).gt.0.0_r8) my_Nxyu=my_Nxyu+1
+          IF (vmask_full(Iend+1,j).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END IF
       IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
         DO i=Istr,Iend
-          IF (rmask_io(i,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-          IF (umask_io(i,Jstr-1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
+          IF (rmask_full(i,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+          IF (umask_full(i,Jstr-1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
         END DO
       END IF
       IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
         DO i=Istr,Iend
-          IF (pmask_io(i,Jend+1).gt.0.0_r8) my_Nxyp=my_Nxyp+1
-          IF (rmask_io(i,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-          IF (umask_io(i,Jend+1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
-          IF (vmask_io(i,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
+          IF (pmask_full(i,Jend+1).gt.0.0_r8) my_Nxyp=my_Nxyp+1
+          IF (rmask_full(i,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+          IF (umask_full(i,Jend+1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
+          IF (vmask_full(i,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
         END DO
       END IF
       IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
-        IF (rmask_io(Istr-1,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+        IF (rmask_full(Istr-1,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
       END IF
       IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
-        IF (rmask_io(Iend+1,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-        IF (umask_io(Iend+1,Jstr-1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
+        IF (rmask_full(Iend+1,Jstr-1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+        IF (umask_full(Iend+1,Jstr-1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
       END IF
       IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
-        IF (rmask_io(Istr-1,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-        IF (vmask_io(Istr-1,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
+        IF (rmask_full(Istr-1,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+        IF (vmask_full(Istr-1,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
       END IF
       IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-        IF (pmask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyp=my_Nxyp+1
-        IF (rmask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
-        IF (umask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
-        IF (vmask_io(Iend+1,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
+        IF (pmask_full(Iend+1,Jend+1).gt.0.0_r8) my_Nxyp=my_Nxyp+1
+        IF (rmask_full(Iend+1,Jend+1).gt.0.0_r8) my_Nxyr=my_Nxyr+1
+        IF (umask_full(Iend+1,Jend+1).gt.0.0_r8) my_Nxyu=my_Nxyu+1
+        IF (vmask_full(Iend+1,Jend+1).gt.0.0_r8) my_Nxyv=my_Nxyv+1
       END IF
 # endif
 # ifdef PROPAGATOR
@@ -247,7 +248,7 @@
       DO j=JR_RANGE
         DO i=IR_RANGE
 #  ifdef MASKING
-          IF (rmask_io(i,j).gt.0.0_r8) THEN
+          IF (rmask_full(i,j).gt.0.0_r8) THEN
             my_NwaterR=my_NwaterR+1
           END IF
 #  else
@@ -256,7 +257,7 @@
         END DO
         DO i=IU_RANGE
 #  ifdef MASKING
-          IF (umask_io(i,j).gt.0.0_r8) THEN
+          IF (umask_full(i,j).gt.0.0_r8) THEN
             my_NwaterU=my_NwaterU+1
           END IF
 #  else
@@ -267,7 +268,7 @@
       DO j=JV_RANGE
         DO i=IR_RANGE
 #  ifdef MASKING
-          IF (vmask_io(i,j).gt.0.0_r8) THEN
+          IF (vmask_full(i,j).gt.0.0_r8) THEN
             my_NwaterV=my_NwaterV+1
           END IF
 #  else
@@ -487,7 +488,7 @@
 !
       CALL mp_gather2d (ng, model, LBi, UBi, LBj, UBj,                  &
      &                  0, r2dvar, 1.0_r8,                              &
-     &                  rmask_io, rmask_io, Npts, mask, .FALSE.)
+     &                  rmask_full, rmask_full, Npts, mask, .FALSE.)
       CALL mp_bcastf (ng, model, mask)
 #  else
 !
@@ -497,7 +498,7 @@
       DO j=0,Mm(ng)+1
         DO i=0,Lm(ng)+1
           ic=ic+1
-          mask(ic)=rmask_io(i,j)
+          mask(ic)=rmask_full(i,j)
         END DO
       END DO
       Npts=ic
@@ -568,7 +569,7 @@
 !
       CALL mp_gather2d (ng, model, LBi, UBi, LBj, UBj,                  &
      &                  0, p2dvar, 1.0_r8,                              &
-     &                  pmask_io, pmask_io, Npts, mask, .FALSE.)
+     &                  pmask_full, pmask_full, Npts, mask, .FALSE.)
       CALL mp_bcastf (ng, model, mask)
 !
 !  Determine water PSI-points for IO purposes.
@@ -589,7 +590,7 @@
 !
       CALL mp_gather2d (ng, model, LBi, UBi, LBj, UBj,                  &
      &                  0, u2dvar, 1.0_r8,                              &
-     &                  umask_io, umask_io, Npts, mask, .FALSE.)
+     &                  umask_full, umask_full, Npts, mask, .FALSE.)
       CALL mp_bcastf (ng, model, mask)
 #  else
 !
@@ -599,7 +600,7 @@
       DO j=0,Mm(ng)+1
         DO i=1,Lm(ng)+1
           ic=ic+1
-          mask(ic)=umask_io(i,j)
+          mask(ic)=umask_full(i,j)
         END DO
       END DO
       Npts=ic
@@ -670,7 +671,7 @@
 !
       CALL mp_gather2d (ng, model, LBi, UBi, LBj, UBj,                  &
      &                  0, v2dvar, 1.0_r8,                              &
-     &                  vmask_io, vmask_io, Npts, mask, .FALSE.)
+     &                  vmask_full, vmask_full, Npts, mask, .FALSE.)
       CALL mp_bcastf (ng, model, mask)
 #  else
 !
@@ -680,7 +681,7 @@
       DO j=1,Mm(ng)+1
         DO i=0,Lm(ng)+1
           ic=ic+1
-          mask(ic)=vmask_io(i,j)
+          mask(ic)=vmask_full(i,j)
         END DO
       END DO
       Npts=ic

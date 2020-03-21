@@ -4,9 +4,9 @@
 
       SUBROUTINE bblm (ng, tile)
 !
-!svn $Id: ssw_bbl.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ssw_bbl.h 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group        Chris Sherwood   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group        Chris Sherwood   !
 !    Licensed under a MIT/X style license               Rich Signell   !
 !    See License_ROMS.txt                             John C. Warner   !
 !=======================================================================
@@ -41,13 +41,16 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 37)
+      CALL wclock_on (ng, iNLM, 37, __LINE__, __FILE__)
 #endif
       CALL bblm_tile (ng, tile,                                         &
      &                LBi, UBi, LBj, UBj,                               &
      &                IminS, ImaxS, JminS, JmaxS,                       &
      &                nrhs(ng),                                         &
      &                GRID(ng) % h,                                     &
+#ifdef LIMIT_BSTRESS
+     &                GRID(ng) % Hz,                                    &
+#endif
      &                GRID(ng) % z_r,                                   &
      &                GRID(ng) % z_w,                                   &
      &                GRID(ng) % angler,                                &
@@ -81,7 +84,7 @@
      &                FORCES(ng) % bustr,                               &
      &                FORCES(ng) % bvstr)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 37)
+      CALL wclock_off (ng, iNLM, 37, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE bblm
@@ -91,7 +94,11 @@
      &                      LBi, UBi, LBj, UBj,                         &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nrhs,                                       &
-     &                      h, z_r, z_w, angler, ZoBot,                 &
+     &                      h,                                          &
+#ifdef LIMIT_BSTRESS
+     &                      Hz,                                         &
+#endif
+     &                      z_r, z_w, angler, ZoBot,                    &
 #if defined SSW_CALC_UB
      &                      Hwave,                                      &
 #else
@@ -112,6 +119,7 @@
 !
       USE mod_param
       USE mod_parallel
+      USE mod_iounits
       USE mod_scalars
       USE mod_sediment
 !
@@ -132,6 +140,9 @@
       integer, intent(inout) :: Iconv(LBi:,LBj:)
 
       real(r8), intent(in) :: h(LBi:,LBj:)
+# ifdef LIMIT_BSTRESS
+      real(r8), intent(in) :: Hz(LBi:,LBj:,:)
+# endif
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
       real(r8), intent(in) :: z_w(LBi:,LBj:,0:)
       real(r8), intent(in) :: angler(LBi:,LBj:)
@@ -167,6 +178,9 @@
       integer, intent(inout) :: Iconv(LBi:UBi,LBj:UBj)
 
       real(r8), intent(in) :: h(LBi:UBi,LBj:UBj)
+# ifdef LIMIT_BSTRESS
+      real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
+# endif
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: z_w(LBi:UBi,LBj:UBj,0:N(ng))
       real(r8), intent(in) :: angler(LBi:UBi,LBj:UBj)
@@ -410,8 +424,9 @@
      &                 (1.0_r8+coef_st*tstar)
              IF (zoST(i,j).lt.0.0_r8) THEN
                IF (Master) THEN
-                 PRINT *, ' Warning: zoST<0  tstar, d50, coef_st:'
-                 PRINT *, tstar,d50,coef_st
+                 WRITE (stdout,'(/,a)')                                 &
+     &                         'Warning zoST < 0: tstar, d50, coef_st:'
+                 WRITE (stdout,*) tstar, d50, coef_st
                END IF
              END IF
 !
@@ -462,8 +477,8 @@
           IF (zoDEF(i,j).lt.absolute_zoMIN) THEN
             zoDEF(i,j)=absolute_zoMIN
             IF (Master) THEN
-              PRINT *, ' Warning: default zo < 0.05 mm, replaced with:',&
-     &                 zoDEF
+              WRITE (stdout,*) ' Warning: default zo < 0.05 mm,',       &
+     &                         ' replaced with: ', zoDEF
             END IF
           END IF
           zo=zoDEF(i,j)
@@ -506,7 +521,8 @@
 !  Waves and currents, but zr <= zo.
 !
             IF (Master) THEN
-              PRINT *,' Warning: w-c calcs ignored because zr <= zo'
+              WRITE (stdout,*) ' Warning: w-c calcs ignored because',   &
+     &                         ' zr <= zo'
             END IF
           ELSE IF ((Umag(i,j).gt.0.0_r8).and.(Ub(i,j).gt.eps).and.      &
      &             ((Zr(i,j)/zo).gt.1.0_r8)) THEN
@@ -634,17 +650,42 @@
 !  Compute kinematic bottom stress components due current and wind-
 !  induced waves.
 !-----------------------------------------------------------------------
+#ifdef LIMIT_BSTRESS
+!
+!  Set limiting factor for bottom stress. The bottom stress is adjusted
+!  to not change the direction of momentum.  It only should slow down
+!  to zero.  The value of 0.75 is arbitrary limitation assigment.
+!
+      cff=0.75_r8/dt(ng)
+#endif
 !
       DO j=Jstr,Jend
         DO i=IstrU,Iend
           anglec=Ur_sg(i,j)/(0.5*(Umag(i-1,j)+Umag(i,j)))
           bustr(i,j)=0.5_r8*(Tauc(i-1,j)+Tauc(i,j))*anglec
+#ifdef LIMIT_BSTRESS
+          cff1=cff*0.5_r8*(z_w(i-1,j,1)+z_w(i,j,1)-                     &
+     &                     z_w(i-1,j,0)-z_w(i,j,0))
+
+          bustr(i,j)=SIGN(1.0_r8, bustr(i,j))*                          &
+     &               MIN(ABS(bustr(i,j)),                               &
+     &                   ABS(u(i,j,1,nrhs))*cff1)
+#endif
         END DO
       END DO
       DO j=JstrV,Jend
         DO i=Istr,Iend
           anglec=Vr_sg(i,j)/(0.5_r8*(Umag(i,j-1)+Umag(i,j)))
           bvstr(i,j)=0.5_r8*(Tauc(i,j-1)+Tauc(i,j))*anglec
+#ifdef LIMIT_BSTRESS
+          cff1=cff*0.5_r8*(z_w(i,j-1,1)+z_w(i,j,1)-                     &
+     &                     z_w(i,j-1,0)-z_w(i,j,0))
+
+          cff3=cff*0.5_r8*(Hz(i,j-1,1)+Hz(i,j,1))
+          bvstr(i,j)=SIGN(1.0_r8, bvstr(i,j))*                          &
+     &               MIN(ABS(bvstr(i,j)),                               &
+     &                   ABS(v(i,j,1,nrhs))*cff1)
+#endif
         END DO
       END DO
       DO j=Jstr,Jend

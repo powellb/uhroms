@@ -2,9 +2,9 @@
       MODULE ad_ini_fields_mod
 #ifdef ADJOINT
 !
-!svn $Id: ad_ini_fields.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_ini_fields.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -50,7 +50,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 2)
+      CALL wclock_on (ng, iADM, 2, __LINE__, __FILE__)
 # endif
       CALL ad_ini_fields_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -82,7 +82,7 @@
      &                         OCEAN(ng) % zeta,                        &
      &                         OCEAN(ng) % ad_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 2)
+      CALL wclock_off (ng, iADM, 2, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -210,7 +210,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, itrc, j, k, kbed
+      integer :: i, ic, itrc, j, k, kbed
 
       real(r8) :: cff1
       real(r8) :: adfac, ad_cff1, ad_cff2
@@ -262,7 +262,12 @@
      &                       EWperiodic(ng), NSperiodic(ng),            &
      &                       ad_t(:,:,:,nstp,:))
 #  endif
+!
+      ic=0
       DO itrc=1,NT(ng)
+        IF (LtracerCLM(itrc,ng).and.LnudgeTCLM(itrc,ng)) THEN
+          ic=ic+1
+        END IF
         IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
 !!        CALL exchange_r3d_tile (ng, tile,                             &
 !!   &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
@@ -280,24 +285,24 @@
      &                               ad_t(:,:,:,nstp,itrc))
         END IF
 !
-!!      CALL tl_t3dbc_tile (ng, tile, itrc,                             &
+!!      CALL tl_t3dbc_tile (ng, tile, itrc, ic,                         &
 !!   &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
 !!   &                      IminS, ImaxS, JminS, JmaxS,                 &
 !!   &                      nstp, nnew,                                 &
 !!   &                      tl_t)
 !!
-!!      CALL ad_t3dbc_tile (ng, tile, itrc,                             &
+!!      CALL ad_t3dbc_tile (ng, tile, itrc, ic,                         &
 !!   &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
 !!   &                      IminS, ImaxS, JminS, JmaxS,                 &
 !!   &                      nstp, nnew,                                 &
 !!   &                      ad_t)
-!>      CALL tl_t3dbc_tile (ng, tile, itrc,                             &
+!>      CALL tl_t3dbc_tile (ng, tile, itrc, ic,                         &
 !>   &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
 !>   &                      IminS, ImaxS, JminS, JmaxS,                 &
 !>   &                      nstp, nstp,                                 &
 !>   &                      tl_t)
 !>                                                      only nstp needed
-        CALL ad_t3dbc_tile (ng, tile, itrc,                             &
+        CALL ad_t3dbc_tile (ng, tile, itrc, ic,                         &
      &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nstp,                                 &
@@ -922,7 +927,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 2)
+      CALL wclock_on (ng, iADM, 2, __LINE__, __FILE__)
 # endif
       CALL ad_ini_zeta_tile (ng, tile, model,                           &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -946,7 +951,7 @@
      &                       OCEAN(ng) % ad_zeta_sol,                   &
      &                       OCEAN(ng) % ad_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 2)
+      CALL wclock_off (ng, iADM, 2, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE ad_ini_zeta
@@ -1228,7 +1233,8 @@
        defined SENSITIVITY_4DVAR || defined SO_SEMI)
 !
       IF (.not.(ANY(ad_LBC(:,isFsur,ng)%radiation).or.                  &
-     &          ANY(ad_LBC(:,isFsur,ng)%Chapman))) THEN
+     &          ANY(ad_LBC(:,isFsur,ng)%Chapman_explicit).or.           &
+     &          ANY(ad_LBC(:,isFsur,ng)%Chapman_implicit))) THEN
 #  ifdef SOLVE3D
 !>      CALL tl_zetabc_tile (ng, tile,                                  &
 !>   &                       LBi, UBi, LBj, UBj,                        &
@@ -1277,7 +1283,8 @@
 !  Adjoint of free-surface initialization.
 !
       IF (.not.(ANY(ad_LBC(:,isFsur,ng)%radiation).or.                  &
-     &          ANY(ad_LBC(:,isFsur,ng)%Chapman))) THEN
+     &          ANY(ad_LBC(:,isFsur,ng)%Chapman_explicit).or.           &
+     &          ANY(ad_LBC(:,isFsur,ng)%Chapman_implicit))) THEN
         Imin=IstrB
         Imax=IendB
         Jmin=JstrB
@@ -1354,7 +1361,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 2)
+      CALL wclock_on (ng, iADM, 2, __LINE__, __FILE__)
 # endif
       CALL ad_out_fields_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -1383,7 +1390,7 @@
      &                         OCEAN(ng) % ad_vbar,                     &
      &                         OCEAN(ng) % ad_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 2)
+      CALL wclock_off (ng, iADM, 2, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -1493,7 +1500,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: i, itrc, j, k, kbed, kout
+      integer :: i, ic, itrc, j, k, kbed, kout
 
       real(r8) :: cff1
       real(r8) :: adfac, ad_cff1, ad_cff2
@@ -1710,7 +1717,12 @@
      &                       ad_t(:,:,:,nstp,:),                        &
      &                       ad_t(:,:,:,nnew,:))
 #  endif
+!
+      ic=0
       DO itrc=1,NT(ng)
+        IF (LtracerCLM(itrc,ng).and.LnudgeTCLM(itrc,ng)) THEN
+          ic=ic+1
+        END IF
         IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
           CALL ad_exchange_r3d_tile (ng, tile,                          &
      &                               LBi, UBi, LBj, UBj, 1, N(ng),      &
@@ -1719,12 +1731,12 @@
      &                               LBi, UBi, LBj, UBj, 1, N(ng),      &
      &                               ad_t(:,:,:,nnew,itrc))
         END IF
-        CALL ad_t3dbc_tile (ng, tile, itrc,                             &
+        CALL ad_t3dbc_tile (ng, tile, itrc, ic,                         &
      &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nnew,                                 &
      &                      ad_t)
-        CALL ad_t3dbc_tile (ng, tile, itrc,                             &
+        CALL ad_t3dbc_tile (ng, tile, itrc, ic,                         &
      &                      LBi, UBi, LBj, UBj, N(ng), NT(ng),          &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      nstp, nstp,                                 &
@@ -1765,7 +1777,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 2)
+      CALL wclock_on (ng, iADM, 2, __LINE__, __FILE__)
 # endif
       CALL ad_out_zeta_tile (ng, tile, model,                           &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -1789,7 +1801,7 @@
      &                       OCEAN(ng) % ad_zeta_sol,                   &
      &                       OCEAN(ng) % ad_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 2)
+      CALL wclock_off (ng, iADM, 2, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -1947,7 +1959,8 @@
       END IF
 !
       IF (.not.(ANY(ad_LBC(:,isFsur,ng)%radiation).or.                  &
-     &          ANY(ad_LBC(:,isFsur,ng)%Chapman))) THEN
+     &          ANY(ad_LBC(:,isFsur,ng)%Chapman_explicit).or.           &
+     &          ANY(ad_LBC(:,isFsur,ng)%Chapman_implicit))) THEN
         CALL ad_zetabc_tile (ng, tile,                                  &
      &                       LBi, UBi, LBj, UBj,                        &
      &                       IminS, ImaxS, JminS, JmaxS,                &

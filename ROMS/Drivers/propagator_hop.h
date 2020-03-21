@@ -1,8 +1,8 @@
       SUBROUTINE propagator (RunInterval, state, ad_state)
 !
-!svn $Id: propagator_hop.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: propagator_hop.h 995 2020-01-10 04:01:28Z arango $
 !************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
@@ -34,17 +34,18 @@
       USE mod_scalars
       USE mod_stepping
 !
-      USE dotproduct_mod, ONLY : tl_statenorm
-      USE ini_adjust_mod, ONLY : ad_ini_perturb
+      USE dotproduct_mod,  ONLY : tl_statenorm
+      USE ini_adjust_mod,  ONLY : ad_ini_perturb
       USE inner2state_mod, ONLY : ad_inner2state, tl_inner2state
       USE inner2state_mod, ONLY : ini_C_norm
 #ifdef SOLVE3D
-      USE set_depth_mod, ONLY: set_depth
+      USE set_depth_mod,   ONLY : set_depth
 #endif
+      USE strings_mod,     ONLY : FoundError
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: RunInterval
+      real(dp), intent(in) :: RunInterval
 
       TYPE (T_GST), intent(in) :: state(Ngrids)
       TYPE (T_GST), intent(inout) :: ad_state(Ngrids)
@@ -87,10 +88,10 @@
         nrhs(ng)=1
         nnew(ng)=1
 !
-!$OMP MASTER
         synchro_flag(ng)=.TRUE.
         tdays(ng)=dstart
         time(ng)=tdays(ng)*day2sec
+!$OMP MASTER
         ntstart(ng)=INT((time(ng)-dstart*day2sec)/dt(ng))+1
         ntend(ng)=ntimes(ng)
         ntfirst(ng)=ntstart(ng)
@@ -123,7 +124,7 @@
 !
       DO ng=1,Ngrids
         DO tile=last_tile(ng),first_tile(ng),-1
-          CALL set_depth (ng, tile)
+          CALL set_depth (ng, tile, iTLM)
         END DO
 !$OMP BARRIER
       END DO
@@ -168,15 +169,16 @@
       DO ng=1,Ngrids
 !$OMP MASTER
         CALL close_inp (ng, iTLM)
-        IF (exit_flag.ne.NoError) RETURN
-#ifdef TIMELESS_DATA
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
         CALL tl_get_idata (ng)
-        IF (exit_flag.ne.NoError) RETURN
-#endif
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
         CALL tl_get_data (ng)
 !$OMP END MASTER
 !$OMP BARRIER
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 !
 !-----------------------------------------------------------------------
@@ -200,7 +202,8 @@
       CALL tl_main2d (RunInterval)
 #endif
 !$OMP BARRIER
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Clear nonlinear (basic state) and adjoint state variables.
@@ -227,7 +230,7 @@
 !
       DO ng=1,Ngrids
         DO tile=last_tile(ng),first_tile(ng),-1
-          CALL set_depth (ng, tile)
+          CALL set_depth (ng, tile, iTLM)
         END DO
 !$OMP BARRIER
       END DO
@@ -273,10 +276,10 @@
         nrhs(ng)=1
         nnew(ng)=2
 !
-!$OMP MASTER
         synchro_flag(ng)=.TRUE.
         tdays(ng)=dstart+dt(ng)*REAL(ntimes(ng),r8)*sec2day
         time(ng)=tdays(ng)*day2sec
+!$OMP MASTER
         ntstart(ng)=ntimes(ng)+1
         ntend(ng)=1
         ntfirst(ng)=ntend(ng)
@@ -306,14 +309,15 @@
       DO ng=1,Ngrids
 !$OMP MASTER
         CALL close_inp (ng, iADM)
-        IF (exit_flag.ne.NoError) RETURN
-#ifdef TIMELESS_DATA
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
         CALL ad_get_idata (ng)
-        IF (exit_flag.ne.NoError) RETURN
-#endif
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
         CALL ad_get_data (ng)
 !$OMP END MASTER
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 !$OMP BARRIER
 !
@@ -338,7 +342,8 @@
       CALL ad_main2d (RunInterval)
 #endif
 !$OMP BARRIER
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Clear nonlinear state (basic state) variables for next iteration
@@ -366,7 +371,7 @@
 !
       DO ng=1,Ngrids
         DO tile=last_tile(ng),first_tile(ng),-1
-          CALL set_depth (ng, tile)
+          CALL set_depth (ng, tile, iADM)
         END DO
 !$OMP BARRIER
       END DO

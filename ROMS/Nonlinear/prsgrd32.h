@@ -1,8 +1,8 @@
       SUBROUTINE prsgrd (ng, tile)
 !
-!svn $Id: prsgrd32.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: prsgrd32.h 995 2020-01-10 04:01:28Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !****************************************** Alexander F. Shchepetkin ***
@@ -49,7 +49,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 23)
+      CALL wclock_on (ng, iNLM, 23, __LINE__, __FILE__)
 #endif
       CALL prsgrd_tile (ng, tile,                                       &
      &                  LBi, UBi, LBj, UBj,                             &
@@ -58,6 +58,10 @@
 #ifdef MASKING
      &                  GRID(ng) % umask,                               &
      &                  GRID(ng) % vmask,                               &
+#endif
+#ifdef WET_DRY
+     &                  GRID(ng)%umask_wet,                             &
+     &                  GRID(ng)%vmask_wet,                             &
 #endif
      &                  GRID(ng) % om_v,                                &
      &                  GRID(ng) % on_u,                                &
@@ -75,7 +79,7 @@
      &                  OCEAN(ng) % ru,                                 &
      &                  OCEAN(ng) % rv)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 23)
+      CALL wclock_off (ng, iNLM, 23, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE prsgrd
@@ -87,6 +91,9 @@
      &                        nrhs,                                     &
 #ifdef MASKING
      &                        umask, vmask,                             &
+#endif
+#ifdef WET_DRY
+     &                        umask_wet, vmask_wet,                     &
 #endif
      &                        om_v, on_u,                               &
      &                        Hz, z_r, z_w,                             &
@@ -115,6 +122,10 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+# endif
       real(r8), intent(in) :: om_v(LBi:,LBj:)
       real(r8), intent(in) :: on_u(LBi:,LBj:)
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
@@ -134,6 +145,10 @@
 # ifdef MASKING
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
 # endif
       real(r8), intent(in) :: om_v(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: on_u(LBi:UBi,LBj:UBj)
@@ -296,6 +311,9 @@
      &                         (rho(i,j,k)-rho(i-1,j,k)-                &
      &                          OneTwelfth*                             &
      &                          (dRx(i,j)+dRx(i-1,j))))))
+#ifdef WET_DRY
+            ru(i,j,k,nrhs)=ru(i,j,k,nrhs)*umask_wet(i,j)
+#endif
 #ifdef DIAGNOSTICS_UV
             DiaRU(i,j,k,nrhs,M3pgrd)=ru(i,j,k,nrhs)
 #endif
@@ -357,6 +375,9 @@
      &                         (rho(i,j,k)-rho(i,j-1,k)-                &
      &                          OneTwelfth*                             &
      &                          (dRx(i,j)+dRx(i,j-1))))))
+#ifdef WET_DRY
+            rv(i,j,k,nrhs)=rv(i,j,k,nrhs)*vmask_wet(i,j)
+#endif
 #ifdef DIAGNOSTICS_UV
             DiaRV(i,j,k,nrhs,M3pgrd)=rv(i,j,k,nrhs)
 #endif

@@ -1,7 +1,7 @@
 /*
-** svn $Id: riverplume2.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: riverplume2.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -10,24 +10,21 @@
 ** http://smig.usgs.gov/SMIG/features_0300/plumes_inline.html
 **
 ** Application flag:   RIVERPLUME2
-** Input script:       ocean_riverplume2.in
+** Input script:       roms_riverplume2.in
 */
 
 #define UV_ADV
 #define UV_COR
 #define UV_QDRAG
-#define UV_PSOURCE
 #define DJ_GRADPS
-#define TS_A4HADVECTION
-#define TS_A4VADVECTION
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define TS_DIF2
 #define MIX_GEO_TS
-#define TS_PSOURCE
 #define NONLIN_EOS
 #define SALINITY
 #define MASKING
 #define SOLVE3D
-#define SPLINES
 #define AVERAGES
 
 #define LMD_MIXING
@@ -37,6 +34,7 @@
 # define LMD_SKPP
 # define LMD_BKPP
 # define LMD_NONLOCAL
+# define RI_SPLINES
 #endif
 
 #define ANA_GRID

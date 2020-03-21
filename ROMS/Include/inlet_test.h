@@ -1,7 +1,7 @@
 /*
-** svn $Id: inlet_test.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: inlet_test.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Options for Inlet Test Case, waves-ocean (SWAN/ROMS) two-way coupling.
 **
 ** Application flag:   INLET_TEST
-** Input script:       ocean_inlet_test.in
+** Input script:       roms_inlet_test.in
 **                     coupling_inlet_test.in
 **                     sediment_inlet_test.in
 */
@@ -20,11 +20,11 @@
 #define MASKING
 #define UV_ADV
 #undef  UV_COR
-#define TS_MPDATA
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define DJ_GRADPS
 #define FSOBC_REDUCED
 #define SOLVE3D
-#define SPLINES
 #define SWAN_COUPLING
 #define NEARSHORE_MELLOR08
 #define ANA_INITIAL
@@ -51,6 +51,7 @@
 # ifdef GLS_MIXING
 #  define KANTHA_CLAYSON
 #  define N2S2_HORAVG
+#  define RI_SPLINES
 # endif
 # define SEDIMENT
 # ifdef SEDIMENT

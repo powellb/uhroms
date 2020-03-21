@@ -1,10 +1,8 @@
-#define MIX_STABILITY
-
       SUBROUTINE t3dmix4 (ng, tile)
 !
-!svn $Id: t3dmix4_s.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: t3dmix4_s.h 995 2020-01-10 04:01:28Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !****************************************** Alexander F. Shchepetkin ***
@@ -15,7 +13,7 @@
 !***********************************************************************
 !
       USE mod_param
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
       USE mod_clima
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -35,7 +33,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 27)
+      CALL wclock_on (ng, iNLM, 27, __LINE__, __FILE__)
 #endif
       CALL t3dmix4_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
@@ -44,6 +42,10 @@
 #ifdef MASKING
      &                   GRID(ng) % umask,                              &
      &                   GRID(ng) % vmask,                              &
+#endif
+#ifdef WET_DRY
+     &                   GRID(ng) % umask_wet,                          &
+     &                   GRID(ng) % vmask_wet,                          &
 #endif
      &                   GRID(ng) % Hz,                                 &
      &                   GRID(ng) % pmon_u,                             &
@@ -60,7 +62,7 @@
 #else
      &                   MIXING(ng) % diff4,                            &
 #endif
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
      &                   CLIMA(ng) % tclm,                              &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -68,7 +70,7 @@
 #endif
      &                   OCEAN(ng) % t)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 27)
+      CALL wclock_off (ng, iNLM, 27, __LINE__, __FILE__)
 #endif
 
       RETURN
@@ -82,6 +84,9 @@
 #ifdef MASKING
      &                         umask, vmask,                            &
 #endif
+#ifdef WET_DRY
+     &                         umask_wet, vmask_wet,                    &
+#endif
      &                         Hz, pmon_u, pnom_v, pm, pn,              &
 #ifdef DIFF_3DCOEF
 # ifdef TS_U3ADV_SPLIT
@@ -92,7 +97,7 @@
 #else
      &                         diff4,                                   &
 #endif
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
      &                         tclm,                                    &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -117,6 +122,10 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+# endif
 # ifdef DIFF_3DCOEF
 #  ifdef TS_U3ADV_SPLIT
       real(r8), intent(in) :: diff3d_u(LBi:,LBj:,:)
@@ -132,7 +141,7 @@
       real(r8), intent(in) :: pnom_v(LBi:,LBj:)
       real(r8), intent(in) :: pm(LBi:,LBj:)
       real(r8), intent(in) :: pn(LBi:,LBj:)
-# ifdef CLIMA_TS_MIX
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -143,6 +152,10 @@
 # ifdef MASKING
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
 # endif
 # ifdef DIFF_3DCOEF
 #  ifdef TS_U3ADV_SPLIT
@@ -159,7 +172,7 @@
       real(r8), intent(in) :: pnom_v(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: pm(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
-# ifdef CLIMA_TS_MIX
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng))
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -186,7 +199,7 @@
 !  Compute horizontal biharmonic diffusion along constant S-surfaces.
 !  The biharmonic operator is computed by applying the harmonic
 !  operator twice.
-#ifdef MIX_STABILITY
+#ifdef TS_MIX_STABILITY
 !  In order to increase stability, the biharmonic operator is applied
 !  as: 3/4 t(:,:,:,nrhs,:) + 1/4 t(:,:,:,nstp,:).
 #endif
@@ -229,16 +242,31 @@
 #ifdef MASKING
               cff=cff*umask(i,j)
 #endif
-              FX(i,j)=cff*(Hz(i,j,k)+Hz(i-1,j,k))*                      &
-#ifdef MIX_STABILITY
+#ifdef WET_DRY
+              cff=cff*umask_wet(i,j)
+#endif
+#if defined TS_MIX_STABILITY
+              FX(i,j)=cff*                                              &
+     &                (Hz(i,j,k)+Hz(i-1,j,k))*                          &
      &                (0.75_r8*(t(i  ,j,k,nrhs,itrc)-                   &
      &                          t(i-1,j,k,nrhs,itrc))+                  &
      &                 0.25_r8*(t(i  ,j,k,nstp,itrc)-                   &
      &                          t(i-1,j,k,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-     &                ((t(i  ,j,k,nrhs,itrc)-tclm(i  ,j,k,itrc))-       &
-     &                 (t(i-1,j,k,nrhs,itrc)-tclm(i-1,j,k,itrc)))
+#elif defined TS_MIX_CLIMA
+              IF (LtracerCLM(itrc,ng)) THEN
+                FX(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i-1,j,k))*                        &
+     &                  ((t(i  ,j,k,nrhs,itrc)-tclm(i  ,j,k,itrc))-     &
+     &                   (t(i-1,j,k,nrhs,itrc)-tclm(i-1,j,k,itrc)))
+              ELSE
+                FX(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i-1,j,k))*                        &
+     &                  (t(i  ,j,k,nrhs,itrc)-                          &
+     &                   t(i-1,j,k,nrhs,itrc))
+              END IF
 #else
+              FX(i,j)=cff*                                              &
+     &                (Hz(i,j,k)+Hz(i-1,j,k))*                          &
      &                (t(i  ,j,k,nrhs,itrc)-                            &
      &                 t(i-1,j,k,nrhs,itrc))
 #endif
@@ -260,16 +288,31 @@
 #ifdef MASKING
               cff=cff*vmask(i,j)
 #endif
-              FE(i,j)=cff*(Hz(i,j,k)+Hz(i,j-1,k))*                      &
-#ifdef MIX_STABILITY
+#ifdef WET_DRY
+              cff=cff*vmask_wet(i,j)
+#endif
+#if defined TS_MIX_STABILITY
+              FE(i,j)=cff*                                              &
+     &                (Hz(i,j,k)+Hz(i,j-1,k))*                          &
      &                (0.75_r8*(t(i,j  ,k,nrhs,itrc)-                   &
      &                          t(i,j-1,k,nrhs,itrc))+                  &
      &                 0.25_r8*(t(i,j  ,k,nstp,itrc)-                   &
      &                          t(i,j-1,k,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-     &                ((t(i,j  ,k,nrhs,itrc)-tclm(i,j  ,k,itrc))-       &
-     &                 (t(i,j-1,k,nrhs,itrc)-tclm(i,j-1,k,itrc)))
+#elif defined TS_MIX_CLIMA
+              IF (LtracerCLM(itrc,ng)) THEN
+                FE(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i,j-1,k))*                        &
+     &                  ((t(i,j  ,k,nrhs,itrc)-tclm(i,j  ,k,itrc))-     &
+     &                   (t(i,j-1,k,nrhs,itrc)-tclm(i,j-1,k,itrc)))
+              ELSE
+                FE(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i,j-1,k))*                        &
+     &                  (t(i,j  ,k,nrhs,itrc)-                          &
+     &                   t(i,j-1,k,nrhs,itrc))
+              END IF
 #else
+              FE(i,j)=cff*                                              &
+     &                (Hz(i,j,k)+Hz(i,j-1,k))*                          &
      &                (t(i,j  ,k,nrhs,itrc)-                            &
      &                 t(i,j-1,k,nrhs,itrc))
 #endif
@@ -291,54 +334,58 @@
 !  Apply boundary conditions (except periodic; closed or gradient)
 !  to the first harmonic operator.
 !
-          IF (.not.ComposedGrid(ng)) THEN
-            IF (.not.EWperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-                IF (LBC(iwest,isTvar(itrc),ng)%closed) THEN
-                  DO j=Jmin,Jmax
-                    LapT(Istr-1,j)=0.0_r8
-                  END DO
-                ELSE
-                  DO j=Jmin,Jmax
-                    LapT(Istr-1,j)=LapT(Istr,j)
-                  END DO
-                END IF
-              END IF
-              IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-                IF (LBC(ieast,isTvar(itrc),ng)%closed) THEN
-                  DO j=Jmin,Jmax
-                    LapT(Iend+1,j)=0.0_r8
-                  END DO
-                ELSE
-                  DO j=Jmin,Jmax
-                    LapT(Iend+1,j)=LapT(Iend,j)
-                  END DO
-                END IF
+          IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+              IF (LBC(iwest,isTvar(itrc),ng)%closed) THEN
+                DO j=Jmin,Jmax
+                  LapT(Istr-1,j)=0.0_r8
+                END DO
+              ELSE
+                DO j=Jmin,Jmax
+                  LapT(Istr-1,j)=LapT(Istr,j)
+                END DO
               END IF
             END IF
-
-            IF (.not.NSperiodic(ng)) THEN
-              IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-                IF (LBC(isouth,isTvar(itrc),ng)%closed) THEN
-                  DO i=Imin,Imax
-                    LapT(i,Jstr-1)=0.0_r8
-                  END DO
-                ELSE
-                  DO i=Imin,Imax
-                    LapT(i,Jstr-1)=LapT(i,Jstr)
-                  END DO
-                END IF
+          END IF
+!
+          IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+              IF (LBC(ieast,isTvar(itrc),ng)%closed) THEN
+                DO j=Jmin,Jmax
+                  LapT(Iend+1,j)=0.0_r8
+                END DO
+              ELSE
+                DO j=Jmin,Jmax
+                  LapT(Iend+1,j)=LapT(Iend,j)
+                END DO
               END IF
-              IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-                IF (LBC(inorth,isTvar(itrc),ng)%closed) THEN
-                  DO i=Imin,Imax
-                    LapT(i,Jend+1)=0.0_r8
-                  END DO
-                ELSE
-                  DO i=Imin,Imax
-                    LapT(i,Jend+1)=LapT(i,Jend)
-                  END DO
-                END IF
+            END IF
+          END IF
+!
+          IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+              IF (LBC(isouth,isTvar(itrc),ng)%closed) THEN
+                DO i=Imin,Imax
+                  LapT(i,Jstr-1)=0.0_r8
+                END DO
+              ELSE
+                DO i=Imin,Imax
+                  LapT(i,Jstr-1)=LapT(i,Jstr)
+                END DO
+              END IF
+            END IF
+          END IF
+!
+          IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+            IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+              IF (LBC(inorth,isTvar(itrc),ng)%closed) THEN
+                DO i=Imin,Imax
+                  LapT(i,Jend+1)=0.0_r8
+                END DO
+              ELSE
+                DO i=Imin,Imax
+                  LapT(i,Jend+1)=LapT(i,Jend)
+                END DO
               END IF
             END IF
           END IF
@@ -364,6 +411,9 @@
 #ifdef MASKING
               FX(i,j)=FX(i,j)*umask(i,j)
 #endif
+#ifdef WET_DRY
+              FX(i,j)=FX(i,j)*umask_wet(i,j)
+#endif
             END DO
           END DO
           DO j=Jstr,Jend+1
@@ -384,6 +434,9 @@
      &                (LapT(i,j)-LapT(i,j-1))
 #ifdef MASKING
               FE(i,j)=FE(i,j)*vmask(i,j)
+#endif
+#ifdef WET_DRY
+              FE(i,j)=FE(i,j)*vmask_wet(i,j)
 #endif
             END DO
           END DO

@@ -1,13 +1,13 @@
 #!/bin/csh -f
 #
-# svn $Id: job_normalization.sh 645 2013-01-22 23:21:54Z arango $
+# svn $Id: job_normalization.sh 995 2020-01-10 04:01:28Z arango $
 #######################################################################
-# Copyright (c) 2002-2013 The ROMS/TOMS Group                         #
+# Copyright (c) 2002-2020 The ROMS/TOMS Group                         #
 #   Licensed under a MIT/X style license                              #
 #   See License_ROMS.txt                                              #
 #######################################################################
 #                                                                     #
-# 4D-Var error covariance normalization coeficients job script:       #
+# 4D-Var error covariance normalization coefficients job script:      #
 #                                                                     #
 # This script NEEDS to be run before any run:                         #
 #                                                                     #
@@ -62,16 +62,16 @@
  endif
  cp s4dvar.in $NORM
 
- $SUBSTITUTE $NORM ocean_std_m.nc $STDnameM
- $SUBSTITUTE $NORM ocean_std_i.nc $STDnameI
- $SUBSTITUTE $NORM ocean_std_b.nc $STDnameB
- $SUBSTITUTE $NORM ocean_std_f.nc $STDnameF
- $SUBSTITUTE $NORM ocean_nrm_m.nc $NRMnameM
- $SUBSTITUTE $NORM ocean_nrm_i.nc $NRMnameI
- $SUBSTITUTE $NORM ocean_nrm_b.nc $NRMnameB
- $SUBSTITUTE $NORM ocean_nrm_f.nc $NRMnameF
- $SUBSTITUTE $NORM ocean_obs.nc wc13_obs.nc
- $SUBSTITUTE $NORM ocean_hss.nc wc13_hss.nc
- $SUBSTITUTE $NORM ocean_lcz.nc wc13_lcz.nc
- $SUBSTITUTE $NORM ocean_mod.nc wc13_mod.nc
- $SUBSTITUTE $NORM ocean_err.nc wc13_err.nc
+ $SUBSTITUTE $NORM roms_std_m.nc $STDnameM
+ $SUBSTITUTE $NORM roms_std_i.nc $STDnameI
+ $SUBSTITUTE $NORM roms_std_b.nc $STDnameB
+ $SUBSTITUTE $NORM roms_std_f.nc $STDnameF
+ $SUBSTITUTE $NORM roms_nrm_m.nc $NRMnameM
+ $SUBSTITUTE $NORM roms_nrm_i.nc $NRMnameI
+ $SUBSTITUTE $NORM roms_nrm_b.nc $NRMnameB
+ $SUBSTITUTE $NORM roms_nrm_f.nc $NRMnameF
+ $SUBSTITUTE $NORM roms_obs.nc wc13_obs.nc
+ $SUBSTITUTE $NORM roms_hss.nc wc13_hss.nc
+ $SUBSTITUTE $NORM roms_lcz.nc wc13_lcz.nc
+ $SUBSTITUTE $NORM roms_mod.nc wc13_mod.nc
+ $SUBSTITUTE $NORM roms_err.nc wc13_err.nc

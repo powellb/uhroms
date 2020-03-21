@@ -2,9 +2,9 @@
       MODULE bulk_flux_mod
 #ifdef BULK_FLUXES
 !
-!svn $Id: bulk_flux.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: bulk_flux.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -35,7 +35,7 @@
 !  (10/2004).                                                          !
 !                                                                      !
 !  Modified by Kate Hedstrom for COARE version 3.0 (03/2005).          !
-!  Modified by Jim Edson to correct specific hunidities.               !
+!  Modified by Jim Edson to correct specific humidities.               !
 !                                                                      !
 !  Reference:                                                          !
 !                                                                      !
@@ -79,7 +79,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 17)
+      CALL wclock_on (ng, iNLM, 17, __LINE__, __FILE__)
 # endif
       CALL bulk_flux_tile (ng, tile,                                    &
      &                     LBi, UBi, LBj, UBj,                          &
@@ -90,10 +90,19 @@
      &                     GRID(ng) % umask,                            &
      &                     GRID(ng) % vmask,                            &
 # endif
+# ifdef WET_DRY
+     &                     GRID(ng) % rmask_wet,                        &
+     &                     GRID(ng) % umask_wet,                        &
+     &                     GRID(ng) % vmask_wet,                        &
+# endif
      &                     MIXING(ng) % alpha,                          &
      &                     MIXING(ng) % beta,                           &
      &                     OCEAN(ng) % rho,                             &
      &                     OCEAN(ng) % t,                               &
+# ifdef WIND_MINUS_CURRENT
+     &                     OCEAN(ng) % u,                               &
+     &                     OCEAN(ng) % v,                               &
+# endif
      &                     FORCES(ng) % Hair,                           &
      &                     FORCES(ng) % Pair,                           &
      &                     FORCES(ng) % Tair,                           &
@@ -117,7 +126,7 @@
      &                     FORCES(ng) % lrflx,                          &
      &                     FORCES(ng) % shflx,                          &
      &                     FORCES(ng) % srflx,                          &
-     &                     FORCES(ng) % stflx,                          &
+     &                     FORCES(ng) % snhflx,                         &
 # ifdef EMINUSP
      &                     FORCES(ng) % EminusP,                        &
      &                     FORCES(ng) % evap,                           &
@@ -125,7 +134,7 @@
      &                     FORCES(ng) % sustr,                          &
      &                     FORCES(ng) % svstr)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 17)
+      CALL wclock_off (ng, iNLM, 17, __LINE__, __FILE__)
 # endif
 
       RETURN
@@ -139,7 +148,13 @@
 # ifdef MASKING
      &                           rmask, umask, vmask,                   &
 # endif
+# ifdef WET_DRY
+     &                           rmask_wet, umask_wet, vmask_wet,       &
+# endif
      &                           alpha, beta, rho, t,                   &
+# ifdef WIND_MINUS_CURRENT
+     &                           u, v,                                  &
+# endif
      &                           Hair, Pair, Tair, Uwind, Vwind,        &
 # ifdef CLOUDS
      &                           cloud,                                 &
@@ -155,7 +170,7 @@
      &                           Lwave,                                 &
 # endif
      &                           rain, lhflx, lrflx, shflx,             &
-     &                           srflx, stflx,                          &
+     &                           srflx, snhflx,                         &
 # ifdef EMINUSP
      &                           EminusP, evap,                         &
 # endif
@@ -183,10 +198,19 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 #  endif
+#  ifdef WET_DRY
+      real(r8), intent(in) :: rmask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+#  endif
       real(r8), intent(in) :: alpha(LBi:,LBj:)
       real(r8), intent(in) :: beta(LBi:,LBj:)
       real(r8), intent(in) :: rho(LBi:,LBj:,:)
       real(r8), intent(in) :: t(LBi:,LBj:,:,:,:)
+#  ifdef WIND_MINUS_CURRENT
+      real(r8), intent(in) :: u(LBi:,LBj:,:,:)
+      real(r8), intent(in) :: v(LBi:,LBj:,:,:)
+#  endif
       real(r8), intent(in) :: Hair(LBi:,LBj:)
       real(r8), intent(in) :: Pair(LBi:,LBj:)
       real(r8), intent(in) :: Tair(LBi:,LBj:)
@@ -211,7 +235,7 @@
       real(r8), intent(inout) :: lrflx(LBi:,LBj:)
       real(r8), intent(inout) :: shflx(LBi:,LBj:)
       real(r8), intent(inout) :: srflx(LBi:,LBj:)
-      real(r8), intent(inout) :: stflx(LBi:,LBj:,:)
+      real(r8), intent(inout) :: snhflx(LBi:,LBj:)
 
 #  ifdef EMINUSP
       real(r8), intent(out) :: EminusP(LBi:,LBj:)
@@ -225,10 +249,19 @@
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
 #  endif
+#  ifdef WET_DRY
+      real(r8), intent(in) :: rmask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
+#  endif
       real(r8), intent(in) :: alpha(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: beta(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: rho(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
+#  ifdef WIND_MINUS_CURRENT
+      real(r8), intent(in) :: u(LBi:UBi,LBj:UBj,N(ng),3)
+      real(r8), intent(in) :: v(LBi:UBi,LBj:UBj,N(ng),3)
+#  endif
       real(r8), intent(in) :: Hair(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: Pair(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: Tair(LBi:UBi,LBj:UBj)
@@ -253,7 +286,7 @@
       real(r8), intent(inout) :: lrflx(LBi:UBi,LBj:UBj)
       real(r8), intent(inout) :: shflx(LBi:UBi,LBj:UBj)
       real(r8), intent(inout) :: srflx(LBi:UBi,LBj:UBj)
-      real(r8), intent(inout) :: stflx(LBi:UBi,LBj:UBj,NT(ng))
+      real(r8), intent(inout) :: snhflx(LBi:UBi,LBj:UBj)
 
 #  ifdef EMINUSP
       real(r8), intent(out) :: EminusP(LBi:UBi,LBj:UBj)
@@ -340,12 +373,53 @@
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: SRad
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Taux
       real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Tauy
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Uair
+      real(r8), dimension(IminS:ImaxS,JminS:JmaxS) :: Vair
 
 # include "set_bounds.h"
 !
 !=======================================================================
 !  Atmosphere-Ocean bulk fluxes parameterization.
 !=======================================================================
+#ifdef WIND_MINUS_CURRENT
+!
+!  Modify near-surface (2m or 10m) effective winds by subtracting the
+!  ocean surface current (J Wilkin). See:
+!
+!  Bye, J.A.T. and J.-O. Wolff, 1999: Atmosphere-ocean momentum exchange
+!     in general circulation models. J. Phys. Oceanogr. 29, 671-691.
+!
+      DO j=Jstr-1,Jend+1
+        DO i=Istr-1,MIN(Iend+1,Lm(ng))
+          Uair(i,j)=Uwind(i,j)-                                         &
+     &              0.5_r8*(u(i,j,N(ng),nrhs)+u(i+1,j,N(ng),nrhs))
+        END DO
+        IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+          Uair(Iend+1,j)=Uwind(Iend+1,j)-u(Iend,j,N(ng),nrhs)
+        END IF
+      END DO
+      DO i=Istr-1,Iend+1
+        DO j=Jstr-1,MIN(Jend+1,Mm(ng))
+          Vair(i,j)=Vwind(i,j)-                                         &
+     &              0.5_r8*(v(i,j,N(ng),nrhs)+v(i,j+1,N(ng),nrhs))
+        END DO
+        IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+          Vair(i,Jend+1)=Vwind(i,Jend+1)-v(i,Jend,N(ng),nrhs)
+        END IF
+      END DO
+#else
+!
+!  Load wind components to local arrays.
+!
+      DO j=Jstr-1,Jend+1
+        DO i=Istr-1,Iend+1
+          Uair(i,j)=Uwind(i,j)
+          Vair(i,j)=Vwind(i,j)
+        END DO
+      END DO
+#endif
+!
+!  Compute Atmosphere-ocean fluxes using a bulk flux parameterization.
 !
       Hscale=rho0*Cp
       twopi_inv=0.5_r8/pi
@@ -354,7 +428,7 @@
 !
 !  Input bulk parameterization fields.
 !
-          Wmag(i)=SQRT(Uwind(i,j)*Uwind(i,j)+Vwind(i,j)*Vwind(i,j))
+          Wmag(i)=SQRT(Uair(i,j)*Uair(i,j)+Vair(i,j)*Vair(i,j))
           PairM=Pair(i,j)
           TairC(i)=Tair(i,j)
           TairK(i)=TairC(i)+273.16_r8
@@ -412,6 +486,9 @@
 # endif
 # ifdef MASKING
           LRad(i,j)=LRad(i,j)*rmask(i,j)
+# endif
+# ifdef WET_DRY
+          LRad(i,j)=LRad(i,j)*rmask_wet(i,j)
 # endif
 !
 !-----------------------------------------------------------------------
@@ -493,7 +570,11 @@
 !
 !  Compute latent heat of vaporization (J/kg) at sea surface, Hlv.
 !
+#ifdef REGCM_COUPLING
+          Hlv(i,j)=2.5104E+6_r8 ! to be consistent with RegCM
+#else
           Hlv(i,j)=(2.501_r8-0.00237_r8*TseaC(i))*1.0E+6_r8
+#endif
 !
 !  Assume that wind is measured relative to sea surface and include
 !  gustiness.
@@ -704,9 +785,14 @@
      &                                     (blk_Cpa*diffh))
           Hsr=rain(i,j)*wet_bulb*blk_Cpw*                               &
      &        ((TseaC(i)-TairC(i))+(Qsea(i)-Q(i))*Hlv(i,j)/blk_Cpa)
+# ifndef REGCM_COUPLING
           SHeat(i,j)=(Hs+Hsr)
+# endif
 # ifdef MASKING
           SHeat(i,j)=SHeat(i,j)*rmask(i,j)
+# endif
+# ifdef WET_DRY
+          SHeat(i,j)=SHeat(i,j)*rmask_wet(i,j)
 # endif
 !
 !  Compute turbulent latent heat flux (W/m2), Hl.
@@ -718,9 +804,14 @@
           upvel=-1.61_r8*Wstar(i)*Qstar(i)-                             &
      &          (1.0_r8+1.61_r8*Q(i))*Wstar(i)*Tstar(i)/TairK(i)
           Hlw=rhoAir(i)*Hlv(i,j)*upvel*Q(i)
+# ifndef REGCM_COUPLING
           LHeat(i,j)=(Hl+Hlw)
+# endif
 # ifdef MASKING
           LHeat(i,j)=LHeat(i,j)*rmask(i,j)
+# endif
+# ifdef WET_DRY
+          LHeat(i,j)=LHeat(i,j)*rmask_wet(i,j)
 # endif
 !
 !  Compute momentum flux (N/m2) due to rainfall (kg/m2/s).
@@ -730,13 +821,19 @@
 !  Compute wind stress components (N/m2), Tau.
 !
           cff=rhoAir(i)*Cd*Wspeed
-          Taux(i,j)=(cff*Uwind(i,j)+Taur*SIGN(1.0_r8,Uwind(i,j)))
+          Taux(i,j)=(cff*Uair(i,j)+Taur*SIGN(1.0_r8,Uair(i,j)))
 # ifdef MASKING
           Taux(i,j)=Taux(i,j)*rmask(i,j)
 # endif
-          Tauy(i,j)=(cff*Vwind(i,j)+Taur*SIGN(1.0_r8,Vwind(i,j)))
+# ifdef WET_DRY
+          Taux(i,j)=Taux(i,j)*rmask_wet(i,j)
+# endif
+          Tauy(i,j)=(cff*Vair(i,j)+Taur*SIGN(1.0_r8,Vair(i,j)))
 # ifdef MASKING
           Tauy(i,j)=Tauy(i,j)*rmask(i,j)
+# endif
+# ifdef WET_DRY
+          Tauy(i,j)=Tauy(i,j)*rmask_wet(i,j)
 # endif
         END DO
       END DO
@@ -776,21 +873,29 @@
           lrflx(i,j)=LRad(i,j)*Hscale
           lhflx(i,j)=-LHeat(i,j)*Hscale
           shflx(i,j)=-SHeat(i,j)*Hscale
-          stflx(i,j,itemp)=(srflx(i,j)+lrflx(i,j)+                      &
-     &                      lhflx(i,j)+shflx(i,j))
+          snhflx(i,j)=(srflx(i,j)+lrflx(i,j)+                           &
+     &                 lhflx(i,j)+shflx(i,j))
+# ifdef MASKING
+          snhflx(i,j)=snhflx(i,j)*rmask(i,j)
+# endif
+# ifdef WET_DRY
+          snhflx(i,j)=snhflx(i,j)*rmask_wet(i,j)
+# endif
 # ifdef EMINUSP
           evap(i,j)=LHeat(i,j)/Hlv(i,j)
-          stflx(i,j,isalt)=cff*(evap(i,j)-rain(i,j))
-# endif
-# ifdef MASKING
-          stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
-#   ifdef EMINUSP
+#  ifdef MASKING
           evap(i,j)=evap(i,j)*rmask(i,j)
-          stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
-#   endif
-# endif
-# ifdef EMINUSP
-          EminusP(i,j)=stflx(i,j,isalt)
+#  endif
+#  ifdef WET_DRY
+          evap(i,j)=evap(i,j)*rmask_wet(i,j)
+#  endif
+          EminusP(i,j)=cff*(evap(i,j)-rain(i,j))
+#  ifdef MASKING
+          EminusP(i,j)=EminusP(i,j)*rmask(i,j)
+#  endif
+#  ifdef WET_DRY
+          EminusP(i,j)=EminusP(i,j)*rmask_wet(i,j)
+#  endif
 # endif
         END DO
       END DO
@@ -804,6 +909,9 @@
 # ifdef MASKING
           sustr(i,j)=sustr(i,j)*umask(i,j)
 # endif
+# ifdef WET_DRY
+          sustr(i,j)=sustr(i,j)*umask_wet(i,j)
+# endif
         END DO
       END DO
       DO j=Jstr,JendR
@@ -811,6 +919,9 @@
           svstr(i,j)=cff*(Tauy(i,j-1)+Tauy(i,j))
 # ifdef MASKING
           svstr(i,j)=svstr(i,j)*vmask(i,j)
+# endif
+# ifdef WET_DRY
+          svstr(i,j)=svstr(i,j)*vmask_wet(i,j)
 # endif
         END DO
       END DO
@@ -831,7 +942,7 @@
      &                          shflx)
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          stflx(:,:,itemp))
+     &                          snhflx)
 # ifdef EMINUSP
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -839,9 +950,6 @@
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
      &                          EminusP)
-        CALL exchange_r2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          stflx(:,:,isalt))
 # endif
         CALL exchange_u2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -856,15 +964,13 @@
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    lrflx, lhflx, shflx,                          &
-     &                    stflx(:,:,itemp))
+     &                    lrflx, lhflx, shflx, snhflx)
 #  ifdef EMINUSP
-      CALL mp_exchange2d (ng, tile, iNLM, 3,                            &
+      CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    evap, EminusP,                                &
-     &                    stflx(:,:,isalt))
+     &                    evap, EminusP)
 #  endif
       CALL mp_exchange2d (ng, tile, iNLM, 2,                            &
      &                    LBi, UBi, LBj, UBj,                           &
@@ -896,7 +1002,8 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: ZoL, pi
+      real(dp), intent(in) :: pi
+      real(r8), intent(in) :: ZoL
 !
 !  Local variable declarations.
 !
@@ -960,7 +1067,8 @@
 !
 !  Imported variable declarations.
 !
-      real(r8), intent(in) :: ZoL, pi
+      real(dp), intent(in) :: pi
+      real(r8), intent(in) :: ZoL
 !
 !  Local variable declarations.
 !

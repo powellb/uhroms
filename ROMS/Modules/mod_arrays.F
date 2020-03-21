@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       SUBROUTINE mod_arrays (allocate_vars)
 !
-!svn $Id: mod_arrays.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_arrays.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -15,6 +15,7 @@
 !
       USE mod_param
       USE mod_parallel
+      USE mod_scalars
 !
 #if defined AVERAGES    || \
    (defined AD_AVERAGES && defined ADJOINT) || \
@@ -23,11 +24,7 @@
       USE mod_average, ONLY : allocate_average, initialize_average
 #endif
       USE mod_boundary, ONLY : allocate_boundary, initialize_boundary
-#if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
-    defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
-    defined SENSITIVITY_4DVAR   || defined SO_SEMI
       USE mod_clima, ONLY : allocate_clima, initialize_clima
-#endif
 #ifdef SOLVE3D
       USE mod_coupling, ONLY : allocate_coupling, initialize_coupling
 #endif
@@ -37,16 +34,14 @@
       USE mod_forces, ONLY : allocate_forces, initialize_forces
       USE mod_grid, ONLY : allocate_grid, initialize_grid
       USE mod_mixing, ONLY : allocate_mixing, initialize_mixing
-#if defined ASSIMILATION || defined NUDGING
-      USE mod_obs, ONLY : allocate_obs, initialize_obs
+#ifdef NESTING
+      USE mod_nesting, ONLY : allocate_nesting, initialize_nesting
 #endif
       USE mod_ocean, ONLY : allocate_ocean, initialize_ocean
 #if defined SEDIMENT || defined BBL_MODEL
       USE mod_sedbed, ONLY : allocate_sedbed, initialize_sedbed
 #endif
-#if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
       USE mod_sources, ONLY : allocate_sources
-#endif
 #if defined SSH_TIDES || defined UV_TIDES
       USE mod_tides, ONLY : allocate_tides, initialize_tides
 #endif
@@ -62,9 +57,12 @@
 !
 !  Local variable declarations.
 !
+      logical :: LallocateClima
+!
       integer :: ng, thread, tile
+      integer :: IminS, ImaxS, JminS, JmaxS
       integer :: LBi, UBi, LBj, UBj, LBij, UBij
-
+!
       integer, parameter :: model = 0
 
 #ifdef PROFILE
@@ -73,12 +71,12 @@
 !  Turn on allocation time wall clock.
 !-----------------------------------------------------------------------
 !
-        DO ng=1,Ngrids
-          DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iNLM, 1)
-          END DO
-!$OMP BARRIER
+      DO ng=1,Ngrids
+        DO thread=THREAD_RANGE
+          CALL wclock_on (ng, iNLM, 1, __LINE__, __FILE__)
         END DO
+!$OMP BARRIER
+      END DO
 #endif
 !
 !-----------------------------------------------------------------------
@@ -91,6 +89,15 @@
 #else
         tile=0
 #endif
+
+#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+    defined SO_SEMI
+        LallocateClima=.TRUE.
+#else
+        LallocateClima=.FALSE.
+#endif
+
         DO ng=1,Ngrids
 !$OMP MASTER
           LBi=BOUNDS(ng)%LBi(tile)
@@ -109,11 +116,9 @@
 #ifdef BBL_MODEL
           CALL allocate_bbl (ng, LBi, UBi, LBj, UBj)
 #endif
-#if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
-    defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
-    defined SENSITIVITY_4DVAR   || defined SO_SEMI
-          CALL allocate_clima (ng, LBi, UBi, LBj, UBj)
-#endif
+          IF (LallocateClima.or.Lclimatology(ng)) THEN
+            CALL allocate_clima (ng, LBi, UBi, LBj, UBj)
+          END IF
 #ifdef SOLVE3D
           CALL allocate_coupling (ng, LBi, UBi, LBj, UBj)
 #endif
@@ -123,9 +128,6 @@
           CALL allocate_forces (ng, LBi, UBi, LBj, UBj)
           CALL allocate_grid (ng, LBi, UBi, LBj, UBj, LBij, UBij)
           CALL allocate_mixing (ng, LBi, UBi, LBj, UBj)
-#if defined ASSIMILATION || defined NUDGING
-          CALL allocate_obs (ng, LBi, UBi, LBj, UBj)
-#endif
           CALL allocate_ocean (ng, LBi, UBi, LBj, UBj)
 #if defined SEDIMENT || defined BBL_MODEL
           CALL allocate_sedbed (ng, LBi, UBi, LBj, UBj)
@@ -133,12 +135,23 @@
 #if defined SSH_TIDES || defined UV_TIDES
           CALL allocate_tides (ng, LBi, UBi, LBj, UBj)
 #endif
-#if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
-          CALL allocate_sources (ng)
-#endif
+          IF (LuvSrc(ng).or.LwSrc(ng).or.ANY(LtracerSrc(:,ng))) THEN
+            CALL allocate_sources (ng)
+          END IF
 !$OMP END MASTER
 !$OMP BARRIER
         END DO
+#ifdef NESTING
+!
+!  Allocate and initialized contact points boundaty structure. It
+!  needs to be delayed to the end because we need "LBC_apply" to
+!  allocated in "mod_boundary" for all nested grid.
+!
+!$OMP MASTER
+        CALL allocate_nesting
+!$OMP END MASTER
+!$OMP BARRIER
+#endif
       END IF
 !
 !-----------------------------------------------------------------------
@@ -146,6 +159,11 @@
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
+#ifdef NESTING
+        IF (ng.eq.1) THEN
+          CALL initialize_nesting
+        END IF
+#endif
         DO tile=first_tile(ng),last_tile(ng),+1
 #if defined AVERAGES    || \
    (defined AD_AVERAGES && defined ADJOINT) || \
@@ -157,11 +175,10 @@
           CALL initialize_bbl (ng, tile)
 #endif
           CALL initialize_boundary (ng, tile, model)
-#if defined AD_SENSITIVITY      || defined CLIMATOLOGY      || \
-    defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
-    defined SENSITIVITY_4DVAR   || defined SO_SEMI
-          CALL initialize_clima (ng, tile)
-#endif
+
+          IF (LallocateClima.or.Lclimatology(ng)) THEN
+            CALL initialize_clima (ng, tile)
+          END IF
 #ifdef SOLVE3D
           CALL initialize_coupling (ng, tile, model)
 #endif
@@ -171,9 +188,6 @@
           CALL initialize_forces (ng, tile, model)
           CALL initialize_grid (ng, tile, model)
           CALL initialize_mixing (ng, tile, model)
-#if defined ASSIMILATION || defined NUDGING
-          CALL initialize_obs (ng, tile)
-#endif
           CALL initialize_ocean (ng, tile, model)
 #if defined SEDIMENT || defined BBL_MODEL
           CALL initialize_sedbed (ng, tile, model)
@@ -193,11 +207,11 @@
 !
       DO ng=1,Ngrids
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 1)
+          CALL wclock_off (ng, iNLM, 1, __LINE__, __FILE__)
         END DO
 !$OMP BARRIER
       END DO
 #endif
-
+!
       RETURN
       END SUBROUTINE mod_arrays

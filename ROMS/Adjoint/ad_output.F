@@ -2,9 +2,9 @@
 #ifdef ADJOINT
       SUBROUTINE ad_output (ng)
 !
-!svn $Id: ad_output.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_output.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -22,11 +22,11 @@
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
-
-# ifdef DISTRIBUTE
 !
+# ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcasts
 # endif
+      USE strings_mod, ONLY : FoundError
 !
       implicit none
 !
@@ -40,7 +40,7 @@
 
       integer :: Fcount, ifile, status
 !
-      SourceFile='ad_output.F'
+      SourceFile=__FILE__
 
 # ifdef PROFILE
 !
@@ -48,7 +48,7 @@
 !  Turn on output data time wall clock.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, iADM, 8)
+      CALL wclock_on (ng, iADM, 8, __LINE__, __FILE__)
 # endif
 !
 !-----------------------------------------------------------------------
@@ -92,7 +92,11 @@
             Ldefine=.FALSE.
           END IF
           IF (Ldefine) THEN                     ! create new file or
-            Fcount=ADM(ng)%Fcount               ! inquire existing file
+            IF (iic(ng).eq.ntstart(ng)) THEN    ! inquire existing file
+              ADM(ng)%load=0                    ! reset filename counter
+            END IF
+            ADM(ng)%load=ADM(ng)%load+1
+            Fcount=ADM(ng)%load
             ADM(ng)%Nrec(Fcount)=0
             ifile=(iic(ng)-1)/ndefADJ(ng)+1
             IF (Master) THEN
@@ -102,11 +106,13 @@
 # ifdef DISTRIBUTE
             CALL mp_bcasts (ng, iADM, ADM(ng)%name)
 # endif
+            ADM(ng)%files(Fcount)=TRIM(ADM(ng)%name)
             IF (ADM(ng)%ncid.ne.-1) THEN
               CALL netcdf_close (ng, iADM, ADM(ng)%ncid)
             END IF
             CALL ad_def_his (ng, NewFile)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
           IF ((iic(ng).eq.ntstart(ng)).and.(nrrec(ng).ne.0)) THEN
             LwrtADJ(ng)=.FALSE.                 ! avoid writing initial
@@ -116,7 +122,8 @@
         ELSE
           IF (iic(ng).eq.ntstart(ng)) THEN
             CALL ad_def_his (ng, ldefout(ng))
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             LwrtADJ(ng)=.TRUE.
             LdefADJ(ng)=.FALSE.
           END IF
@@ -130,7 +137,8 @@
           IF ((iic(ng).ne.ntstart(ng)).and.                             &
      &        (MOD(iic(ng)-1,nADJ(ng)).eq.0)) THEN
             CALL ad_wrt_his (ng)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         ELSE
 # ifdef HESSIAN_SO
@@ -150,7 +158,8 @@
 # endif
           IF (wrtHIS) THEN
             CALL ad_wrt_his (ng)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         END IF
       END IF
@@ -194,6 +203,11 @@
             Ldefine=.FALSE.
           END IF
           IF (Ldefine) THEN
+            IF (iic(ng).eq.ntstart(ng)) THEN
+              AVG(ng)%load=0                  ! reset filename counter
+            END IF
+            AVG(ng)%load=AVG(ng)%load+1
+            Fcount=AVG(ng)%load
             AVG(ng)%Nrec(Fcount)=0
             IF (ndefAVG(ng).eq.nAVG(ng)) THEN
               ifile=(iic(ng)-1)/ndefAVG(ng)
@@ -207,17 +221,20 @@
 #  ifdef DISTRIBUTE
             CALL mp_bcasts (ng, iADM, AVG(ng)%name)
 #  endif
+            AVG(ng)%files(Fcount)=TRIM(AVG(ng)%name)
             IF (AVG(ng)%ncid.ne.-1) THEN
               CALL netcdf_close (ng, iADM, AVG(ng)%ncid)
             END IF
             CALL def_avg (ng, Newfile)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             LwrtAVG(ng)=.TRUE.
           END IF
         ELSE
           IF (iic(ng).eq.ntstart(ng)) THEN
             CALL def_avg (ng, ldefout(ng))
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
             LwrtAVG(ng)=.TRUE.
             LdefAVG(ng)=.FALSE.
           END IF
@@ -230,7 +247,8 @@
         IF ((iic(ng).ne.ntstart(ng)).and.                               &
      &      (MOD(iic(ng),nAVG(ng)).eq.1)) THEN
           CALL wrt_avg (ng)
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END IF
       END IF
 # endif
@@ -241,7 +259,7 @@
 !  Turn off output data time wall clock.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, iADM, 8)
+      CALL wclock_off (ng, iADM, 8, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE ad_output

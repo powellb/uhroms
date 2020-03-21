@@ -2,9 +2,9 @@
 #if defined FLOATS || defined STATIONS
        SUBROUTINE grid_coords (ng, model)
 !
-!svn $Id: grid_coords.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: grid_coords.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================

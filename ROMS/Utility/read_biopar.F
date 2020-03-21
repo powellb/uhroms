@@ -1,9 +1,9 @@
 #include "cppdefs.h"
 #ifdef BIOLOGY
 !!
-!!svn $Id: read_biopar.F 645 2013-01-22 23:21:54Z arango $
+!!svn $Id: read_biopar.F 995 2020-01-10 04:01:28Z arango $
 !!================================================= Hernan G. Arango ===
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !!======================================================================
@@ -17,6 +17,8 @@
 #  include <fennel_inp.h>
 # elif defined ECOSIM
 #  include <ecosim_inp.h>
+# elif defined HYPOXIA_SRM
+#  include <hypoxia_srm_inp.h>
 # elif defined NEMURO
 #  include <nemuro_inp.h>
 # elif defined NPZD_FRANKS
@@ -25,6 +27,8 @@
 #  include <npzd_iron_inp.h>
 # elif defined NPZD_POWELL
 #  include <npzd_Powell_inp.h>
+# elif defined RED_TIDE
+#  include <red_tide_inp.h>
 # endif
 #else
       SUBROUTINE read_BioPar

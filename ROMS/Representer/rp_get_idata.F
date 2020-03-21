@@ -1,10 +1,10 @@
 #include "cppdefs.h"
-#if defined TL_IOMS && defined TIMELESS_DATA
+#ifdef TL_IOMS
       SUBROUTINE rp_get_idata (ng)
 !
-!svn $Id: rp_get_idata.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: rp_get_idata.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -22,19 +22,13 @@
       USE mod_ncparam
       USE mod_parallel
       USE mod_scalars
-# if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
       USE mod_sources
-# endif
       USE mod_stepping
 # if defined SSH_TIDES_NOT_YET || defined UV_TIDES_NOT_YET
       USE mod_tides
 # endif
-
-# if defined ANA_PSOURCE && \
-    (defined UV_PSOURCE  || defined TS_PSOURCE || defined Q_PSOURCE)
 !
-      USE analytical_mod, ONLY : ana_psource
-# endif
+      USE strings_mod, ONLY : FoundError
 !
       implicit none
 !
@@ -52,7 +46,7 @@
 
       real(r8) :: time_save = 0.0_r8
 !
-      SourceFile='rp_get_idata.F'
+      SourceFile=__FILE__
 !
 !  Lower and upper bounds for tiled arrays.
 !
@@ -67,7 +61,7 @@
 !  Turn on input data time wall clock.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_on (ng, iRPM, 3)
+      CALL wclock_on (ng, iRPM, 3, __LINE__, __FILE__)
 # endif
 
 # if defined SSH_TIDES_NOT_YET || defined UV_TIDES_NOT_YET
@@ -78,12 +72,15 @@
 !
 !  Tidal Period.
 !
-      IF (iic(ng).eq.0) THEN
-        CALL get_ngfld (ng, iRPM, idTper, ncFRCid(idTper,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  1, MTC, 1, 1, 1, NTC(ng), 1,                    &
-     &                  TIDES(ng) % Tperiod)
-        IF (exit_flag.ne.NoError) RETURN
+      IF (LprocessTides(ng)) THEN
+        IF (iic(ng).eq.0) THEN
+          CALL get_ngfld (ng, iRPM, idTper, ncFRCid(idTper,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    1, MTC, 1, 1, 1, NTC(ng), 1,                  &
+     &                    TIDES(ng) % Tperiod)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
       END IF
 # endif
 
@@ -93,31 +90,35 @@
 !  function of tidal period, we need to reset the model time variables
 !  temporarily.
 !
-      IF (iic(ng).eq.0) THEN
-        time_save=time(ng)
-        time(ng)=8640000.0_r8
-        tdays(ng)=time(ng)*sec2day
+      IF (LprocessTides(ng)) THEN
+        IF (iic(ng).eq.0) THEN
+          time_save=time(ng)
+          time(ng)=8640000.0_r8
+          tdays(ng)=time(ng)*sec2day
 
-        CALL get_2dfld (ng, iRPM, idTzam, ncFRCid(idTzam,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  LBi, UBi, LBj, UBj, MTC, NTC(ng),               &
+          CALL get_2dfld (ng, iRPM, idTzam, ncFRCid(idTzam,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    LBi, UBi, LBj, UBj, MTC, NTC(ng),             &
 #  ifdef MASKING
-     &                  GRID(ng) % rmask,                               &
+     &                    GRID(ng) % rmask,                             &
 #  endif
-     &                  TIDES(ng) % SSH_Tamp)
-        IF (exit_flag.ne.NoError) RETURN
+     &                    TIDES(ng) % SSH_Tamp)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
-        CALL get_2dfld (ng, iRPM, idTzph, ncFRCid(idTzph,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  LBi, UBi, LBj, UBj, MTC, NTC(ng),               &
+          CALL get_2dfld (ng, iRPM, idTzph, ncFRCid(idTzph,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    LBi, UBi, LBj, UBj, MTC, NTC(ng),             &
 #  ifdef MASKING
-     &                  GRID(ng) % rmask,                               &
+     &                    GRID(ng) % rmask,                             &
 #  endif
-     &                  TIDES(ng) % SSH_Tphase)
-        IF (exit_flag.ne.NoError) RETURN
+     &                    TIDES(ng) % SSH_Tphase)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
-        time(ng)=time_save
-        tdays(ng)=time(ng)*sec2day
+          time(ng)=time_save
+          tdays(ng)=time(ng)*sec2day
+        END IF
       END IF
 # endif
 
@@ -125,54 +126,59 @@
 !
 !  Tidal currents angle, phase, major and minor ellipse axis.
 !
-      IF (iic(ng).eq.0) THEN
-        time_save=time(ng)
-        time(ng)=8640000.0_r8
-        tdays(ng)=time(ng)*sec2day
+      IF (LprocessTides(ng)) THEN
+        IF (iic(ng).eq.0) THEN
+          time_save=time(ng)
+          time(ng)=8640000.0_r8
+          tdays(ng)=time(ng)*sec2day
 
-        CALL get_2dfld (ng, iRPM, idTvan, ncFRCid(idTvan,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  LBi, UBi, LBj, UBj, MTC, NTC(ng),               &
+          CALL get_2dfld (ng, iRPM, idTvan, ncFRCid(idTvan,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    LBi, UBi, LBj, UBj, MTC, NTC(ng),             &
 #  ifdef MASKING
-     &                  GRID(ng) % rmask,                               &
+     &                    GRID(ng) % rmask,                             &
 #  endif
-     &                  TIDES(ng) % UV_Tangle)
-        IF (exit_flag.ne.NoError) RETURN
+     &                    TIDES(ng) % UV_Tangle)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
-        CALL get_2dfld (ng, iRPM, idTvph, ncFRCid(idTvph,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  LBi, UBi, LBj, UBj, MTC, NTC(ng),               &
+          CALL get_2dfld (ng, iRPM, idTvph, ncFRCid(idTvph,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    LBi, UBi, LBj, UBj, MTC, NTC(ng),             &
 #  ifdef MASKING
-     &                  GRID(ng) % rmask,                               &
+     &                    GRID(ng) % rmask,                             &
 #  endif
-     &                  TIDES(ng) % UV_Tphase)
-        IF (exit_flag.ne.NoError) RETURN
+     &                    TIDES(ng) % UV_Tphase)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
-        CALL get_2dfld (ng, iRPM, idTvma, ncFRCid(idTvma,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  LBi, UBi, LBj, UBj, MTC, NTC(ng),               &
+          CALL get_2dfld (ng, iRPM, idTvma, ncFRCid(idTvma,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    LBi, UBi, LBj, UBj, MTC, NTC(ng),             &
 #  ifdef MASKING
-     &                  GRID(ng) % rmask,                               &
+     &                    GRID(ng) % rmask,                             &
 #  endif
      &                  TIDES(ng) % UV_Tmajor)
-        IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
-        CALL get_2dfld (ng, iRPM, idTvmi, ncFRCid(idTvmi,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
-     &                  LBi, UBi, LBj, UBj, MTC, NTC(ng),               &
+          CALL get_2dfld (ng, iRPM, idTvmi, ncFRCid(idTvmi,ng),         &
+     &                    nFfiles(ng), FRC(1,ng), update(1),            &
+     &                    LBi, UBi, LBj, UBj, MTC, NTC(ng),             &
 #  ifdef MASKING
-     &                  GRID(ng) % rmask,                               &
+     &                    GRID(ng) % rmask,                             &
 #  endif
-     &                  TIDES(ng) % UV_Tminor)
-        IF (exit_flag.ne.NoError) RETURN
+     &                    TIDES(ng) % UV_Tminor)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
-        time(ng)=time_save
-        tdays(ng)=time(ng)*sec2day
+          time(ng)=time_save
+          tdays(ng)=time(ng)*sec2day
+        END IF
       END IF
 # endif
 
-# if !defined ANA_PSOURCE && \
-     (defined UV_PSOURCE  || defined TS_PSOURCE || defined Q_PSOURCE)
+# ifndef ANA_PSOURCE
 !
 !-----------------------------------------------------------------------
 !  Read in point Sources/Sinks position, direction, special flag, and
@@ -180,30 +186,37 @@
 !  U- and V-points.
 !-----------------------------------------------------------------------
 !
-      IF (iic(ng).eq.0) THEN
-        CALL get_ngfld (ng, iRPM, idRxpo, ncFRCid(idRxpo,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
+      IF ((iic(ng).eq.0).and.                                           &
+     &    (LuvSrc(ng).or.LwSrc(ng).or.ANY(LtracerSrc(:,ng)))) THEN
+        CALL get_ngfld (ng, iRPM, idRxpo, SSF(ng)%ncid,                 &
+     &                  1, SSF(ng), update(1),                          &
      &                  1, Nsrc(ng), 1, 1, 1, Nsrc(ng), 1,              &
      &                  SOURCES(ng) % Xsrc)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
-        CALL get_ngfld (ng, iRPM, idRepo, ncFRCid(idRepo,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
+        CALL get_ngfld (ng, iRPM, idRepo, SSF(ng)%ncid,                 &
+     &                  1, SSF(ng), update(1),                          &
      &                  1, Nsrc(ng), 1, 1, 1, Nsrc(ng), 1,              &
      &                  SOURCES(ng) % Ysrc)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
-        CALL get_ngfld (ng, iRPM, idRdir, ncFRCid(idRdir,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
+        CALL get_ngfld (ng, iRPM, idRdir, SSF(ng)%ncid,                 &
+     &                  1, SSF(ng), update(1),                          &
      &                  1, Nsrc(ng), 1, 1, 1, Nsrc(ng), 1,              &
      &                  SOURCES(ng) % Dsrc)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
-        CALL get_ngfld (ng, iRPM, idRvsh, ncFRCid(idRvsh,ng),           &
-     &                  nFfiles(ng), FRC(1,ng), update(1),              &
+#  ifdef SOLVE3D
+        CALL get_ngfld (ng, iRPM, idRvsh, SSF(ng)%ncid,                 &
+     &                  1, SSF(ng), update(1),                          &
      &                  1, Nsrc(ng), N(ng), 1, 1, Nsrc(ng), N(ng),      &
      &                  SOURCES(ng) % Qshape)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+#  endif
 
         DO is=1,Nsrc(ng)
           SOURCES(ng)%Isrc(is)=                                         &
@@ -220,7 +233,7 @@
 !  Turn off input data time wall clock.
 !-----------------------------------------------------------------------
 !
-      CALL wclock_off (ng, iRPM, 3)
+      CALL wclock_off (ng, iRPM, 3, __LINE__, __FILE__)
 # endif
 
       RETURN

@@ -1,8 +1,8 @@
       SUBROUTINE ana_tair (ng, tile, model)
 !
-!! svn $Id: ana_tair.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_tair.h 995 2020-01-10 04:01:28Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -78,8 +78,8 @@
 !-----------------------------------------------------------------------
 !
 #if defined MY_APPLICATION
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Tair(i,j)=???
         END DO
       END DO

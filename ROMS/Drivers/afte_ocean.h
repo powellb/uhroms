@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: afte_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: afte_ocean.h 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -57,16 +57,16 @@
       USE mod_iounits
       USE mod_scalars
       USE mod_storage
-
-#ifdef MCT_LIB
 !
-# ifdef AIR_OCEAN
+#ifdef MCT_LIB
+# ifdef ATM_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
 # endif
-# ifdef WAVES_OCEAN
+# ifdef WAV_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2wav_coupling
 # endif
 #endif
+      USE strings_mod,       ONLY : FoundError
 !
 !  Imported variable declarations.
 !
@@ -89,7 +89,7 @@
 #ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-!  Set distribute-memory (MPI) world communictor.
+!  Set distribute-memory (mpi) world communictor.
 !-----------------------------------------------------------------------
 !
       IF (PRESENT(mpiCOMM)) THEN
@@ -121,7 +121,8 @@
 !  grids and dimension parameters are known.
 !
         CALL inp_par (iADM)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Set domain decomposition tile partition range.  This range is
 !  computed only once since the "first_tile" and "last_tile" values
@@ -154,7 +155,7 @@
         DO ng=1,Ngrids
 !$OMP PARALLEL
           DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iADM, 0)
+            CALL wclock_on (ng, iADM, 0, __LINE__, __FILE__)
           END DO
 !$OMP END PARALLEL
         END DO
@@ -167,17 +168,17 @@
 
       END IF
 
-#if defined MCT_LIB && (defined AIR_OCEAN || defined WAVES_OCEAN)
+#if defined MCT_LIB && (defined ATM_COUPLING || defined WAV_COUPLING)
 !
 !-----------------------------------------------------------------------
 !  Initialize coupling streams between model(s).
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
-# ifdef AIR_OCEAN
+# ifdef ATM_COUPLING
         CALL initialize_ocn2atm_coupling (ng, MyRank)
 # endif
-# ifdef WAVES_OCEAN
+# ifdef WAV_COUPLING
         CALL initialize_ocn2wav_coupling (ng, MyRank)
 # endif
       END DO
@@ -189,14 +190,30 @@
 !  routine "wpoints".
 !-----------------------------------------------------------------------
 !
-      DO ng=1,Ngrids
 #if defined BULK_FLUXES && defined NL_BULK_FLUXES
-        BLK(ng)%name=FWD(ng)%name
+!  Set structure for the nonlinear surface fluxes to be processed by
+!  by the tangent linear and adjoint models. Also, set switches to
+!  process the BLK structure in routine "check_multifile".  Notice that
+!  it is possible to split solution into multiple NetCDF files to reduce
+!  their size.
+!
+      CALL edit_multifile ('FWD2BLK')
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+      DO ng=1,Ngrids
+        LreadBLK(ng)=.TRUE.
+      END DO
 #endif
+!
+!  Initialize adjoint model.
+!
+      DO ng=1,Ngrids
+        LreadFWD(ng)=.TRUE.
 !$OMP PARALLEL
         CALL ad_initial (ng)
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 !
 !  Allocate arrays associated with Generalized Stability Theory (GST)
@@ -262,7 +279,8 @@
         ELSE
           CALL def_gst (ng, iADM)
         END IF
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 #endif
 
@@ -297,12 +315,13 @@
       USE mod_storage
 !
       USE propagator_mod
-      USE packing_mod, ONLY : c_norm2
-      USE packing_mod, ONLY : r_norm2
+      USE packing_mod,   ONLY : c_norm2
+      USE packing_mod,   ONLY : r_norm2
+      USE strings_mod,   ONLY : FoundError
 !
 !  Imported variable declarations
 !
-      real(r8), intent(in) :: RunInterval            ! seconds
+      real(dp), intent(in) :: RunInterval            ! seconds
 !
 !  Local variable declarations.
 !
@@ -351,7 +370,7 @@
 !
         DO ng=1,Ngrids
 #ifdef PROFILE
-          CALL wclock_on (ng, iADM, 38)
+          CALL wclock_on (ng, iADM, 38, __LINE__, __FILE__)
 #endif
 #ifdef DISTRIBUTE
           CALL pdnaupd (OCN_COMM_WORLD,                                 &
@@ -373,7 +392,7 @@
 #endif
           Nconv(ng)=iaup2(4)
 #ifdef PROFILE
-          CALL wclock_off (ng, iADM, 38)
+          CALL wclock_off (ng, iADM, 38, __LINE__, __FILE__)
 #endif
 #ifdef CHECKPOINTING
 !
@@ -385,7 +404,8 @@
           IF ((MOD(iter,nGST).eq.0).or.(iter.ge.MaxIterGST).or.         &
      &        (ANY(ido.eq.99))) THEN
             CALL wrt_gst (ng, iADM)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
 #endif
         END DO
@@ -403,7 +423,7 @@
 !
         IF (ANY(ABS(ido).eq.1)) THEN
           DO ng=1,Ngrids
-            Fcount=ADM(ng)%Fcount
+            Fcount=ADM(ng)%load
             ADM(ng)%Nrec(Fcount)=0
             ADM(ng)%Rindex=0
           END DO
@@ -430,7 +450,8 @@
 !$OMP PARALLEL
           CALL propagator (RunInterval, state, ad_state)
 !$OMP END PARALLEL
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
         ELSE
           IF (ANY(info.ne.0)) THEN
@@ -459,7 +480,7 @@
      &                            iparam(3,ng)
               END IF
 #ifdef PROFILE
-              CALL wclock_on (ng, iADM, 38)
+              CALL wclock_on (ng, iADM, 38, __LINE__, __FILE__)
 #endif
 #ifdef DISTRIBUTE
               CALL pdneupd (OCN_COMM_WORLD,                             &
@@ -488,7 +509,7 @@
      &                     SworkL(1,ng), LworkL, info(ng))
 #endif
 #ifdef PROFILE
-              CALL wclock_off (ng, iADM, 38)
+              CALL wclock_off (ng, iADM, 38, __LINE__, __FILE__)
 #endif
             END DO
 
@@ -515,7 +536,7 @@
               DO i=1,MAXVAL(NconvRitz)
                 DO ng=1,Ngrids
                   IF ((i.eq.1).or.LmultiGST) THEN
-                    Fcount=ADM(ng)%Fcount
+                    Fcount=ADM(ng)%load
                     ADM(ng)%Nrec(Fcount)=0
                     ADM(ng)%Rindex=0
                   END IF
@@ -549,7 +570,8 @@
 !$OMP PARALLEL
                   CALL propagator (RunInterval, state, ad_state)
 !$OMP END PARALLEL
-                  IF (exit_flag.ne.NoError) RETURN
+                  IF (FoundError(exit_flag, NoError, __LINE__,          &
+     &                           __FILE__)) RETURN
 !
                   DO ng=1,Ngrids
                     CALL r_norm2 (ng, iADM, Nstr(ng), Nend(ng),         &
@@ -574,13 +596,14 @@
                       nullify (ad_state(ng)%vector)
                     END IF
                     state(ng)%vector => STORAGE(ng)%Rvector(Is:Ie,i)
-                    ad_state(ng)%vector => STORAGE(ng)%SworkD(Is:Ie)
+                    ad_state(ng)%vector => SworkR(Is:Ie)
                   END DO
 
 !$OMP PARALLEL
                   CALL propagator (RunInterval, state, ad_state)
 !$OMP END PARALLEL
-                  IF (exit_flag.ne.NoError) RETURN
+                  IF (FoundError(exit_flag, NoError, __LINE__,          &
+     &                           __FILE__)) RETURN
 !
                   DO ng=1,Ngrids
                     CALL c_norm2 (ng, iADM, Nstr(ng), Nend(ng),         &
@@ -602,13 +625,14 @@
                       nullify (ad_state(ng)%vector)
                     END IF
                     state(ng)%vector => STORAGE(ng)%Rvector(Is:Ie,i+1)
-                    ad_state(ng)%vector => STORAGE(ng)%SworkD(Is:Ie)
+                    ad_state(ng)%vector => SworkR(Is:Ie)
                   END DO
 
 !$OMP PARALLEL
                   CALL propagator (RunInterval, state, ad_state)
 !$OMP END PARALLEL
-                  IF (exit_flag.ne.NoError) RETURN
+                  IF (FoundError(exit_flag, NoError, __LINE__,          &
+     &                           __FILE__)) RETURN
 !
                   DO ng=1,Ngrids
                     CALL c_norm2 (ng, iADM, Nstr(ng), Nend(ng),         &
@@ -634,8 +658,8 @@
 !  Write out Ritz eigenvalues and Ritz eigenvector Euclidean norm
 !  (residual)to NetCDF file(s).
 !
+                SourceFile=__FILE__ // ", ROMS_run"
                 DO ng=1,Ngrids
-                  SourceFile='afte_ocean.h, ROMS_run'
                   IF (LmultiGST) THEN
                     IF (.not.Lcomplex.or.(RvalueI(i,ng).eq.0.0_r8)) THEN
                       srec=1
@@ -653,7 +677,8 @@
      &                                    start = (/srec/),             &
      &                                    total = (/1/),                &
      &                                    ncid = ADM(ng)%ncid)
-                    IF (exit_flag.ne. NoError) RETURN
+                    IF (FoundError(exit_flag, NoError, __LINE__,        &
+     &                             __FILE__)) RETURN
 
                     CALL netcdf_put_fvar (ng, iADM, ADM(ng)%name,       &
      &                                    'Ritz_ivalue',                &
@@ -661,19 +686,22 @@
      &                                    start = (/srec/),             &
      &                                    total = (/1/),                &
      &                                    ncid = ADM(ng)%ncid)
-                    IF (exit_flag.ne. NoError) RETURN
+                    IF (FoundError(exit_flag, NoError, __LINE__,        &
+     &                             __FILE__)) RETURN
 
                     CALL netcdf_put_fvar (ng, iADM, ADM(ng)%name,       &
      &                                    'Ritz_norm', norm(i:,ng),     &
      &                                    start = (/srec/),             &
      &                                    total = (/1/),                &
      &                                    ncid = ADM(ng)%ncid)
-                    IF (exit_flag.ne. NoError) RETURN
+                    IF (FoundError(exit_flag, NoError, __LINE__,        &
+     &                             __FILE__)) RETURN
 
                     IF (LmultiGST.and.Lcomplex) THEN
                       CALL netcdf_close (ng, iADM, ADM(ng)%ncid,        &
      &                                   ADM(ng)%name)
-                      IF (exit_flag.ne.NoError) RETURN
+                      IF (FoundError(exit_flag, NoError, __LINE__,      &
+     &                               __FILE__)) RETURN
                     END IF
                   END IF
                 END DO
@@ -725,7 +753,7 @@
             IF (Master) WRITE (stdout,10)
  10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
      &                ' RESTART file',/)
-            Fcount=RST(ng)%Fcount
+            Fcount=RST(ng)%load
             IF (LcycleRST(ng).and.(RST(ng)%Nrec(Fcount).ge.2)) THEN
               RST(ng)%Rindex=2
               LcycleRST(ng)=.FALSE.
@@ -738,7 +766,8 @@
       END IF
 !
 !-----------------------------------------------------------------------
-!  Stop model and time profiling clocks.  Close output NetCDF files.
+!  Stop model and time profiling clocks, report memory requirements, and
+!  close output NetCDF files.
 !-----------------------------------------------------------------------
 !
 !  Stop time clocks.
@@ -747,17 +776,26 @@
         WRITE (stdout,20)
  20     FORMAT (/,' Elapsed CPU time (seconds):',/)
       END IF
-
+!
       DO ng=1,Ngrids
 !$OMP PARALLEL
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iADM, 0)
+          CALL wclock_off (ng, iADM, 0, __LINE__, __FILE__)
         END DO
 !$OMP END PARALLEL
       END DO
 !
+!  Report dynamic memory and automatic memory requirements.
+!
+!$OMP PARALLEL
+      CALL memory
+!$OMP END PARALLEL
+!
 !  Close IO files.
 !
+      DO ng=1,Ngrids
+        CALL close_inp (ng, iADM)
+      END DO
       CALL close_out
 
       RETURN

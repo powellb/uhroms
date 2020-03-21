@@ -1,10 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_sources
-#if defined UV_PSOURCE || defined TS_PSOURCE || defined Q_PSOURCE
 !
-!svn $Id: mod_sources.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_sources.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -65,10 +64,10 @@
           real(r8), pointer :: Xsrc(:)
           real(r8), pointer :: Ysrc(:)
 
-# ifndef ANA_PSOURCE
+#ifndef ANA_PSOURCE
           real(r8), pointer :: QbarG(:,:)
           real(r8), pointer :: TsrcG(:,:,:,:)
-# endif
+#endif
 
         END TYPE T_SOURCES
 
@@ -86,13 +85,15 @@
 !=======================================================================
 !
       USE mod_param
-# ifndef ANA_PSOURCE
+#ifndef ANA_PSOURCE
       USE mod_parallel
       USE mod_iounits
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
-# endif
+#endif
+!
+      USE strings_mod, ONLY : FoundError
 !
 !  Imported variable declarations.
 !
@@ -100,11 +101,11 @@
 !
 !  Local variable declarations.
 !
-# ifndef ANA_PSOURCE
+#ifndef ANA_PSOURCE
       logical :: foundit
 
       integer :: Vid, ifile, nvatt, nvdim
-# endif
+#endif
       integer :: is, itrc, k, mg
 
       real(r8), parameter :: IniVal = 0.0_r8
@@ -118,40 +119,38 @@
         allocate ( Nsrc(Ngrids) )
       END IF
 
-# if !defined ANA_PSOURCE && (defined UV_PSOURCE || \
-                              defined TS_PSOURCE || defined Q_PSOURCE)
+#ifndef ANA_PSOURCE
 !
 !  Inquire about the number of point sources.
 !
       IF (ng.eq.1) THEN
         DO mg=1,Ngrids
           foundit=.FALSE.
-
-          QUERY : DO ifile=1,nFfiles(mg)
-            CALL netcdf_inq_var (ng, iNLM, FRC(ifile,mg)%name,          &
+          IF (LuvSrc(mg).or.LwSrc(mg).or.ANY(LtracerSrc(:,mg))) THEN
+            CALL netcdf_inq_var (ng, iNLM, SSF(mg)%name,                &
      &                           MyVarName = TRIM(Vname(1,idRxpo)),     &
      &                           SearchVar = foundit,                   &
      &                           VarID = Vid,                           &
      &                           nVardim = nvdim,                       &
      &                           nVarAtt = nvatt)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__//", allocate_sources")) RETURN
 
             IF (foundit) THEN
               Nsrc(mg)=var_Dsize(1)         ! first dimension
               Msrc(mg)=Nsrc(mg)
-              EXIT QUERY
             END IF
-          END DO QUERY
+          END IF
         END DO
       END IF
-# else
+#else
 !
 !  Set number of point sources to maximum number of analytical sources.
 !  Notice that a maximum of 200 analytical sources are set-up here.
 !
       Msrc(ng)=200
       Nsrc(ng)=Msrc(ng)
-# endif
+#endif
 !
 !  Allocate structure.
 !
@@ -160,30 +159,42 @@
 !  Allocate point Sources/Sinks variables.
 !
       allocate ( SOURCES(ng) % Isrc(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % Jsrc(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % Dsrc(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % Fsrc(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % Qbar(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % Qshape(Nsrc(ng),N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng)*N(ng),r8)
 
       allocate ( SOURCES(ng) % Qsrc(Nsrc(ng),N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng)*N(ng),r8)
 
       allocate ( SOURCES(ng) % Tsrc(Nsrc(ng),N(ng),NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng)*N(ng)*NT(ng),r8)
 
       allocate ( SOURCES(ng) % Xsrc(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % Ysrc(Nsrc(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(Nsrc(ng),r8)
 
-# ifndef ANA_PSOURCE
+#ifndef ANA_PSOURCE
       allocate ( SOURCES(ng) % QbarG(Nsrc(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(Nsrc(ng),r8)
 
       allocate ( SOURCES(ng) % TsrcG(Nsrc(ng),N(ng),2,NT(ng)) )
-# endif
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(Nsrc(ng)*N(ng)*NT(ng),r8)
+#endif
 !
 !-----------------------------------------------------------------------
 !  Initialize module variables.
@@ -197,10 +208,10 @@
         SOURCES(ng) % Xsrc(is) = IniVal
         SOURCES(ng) % Ysrc(is) = IniVal
         SOURCES(ng) % Qbar(is) = IniVal
-# ifndef ANA_PSOURCE
+#ifndef ANA_PSOURCE
         SOURCES(ng) % QbarG(is,1) = IniVal
         SOURCES(ng) % QbarG(is,2) = IniVal
-# endif
+#endif
       END DO
       DO k=1,N(ng)
         DO is=1,Nsrc(ng)
@@ -212,15 +223,14 @@
         DO k=1,N(ng)
           DO is=1,Nsrc(ng)
             SOURCES(ng) % Tsrc(is,k,itrc) = IniVal
-# ifndef ANA_PSOURCE
+#ifndef ANA_PSOURCE
             SOURCES(ng) % TsrcG(is,k,1,itrc) = IniVal
             SOURCES(ng) % TsrcG(is,k,2,itrc) = IniVal
-# endif
+#endif
           END DO
         END DO
       END DO
 
       RETURN
       END SUBROUTINE allocate_sources
-#endif
       END MODULE mod_sources

@@ -1,8 +1,8 @@
       SUBROUTINE uv3dmix4 (ng, tile)
 !
-!svn $Id: uv3dmix4_geo.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: uv3dmix4_geo.h 995 2020-01-10 04:01:28Z arango $
 !************************************************** Hernan G. Arango ***
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !***********************************************************************
@@ -50,7 +50,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 33)
+      CALL wclock_on (ng, iNLM, 33, __LINE__, __FILE__)
 #endif
       CALL uv3dmix4_tile (ng, tile,                                     &
      &                    LBi, UBi, LBj, UBj,                           &
@@ -61,6 +61,12 @@
      &                    GRID(ng) % rmask,                             &
      &                    GRID(ng) % umask,                             &
      &                    GRID(ng) % vmask,                             &
+#endif
+#ifdef WET_DRY
+     &                    GRID(ng) % pmask_wet,                         &
+     &                    GRID(ng) % rmask_wet,                         &
+     &                    GRID(ng) % umask_wet,                         &
+     &                    GRID(ng) % vmask_wet,                         &
 #endif
      &                    GRID(ng) % om_p,                              &
      &                    GRID(ng) % om_r,                              &
@@ -96,7 +102,7 @@
      &                    COUPLING(ng) % rufrc,                         &
      &                    COUPLING(ng) % rvfrc)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 33)
+      CALL wclock_off (ng, iNLM, 33, __LINE__, __FILE__)
 #endif
 
       RETURN
@@ -109,6 +115,10 @@
      &                          nrhs, nnew,                             &
 #ifdef MASKING
      &                          pmask, rmask, umask, vmask,             &
+#endif
+#ifdef WET_DRY
+     &                          pmask_wet, rmask_wet,                   &
+     &                          umask_wet, vmask_wet,                   &
 #endif
      &                          om_p, om_r, om_u, om_v,                 &
      &                          on_p, on_r, on_u, on_v,                 &
@@ -149,6 +159,12 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: pmask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: rmask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+# endif
       real(r8), intent(in) :: om_p(LBi:,LBj:)
       real(r8), intent(in) :: om_r(LBi:,LBj:)
       real(r8), intent(in) :: om_u(LBi:,LBj:)
@@ -188,6 +204,12 @@
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: pmask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: rmask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
 # endif
       real(r8), intent(in) :: om_p(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: om_r(LBi:UBi,LBj:UBj)
@@ -297,6 +319,9 @@
 #ifdef MASKING
               cff=cff*umask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*umask_wet(i,j)
+#endif
               UFx(i,j)=cff*(z_r(i  ,j,k+1)-                             &
      &                      z_r(i-1,j,k+1))
             END DO
@@ -306,6 +331,9 @@
               cff=0.5_r8*(pn(i,j-1)+pn(i,j))
 #ifdef MASKING
               cff=cff*vmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*vmask_wet(i,j)
 #endif
               VFe(i,j)=cff*(z_r(i,j  ,k+1)-                             &
      &                      z_r(i,j-1,k+1))
@@ -337,6 +365,9 @@
 #ifdef MASKING
               cff=cff*rmask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*rmask_wet(i,j)
+#endif
               dnUdx(i,j,k2)=cff*((pn(i  ,j)+pn(i+1,j))*                 &
      &                           u(i+1,j,k+1,nrhs)-                     &
      &                           (pn(i-1,j)+pn(i  ,j))*                 &
@@ -350,6 +381,9 @@
      &                      pn(i-1,j-1)+pn(i,j-1))
 #ifdef MASKING
               cff=cff*pmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*pmask_wet(i,j)
 #endif
               dmUde(i,j,k2)=cff*((pm(i-1,j  )+pm(i,j  ))*               &
      &                           u(i,j  ,k+1,nrhs)-                     &
@@ -365,6 +399,9 @@
 #ifdef MASKING
               cff=cff*pmask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*pmask_wet(i,j)
+#endif
               dnVdx(i,j,k2)=cff*((pn(i  ,j-1)+pn(i  ,j))*               &
      &                           v(i  ,j,k+1,nrhs)-                     &
      &                           (pn(i-1,j-1)+pn(i-1,j))*               &
@@ -377,6 +414,9 @@
               cff=0.5_r8*pn(i,j)
 #ifdef MASKING
               cff=cff*rmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*rmask_wet(i,j)
 #endif
               dmVde(i,j,k2)=cff*((pm(i,j  )+pm(i,j+1))*                 &
      &                           v(i,j+1,k+1,nrhs)-                     &
@@ -459,6 +499,9 @@
 #ifdef MASKING
               cff=cff*rmask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*rmask_wet(i,j)
+#endif
 #ifdef VISC_3DCOEF
 # ifdef UV_U3ADV_SPLIT
               UFx(i,j)=on_r(i,j)*on_r(i,j)*Uvis3d_r(i,j,k)*cff
@@ -498,6 +541,9 @@
      &                              dUdz(i,j  ,k1))))
 #ifdef MASKING
               cff=cff*pmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*pmask_wet(i,j)
 #endif
 #ifdef VISC_3DCOEF
 # ifdef UV_U3ADV_SPLIT
@@ -712,6 +758,9 @@
 #ifdef MASKING
               LapU(i,j,k)=LapU(i,j,k)*umask(i,j)
 #endif
+#ifdef WET_DRY
+              LapU(i,j,k)=LapU(i,j,k)*umask_wet(i,j)
+#endif
             END DO
           END DO
 
@@ -729,6 +778,9 @@
 #ifdef MASKING
               LapV(i,j,k)=LapV(i,j,k)*vmask(i,j)
 #endif
+#ifdef WET_DRY
+              LapV(i,j,k)=LapV(i,j,k)*vmask_wet(i,j)
+#endif
             END DO
           END DO
         END IF
@@ -737,160 +789,175 @@
 !  Apply boundary conditions (closed or gradient; except periodic)
 !  to the first harmonic operator.
 !
-      IF (.not.ComposedGrid(ng)) THEN
-        IF (.not.EWperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Western_Edge(tile)) THEN
-            IF (LBC(iwest,isUvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO j=Jstrm1,Jendp1
-                  LapU(IstrU-1,j,k)=0.0_r8
-                END DO
+      IF (.not.(CompositeGrid(iwest,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+          IF (LBC(iwest,isUvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO j=Jstrm1,Jendp1
+                LapU(IstrU-1,j,k)=0.0_r8
               END DO
-            ELSE
-              DO k=1,N(ng)
-                DO j=Jstrm1,Jendp1
-                  LapU(IstrU-1,j,k)=LapU(IstrU,j,k)
-                END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO j=Jstrm1,Jendp1
+                LapU(IstrU-1,j,k)=LapU(IstrU,j,k)
               END DO
-            END IF
-            IF (LBC(iwest,isVvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO j=JstrVm1,Jendp1
-                  LapV(Istr-1,j,k)=gamma2(ng)*LapV(Istr,j,k)
-                END DO
-              END DO
-            ELSE
-              DO k=1,N(ng)
-                DO j=JstrVm1,Jendp1
-                  LapV(Istr-1,j,k)=0.0_r8
-                END DO
-              END DO
-            END IF
+            END DO
           END IF
-
-          IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
-            IF (LBC(ieast,isUvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO j=Jstrm1,Jendp1
-                  LapU(Iend+1,j,k)=0.0_r8
-                END DO
+          IF (LBC(iwest,isVvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO j=JstrVm1,Jendp1
+                LapV(Istr-1,j,k)=gamma2(ng)*LapV(Istr,j,k)
               END DO
-            ELSE
-              DO k=1,N(ng)
-                DO j=Jstrm1,Jendp1
-                  LapU(Iend+1,j,k)=LapU(Iend,j,k)
-                END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO j=JstrVm1,Jendp1
+                LapV(Istr-1,j,k)=0.0_r8
               END DO
-            END IF
-            IF (LBC(ieast,isVvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO j=JstrVm1,Jendp1
-                  LapV(Iend+1,j,k)=gamma2(ng)*LapV(Iend,j,k)
-                END DO
-              END DO
-            ELSE
-              DO k=1,N(ng)
-                DO j=JstrVm1,Jendp1
-                  LapV(Iend+1,j,k)=0.0_r8
-                END DO
-              END DO
-            END IF
+            END DO
           END IF
         END IF
-
-        IF (.not.NSperiodic(ng)) THEN
-          IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
-            IF (LBC(isouth,isUvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO i=IstrUm1,Iendp1
-                  LapU(i,Jstr-1,k)=gamma2(ng)*LapU(i,Jstr,k)
-                END DO
+      END IF
+!
+      IF (.not.(CompositeGrid(ieast,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+          IF (LBC(ieast,isUvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO j=Jstrm1,Jendp1
+                LapU(Iend+1,j,k)=0.0_r8
               END DO
-            ELSE
-              DO k=1,N(ng)
-                DO i=IstrUm1,Iendp1
-                  LapU(i,Jstr-1,k)=0.0_r8
-                END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO j=Jstrm1,Jendp1
+                LapU(Iend+1,j,k)=LapU(Iend,j,k)
               END DO
-            END IF
-            IF (LBC(isouth,isVvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO i=Istrm1,Iendp1
-                  LapV(i,JstrV-1,k)=0.0_r8
-                END DO
-              END DO
-            ELSE
-              DO k=1,N(ng)
-                DO i=Istrm1,Iendp1
-                  LapV(i,JstrV-1,k)=LapV(i,JstrV,k)
-                END DO
-              END DO
-            END IF
+            END DO
           END IF
-
-          IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
-            IF (LBC(inorth,isUvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO i=IstrUm1,Iendp1
-                  LapU(i,Jend+1,k)=gamma2(ng)*LapU(i,Jend,k)
-                END DO
+          IF (LBC(ieast,isVvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO j=JstrVm1,Jendp1
+                LapV(Iend+1,j,k)=gamma2(ng)*LapV(Iend,j,k)
               END DO
-            ELSE
-              DO k=1,N(ng)
-                DO i=IstrUm1,Iendp1
-                  LapU(i,Jend+1,k)=0.0_r8
-                END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO j=JstrVm1,Jendp1
+                LapV(Iend+1,j,k)=0.0_r8
               END DO
-            END IF
-            IF (LBC(inorth,isVvel,ng)%closed) THEN
-              DO k=1,N(ng)
-                DO i=Istrm1,Iendp1
-                  LapV(i,Jend+1,k)=0.0_r8
-                END DO
-              END DO
-            ELSE
-              DO k=1,N(ng)
-                DO i=Istrm1,Iendp1
-                  LapV(i,Jend+1,k)=LapV(i,Jend,k)
-                END DO
-              END DO
-            END IF
+            END DO
           END IF
         END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+          IF (LBC(isouth,isUvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO i=IstrUm1,Iendp1
+                LapU(i,Jstr-1,k)=gamma2(ng)*LapU(i,Jstr,k)
+              END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO i=IstrUm1,Iendp1
+                LapU(i,Jstr-1,k)=0.0_r8
+              END DO
+            END DO
+          END IF
+          IF (LBC(isouth,isVvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO i=Istrm1,Iendp1
+                LapV(i,JstrV-1,k)=0.0_r8
+              END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO i=Istrm1,Iendp1
+                LapV(i,JstrV-1,k)=LapV(i,JstrV,k)
+              END DO
+            END DO
+          END IF
+        END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng))) THEN
+        IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+          IF (LBC(inorth,isUvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO i=IstrUm1,Iendp1
+                LapU(i,Jend+1,k)=gamma2(ng)*LapU(i,Jend,k)
+              END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO i=IstrUm1,Iendp1
+                LapU(i,Jend+1,k)=0.0_r8
+              END DO
+            END DO
+          END IF
+          IF (LBC(inorth,isVvel,ng)%closed) THEN
+            DO k=1,N(ng)
+              DO i=Istrm1,Iendp1
+                LapV(i,Jend+1,k)=0.0_r8
+              END DO
+            END DO
+          ELSE
+            DO k=1,N(ng)
+              DO i=Istrm1,Iendp1
+                LapV(i,Jend+1,k)=LapV(i,Jend,k)
+              END DO
+            END DO
+          END IF
+        END IF
+      END IF
+!
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(iwest ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
+          DO k=1,N(ng)
+            LapU(Istr  ,Jstr-1,k)=0.5_r8*(LapU(Istr+1,Jstr-1,k)+        &
+     &                                    LapU(Istr  ,Jstr  ,k))
+            LapV(Istr-1,Jstr  ,k)=0.5_r8*(LapV(Istr-1,Jstr+1,k)+        &
+     &                                    LapV(Istr  ,Jstr  ,k))
+          END DO
+        END IF
+      END IF
 
-        IF (.not.(EWperiodic(ng).or.NSperiodic(ng))) THEN
-          IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
-            DO k=1,N(ng)
-              LapU(Istr  ,Jstr-1,k)=0.5_r8*(LapU(Istr+1,Jstr-1,k)+      &
-     &                                      LapU(Istr  ,Jstr  ,k))
-              LapV(Istr-1,Jstr  ,k)=0.5_r8*(LapV(Istr-1,Jstr+1,k)+      &
-     &                                      LapV(Istr  ,Jstr  ,k))
-            END DO
-          END IF
-          IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
-            DO k=1,N(ng)
-              LapU(Iend+1,Jstr-1,k)=0.5_r8*(LapU(Iend  ,Jstr-1,k)+      &
-     &                                      LapU(Iend+1,Jstr  ,k))
-              LapV(Iend+1,Jstr  ,k)=0.5_r8*(LapV(Iend  ,Jstr  ,k)+      &
-     &                                      LapV(Iend+1,Jstr+1,k))
-            END DO
-          END IF
-          IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
-            DO k=1,N(ng)
-              LapU(Istr  ,Jend+1,k)=0.5_r8*(LapU(Istr+1,Jend+1,k)+      &
-     &                                      LapU(Istr  ,Jend  ,k))
-              LapV(Istr-1,Jend+1,k)=0.5_r8*(LapV(Istr  ,Jend+1,k)+      &
-     &                                      LapV(Istr-1,Jend  ,k))
-            END DO
-          END IF
-          IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-            DO k=1,N(ng)
-              LapU(Iend+1,Jend+1,k)=0.5_r8*(LapU(Iend  ,Jend+1,k)+      &
-     &                                      LapU(Iend+1,Jend  ,k))
-              LapV(Iend+1,Jend+1,k)=0.5_r8*(LapV(Iend  ,Jend+1,k)+      &
-     &                                      LapV(Iend+1,Jend  ,k))
-            END DO
-          END IF
+      IF (.not.(CompositeGrid(isouth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(ieast ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
+          DO k=1,N(ng)
+            LapU(Iend+1,Jstr-1,k)=0.5_r8*(LapU(Iend  ,Jstr-1,k)+        &
+     &                                    LapU(Iend+1,Jstr  ,k))
+            LapV(Iend+1,Jstr  ,k)=0.5_r8*(LapV(Iend  ,Jstr  ,k)+        &
+     &                                    LapV(Iend+1,Jstr+1,k))
+          END DO
+        END IF
+      END IF
+
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(iwest ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
+          DO k=1,N(ng)
+            LapU(Istr  ,Jend+1,k)=0.5_r8*(LapU(Istr+1,Jend+1,k)+        &
+     &                                    LapU(Istr  ,Jend  ,k))
+            LapV(Istr-1,Jend+1,k)=0.5_r8*(LapV(Istr  ,Jend+1,k)+        &
+     &                                    LapV(Istr-1,Jend  ,k))
+          END DO
+        END IF
+      END IF
+
+      IF (.not.(CompositeGrid(inorth,ng).or.NSperiodic(ng).or.          &
+     &          CompositeGrid(ieast ,ng).or.EWperiodic(ng))) THEN
+        IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
+          DO k=1,N(ng)
+            LapU(Iend+1,Jend+1,k)=0.5_r8*(LapU(Iend  ,Jend+1,k)+        &
+     &                                    LapU(Iend+1,Jend  ,k))
+            LapV(Iend+1,Jend+1,k)=0.5_r8*(LapV(Iend  ,Jend+1,k)+        &
+     &                                    LapV(Iend+1,Jend  ,k))
+          END DO
         END IF
       END IF
 !
@@ -911,6 +978,9 @@
 #ifdef MASKING
               cff=cff*umask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*umask_wet(i,j)
+#endif
               UFx(i,j)=cff*(z_r(i  ,j,k+1)-                             &
      &                      z_r(i-1,j,k+1))
             END DO
@@ -920,6 +990,9 @@
               cff=0.5_r8*(pn(i,j-1)+pn(i,j))
 #ifdef MASKING
               cff=cff*vmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*vmask_wet(i,j)
 #endif
               VFe(i,j)=cff*(z_r(i,j  ,k+1)-                             &
      &                      z_r(i,j-1,k+1))
@@ -952,6 +1025,9 @@
 #ifdef MASKING
               cff=cff*rmask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*rmask_wet(i,j)
+#endif
               dnUdx(i,j,k2)=cff*((pn(i  ,j)+pn(i+1,j))*                 &
      &                           LapU(i+1,j,k+1)-                       &
      &                           (pn(i-1,j)+pn(i  ,j))*                 &
@@ -965,6 +1041,9 @@
      &                      pn(i-1,j-1)+pn(i,j-1))
 #ifdef MASKING
               cff=cff*pmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*pmask_wet(i,j)
 #endif
               dmUde(i,j,k2)=cff*((pm(i-1,j  )+pm(i,j  ))*               &
      &                           LapU(i,j  ,k+1)-                       &
@@ -980,6 +1059,9 @@
 #ifdef MASKING
               cff=cff*pmask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*pmask_wet(i,j)
+#endif
               dnVdx(i,j,k2)=cff*((pn(i  ,j-1)+pn(i  ,j))*               &
      &                           LapV(i  ,j,k+1)-                       &
      &                           (pn(i-1,j-1)+pn(i-1,j))*               &
@@ -992,6 +1074,9 @@
               cff=0.5_r8*pn(i,j)
 #ifdef MASKING
               cff=cff*rmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*rmask_wet(i,j)
 #endif
               dmVde(i,j,k2)=cff*((pm(i,j  )+pm(i,j+1))*                 &
      &                           LapV(i,j+1,k+1)-                       &
@@ -1074,6 +1159,9 @@
 #ifdef MASKING
               cff=cff*rmask(i,j)
 #endif
+#ifdef WET_DRY
+              cff=cff*rmask_wet(i,j)
+#endif
 #ifdef VISC_3DCOEF
 # ifdef UV_U3ADV_SPLIT
               UFx(i,j)=on_r(i,j)*on_r(i,j)*Uvis3d_r(i,j,k)*cff
@@ -1116,6 +1204,9 @@
      &                                dUdz(i,j  ,k1)))))
 #ifdef MASKING
               cff=cff*pmask(i,j)
+#endif
+#ifdef WET_DRY
+              cff=cff*pmask_wet(i,j)
 #endif
 #ifdef VISC_3DCOEF
 # ifdef UV_U3ADV_SPLIT

@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_ocean
 !
-!svn $Id: mod_ocean.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: mod_ocean.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -27,10 +27,22 @@
 !  u            3D U-momentum component (m/s).                         !
 !  v            3D V-momentum component (m/s).                         !
 !  W            S-coordinate (omega*Hz/mn) vertical velocity (m3/s).   !
+#ifdef BIOLOGY
 !                                                                      !
 !  Biology Variables.                                                  !
 !                                                                      !
+# if defined BIO_FENNEL && defined CARBON
 !  pH           Surface concentration of hydrogen ions.                !
+# endif
+# ifdef RED_TIDE
+!  CystIni      Red tide dinoflagellate bottom cyst initial            !
+!                 concentration (cysts/m2).                            !
+!  DIN_obs      Observed Dissolved Inorganic Nutrient (micromoles).    !
+# endif
+#endif
+# ifdef HYPOXIA_SRM
+!  repiration   Total biological respiration rate (1/day).             !
+# endif
 !                                                                      !
 #ifdef NEARSHORE_MELLOR
 !  Nearshore radiation stresses:                                       !
@@ -86,6 +98,17 @@
 # if defined BIO_FENNEL && defined CARBON
           real(r8), pointer :: pH(:,:)
 # endif
+# ifdef RED_TIDE
+          real(r8), pointer :: CystIni(:,:)
+          real(r8), pointer :: DIN_obs(:,:,:)
+          real(r8), pointer :: DIN_obsG(:,:,:,:)
+# endif
+# ifdef HYPOXIA_SRM
+          real(r8), pointer :: respiration(:,:,:)
+#  ifndef ANA_RESPIRATION
+          real(r8), pointer :: respirationG(:,:,:,:)
+#  endif
+# endif
 #endif
 
 #if defined TANGENT || defined TL_IOMS
@@ -113,6 +136,9 @@
           real(r8), pointer :: tl_u(:,:,:,:)
           real(r8), pointer :: tl_v(:,:,:,:)
           real(r8), pointer :: tl_W(:,:,:)
+#  ifdef NOT_YET
+          real(r8), pointer :: tl_wvel(:,:,:)
+#  endif
 #  if defined NEARSHORE_MELLOR
           real(r8), pointer :: tl_rulag3d(:,:,:)
           real(r8), pointer :: tl_rvlag3d(:,:,:)
@@ -150,6 +176,8 @@
           real(r8), pointer :: ad_u(:,:,:,:)
           real(r8), pointer :: ad_v(:,:,:,:)
           real(r8), pointer :: ad_W(:,:,:)
+          real(r8), pointer :: ad_wvel(:,:,:)
+
           real(r8), pointer :: ad_t_sol(:,:,:,:)
           real(r8), pointer :: ad_u_sol(:,:,:)
           real(r8), pointer :: ad_v_sol(:,:,:)
@@ -162,7 +190,8 @@
 # endif
 #endif
 
-#if defined FOUR_DVAR || defined IMPULSE
+#if defined FOUR_DVAR  || defined IMPULSE || \
+   (defined HESSIAN_SV && defined BNORM)
 !
 !  Working arrays to store adjoint impulse forcing, error covariance,
 !  standard deviations, or descent conjugate vectors (directions).
@@ -175,7 +204,7 @@
           real(r8), pointer :: b_u(:,:,:,:)
           real(r8), pointer :: b_v(:,:,:,:)
 # endif
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
           real(r8), pointer :: d_ubar(:,:)
           real(r8), pointer :: d_vbar(:,:)
           real(r8), pointer :: d_zeta(:,:)
@@ -202,9 +231,19 @@
           real(r8), pointer :: f_u(:,:,:)
           real(r8), pointer :: f_v(:,:,:)
 #  endif
+#  ifdef TIME_CONV
+          real(r8), pointer :: f_ubarS(:,:,:)
+          real(r8), pointer :: f_vbarS(:,:,:)
+          real(r8), pointer :: f_zetaS(:,:,:)
+#   ifdef SOLVE3D
+          real(r8), pointer :: f_tS(:,:,:,:,:)
+          real(r8), pointer :: f_uS(:,:,:,:)
+          real(r8), pointer :: f_vS(:,:,:,:)
+#   endif
+#  endif
 # endif
 #endif
-#ifdef FORCING_SV
+#if defined FORCING_SV || defined HESSIAN_FSV
           real(r8), pointer :: f_ubar(:,:)
           real(r8), pointer :: f_vbar(:,:)
           real(r8), pointer :: f_zeta(:,:)
@@ -244,10 +283,9 @@
           real(r8), pointer :: f_tG(:,:,:,:,:)
           real(r8), pointer :: f_uG(:,:,:,:)
           real(r8), pointer :: f_vG(:,:,:,:)
-#  else
+#  endif
           real(r8), pointer :: f_ubarG(:,:,:)
           real(r8), pointer :: f_vbarG(:,:,:)
-#  endif
 # endif
 #endif
 
@@ -272,53 +310,121 @@
 !
       integer, intent(in) :: ng, LBi, UBi, LBj, UBj
 !
+!  Local variable declarations.
+!
+      real(r8) :: size2d
+!
 !-----------------------------------------------------------------------
 !  Allocate and initialize module variables.
 !-----------------------------------------------------------------------
 !
       IF (ng.eq.1) allocate ( OCEAN(Ngrids) )
 !
+!  Set horizontal array size.
+!
+      size2d=REAL((UBi-LBi+1)*(UBj-LBj+1),r8)
+!
 !  Nonlinear model state.
 !
       allocate ( OCEAN(ng) % rubar(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % rvbar(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % rzeta(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 
       allocate ( OCEAN(ng) % ubar(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
+
       allocate ( OCEAN(ng) % vbar(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
+
       allocate ( OCEAN(ng) % zeta(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
 
 #if defined NEARSHORE_MELLOR
       allocate ( OCEAN(ng) % rulag2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % rvlag2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % ubar_stokes(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % vbar_stokes(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 #endif
 
 #ifdef SOLVE3D
       allocate ( OCEAN(ng) % pden(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % rho(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 
       allocate ( OCEAN(ng) % ru(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( OCEAN(ng) % rv(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
 
       allocate ( OCEAN(ng) % t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % u(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % v(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % W(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
       allocate ( OCEAN(ng) % wvel(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 
 # if defined NEARSHORE_MELLOR
       allocate ( OCEAN(ng) % rulag3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % rvlag3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % u_stokes(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % v_stokes(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 # endif
 
 # if defined BIO_FENNEL && defined CARBON
       allocate ( OCEAN(ng) % pH(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 # endif
 
+# ifdef RED_TIDE
+      allocate ( OCEAN(ng) % CystIni(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
+      allocate ( OCEAN(ng) % DIN_obs(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+      allocate ( OCEAN(ng) % DIN_obsG(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+# endif
+
+# ifdef HYPOXIA_SRM
+      allocate ( OCEAN(ng) % respiration(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+#  ifndef ANA_RESPIRATION
+      allocate ( OCEAN(ng) % respirationG(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+#  endif
+# endif
 #endif
 
 #if defined TANGENT || defined TL_IOMS
@@ -326,37 +432,79 @@
 !  Tangent linear model state.
 !
       allocate ( OCEAN(ng) % tl_rubar(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % tl_rvbar(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % tl_rzeta(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 
       allocate ( OCEAN(ng) % tl_ubar(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
+
       allocate ( OCEAN(ng) % tl_vbar(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
+
       allocate ( OCEAN(ng) % tl_zeta(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
 
 # if defined NEARSHORE_MELLOR
       allocate ( OCEAN(ng) % tl_rulag2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % tl_rvlag2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % tl_ubar_stokes(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % tl_vbar_stokes(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 # endif
 
 # ifdef SOLVE3D
       allocate ( OCEAN(ng) % tl_pden(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_rho(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 
       allocate ( OCEAN(ng) % tl_ru(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( OCEAN(ng) % tl_rv(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
 
       allocate ( OCEAN(ng) % tl_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_u(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_v(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_W(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
+#  ifdef NOT_YET
+      allocate ( OCEAN(ng) % tl_wvel(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+#  endif
 
 #  if defined NEARSHORE_MELLOR
       allocate ( OCEAN(ng) % tl_rulag3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_rvlag3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_u_stokes(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % tl_v_stokes(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  endif
 # endif
 #endif
@@ -366,108 +514,229 @@
 !  Adjoint model state.
 !
       allocate ( OCEAN(ng) % ad_rubar(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % ad_rvbar(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % ad_rzeta(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 
       allocate ( OCEAN(ng) % ad_ubar(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
+
       allocate ( OCEAN(ng) % ad_vbar(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
+
       allocate ( OCEAN(ng) % ad_zeta(LBi:UBi,LBj:UBj,3) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*size2d
 
       allocate ( OCEAN(ng) % ad_ubar_sol(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % ad_vbar_sol(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % ad_zeta_sol(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 
 # if defined NEARSHORE_MELLOR
       allocate ( OCEAN(ng) % ad_rulag2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % ad_rvlag2d(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % ad_ubar_stokes(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % ad_vbar_stokes(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 # endif
 
 # ifdef SOLVE3D
       allocate ( OCEAN(ng) % ad_pden(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_rho(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 
       allocate ( OCEAN(ng) % ad_ru(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( OCEAN(ng) % ad_rv(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
 
       allocate ( OCEAN(ng) % ad_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+3.0_r8*REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_u(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_v(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_W(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
+
+      allocate ( OCEAN(ng) % ad_wvel(LBi:UBi,LBj:UBj,0:N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)+1,r8)*size2d
 
       allocate ( OCEAN(ng) % ad_t_sol(LBi:UBi,LBj:UBj,N(ng),NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_u_sol(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_v_sol(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 
 #  if defined NEARSHORE_MELLOR
       allocate ( OCEAN(ng) % ad_rulag3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_rvlag3d(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_u_stokes(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % ad_v_stokes(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  endif
 # endif
 #endif
 
-#if defined FOUR_DVAR || defined IMPULSE
+#if defined FOUR_DVAR  || defined IMPULSE || \
+   (defined HESSIAN_SV && defined BNORM)
 !
 !  Working arrays to store adjoint impulse forcing, background error
 !  covariance, background-error standard deviations, or descent
 !  conjugate vectors (directions).
 !
       allocate ( OCEAN(ng) % b_ubar(LBi:UBi,LBj:UBj,NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % b_vbar(LBi:UBi,LBj:UBj,NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % b_zeta(LBi:UBi,LBj:UBj,NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(NSA,r8)*size2d
 
 # ifdef SOLVE3D
       allocate ( OCEAN(ng) % b_t(LBi:UBi,LBj:UBj,N(ng),NSA,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NT(ng)*NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % b_u(LBi:UBi,LBj:UBj,N(ng),NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % b_v(LBi:UBi,LBj:UBj,N(ng),NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NSA,r8)*size2d
 # endif
 
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
       allocate ( OCEAN(ng) % d_ubar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % d_vbar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % d_zeta(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 
 #  ifdef SOLVE3D
       allocate ( OCEAN(ng) % d_t(LBi:UBi,LBj:UBj,N(ng),NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % d_u(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % d_v(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 #  endif
 
       allocate ( OCEAN(ng) % e_ubar(LBi:UBi,LBj:UBj,NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % e_vbar(LBi:UBi,LBj:UBj,NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % e_zeta(LBi:UBi,LBj:UBj,NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(NSA,r8)*size2d
 
 #  ifdef SOLVE3D
       allocate ( OCEAN(ng) % e_t(LBi:UBi,LBj:UBj,N(ng),NSA,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NT(ng)*NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % e_u(LBi:UBi,LBj:UBj,N(ng),NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NSA,r8)*size2d
+
       allocate ( OCEAN(ng) % e_v(LBi:UBi,LBj:UBj,N(ng),NSA) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NSA,r8)*size2d
 #  endif
 
 #  ifdef WEAK_CONSTRAINT
-      allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
-      allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
-
 #   ifdef SOLVE3D
       allocate ( OCEAN(ng) % f_t(LBi:UBi,LBj:UBj,N(ng),NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % f_u(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % f_v(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+#   endif
+      allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
+      allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
+      allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+#   ifdef TIME_CONV
+#    ifdef SOLVE3D
+      allocate ( OCEAN(ng) % f_tS(LBi:UBi,LBj:UBj,N(ng),NrecTC(ng),     &
+     &                            NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NrecTC(ng)*NT(ng),r8)*size2d
+
+      allocate ( OCEAN(ng) % f_uS(LBi:UBi,LBj:UBj,N(ng),NrecTC(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NrecTC(ng),r8)*size2d
+
+      allocate ( OCEAN(ng) % f_vS(LBi:UBi,LBj:UBj,N(ng),NrecTC(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NrecTC(ng),r8)*size2d
+#    endif
+      allocate ( OCEAN(ng) % f_ubarS(LBi:UBi,LBj:UBj,NrecTC(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(NrecTC(ng),r8)*size2d
+
+      allocate ( OCEAN(ng) % f_vbarS(LBi:UBi,LBj:UBj,NrecTC(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(NrecTC(ng),r8)*size2d
+
+      allocate ( OCEAN(ng) % f_zetaS(LBi:UBi,LBj:UBj,NrecTC(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(NrecTC(ng),r8)*size2d
 #   endif
 #  endif
 # endif
 #endif
-#ifdef FORCING_SV
+#if defined FORCING_SV || defined HESSIAN_FSV
       allocate ( OCEAN(ng) % f_ubar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % f_vbar(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
+
       allocate ( OCEAN(ng) % f_zeta(LBi:UBi,LBj:UBj) )
+      Dmem(ng)=Dmem(ng)+size2d
 
 # ifdef SOLVE3D
       allocate ( OCEAN(ng) % f_t(LBi:UBi,LBj:UBj,N(ng),NT(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % f_u(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % f_v(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
 # endif
 #endif
 
@@ -479,32 +748,60 @@
 !
 # ifdef FORWARD_RHS
       allocate ( OCEAN(ng) % rubarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % rvbarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % rzetaG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 # endif
       allocate ( OCEAN(ng) % ubarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % vbarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
       allocate ( OCEAN(ng) % zetaG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 
 # ifdef SOLVE3D
 #  ifdef FORWARD_RHS
       allocate ( OCEAN(ng) % ruG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
+
       allocate ( OCEAN(ng) % rvG(LBi:UBi,LBj:UBj,0:N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
 #  endif
       allocate ( OCEAN(ng) % tG(LBi:UBi,LBj:UBj,N(ng),2,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % uG(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % vG(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
 # endif
 # ifdef WEAK_CONSTRAINT
-      allocate ( OCEAN(ng) % f_zetaG(LBi:UBi,LBj:UBj,2) )
 #  ifdef SOLVE3D
       allocate ( OCEAN(ng) % f_tG(LBi:UBi,LBj:UBj,N(ng),2,NT(ng)) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)*NT(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % f_uG(LBi:UBi,LBj:UBj,N(ng),2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+
       allocate ( OCEAN(ng) % f_vG(LBi:UBi,LBj:UBj,N(ng),2) )
-#  else
-      allocate ( OCEAN(ng) % f_ubarG(LBi:UBi,LBj:UBj,2) )
-      allocate ( OCEAN(ng) % f_vbarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
 #  endif
+      allocate ( OCEAN(ng) % f_ubarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
+      allocate ( OCEAN(ng) % f_vbarG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
+
+      allocate ( OCEAN(ng) % f_zetaG(LBi:UBi,LBj:UBj,2) )
+      Dmem(ng)=Dmem(ng)+2.0_r8*size2d
 # endif
 #endif
 
@@ -605,6 +902,9 @@
 # if defined BIO_FENNEL && defined CARBON && defined SOLVE3D
             OCEAN(ng) % pH(i,j) = 8.0_r8
 # endif
+# ifdef RED_TIDE
+            OCEAN(ng) % CystIni(i,j) = IniVal
+# endif
           END DO
 #ifdef SOLVE3D
           DO k=1,N(ng)
@@ -621,6 +921,18 @@
               OCEAN(ng) % rvlag3d(i,j,k) = IniVal
               OCEAN(ng) % u_stokes(i,j,k) = IniVal
               OCEAN(ng) % v_stokes(i,j,k) = IniVal
+# endif
+# ifdef RED_TIDE
+              OCEAN(ng) % DIN_obs(i,j,k) = IniVal
+              OCEAN(ng) % DIN_obsG(i,j,k,1) = IniVal
+              OCEAN(ng) % DIN_obsG(i,j,k,2) = IniVal
+# endif
+# ifdef HYPOXIA_SRM
+              OCEAN(ng) % respiration(i,j,k) = IniVal
+#  ifndef ANA_RESPIRATION
+              OCEAN(ng) % respirationG(i,j,k,1) = IniVal
+              OCEAN(ng) % respirationG(i,j,k,2) = IniVal
+#  endif
 # endif
             END DO
           END DO
@@ -671,11 +983,12 @@
             OCEAN(ng) % tl_zeta(i,j,1) = IniVal
             OCEAN(ng) % tl_zeta(i,j,2) = IniVal
             OCEAN(ng) % tl_zeta(i,j,3) = IniVal
-# ifdef FORCING_SV
+# if defined FORCING_SV || defined HESSIAN_FSV
             OCEAN(ng) % f_ubar(i,j) = IniVal
             OCEAN(ng) % f_vbar(i,j) = IniVal
             OCEAN(ng) % f_zeta(i,j) = IniVal
 # endif
+
 # if defined NEARSHORE_MELLOR
             OCEAN(ng) % tl_rulag2d(i,j) = IniVal
             OCEAN(ng) % tl_rvlag2d(i,j) = IniVal
@@ -693,7 +1006,7 @@
               OCEAN(ng) % tl_u(i,j,k,2) = IniVal
               OCEAN(ng) % tl_v(i,j,k,1) = IniVal
               OCEAN(ng) % tl_v(i,j,k,2) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
               OCEAN(ng) % f_u(i,j,k) = IniVal
               OCEAN(ng) % f_v(i,j,k) = IniVal
 #  endif
@@ -713,6 +1026,9 @@
               OCEAN(ng) % tl_rv(i,j,k,2) = IniVal
 
               OCEAN(ng) % tl_W(i,j,k) = IniVal
+#  ifdef NOT_YET
+              OCEAN(ng) % tl_wvel(i,j,k) = IniVal
+#  endif
             END DO
           END DO
           DO itrc=1,NT(ng)
@@ -721,7 +1037,7 @@
                 OCEAN(ng) % tl_t(i,j,k,1,itrc) = IniVal
                 OCEAN(ng) % tl_t(i,j,k,2,itrc) = IniVal
                 OCEAN(ng) % tl_t(i,j,k,3,itrc) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
                 OCEAN(ng) % f_t(i,j,k,itrc) = IniVal
 #  endif
               END DO
@@ -755,7 +1071,7 @@
             OCEAN(ng) % ad_zeta(i,j,1) = IniVal
             OCEAN(ng) % ad_zeta(i,j,2) = IniVal
             OCEAN(ng) % ad_zeta(i,j,3) = IniVal
-# ifdef FORCING_SV
+# if defined FORCING_SV | defined HESSIAN_FSV
             OCEAN(ng) % f_ubar(i,j) = IniVal
             OCEAN(ng) % f_vbar(i,j) = IniVal
             OCEAN(ng) % f_zeta(i,j) = IniVal
@@ -783,7 +1099,7 @@
               OCEAN(ng) % ad_v(i,j,k,2) = IniVal
               OCEAN(ng) % ad_u_sol(i,j,k) = IniVal
               OCEAN(ng) % ad_v_sol(i,j,k) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
               OCEAN(ng) % f_u(i,j,k) = IniVal
               OCEAN(ng) % f_v(i,j,k) = IniVal
 #  endif
@@ -803,6 +1119,7 @@
               OCEAN(ng) % ad_rv(i,j,k,2) = IniVal
 
               OCEAN(ng) % ad_W(i,j,k) = IniVal
+              OCEAN(ng) % ad_wvel(i,j,k) = IniVal
             END DO
           END DO
           DO itrc=1,NT(ng)
@@ -812,7 +1129,7 @@
                 OCEAN(ng) % ad_t(i,j,k,2,itrc) = IniVal
                 OCEAN(ng) % ad_t(i,j,k,3,itrc) = IniVal
                 OCEAN(ng) % ad_t_sol(i,j,k,itrc) = IniVal
-#  ifdef FORCING_SV
+#  if defined FORCING_SV || defined HESSIAN_FSV
                 OCEAN(ng) % f_t(i,j,k,itrc) = IniVal
 #  endif
               END DO
@@ -823,7 +1140,8 @@
       END IF
 #endif
 
-#if defined FOUR_DVAR || defined IMPULSE
+#if defined FOUR_DVAR  || defined IMPULSE || \
+   (defined HESSIAN_SV && defined BNORM)
 !
 !  Working arrays to store adjoint impulse forcing, background error
 !  covariance, background-error standard deviations, or descent
@@ -836,7 +1154,7 @@
               OCEAN(ng) % b_ubar(i,j,rec) = IniVal
               OCEAN(ng) % b_vbar(i,j,rec) = IniVal
               OCEAN(ng) % b_zeta(i,j,rec) = IniVal
-# ifdef FOUR_DVAR
+# if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
               OCEAN(ng) % e_ubar(i,j,rec) = IniVal
               OCEAN(ng) % e_vbar(i,j,rec) = IniVal
               OCEAN(ng) % e_zeta(i,j,rec) = IniVal
@@ -906,6 +1224,34 @@
 #  endif
           END DO
 # endif
+# if defined TIME_CONV && defined WEAK_CONSTRAINT
+          DO rec=1,NrecTC(ng)
+            DO i=Imin,Imax
+              OCEAN(ng) % f_ubarS(i,j,rec) = IniVal
+              OCEAN(ng) % f_zetaS(i,j,rec) = IniVal
+              OCEAN(ng) % f_vbarS(i,j,rec) = IniVal
+            END DO
+          END DO
+#  ifdef SOLVE3D
+          DO rec=1,NrecTC(ng)
+            DO k=1,N(ng)
+              DO i=Imin,Imax
+                OCEAN(ng) % f_uS(i,j,k,rec) = IniVal
+                OCEAN(ng) % f_vS(i,j,k,rec) = IniVal
+              END DO
+            END DO
+          END DO
+          DO itrc=1,NT(ng)
+            DO rec=1,NrecTC(ng)
+              DO k=1,N(ng)
+                DO i=Imin,Imax
+                  OCEAN(ng) % f_tS(i,j,k,rec,itrc) = IniVal
+                END DO
+              END DO
+            END DO
+          END DO
+#  endif
+# endif
         END DO
       END IF
 #endif
@@ -936,12 +1282,10 @@
 # ifdef WEAK_CONSTRAINT
             OCEAN(ng) % f_zetaG(i,j,1) = IniVal
             OCEAN(ng) % f_zetaG(i,j,2) = IniVal
-#  ifndef SOLVE3D
             OCEAN(ng) % f_ubarG(i,j,1) = IniVal
             OCEAN(ng) % f_ubarG(i,j,2) = IniVal
             OCEAN(ng) % f_vbarG(i,j,1) = IniVal
             OCEAN(ng) % f_vbarG(i,j,2) = IniVal
-#  endif
 # endif
           END DO
 # ifdef SOLVE3D
@@ -985,7 +1329,6 @@
         END DO
       END IF
 #endif
-
       RETURN
       END SUBROUTINE initialize_ocean
 

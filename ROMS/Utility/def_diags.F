@@ -2,9 +2,9 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE def_diags (ng, ldef)
 !
-!svn $Id: def_diags.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: def_diags.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -31,6 +31,7 @@
 # endif
 !
       USE def_var_mod, ONLY : def_var
+      USE strings_mod, ONLY : FoundError
 !
       implicit none
 !
@@ -46,14 +47,16 @@
 
       integer, parameter :: Natt = 25
 
-      integer :: i, ifield, itrc, ivar, j, nvd3, nvd4
+      integer :: i, ifield, itrc, ivar, j, nvd3, nvd4, nvd5
       integer :: recdim, status
 # if defined WRITE_WATER && defined MASKING
       integer :: xy_pdim, xyz_pdim
 # endif
-      integer :: DimIDs(32), t2dgrd(3), u2dgrd(3), v2dgrd(3)
-      integer :: Vsize(4)
-
+      integer :: DimIDs(nDimID)
+      integer :: t2dgrd(3), u2dgrd(3), v2dgrd(3)
+# if defined ECOSIM && defined DIAGNOSTICS_BIO
+      integer :: l3dgrd(4), l4dgrd(5)
+# endif
       integer :: def_dim
 
 # ifdef SOLVE3D
@@ -65,23 +68,25 @@
 
       real(r8) :: Aval(6)
 
+      character (len= 13) :: Prefix
       character (len=120) :: Vinfo(Natt)
       character (len=256) :: ncname
 !
-      SourceFile='def_diags.F'
+      SourceFile=__FILE__
 !
 !-----------------------------------------------------------------------
 !  Set and report file name.
 !-----------------------------------------------------------------------
 !
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
       ncname=DIA(ng)%name
 !
       IF (Master) THEN
         IF (ldef) THEN
-          WRITE (stdout,10) TRIM(ncname)
+          WRITE (stdout,10) ng, TRIM(ncname)
         ELSE
-          WRITE (stdout,20) TRIM(ncname)
+          WRITE (stdout,20) ng, TRIM(ncname)
         END IF
       END IF
 !
@@ -91,7 +96,8 @@
 !
       DEFINE : IF (ldef) THEN
         CALL netcdf_create (ng, iNLM, TRIM(ncname), DIA(ng)%ncid)
-        IF (exit_flag.ne.NoError) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) THEN
           IF (Master) WRITE (stdout,30) TRIM(ncname)
           RETURN
         END IF
@@ -104,138 +110,172 @@
 !
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xi_rho',        &
      &                 IOBOUNDS(ng)%xi_rho, DimIDs( 1))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xi_u',          &
      &                 IOBOUNDS(ng)%xi_u, DimIDs( 2))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xi_v',          &
      &                 IOBOUNDS(ng)%xi_v, DimIDs( 3))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xi_psi',        &
      &                 IOBOUNDS(ng)%xi_psi, DimIDs( 4))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'eta_rho',       &
      &                 IOBOUNDS(ng)%eta_rho, DimIDs( 5))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'eta_u',         &
      &                 IOBOUNDS(ng)%eta_u, DimIDs( 6))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'eta_v',         &
      &                 IOBOUNDS(ng)%eta_v, DimIDs( 7))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'eta_psi',       &
      &                 IOBOUNDS(ng)%eta_psi, DimIDs( 8))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 # if defined WRITE_WATER && defined MASKING
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xy_psi',        &
      &                 IOBOUNDS(ng)%xy_psi, xy_pdim)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xy_rho',        &
      &                 IOBOUNDS(ng)%xy_rho, DimIDs(17))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xy_u',          &
      &                 IOBOUNDS(ng)%xy_u, DimIDs(18))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xy_v',          &
      &                 IOBOUNDS(ng)%xy_v, DimIDs(19))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 # endif
 
 # ifdef SOLVE3D
 #  if defined WRITE_WATER && defined MASKING
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xyz_psi',       &
      &                 IOBOUNDS(ng)%xy_psi*N(ng), xyz_pdim)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xyz_rho',       &
      &                 IOBOUNDS(ng)%xy_rho*N(ng), DimIDs(20))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xyz_u',         &
      &                 IOBOUNDS(ng)%xy_u*N(ng), DimIDs(21))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xyz_v',         &
      &                 IOBOUNDS(ng)%xy_v*N(ng), DimIDs(22))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xyz_w',         &
      &                 IOBOUNDS(ng)%xy_rho*(N(ng)+1), DimIDs(23))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 #  endif
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 's_rho',         &
      &                 N(ng), DimIDs( 9))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 's_w',           &
      &                 N(ng)+1, DimIDs(10))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'tracer',        &
      &                 NT(ng), DimIDs(11))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 #  ifdef SEDIMENT
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'NST',           &
      &                 NST, DimIDs(32))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Nbed',          &
      &                 Nbed, DimIDs(16))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 #   if defined WRITE_WATER && defined MASKING
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'xybed',         &
      &                 IOBOUNDS(ng)%xy_rho*Nbed, DimIDs(24))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 #   endif
 #  endif
-
 #  ifdef ECOSIM
+        status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Nbands',        &
+     &                 NDbands, DimIDs(33))
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Nphy',          &
      &                 Nphy, DimIDs(25))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Nbac',          &
      &                 Nbac, DimIDs(26))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Ndom',          &
      &                 Ndom, DimIDs(27))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Nfec',          &
      &                 Nfec, DimIDs(28))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 #  endif
 # endif
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'boundary',      &
      &                 4, DimIDs(14))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 # ifdef FOUR_DVAR
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname, 'Nstate',        &
      &                 NstateVar(ng), DimIDs(29))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 # endif
 
         status=def_dim(ng, iNLM, DIA(ng)%ncid, ncname,                  &
      &                 TRIM(ADJUSTL(Vname(5,idtime))),                  &
      &                 nf90_unlimited, DimIDs(12))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
         recdim=DimIDs(12)
 !
@@ -244,9 +284,11 @@
 #if defined WRITE_WATER && defined MASKING
         nvd3=2
         nvd4=2
+        nvd5=2
 #else
         nvd3=3
         nvd4=4
+        nvd5=5
 #endif
 !
 !  Define dimension vectors for staggered tracer type variables.
@@ -270,7 +312,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered u-momemtum type variables.
+!  Define dimension vectors for staggered u-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         u2dgrd(1)=DimIDs(18)
@@ -291,7 +333,7 @@
 #  endif
 # endif
 !
-!  Define dimension vectors for staggered v-momemtum type variables.
+!  Define dimension vectors for staggered v-momentum type variables.
 !
 # if defined WRITE_WATER && defined MASKING
         v2dgrd(1)=DimIDs(19)
@@ -313,7 +355,7 @@
 # endif
 # ifdef SOLVE3D
 !
-!  Define dimension vector for staggered w-momemtum type variables.
+!  Define dimension vector for staggered w-momentum type variables.
 !
 #  if defined WRITE_WATER && defined MASKING
         w3dgrd(1)=DimIDs(23)
@@ -338,6 +380,21 @@
         b3dgrd(4)=DimIDs(12)
 #   endif
 #  endif
+#  if defined ECOSIM && defined DIAGNOSTICS_BIO
+!
+!  Define dimension vector for spectral light type variables.
+!
+        l3dgrd(1)=DimIDs( 1)
+        l3dgrd(2)=DimIDs( 5)
+        l3dgrd(3)=DimIDs(33)
+        l3dgrd(4)=DimIDs(12)
+!
+        l4dgrd(1)=DimIDs( 1)
+        l4dgrd(2)=DimIDs( 5)
+        l4dgrd(3)=DimIDs( 9)
+        l4dgrd(4)=DimIDs(33)
+        l4dgrd(5)=DimIDs(12)
+#  endif
 # endif
 !
 !  Initialize unlimited time record dimension.
@@ -355,12 +412,17 @@
           Aval(i)=0.0_r8
         END DO
 !
+!  Set long name prefix string.
+!
+        Prefix='time-averaged'
+!
 !-----------------------------------------------------------------------
 !  Define time-recordless information variables.
 !-----------------------------------------------------------------------
 !
         CALL def_info (ng, iNLM, DIA(ng)%ncid, ncname, DimIDs)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Define variables and their attributes.
@@ -369,25 +431,15 @@
 !  Define model time.
 !
         Vinfo( 1)=Vname(1,idtime)
-        WRITE (Vinfo( 2),'(a,1x,a)') 'averaged', TRIM(Vname(2,idtime))
-        IF (INT(time_ref).eq.-2) THEN
-          Vinfo( 3)='seconds since 1968-05-23 00:00:00 GMT'
-          Vinfo( 4)='gregorian'
-        ELSE IF (INT(time_ref).eq.-1) THEN
-          Vinfo( 3)='seconds since 0001-01-01 00:00:00'
-          Vinfo( 4)='360_day'
-        ELSE IF (INT(time_ref).eq.0) THEN
-          Vinfo( 3)='seconds since 0001-01-01 00:00:00'
-          Vinfo( 4)='julian'
-        ELSE IF (time_ref.gt.0.0_r8) THEN
-          WRITE (Vinfo( 3),'(a,1x,a)') 'seconds since', TRIM(r_text)
-          Vinfo( 4)='gregorian'
-        END IF
+        WRITE (Vinfo( 2),'(a,a)') 'averaged ', TRIM(Vname(2,idtime))
+        WRITE (Vinfo( 3),'(a,a)') 'seconds since ', TRIM(Rclock%string)
+        Vinfo( 4)=TRIM(Rclock%calendar)
         Vinfo(14)=Vname(4,idtime)
         status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(idtime),     &
-     &                 NF_TYPE, 1, (/recdim/), Aval, Vinfo, ncname,     &
-     &                 SetParAccess = .FALSE.)
-        IF (exit_flag.ne.NoError) RETURN
+     &                 NF_TOUT, 1, (/recdim/), Aval, Vinfo, ncname,     &
+     &                 SetParAccess = .TRUE.)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 
 # ifdef DIAGNOSTICS_UV
 !
@@ -397,7 +449,7 @@
           ifield=idDu2d(ivar)
           IF (Dout(ifield,ng)) THEN
             Vinfo( 1)=Vname(1,ifield)
-            Vinfo( 2)=Vname(2,ifield)
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
             Vinfo( 3)=Vname(3,ifield)
             Vinfo(14)=Vname(4,ifield)
             Vinfo(16)=Vname(1,idtime)
@@ -408,12 +460,13 @@
             Aval(5)=REAL(u2dvar,r8)
             status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
      &                     NF_FOUT, nvd3, u2dgrd, Aval, Vinfo, ncname)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
           ifield=idDv2d(ivar)
           IF (Dout(ifield,ng)) THEN
             Vinfo( 1)=Vname(1,ifield)
-            Vinfo( 2)=Vname(2,ifield)
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
             Vinfo( 3)=Vname(3,ifield)
             Vinfo(14)=Vname(4,ifield)
             Vinfo(16)=Vname(1,idtime)
@@ -424,7 +477,8 @@
             Aval(5)=REAL(v2dvar,r8)
             status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
      &                     NF_FOUT, nvd3, v2dgrd, Aval, Vinfo, ncname)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         END DO
 
@@ -436,7 +490,7 @@
           ifield=idDu3d(ivar)
           IF (Dout(ifield,ng)) THEN
             Vinfo( 1)=Vname(1,ifield)
-            Vinfo( 2)=Vname(2,ifield)
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
             Vinfo( 3)=Vname(3,ifield)
             Vinfo(14)=Vname(4,ifield)
             Vinfo(16)=Vname(1,idtime)
@@ -447,12 +501,13 @@
             Aval(5)=REAL(u3dvar,r8)
             status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
      &                     NF_FOUT, nvd4, u3dgrd, Aval, Vinfo, ncname)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
           ifield=idDv3d(ivar)
           IF (Dout(ifield,ng)) THEN
             Vinfo( 1)=Vname(1,ifield)
-            Vinfo( 2)=Vname(2,ifield)
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
             Vinfo( 3)=Vname(3,ifield)
             Vinfo(14)=Vname(4,ifield)
             Vinfo(16)=Vname(1,idtime)
@@ -463,7 +518,8 @@
             Aval(5)=REAL(v3dvar,r8)
             status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
      &                     NF_FOUT, nvd4, v3dgrd, Aval, Vinfo, ncname)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         END DO
 #  endif
@@ -477,7 +533,7 @@
             ifield=idDtrc(itrc,ivar)
             IF (Dout(ifield,ng)) THEN
               Vinfo( 1)=Vname(1,ifield)
-              Vinfo( 2)=Vname(2,ifield)
+              WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
               Vinfo( 3)=Vname(3,ifield)
               Vinfo(14)=Vname(4,ifield)
               Vinfo(16)=Vname(1,idtime)
@@ -489,13 +545,15 @@
               status=def_var(ng, iNLM, DIA(ng)%ncid,                    &
      &                       DIA(ng)%Vid(ifield), NF_FOUT,              &
      &                       nvd4, t3dgrd, Aval, Vinfo, ncname)
-              IF (exit_flag.ne.NoError) RETURN
+              IF (FoundError(exit_flag, NoError, __LINE__,              &
+     &                       __FILE__)) RETURN
             END IF
           END DO
         END DO
 # endif
 
-# if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+# ifdef DIAGNOSTICS_BIO
+#  if defined BIO_FENNEL || defined HYPOXIA_SRM
 !
 !  Define 2D biological diagnostic fields.
 !
@@ -503,21 +561,23 @@
           ifield=iDbio2(ivar)
           IF (Dout(ifield,ng)) THEN
             Vinfo( 1)=Vname(1,ifield)
-            WRITE (Vinfo( 2),'(a,1x,a)') 'averaged',                    &
-     &                                   TRIM(Vname(2,ifield))
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
             Vinfo( 3)=Vname(3,ifield)
             Vinfo(14)=Vname(4,ifield)
             Vinfo(16)=Vname(1,idtime)
-#  if defined WRITE_WATER && defined MASKING
+#   if defined WRITE_WATER && defined MASKING
             Vinfo(20)='mask_rho'
-#  endif
+#   endif
             Vinfo(22)='coordinates'
             Aval(5)=REAL(r2dvar,r8)
             status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
      &                     NF_FOUT, nvd3, t2dgrd, Aval, Vinfo, ncname)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         END DO
+#  endif
+#  if defined BIO_FENNEL
 !
 !  Define 3D biological diagnostic fields.
 !
@@ -525,21 +585,67 @@
           ifield=iDbio3(ivar)
           IF (Dout(ifield,ng)) THEN
             Vinfo( 1)=Vname(1,ifield)
-            WRITE (Vinfo( 2),'(a,1x,a)') 'averaged',                    &
-     &                                   TRIM(Vname(2,ifield))
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
             Vinfo( 3)=Vname(3,ifield)
             Vinfo(14)=Vname(4,ifield)
             Vinfo(16)=Vname(1,idtime)
-#  if defined WRITE_WATER && defined MASKING
+#   if defined WRITE_WATER && defined MASKING
             Vinfo(20)='mask_rho'
-#  endif
+#   endif
             Vinfo(22)='coordinates'
             Aval(5)=REAL(r3dvar,r8)
             status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
      &                     NF_FOUT, nvd4, t3dgrd, Aval, Vinfo, ncname)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END IF
         END DO
+#  elif defined ECOSIM
+!
+!  Define 3D biological diagnostic fields.
+!
+        DO ivar=1,NDbio3d
+          ifield=iDbio3(ivar)
+          IF (Dout(ifield,ng)) THEN
+            Vinfo( 1)=Vname(1,ifield)
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
+            Vinfo( 3)=Vname(3,ifield)
+            Vinfo(14)=Vname(4,ifield)
+            Vinfo(16)=Vname(1,idtime)
+#   if defined WRITE_WATER && defined MASKING
+            Vinfo(20)='mask_rho'
+#   endif
+            Vinfo(22)='coordinates'
+            Aval(5)=REAL(Iinfo(1,ifield,ng),r8)
+            status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
+     &                     NF_FOUT, nvd4, l3dgrd, Aval, Vinfo, ncname)
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
+          END IF
+        END DO
+!
+!  Define 4D biological diagnostic fields.
+!
+        DO ivar=1,NDbio4d
+          ifield=iDbio4(ivar)
+          IF (Dout(ifield,ng)) THEN
+            Vinfo( 1)=Vname(1,ifield)
+            WRITE (Vinfo( 2),'(a,1x,a)') Prefix, TRIM(Vname(2,ifield))
+            Vinfo( 3)=Vname(3,ifield)
+            Vinfo(14)=Vname(4,ifield)
+            Vinfo(16)=Vname(1,idtime)
+#   if defined WRITE_WATER && defined MASKING
+            Vinfo(20)='mask_rho'
+#   endif
+            Vinfo(22)='coordinates'
+            Aval(5)=REAL(Iinfo(1,ifield,ng),r8)
+            status=def_var(ng, iNLM, DIA(ng)%ncid, DIA(ng)%Vid(ifield), &
+     &                     NF_FOUT, nvd5, l4dgrd, Aval, Vinfo, ncname)
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
+          END IF
+        END DO
+#  endif
 # endif
 !
 !-----------------------------------------------------------------------
@@ -547,14 +653,16 @@
 !-----------------------------------------------------------------------
 !
         CALL netcdf_enddef (ng, iNLM, ncname, DIA(ng)%ncid)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Write out time-recordless, information variables.
 !-----------------------------------------------------------------------
 !
         CALL wrt_info (ng, iNLM, DIA(ng)%ncid, ncname)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END IF DEFINE
 !
 !=======================================================================
@@ -565,23 +673,28 @@
       QUERY : IF (.not.ldef) THEN
         ncname=DIA(ng)%name
 !
-!  Inquire about the dimensions and check for consistency.
-!
-        CALL netcdf_check_dim (ng, iNLM, ncname)
-        IF (exit_flag.ne.NoError) RETURN
-!
-!  Inquire about the variables.
-!
-        CALL netcdf_inq_var (ng, iNLM, ncname)
-        IF (exit_flag.ne.NoError) RETURN
-!
 !  Open diagnostics file for read/write.
 !
         CALL netcdf_open (ng, iNLM, ncname, 1, DIA(ng)%ncid)
-        IF (exit_flag.ne.NoError) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) THEN
           WRITE (stdout,50) TRIM(ncname)
           RETURN
         END IF
+!
+!  Inquire about the dimensions and check for consistency.
+!
+        CALL netcdf_check_dim (ng, iNLM, ncname,                        &
+     &                         ncid = DIA(ng)%ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+!
+!  Inquire about the variables.
+!
+        CALL netcdf_inq_var (ng, iNLM, ncname,                          &
+     &                       ncid = DIA(ng)%ncid)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Initialize logical switches.
 !
@@ -634,7 +747,8 @@
             END DO
           END DO
 # endif
-# ifdef BIO_FENNEL
+# ifdef DIAGNOSTICS_BIO
+#  if defined BIO_FENNEL || defined HYPOXIA_SRM
           DO ivar=1,NDbio2d
             ifield=iDbio2(ivar)
             IF (TRIM(var_name(i)).eq.TRIM(Vname(1,ifield))) THEN
@@ -642,6 +756,8 @@
               DIA(ng)%Vid(ifield)=var_id(i)
             END IF
           END DO
+#  endif
+#  if defined BIO_FENNEL
           DO ivar=1,NDbio3d
             ifield=iDbio3(ivar)
             IF (TRIM(var_name(i)).eq.TRIM(Vname(1,ifield))) THEN
@@ -649,6 +765,22 @@
               DIA(ng)%Vid(ifield)=var_id(i)
             END IF
           END DO
+#  elif defined ECOSIM
+          DO ivar=1,NDbio3d
+            ifield=iDbio3(ivar)
+            IF (TRIM(var_name(i)).eq.TRIM(Vname(1,ifield))) THEN
+              got_var(ifield)=.TRUE.
+              DIA(ng)%Vid(ifield)=var_id(i)
+            END IF
+          END DO
+          DO ivar=1,NDbio4d
+            ifield=iDbio4(ivar)
+            IF (TRIM(var_name(i)).eq.TRIM(Vname(1,ifield))) THEN
+              got_var(ifield)=.TRUE.
+              DIA(ng)%Vid(ifield)=var_id(i)
+            END IF
+          END DO
+#  endif
 # endif
         END DO
 !
@@ -709,7 +841,8 @@
           END DO
         END DO
 # endif
-# ifdef BIO_FENNEL
+# ifdef DIAGNOSTICS_BIO
+#  if defined BIO_FENNEL || defined HYPOXIA_SRM
         DO ivar=1,NDbio2d
           ifield=iDbio2(ivar)
           IF (.not.got_var(ifield).and.Dout(ifield,ng)) THEN
@@ -719,6 +852,8 @@
             RETURN
           END IF
         END DO
+#  endif
+#  if defined BIO_FENNEL
         DO ivar=1,NDbio3d
           ifield=iDbio3(ivar)
           IF (.not.got_var(ifield).and.Dout(ifield,ng)) THEN
@@ -728,6 +863,26 @@
             RETURN
           END IF
         END DO
+#  elif defined ECOSIM
+        DO ivar=1,NDbio3d
+          ifield=iDbio3(ivar)
+          IF (.not.got_var(ifield).and.Dout(ifield,ng)) THEN
+            IF (Master) WRITE (stdout,60) TRIM(Vname(1,ifield)),        &
+     &                                    TRIM(ncname)
+            exit_flag=3
+            RETURN
+          END IF
+        END DO
+        DO ivar=1,NDbio4d
+          ifield=iDbio4(ivar)
+          IF (.not.got_var(ifield).and.Dout(ifield,ng)) THEN
+            IF (Master) WRITE (stdout,60) TRIM(Vname(1,ifield)),        &
+     &                                    TRIM(ncname)
+            exit_flag=3
+            RETURN
+          END IF
+        END DO
+#  endif
 # endif
 !
 !  Set unlimited time record dimension to the appropriate value.
@@ -754,8 +909,10 @@
      &              0.5_r8*REAL(nDIA(ng),r8)*dt(ng)
       END IF
 !
-  10  FORMAT (6x,'DEF_DIAGS - creating diagnostics file: ',a)
-  20  FORMAT (6x,'DEF_DIAGS - inquiring diagnostics file: ',a)
+  10  FORMAT (6x,'DEF_DIAGS   - creating  diagnostics', t43,            &
+     &        ' file, Grid ',i2.2,': ', a)
+  20  FORMAT (6x,'DEF_DIAGS   - inquiring diagnostics', t43,            &
+     &        ' file, Grid ',i2.2,': ', a)
   30  FORMAT (/,' DEF_DIAGS - unable to create diagnostics NetCDF',     &
      &        ' file: ',a)
   40  FORMAT (1pe11.4,1x,'millimeter')

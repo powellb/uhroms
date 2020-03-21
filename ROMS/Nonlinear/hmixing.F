@@ -4,9 +4,9 @@
 
 #if (defined DIFF_3DCOEF || defined VISC_3DCOEF) && defined SOLVE3D
 !
-!svn $Id: hmixing.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: hmixing.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -68,7 +68,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 28)
+      CALL wclock_on (ng, iNLM, 28, __LINE__, __FILE__)
 # endif
       CALL hmixing_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
@@ -107,7 +107,7 @@
      &                   OCEAN(ng) % u,                                 &
      &                   OCEAN(ng) % v)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 28)
+      CALL wclock_off (ng, iNLM, 28, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE hmixing

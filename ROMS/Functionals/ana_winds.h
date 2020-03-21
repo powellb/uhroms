@@ -1,8 +1,8 @@
       SUBROUTINE ana_winds (ng, tile, model)
 !
-!! svn $Id: ana_winds.h 645 2013-01-22 23:21:54Z arango $
+!! svn $Id: ana_winds.h 995 2020-01-10 04:01:28Z arango $
 !!======================================================================
-!! Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
 !!   See License_ROMS.txt                                              !
 !=======================================================================
@@ -110,8 +110,8 @@
 !
 #if defined BENCHMARK
       Wmag=15.0_r8
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           cff=0.2_r8*(60.0_r8+latr(i,j))
           Uwind(i,j)=Wmag*EXP(-cff*cff)
           Vwind(i,j)=0.0_r8
@@ -123,8 +123,8 @@
 !!      v_wind=4.7936_r8
         v_wind=10.0_r8
       END IF
-      DO j=JstrR,JendR
-        DO i=IstrR,IendR
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
           Uwind(i,j)=u_wind
           Vwind(i,j)=v_wind
         END DO

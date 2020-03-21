@@ -2,9 +2,9 @@
 #ifdef DIAGNOSTICS
       SUBROUTINE set_diags (ng, tile)
 !
-!svn $Id: set_diags.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: set_diags.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -31,7 +31,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 5)
+      CALL wclock_on (ng, iNLM, 5, __LINE__, __FILE__)
 # endif
       CALL set_diags_tile (ng, tile,                                    &
      &                     LBi, UBi, LBj, UBj,                          &
@@ -43,7 +43,7 @@
 # endif
      &                     nrhs(ng))
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 5)
+      CALL wclock_off (ng, iNLM, 5, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE set_diags
@@ -56,7 +56,7 @@
 !***********************************************************************
 !
       USE mod_param
-# if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+# ifdef DIAGNOSTICS_BIO
       USE mod_biology
 # endif
       USE mod_diags
@@ -67,13 +67,15 @@
       USE bc_2d_mod
 # ifdef SOLVE3D
       USE bc_3d_mod
+#  ifdef ECOSIM
+      USE bc_4d_mod
+#  endif
 # endif
 # ifdef WET_DRY
       USE exchange_2d_mod
 # endif
 # ifdef DISTRIBUTE
-#  if defined WET_DRY         || \
-     (defined DIAGNOSTICS_BIO && defined BIO_FENNEL)
+#  if defined WET_DRY || defined DIAGNOSTICS_BIO
       USE mp_exchange_mod, ONLY : mp_exchange2d
 #  endif
       USE mp_exchange_mod, ONLY : mp_exchange3d
@@ -94,7 +96,7 @@
 !  Local variable declarations.
 !
       integer :: i, it, j, k
-      integer :: idiag
+      integer :: iband, idiag
 
       real(r8) :: fac
 
@@ -109,8 +111,6 @@
 !-----------------------------------------------------------------------
 !
       IF (nDIA(ng).eq.0) RETURN
-
-# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
 !
 !-----------------------------------------------------------------------
 ! Initialize time-averaged diagnostic arrays when appropriate.  Notice
@@ -123,41 +123,42 @@
      &    ((iic(ng).ge.ntsDIA(ng)).and.(nDIA(ng).eq.1)).or.             &
      &    ((nrrec(ng).gt.0).and.(iic(ng).eq.ntstart(ng)))) THEN
 
-#  ifdef WET_DRY
+# ifdef WET_DRY
 !
 !  If wetting and drying, initialize time dependent counters for wet
 !  points. The time averaged field at each point is only accumulated
-!  over wet points since its multiplied by the appropriate mask.
+!  over wet points since it is multiplied by the appropriate mask.
 !
         DO j=Jstr,JendR
           DO i=Istr,IendR
             GRID(ng)%pmask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%pmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%pmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=JstrR,JendR
           DO i=IstrR,IendR
             GRID(ng)%rmask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%rmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%rmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=JstrR,JendR
           DO i=Istr,IendR
             GRID(ng)%umask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%umask_io(i,j),     &
+     &                                  MIN(GRID(ng)%umask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
         DO j=Jstr,JendR
           DO i=IstrR,IendR
             GRID(ng)%vmask_dia(i,j)=MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%vmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%vmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
-#  endif
+# endif
+# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
 !
 !  Initialize.
 !
@@ -169,7 +170,7 @@
                 DO i=IstrR,IendR
                   DIAGS(ng)%DiaTrc(i,j,k,it,idiag)=                     &
 #   ifdef WET_DRY
-     &                      GRID(ng)%rmask_io(i,j)*                     &
+     &                      GRID(ng)%rmask_full(i,j)*                   &
 #   endif
      &                      DIAGS(ng)%DiaTwrk(i,j,k,it,idiag)
                 END DO
@@ -184,18 +185,18 @@
             DO i=Istr,IendR
               DIAGS(ng)%DiaU2d(i,j,idiag)=                              &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                  GRID(ng)%umask_full(i,j)*                       &
 #   endif
-     &                                    DIAGS(ng)%DiaU2wrk(i,j,idiag)
+     &                  DIAGS(ng)%DiaU2wrk(i,j,idiag)
             END DO
           END DO
           DO j=Jstr,JendR
             DO i=IstrR,IendR
               DIAGS(ng)%DiaV2d(i,j,idiag)=                              &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                  GRID(ng)%vmask_full(i,j)*                       &
 #   endif
-     &                                    DIAGS(ng)%DiaV2wrk(i,j,idiag)
+     &                  DIAGS(ng)%DiaV2wrk(i,j,idiag)
             END DO
           END DO
         END DO
@@ -206,7 +207,7 @@
               DO i=Istr,IendR
                 DIAGS(ng)%DiaU3d(i,j,k,idiag)=                          &
 #    ifdef WET_DRY
-     &                    GRID(ng)%umask_io(i,j)*                       &
+     &                    GRID(ng)%umask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaU3wrk(i,j,k,idiag)
               END DO
@@ -215,7 +216,7 @@
               DO i=IstrR,IendR
                 DIAGS(ng)%DiaV3d(i,j,k,idiag)=                          &
 #    ifdef WET_DRY
-     &                    GRID(ng)%vmask_io(i,j)*                       &
+     &                    GRID(ng)%vmask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaV3wrk(i,j,k,idiag)
               END DO
@@ -224,6 +225,7 @@
         END DO
 #   endif
 #  endif
+# endif
 !
 !-----------------------------------------------------------------------
 !  Accumulate time-averaged fields.
@@ -231,7 +233,7 @@
 !
       ELSE IF (iic(ng).gt.ntsDIA(ng)) THEN
 
-#  ifdef WET_DRY
+# ifdef WET_DRY
 !
 !  If wetting and drying, accumulate wet points counters.
 !  points. The time averaged field at each point is only accumulated
@@ -241,7 +243,7 @@
           DO i=Istr,IendR
             GRID(ng)%pmask_dia(i,j)=GRID(ng)%pmask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%pmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%pmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -249,7 +251,7 @@
           DO i=IstrR,IendR
             GRID(ng)%rmask_dia(i,j)=GRID(ng)%rmask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%rmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%rmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -257,7 +259,7 @@
           DO i=Istr,IendR
             GRID(ng)%umask_dia(i,j)=GRID(ng)%umask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%umask_io(i,j),     &
+     &                                  MIN(GRID(ng)%umask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
@@ -265,11 +267,12 @@
           DO i=IstrR,IendR
             GRID(ng)%vmask_dia(i,j)=GRID(ng)%vmask_dia(i,j)+            &
      &                              MAX(0.0_r8,                         &
-     &                                  MIN(GRID(ng)%vmask_io(i,j),     &
+     &                                  MIN(GRID(ng)%vmask_full(i,j),   &
      &                                      1.0_r8))
           END DO
         END DO
-#  endif
+# endif
+# if defined DIAGNOSTICS_TS || defined DIAGNOSTICS_UV
 !
 !  Accumulate diagnostic terms.
 !
@@ -282,7 +285,7 @@
                   DIAGS(ng)%DiaTrc(i,j,k,it,idiag)=                     &
      &                      DIAGS(ng)%DiaTrc(i,j,k,it,idiag)+           &
 #   ifdef WET_DRY
-     &                      GRID(ng)%rmask_io(i,j)*                     &
+     &                      GRID(ng)%rmask_full(i,j)*                   &
 #   endif
      &                      DIAGS(ng)%DiaTwrk(i,j,k,it,idiag)
                 END DO
@@ -297,7 +300,7 @@
             DO i=Istr,IendR
               DIAGS(ng)%DiaU2d(i,j,idiag)=DIAGS(ng)%DiaU2d(i,j,idiag)+  &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%umask_io(i,j)*       &
+     &                                    GRID(ng)%umask_full(i,j)*     &
 #   endif
      &                                    DIAGS(ng)%DiaU2wrk(i,j,idiag)
             END DO
@@ -306,7 +309,7 @@
             DO i=IstrR,IendR
               DIAGS(ng)%DiaV2d(i,j,idiag)=DIAGS(ng)%DiaV2d(i,j,idiag)+  &
 #   ifdef WET_DRY
-     &                                    GRID(ng)%vmask_io(i,j)*       &
+     &                                    GRID(ng)%vmask_full(i,j)*     &
 #   endif
      &                                    DIAGS(ng)%DiaV2wrk(i,j,idiag)
             END DO
@@ -320,7 +323,7 @@
                 DIAGS(ng)%DiaU3d(i,j,k,idiag)=                          &
      &                    DIAGS(ng)%DiaU3d(i,j,k,idiag)+                &
 #    ifdef WET_DRY
-     &                    GRID(ng)%umask_io(i,j)*                       &
+     &                    GRID(ng)%umask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaU3wrk(i,j,k,idiag)
               END DO
@@ -330,7 +333,7 @@
                 DIAGS(ng)%DiaV3d(i,j,k,idiag)=                          &
      &                    DIAGS(ng)%DiaV3d(i,j,k,idiag)+                &
 #    ifdef WET_DRY
-     &                    GRID(ng)%vmask_io(i,j)*                       &
+     &                    GRID(ng)%vmask_full(i,j)*                     &
 #    endif
      &                    DIAGS(ng)%DiaV3wrk(i,j,k,idiag)
               END DO
@@ -339,8 +342,8 @@
         END DO
 #   endif
 #  endif
-      END IF
 # endif
+      END IF
 !
 !-----------------------------------------------------------------------
 !  Convert accumulated sums into time-averages, if appropriate
@@ -458,7 +461,8 @@
           END DO
         END DO
 # endif
-# if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+# ifdef DIAGNOSTICS_BIO
+#  if defined BIO_FENNEL || defined HYPOXIA_SRM
         DO idiag=1,NDbio2d
           IF (idiag.ne.ipCO2) THEN
             DO j=JstrR,JendR
@@ -469,6 +473,8 @@
             END DO
           END IF
         END DO
+#  endif
+#  if defined BIO_FENNEL
         DO idiag=1,NDbio3d
           DO k=1,N(ng)
             DO j=JstrR,JendR
@@ -479,6 +485,30 @@
             END DO
           END DO
         END DO
+#  elif defined ECOSIM
+        DO idiag=1,NDbio3d
+          DO k=1,NDbands
+            DO j=JstrR,JendR
+              DO i=IstrR,IendR
+                DIAGS(ng)%DiaBio3d(i,j,k,idiag)=rfac(i,j)*              &
+     &                    DIAGS(ng)%DiaBio3d(i,j,k,idiag)
+              END DO
+            END DO
+          END DO
+        END DO
+        DO idiag=1,NDbio4d
+          DO iband=1,NDbands
+            DO k=1,N(ng)
+              DO j=JstrR,JendR
+                DO i=IstrR,IendR
+                  DIAGS(ng)%DiaBio4d(i,j,k,iband,idiag)=rfac(i,j)*      &
+     &                      DIAGS(ng)%DiaBio4d(i,j,k,iband,idiag)
+                END DO
+              END DO
+            END DO
+          END DO
+        END DO
+#  endif
 # endif
 # ifdef DIAGNOSTICS_UV
         DO idiag=1,NDM2d
@@ -516,7 +546,7 @@
 # endif
 
 # if defined DIAGNOSTICS_TS  || defined DIAGNOSTICS_UV || \
-    (defined DIAGNOSTICS_BIO && defined BIO_FENNEL)
+     defined DIAGNOSTICS_BIO
 !
 !-----------------------------------------------------------------------
 !  Apply periodic or gradient boundary conditions for output purposes.
@@ -583,7 +613,8 @@
 #    endif
 #   endif
 #  endif
-#  if defined DIAGNOSTICS_BIO && defined BIO_FENNEL
+#  ifdef DIAGNOSTICS_BIO
+#   if defined BIO_FENNEL || defined HYPOXIA_SRM
 !
 !  Biological terms 2D diagnostics.
 !
@@ -592,13 +623,15 @@
      &                      LBi, UBi, LBj, UBj,                         &
      &                      DIAGS(ng)%DiaBio2d(:,:,idiag))
         END DO
-#   ifdef DISTRIBUTE
+#    ifdef DISTRIBUTE
         CALL mp_exchange3d (ng, tile, iNLM, 1,                          &
      &                      LBi, UBi, LBj, UBj, 1, NDbio2d,             &
      &                      NghostPoints,                               &
      &                      EWperiodic(ng), NSperiodic(ng),             &
      &                      DIAGS(ng)%DiaBio2d)
+#    endif
 #   endif
+#   if defined BIO_FENNEL
 !
 !  Biological terms 3D diagnostics.
 !
@@ -607,12 +640,44 @@
      &                      LBi, UBi, LBj, UBj, 1, N(ng),               &
      &                      DIAGS(ng)%DiaBio3d(:,:,:,idiag))
         END DO
-#   ifdef DISTRIBUTE
+#    ifdef DISTRIBUTE
         CALL mp_exchange4d (ng, tile, iNLM, 1,                          &
      &                      LBi, UBi, LBj, UBj, 1, N(ng), 1, NDbio3d,   &
      &                      NghostPoints,                               &
      &                      EWperiodic(ng), NSperiodic(ng),             &
      &                      DIAGS(ng)%DiaBio3d)
+#    endif
+#   elif defined ECOSIM
+!
+!  Biological terms 3D diagnostics.
+!
+        DO idiag=1,NDbio3d
+          CALL bc_r3d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj, 1, NDbands,             &
+     &                      DIAGS(ng)%DiaBio3d(:,:,:,idiag))
+        END DO
+#    ifdef DISTRIBUTE
+        CALL mp_exchange4d (ng, tile, iNLM, 1,                          &
+     &                      LBi, UBi, LBj, UBj, 1, NDbands, 1, NDbio3d, &
+     &                      NghostPoints,                               &
+     &                      EWperiodic(ng), NSperiodic(ng),             &
+     &                      DIAGS(ng)%DiaBio3d)
+#    endif
+!
+!  Biological terms 4D diagnostics.
+!
+        DO idiag=1,NDbio4d
+          CALL bc_r4d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj, 1, N(ng), 1, NDbands,   &
+     &                      DIAGS(ng)%DiaBio4d(:,:,:,:,idiag))
+#    ifdef DISTRIBUTE
+          CALL mp_exchange4d (ng, tile, iNLM, 1,                        &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng), 1, NDbands, &
+     &                        NghostPoints,                             &
+     &                        EWperiodic(ng), NSperiodic(ng),           &
+     &                        DIAGS(ng)%DiaBio4d(:,:,:,:,idiag))
+#    endif
+        END DO
 #   endif
 #  endif
 # endif

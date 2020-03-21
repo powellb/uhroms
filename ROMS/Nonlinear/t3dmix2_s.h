@@ -1,10 +1,8 @@
-#undef MIX_STABILITY
-
       SUBROUTINE t3dmix2 (ng, tile)
 !
-!svn $Id: t3dmix2_s.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: t3dmix2_s.h 995 2020-01-10 04:01:28Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !****************************************** Alexander F. Shchepetkin ***
@@ -15,7 +13,7 @@
 !***********************************************************************
 !
       USE mod_param
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
       USE mod_clima
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -35,7 +33,7 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 24)
+      CALL wclock_on (ng, iNLM, 24, __LINE__, __FILE__)
 #endif
       CALL t3dmix2_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
@@ -44,6 +42,10 @@
 #ifdef MASKING
      &                   GRID(ng) % umask,                              &
      &                   GRID(ng) % vmask,                              &
+#endif
+#ifdef WET_DRY
+     &                   GRID(ng) % umask_wet,                          &
+     &                   GRID(ng) % vmask_wet,                          &
 #endif
      &                   GRID(ng) % Hz,                                 &
      &                   GRID(ng) % pmon_u,                             &
@@ -55,7 +57,7 @@
 #else
      &                   MIXING(ng) % diff2,                            &
 #endif
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
      &                   CLIMA(ng) % tclm,                              &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -63,7 +65,7 @@
 #endif
      &                   OCEAN(ng) % t)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 24)
+      CALL wclock_off (ng, iNLM, 24, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE t3dmix2
@@ -76,13 +78,16 @@
 #ifdef MASKING
      &                         umask, vmask,                            &
 #endif
+#ifdef WET_DRY
+     &                         umask_wet, vmask_wet,                    &
+#endif
      &                         Hz, pmon_u, pnom_v, pm, pn,              &
 #ifdef DIFF_3DCOEF
      &                         diff3d_r,                                &
 #else
      &                         diff2,                                   &
 #endif
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
      &                         tclm,                                    &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -106,6 +111,10 @@
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
+# endif
 # ifdef DIFF_3DCOEF
       real(r8), intent(in) :: diff3d_r(LBi:,LBj:,:)
 # else
@@ -116,7 +125,7 @@
       real(r8), intent(in) :: pnom_v(LBi:,LBj:)
       real(r8), intent(in) :: pm(LBi:,LBj:)
       real(r8), intent(in) :: pn(LBi:,LBj:)
-# ifdef CLIMA_TS_MIX
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -128,6 +137,10 @@
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
 # endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
+# endif
 # ifdef DIFF_3DCOEF
       real(r8), intent(in) :: diff3d_r(LBi:UBi,LBj:UBj,N(ng))
 # else
@@ -138,7 +151,7 @@
       real(r8), intent(in) :: pnom_v(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: pm(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
-# ifdef CLIMA_TS_MIX
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng))
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -161,7 +174,7 @@
 !
 !-----------------------------------------------------------------------
 !  Compute horizontal harmonic diffusion along constant S-surfaces.
-#ifdef MIX_STABILITY
+#ifdef TS_MIX_STABILITY
 !  In order to increase stability, the harmonic operator is applied
 !  as: 3/4 t(:,:,:,nrhs,:) + 1/4 t(:,:,:,nstp,:).
 #endif
@@ -181,21 +194,34 @@
               cff=0.25_r8*(diff2(i,j,itrc)+diff2(i-1,j,itrc))*          &
      &            pmon_u(i,j)
 #endif
+#if defined TS_MIX_STABILITY
               FX(i,j)=cff*                                              &
      &                (Hz(i,j,k)+Hz(i-1,j,k))*                          &
-#ifdef MIX_STABILITY
      &                (0.75_r8*(t(i  ,j,k,nrhs,itrc)-                   &
      &                          t(i-1,j,k,nrhs,itrc))+                  &
      &                 0.25_r8*(t(i  ,j,k,nstp,itrc)-                   &
      &                          t(i-1,j,k,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-     &                ((t(i  ,j,k,nrhs,itrc)-tclm(i  ,j,k,itrc))-       &
-     &                 (t(i-1,j,k,nrhs,itrc)-tclm(i-1,j,k,itrc)))
+#elif defined TS_MIX_CLIMA
+              IF (LtracerCLM(itrc,ng)) THEN
+                FX(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i-1,j,k))*                        &
+     &                  ((t(i  ,j,k,nrhs,itrc)-tclm(i  ,j,k,itrc))-     &
+     &                   (t(i-1,j,k,nrhs,itrc)-tclm(i-1,j,k,itrc)))
+              ELSE
+                FX(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i-1,j,k))*                        &
+     &                  (t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc))
+              END IF
 #else
+              FX(i,j)=cff*                                              &
+     &                (Hz(i,j,k)+Hz(i-1,j,k))*                          &
      &                (t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc))
 #endif
 #ifdef MASKING
               FX(i,j)=FX(i,j)*umask(i,j)
+#endif
+#ifdef WET_DRY
+              FX(i,j)=FX(i,j)*umask_wet(i,j)
 #endif
             END DO
           END DO
@@ -208,21 +234,34 @@
               cff=0.25_r8*(diff2(i,j,itrc)+diff2(i,j-1,itrc))*          &
      &            pnom_v(i,j)
 #endif
+#if defined TS_MIX_STABILITY
               FE(i,j)=cff*                                              &
      &                (Hz(i,j,k)+Hz(i,j-1,k))*                          &
-#if defined MIX_STABILITY
      &                (0.75_r8*(t(i,j  ,k,nrhs,itrc)-                   &
      &                          t(i,j-1,k,nrhs,itrc))+                  &
      &                 0.25_r8*(t(i,j  ,k,nstp,itrc)-                   &
      &                          t(i,j-1,k,nstp,itrc)))
-#elif defined CLIMA_TS_MIX
-     &                ((t(i,j  ,k,nrhs,itrc)-tclm(i,j  ,k,itrc))-       &
-     &                 (t(i,j-1,k,nrhs,itrc)-tclm(i,j-1,k,itrc)))
+#elif defined TS_MIX_CLIMA
+              IF (LtracerCLM(itrc,ng)) THEN
+                FE(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i,j-1,k))*                        &
+     &                  ((t(i,j  ,k,nrhs,itrc)-tclm(i,j  ,k,itrc))-     &
+     &                   (t(i,j-1,k,nrhs,itrc)-tclm(i,j-1,k,itrc)))
+              ELSE
+                FE(i,j)=cff*                                            &
+     &                  (Hz(i,j,k)+Hz(i,j-1,k))*                        &
+     &                  (t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc))
+              END IF
 #else
+              FE(i,j)=cff*                                              &
+     &                (Hz(i,j,k)+Hz(i,j-1,k))*                          &
      &                (t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc))
 #endif
 #ifdef MASKING
               FE(i,j)=FE(i,j)*vmask(i,j)
+#endif
+#ifdef WET_DRY
+              FE(i,j)=FE(i,j)*vmask_wet(i,j)
 #endif
             END DO
           END DO

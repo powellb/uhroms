@@ -1,8 +1,8 @@
       SUBROUTINE t3dmix2 (ng, tile)
 !
-!svn $Id: t3dmix2_iso.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: t3dmix2_iso.h 995 2020-01-10 04:01:28Z arango $
 !***********************************************************************
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                           Hernan G. Arango   !
 !****************************************** Alexander F. Shchepetkin ***
@@ -13,7 +13,7 @@
 !***********************************************************************
 !
       USE mod_param
-#ifdef CLIMA_TS_MIX
+#ifdef TS_MIX_CLIMA
       USE mod_clima
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -33,15 +33,19 @@
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 26)
+      CALL wclock_on (ng, iNLM, 26, __LINE__, __FILE__)
 #endif
       CALL t3dmix2_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
      &                   IminS, ImaxS, JminS, JmaxS,                    &
-     &                   nrhs(ng), nnew(ng),                            &
+     &                   nrhs(ng), nstp(ng), nnew(ng),                  &
 #ifdef MASKING
      &                   GRID(ng) % umask,                              &
      &                   GRID(ng) % vmask,                              &
+#endif
+#ifdef WET_DRY
+     &                   GRID(ng) % umask_wet,                          &
+     &                   GRID(ng) % vmask_wet,                          &
 #endif
      &                   GRID(ng) % om_v,                               &
      &                   GRID(ng) % on_u,                               &
@@ -54,8 +58,8 @@
 #else
      &                   MIXING(ng) % diff2,                            &
 #endif
-     &                   OCEAN(ng) % rho,                               &
-#ifdef CLIMA_TS_MIX
+     &                   OCEAN(ng) % pden,                              &
+#ifdef TS_MIX_CLIMA
      &                   CLIMA(ng) % tclm,                              &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -63,7 +67,7 @@
 #endif
      &                   OCEAN(ng) % t)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 26)
+      CALL wclock_off (ng, iNLM, 26, __LINE__, __FILE__)
 #endif
       RETURN
       END SUBROUTINE t3dmix2
@@ -72,9 +76,12 @@
       SUBROUTINE t3dmix2_tile (ng, tile,                                &
      &                         LBi, UBi, LBj, UBj,                      &
      &                         IminS, ImaxS, JminS, JmaxS,              &
-     &                         nrhs, nnew,                              &
+     &                         nrhs, nstp, nnew,                        &
 #ifdef MASKING
      &                         umask, vmask,                            &
+#endif
+#ifdef WET_DRY
+     &                         umask_wet, vmask_wet,                    &
 #endif
      &                         om_v, on_u, pm, pn,                      &
      &                         Hz, z_r,                                 &
@@ -83,8 +90,8 @@
 #else
      &                         diff2,                                   &
 #endif
-     &                         rho,                                     &
-#ifdef CLIMA_TS_MIX
+     &                         pden,                                    &
+#ifdef TS_MIX_CLIMA
      &                         tclm,                                    &
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -101,12 +108,16 @@
       integer, intent(in) :: ng, tile
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
-      integer, intent(in) :: nrhs, nnew
+      integer, intent(in) :: nrhs, nstp, nnew
 
 #ifdef ASSUMED_SHAPE
 # ifdef MASKING
       real(r8), intent(in) :: umask(LBi:,LBj:)
       real(r8), intent(in) :: vmask(LBi:,LBj:)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:,LBj:)
+      real(r8), intent(in) :: vmask_wet(LBi:,LBj:)
 # endif
 # ifdef DIFF_3DCOEF
       real(r8), intent(in) :: diff3d_r(LBi:,LBj:,:)
@@ -119,8 +130,8 @@
       real(r8), intent(in) :: pn(LBi:,LBj:)
       real(r8), intent(in) :: Hz(LBi:,LBj:,:)
       real(r8), intent(in) :: z_r(LBi:,LBj:,:)
-      real(r8), intent(in) :: rho(LBi:,LBj:,:)
-# ifdef CLIMA_TS_MIX
+      real(r8), intent(in) :: pden(LBi:,LBj:,:)
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:,LBj:,:,:)
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -131,6 +142,10 @@
 # ifdef MASKING
       real(r8), intent(in) :: umask(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: vmask(LBi:UBi,LBj:UBj)
+# endif
+# ifdef WET_DRY
+      real(r8), intent(in) :: umask_wet(LBi:UBi,LBj:UBj)
+      real(r8), intent(in) :: vmask_wet(LBi:UBi,LBj:UBj)
 # endif
 # ifdef DIFF_3DCOEF
       real(r8), intent(in) :: diff3d_r(LBi:UBi,LBj:UBj,N(ng))
@@ -143,8 +158,8 @@
       real(r8), intent(in) :: pn(LBi:UBi,LBj:UBj)
       real(r8), intent(in) :: Hz(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(in) :: z_r(LBi:UBi,LBj:UBj,N(ng))
-      real(r8), intent(in) :: rho(LBi:UBi,LBj:UBj,N(ng))
-# ifdef CLIMA_TS_MIX
+      real(r8), intent(in) :: pden(LBi:UBi,LBj:UBj,N(ng))
+# ifdef TS_MIX_CLIMA
       real(r8), intent(in) :: tclm(LBi:UBi,LBj:UBj,N(ng),NT(ng))
 # endif
 # ifdef DIAGNOSTICS_TS
@@ -201,13 +216,26 @@
 #ifdef MASKING
                 cff=cff*umask(i,j)
 #endif
-                dRdx(i,j,k2)=cff*(rho(i  ,j,k+1)-                       &
-     &                            rho(i-1,j,k+1))
-#ifdef CLIMA_TS_MIX
-                dTdx(i,j,k2)=cff*((t(i  ,j,k+1,nrhs,itrc)-              &
-     &                             tclm(i  ,j,k+1,itrc))-               &
-     &                            (t(i-1,j,k+1,nrhs,itrc)-              &
-     &                             tclm(i-1,j,k+1,itrc)))
+#ifdef WET_DRY
+                cff=cff*umask_wet(i,j)
+#endif
+                dRdx(i,j,k2)=cff*(pden(i  ,j,k+1)-                      &
+     &                            pden(i-1,j,k+1))
+#if defined TS_MIX_STABILITY
+                dTdx(i,j,k2)=cff*(0.75_r8*(t(i  ,j,k+1,nrhs,itrc)-      &
+     &                                     t(i-1,j,k+1,nrhs,itrc))+     &
+     &                            0.25_r8*(t(i  ,j,k+1,nstp,itrc)-      &
+     &                                     t(i-1,j,k+1,nstp,itrc)))
+#elif defined TS_MIX_CLIMA
+                IF (LtracerCLM(itrc,ng)) THEN
+                  dTdx(i,j,k2)=cff*((t(i  ,j,k+1,nrhs,itrc)-            &
+     &                               tclm(i  ,j,k+1,itrc))-             &
+     &                              (t(i-1,j,k+1,nrhs,itrc)-            &
+     &                               tclm(i-1,j,k+1,itrc)))
+                ELSE
+                  dTdx(i,j,k2)=cff*(t(i  ,j,k+1,nrhs,itrc)-             &
+     &                              t(i-1,j,k+1,nrhs,itrc))
+                END IF
 #else
                 dTdx(i,j,k2)=cff*(t(i  ,j,k+1,nrhs,itrc)-               &
      &                            t(i-1,j,k+1,nrhs,itrc))
@@ -220,13 +248,26 @@
 #ifdef MASKING
                 cff=cff*vmask(i,j)
 #endif
-                dRde(i,j,k2)=cff*(rho(i,j  ,k+1)-                       &
-     &                            rho(i,j-1,k+1))
-#ifdef CLIMA_TS_MIX
-                dTde(i,j,k2)=cff*((t(i,j  ,k+1,nrhs,itrc)-              &
-     &                             tclm(i,j  ,k+1,itrc))-               &
-     &                            (t(i,j-1,k+1,nrhs,itrc)-              &
-     &                             tclm(i,j-1,k+1,itrc)))
+#ifdef WET_DRY
+                cff=cff*vmask_wet(i,j)
+#endif
+                dRde(i,j,k2)=cff*(pden(i,j  ,k+1)-                      &
+     &                            pden(i,j-1,k+1))
+#if defined TS_MIX_STABILITY
+                dTde(i,j,k2)=cff*(0.75_r8*(t(i,j  ,k+1,nrhs,itrc)-      &
+     &                                     t(i,j-1,k+1,nrhs,itrc))+     &
+     &                            0.25_r8*(t(i,j  ,k+1,nstp,itrc)-      &
+     &                                     t(i,j-1,k+1,nstp,itrc)))
+#elif defined TS_MIX_CLIMA
+                IF (LtracerCLM(itrc,ng)) THEN
+                  dTde(i,j,k2)=cff*((t(i,j  ,k+1,nrhs,itrc)-            &
+     &                               tclm(i,j  ,k+1,itrc))-             &
+     &                              (t(i,j-1,k+1,nrhs,itrc)-            &
+     &                               tclm(i,j-1,k+1,itrc)))
+                ELSE
+                  dTde(i,j,k2)=cff*(t(i,j  ,k+1,nrhs,itrc)-             &
+     &                              t(i,j-1,k+1,nrhs,itrc))
+                END IF
 #else
                 dTde(i,j,k2)=cff*(t(i,j  ,k+1,nrhs,itrc)-               &
      &                            t(i,j-1,k+1,nrhs,itrc))
@@ -244,29 +285,39 @@
           ELSE
             DO j=Jstr-1,Jend+1
               DO i=Istr-1,Iend+1
-#if defined MAX_SLOPE
+#if defined TS_MIX_MAX_SLOPE
                 cff1=SQRT(dRdx(i,j,k2)**2+dRdx(i+1,j,k2)**2+            &
      &                    dRdx(i,j,k1)**2+dRdx(i+1,j,k1)**2+            &
      &                    dRde(i,j,k2)**2+dRde(i,j+1,k2)**2+            &
      &                    dRde(i,j,k1)**2+dRde(i,j+1,k1)**2)
                 cff2=0.25_r8*slope_max*                                 &
      &               (z_r(i,j,k+1)-z_r(i,j,k))*cff1
-                cff3=MAX(rho(i,j,k)-rho(i,j,k+1),small)
+                cff3=MAX(pden(i,j,k)-pden(i,j,k+1),small)
                 cff4=MAX(cff2,cff3)
                 cff=-1.0_r8/cff4
-#elif defined MIN_STRAT
-                cff1=MAX(rho(i,j,k)-rho(i,j,k+1),                       &
+#elif defined TS_MIX_MIN_STRAT
+                cff1=MAX(pden(i,j,k)-pden(i,j,k+1),                     &
      &                   strat_min*(z_r(i,j,k+1)-z_r(i,j,k)))
                 cff=-1.0_r8/cff1
 #else
-                cff1=MAX(rho(i,j,k)-rho(i,j,k+1),eps)
+                cff1=MAX(pden(i,j,k)-pden(i,j,k+1),eps)
                 cff=-1.0_r8/cff1
 #endif
-#ifdef CLIMA_TS_MIX
-                dTdr(i,j,k2)=cff*((t(i,j,k+1,nrhs,itrc)-                &
-     &                             tclm(i,j,k+1,itrc))-                 &
-     &                            (t(i,j,k  ,nrhs,itrc)-                &
-     &                             tclm(i,j,k  ,itrc)))
+#if defined TS_MIX_STABILITY
+                dTdr(i,j,k2)=cff*(0.75_r8*(t(i,j,k+1,nrhs,itrc)-        &
+     &                                     t(i,j,k  ,nrhs,itrc))+       &
+     &                            0.25_r8*(t(i,j,k+1,nstp,itrc)-        &
+     &                                     t(i,j,k  ,nstp,itrc)))
+#elif defined TS_MIX_CLIMA
+                IF (LtracerCLM(itrc,ng)) THEN
+                  dTdr(i,j,k2)=cff*((t(i,j,k+1,nrhs,itrc)-              &
+     &                               tclm(i,j,k+1,itrc))-               &
+     &                              (t(i,j,k  ,nrhs,itrc)-              &
+     &                               tclm(i,j,k  ,itrc)))
+                ELSE
+                  dTdr(i,j,k2)=cff*(t(i,j,k+1,nrhs,itrc)-               &
+     &                              t(i,j,k  ,nrhs,itrc))
+                END IF
 #else
                 dTdr(i,j,k2)=cff*(t(i,j,k+1,nrhs,itrc)-                 &
      &                            t(i,j,k  ,nrhs,itrc))

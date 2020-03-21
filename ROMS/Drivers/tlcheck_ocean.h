@@ -1,8 +1,8 @@
       MODULE ocean_control_mod
 !
-!svn $Id: tlcheck_ocean.h 645 2013-01-22 23:21:54Z arango $
+!svn $Id: tlcheck_ocean.h 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -45,16 +45,16 @@
       USE mod_fourdvar
       USE mod_iounits
       USE mod_scalars
-
-#ifdef MCT_LIB
 !
-# ifdef AIR_OCEAN
+#ifdef MCT_LIB
+# ifdef ATM_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
 # endif
-# ifdef WAVES_OCEAN
+# ifdef WAV_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2wav_coupling
 # endif
 #endif
+      USE strings_mod,       ONLY : FoundError
 !
 !  Imported variable declarations.
 !
@@ -74,7 +74,7 @@
 #ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
-!  Set distribute-memory (MPI) world communictor.
+!  Set distribute-memory (mpi) world communictor.
 !-----------------------------------------------------------------------
 !
       IF (PRESENT(mpiCOMM)) THEN
@@ -106,7 +106,8 @@
 !  grids and dimension parameters are known.
 !
         CALL inp_par (iNLM)
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
 !
 !  Set domain decomposition tile partition range.  This range is
 !  computed only once since the "first_tile" and "last_tile" values
@@ -139,7 +140,7 @@
         DO ng=1,Ngrids
 !$OMP PARALLEL
           DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iNLM, 0)
+            CALL wclock_on (ng, iNLM, 0, __LINE__, __FILE__)
           END DO
 !$OMP END PARALLEL
         END DO
@@ -156,17 +157,17 @@
 
       END IF
 
-#if defined MCT_LIB && (defined AIR_OCEAN || defined WAVES_OCEAN)
+#if defined MCT_LIB && (defined ATM_COUPLING || defined WAV_COUPLING)
 !
 !-----------------------------------------------------------------------
 !  Initialize coupling streams between model(s).
 !-----------------------------------------------------------------------
 !
       DO ng=1,Ngrids
-# ifdef AIR_OCEAN
+# ifdef ATM_COUPLING
         CALL initialize_ocn2atm_coupling (ng, MyRank)
 # endif
-# ifdef WAVES_OCEAN
+# ifdef WAV_COUPLING
         CALL initialize_ocn2wav_coupling (ng, MyRank)
 # endif
       END DO
@@ -194,10 +195,11 @@
       USE mod_stepping
 !
       USE dotproduct_mod, ONLY : ad_dotproduct
+      USE strings_mod,    ONLY : FoundError
 !
 !  Imported variable declarations
 !
-      real(r8), intent(in) :: RunInterval            ! seconds
+      real(dp), intent(in) :: RunInterval            ! seconds
 !
 !  Local variable declarations.
 !
@@ -225,6 +227,10 @@
         Lold(ng)=1
         Lnew(ng)=1
         nTLM(ng)=nHIS(ng)                      ! to allow IO comparison
+#if defined BULK_FLUXES && defined NL_BULK_FLUXES
+        LreadBLK(ng)=.FALSE.
+#endif
+        LreadFWD(ng)=.FALSE.
       END DO
       Nrun=1
       Ipass=1
@@ -237,12 +243,11 @@
 !
 !  Initialize nonlinear model with first guess initial conditions.
 !
-      DO ng=1,Ngrids
 !$OMP PARALLEL
-        CALL initial (ng)
+      CALL initial
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
-      END DO
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !  Run nonlinear model. Extract and store nonlinear model values at
 !  observation locations.
@@ -262,35 +267,60 @@
       CALL main2d (RunInterval)
 #endif
 !$OMP END PARALLEL
-      IF (exit_flag.ne.NoError) RETURN
-!
-!  Close current nonlinear model history file.
-!
-      SourceFile='tlcheck_ocean.h, ROMS_run'
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+
       DO ng=1,Ngrids
-        CALL netcdf_close (ng, iNLM, HIS(ng)%ncid)
-        IF (exit_flag.ne.NoError) RETURN
         wrtNLmod(ng)=.FALSE.
         wrtTLmod(ng)=.TRUE.
       END DO
+!
+!  Set structure for the nonlinear forward trajectory to be processed
+!  by the tangent linear and adjoint models. Also, set switches to
+!  process the FWD structure in routine "check_multifile". Notice that
+!  it is possible to split solution into multiple NetCDF files to reduce
+!  their size.
+!
+      CALL edit_multifile ('HIS2FWD')
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+      DO ng=1,Ngrids
+        LreadFWD(ng)=.TRUE.
+      END DO
+
+#if defined BULK_FLUXES && defined NL_BULK_FLUXES
+!
+!  Set structure for the nonlinear surface fluxes to be processed by
+!  by the tangent linear and adjoint models. Also, set switches to
+!  process the BLK structure in routine "check_multifile".  Notice that
+!  it is possible to split solution into multiple NetCDF files to reduce
+!  their size.
+!
+      CALL edit_multifile ('HIS2BLK')
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
+      DO ng=1,Ngrids
+        LreadBLK(ng)=.TRUE.
+      END DO
+#endif
 !
 !  Save and Report cost function between nonlinear model and
 !  observations.
 !
       DO ng=1,Ngrids
-        DO i=0,NstateVar(ng)
+        DO i=0,NobsVar(ng)
           FOURDVAR(ng)%CostFunOld(i)=FOURDVAR(ng)%CostFun(i)
         END DO
         IF (Master) THEN
           WRITE (stdout,40) FOURDVAR(ng)%CostFunOld(0)
-          DO i=1,NstateVar(ng)
+          DO i=1,NobsVar(ng)
             IF (FOURDVAR(ng)%CostFunOld(i).gt.0.0_r8) THEN
               IF (i.eq.1) THEN
                 WRITE (stdout,50) FOURDVAR(ng)%CostFunOld(i),           &
-     &                            TRIM(Vname(1,idSvar(i)))
+     &                            TRIM(ObsName(i))
               ELSE
                 WRITE (stdout,60) FOURDVAR(ng)%CostFunOld(i),           &
-     &                            TRIM(Vname(1,idSvar(i)))
+     &                            TRIM(ObsName(i))
               END IF
             END IF
           END DO
@@ -303,7 +333,8 @@
 !$OMP PARALLEL
         CALL ad_initial (ng, .TRUE.)
 !$OMP END PARALLEL
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 !
 !  Time-step adjoint model: Compute model state gradient, GRAD(J).
@@ -323,7 +354,8 @@
       CALL ad_main2d (RunInterval)
 #endif
 !$OMP END PARALLEL
-      IF (exit_flag.ne.NoError) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Perturb each tangent linear state variable using the steepest decent
@@ -336,7 +368,8 @@
       DO ng=1,Ngrids
         CALL get_state (ng, iADM, 3, ADM(ng)%name, ADM(ng)%Rindex,      &
      &                  Lnew(ng))
-        IF (exit_flag.ne.NoError) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
       END DO
 !
 !  Compute adjoint solution dot product for scaling purposes.
@@ -366,7 +399,8 @@
 
         DO ng=1,Ngrids
           CALL get_state (ng, iNLM, 1, FWD(ng)%name, IniRec, Lnew(ng))
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
         END DO
 !
 !  INNER LOOP: scale perturbation amplitude by selecting "p" scalar,
@@ -380,12 +414,13 @@
 !  term is a function of the steepest descent direction defined
 !  by grad(J) times the perturbation amplitude "p".
 !
-          DO ng=1,Ngrids
 !$OMP PARALLEL
-            CALL initial (ng, .FALSE.)
+          CALL initial (.FALSE.)
 !$OMP END PARALLEL
-            IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 
+          DO ng=1,Ngrids
             WRITE (HIS(ng)%name,70) TRIM(HIS(ng)%base), Nrun
 
             IF (ndefTLM(ng).lt.0) THEN
@@ -413,14 +448,16 @@
           CALL main2d (RunInterval)
 #endif
 !$OMP END PARALLEL
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 !
 !  Get current nonlinear model trajectory.
 !
           DO ng=1,Ngrids
-            FWD(ng)%name=TRIM(HIS(ng)%base)//'.nc'
+            FWD(ng)%name=TRIM(HIS(ng)%head)//'.nc'
             CALL get_state (ng, iNLM, 1, FWD(ng)%name, IniRec, Lnew(ng))
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END DO
 !
 !  Initialize tangent linear with the steepest decent direction
@@ -430,7 +467,8 @@
 !$OMP PARALLEL
             CALL tl_initial (ng, .FALSE.)
 !$OMP END PARALLEL
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
 
             WRITE (TLM(ng)%name,70) TRIM(TLM(ng)%base), Nrun
 
@@ -458,14 +496,16 @@
           CALL tl_main2d (RunInterval)
 #endif
 !$OMP END PARALLEL
-          IF (exit_flag.ne.NoError) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
 !
 !  Close current tangent linear model history file.
 !
-          SourceFile='tlcheck_ocean.h, ROMS_run'
+          SourceFile=__FILE__ // ", ROMS_run"
           DO ng=1,Ngrids
             CALL netcdf_close (ng, iTLM, TLM(ng)%ncid)
-            IF (exit_flag.ne.NoError) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__,                &
+     &                     __FILE__)) RETURN
           END DO
 !
 !  Advance model run counter.
@@ -480,7 +520,7 @@
 !
       DO ng=1,Ngrids
         IF (Master) THEN
-          WRITE (stdout,80)                                             &
+                                                                                                                                                                                                                   WRITE (stdout,80)                                             &
      &      'TLM Test - Dot Products Summary: p, g1, g2, (g1-g2)/g1'
           inner=1
           DO i=1,MIN(ig1count,ig2count)
@@ -544,7 +584,7 @@
             IF (Master) WRITE (stdout,10)
  10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
      &                ' RESTART file',/)
-            Fcount=RST(ng)%Fcount
+            Fcount=RST(ng)%load
             IF (LcycleRST(ng).and.(RST(ng)%Nrec(Fcount).ge.2)) THEN
               RST(ng)%Rindex=2
               LcycleRST(ng)=.FALSE.
@@ -557,7 +597,8 @@
       END IF
 !
 !-----------------------------------------------------------------------
-!  Stop model and time profiling clocks.  Close output NetCDF files.
+!  Stop model and time profiling clocks, report memory requirements, and
+!  close output NetCDF files.
 !-----------------------------------------------------------------------
 !
 !  Stop time clocks.
@@ -566,17 +607,26 @@
         WRITE (stdout,20)
  20     FORMAT (/,' Elapsed CPU time (seconds):',/)
       END IF
-
+!
       DO ng=1,Ngrids
 !$OMP PARALLEL
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 0)
+          CALL wclock_off (ng, iNLM, 0, __LINE__, __FILE__)
         END DO
 !$OMP END PARALLEL
       END DO
 !
+!  Report dynamic memory and automatic memory requirements.
+!
+!$OMP PARALLEL
+      CALL memory
+!$OMP END PARALLEL
+!
 !  Close IO files.
 !
+      DO ng=1,Ngrids
+        CALL close_inp (ng, iNLM)
+      END DO
       CALL close_out
 
       RETURN

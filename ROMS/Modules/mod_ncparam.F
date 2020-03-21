@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 654 2013-03-12 17:11:03Z arango $
+!svn $Id: mod_ncparam.F 1001 2020-01-10 22:41:16Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -28,8 +28,12 @@
 !               Linfo(2,*)  => switch indicating time cycling.         !
 !               Linfo(3,*)  => switch indicating only one-time         !
 !                              record available.                       !
-!               Linfo(4,*)  => switch indication special record        !
+!               Linfo(4,*)  => switch indicating special record        !
 !                              processing (like tides)                 !
+!               Linfo(5,*)  => switch to indicate processing the first !
+!                              record of a file or multi-file.         !
+!               Linfo(6,*)  => switch to indicate processing the last  !
+!                              record of a file or multi-file.         !
 !                                                                      !
 !  Iinfo      Input/output fields integer information:                 !
 !               Iinfo( 1,*) => variable grid type.                     !
@@ -71,8 +75,13 @@
 !  Maximum number of variables in a generic NetCDF file (MV) and
 !  maximum number of variables in information arrays (NV).
 !
-        integer, parameter :: MV = 950
-        integer, parameter :: NV = 950
+        integer, parameter :: MV = 1400
+        integer, parameter :: NV = 1400
+!
+!  Maximum number of dimension IDs stored in local array DimIDs used to
+!  defined variable dimensions in output NetCDF files.
+!
+        integer, parameter :: nDimID = 33
 !
 !  Input/output grid-type variables.
 !
@@ -86,6 +95,8 @@
         integer, parameter :: v3dvar = 8         ! 3D V-variable
         integer, parameter :: w3dvar = 9         ! 3D W-variable
         integer, parameter :: b3dvar = 10        ! 3D BED-sediment
+        integer, parameter :: l3dvar = 11        ! 3D spectral light
+        integer, parameter :: l4dvar = 12        ! 4D spectral light
 !
 !  Number of horizontal interior and boundary water points.
 !
@@ -144,6 +155,7 @@
         logical, allocatable :: Aout(:,:)     ! average file switches
         logical, allocatable :: Dout(:,:)     ! diagnostic file switches
         logical, allocatable :: Hout(:,:)     ! history file switches
+        logical, allocatable :: Qout(:,:)     ! quicksave file switches
         logical, allocatable :: Sout(:,:)     ! station file switches
 !
 !  Grid identification indices.
@@ -169,6 +181,8 @@
 !
         integer  :: idAice        ! fraction of cell covered by ice
         integer  :: idbath        ! bathymetry
+        integer  :: idBgEr        ! Background error at observations
+        integer  :: idBgTh        ! Threshold for BQC check
         integer  :: idCfra        ! cloud fraction
         integer  :: idCosW        ! COS(omega(k)*t)
         integer  :: idCos2        ! COS(omega(k)*t)*COS(omega(l)*t)
@@ -181,10 +195,14 @@
         integer  :: idFsuD        ! detided free-surface
         integer  :: idFsuH        ! free-surface tide harmonics
         integer  :: idGhat(2)     ! KPP nonlocal transport
+        integer  :: idgTnc        ! generic tracer nudging coefficients
+        integer  :: idJWTy        ! Jerlov water type
         integer  :: idHbbl        ! depth of bottom boundary layer
         integer  :: idHice        ! depth of ice cover
         integer  :: idHsbl        ! depth of surface boundary layer
         integer  :: idHsno        ! depth of snow cover
+        integer  :: idIncr        ! 4D-Var analysis increment
+        integer  :: idInno        ! 4D-Var innovation vector
         integer  :: idKhor        ! convolution horizontal diffusion
         integer  :: idKver        ! convolution vertical diffusion
         integer  :: idLdwn        ! downwelling longwave radiation flux
@@ -195,6 +213,8 @@
         integer  :: idMOMf        ! final model-observation misfit
         integer  :: idMtke        ! turbulent kinetic energy
         integer  :: idMtls        ! turbulent length scale
+        integer  :: idM2nc        ! 2D momentum nudging coefficients
+        integer  :: idM3nc        ! 2D momentum nudging coefficients
         integer  :: idNLmi        ! initial NLM at observation locations
         integer  :: idNLmo        ! NLM at observations locations
         integer  :: idNobs        ! number of observations
@@ -206,13 +226,21 @@
         integer  :: idObsZ        ! observations Z-grid location
         integer  :: idOday        ! observations survey time
         integer  :: idOerr        ! observations error
+        integer  :: idOlat        ! observations latitude
+        integer  :: idOlon        ! observations longitude
+        integer  :: idOmet        ! observations meta value
+        integer  :: idOpro        ! observations provenance
         integer  :: idOtyp        ! observations type
         integer  :: idOval        ! observations value
-        integer  :: idOvar        ! observations global variance
         integer  :: idOvel        ! omega vertical velocity
         integer  :: idQair        ! surface air humidity
         integer  :: idPair        ! surface air pressure
         integer  :: idPbar        ! streamfunction
+        integer  :: idPwet        ! wet/dry mask on PSI-points
+        integer  :: idpthR        ! depths of RHO-points
+        integer  :: idpthU        ! depths of U-points
+        integer  :: idpthV        ! depths of V-points
+        integer  :: idpthW        ! depths of W-points
         integer  :: idRdir        ! river runoff direction
         integer  :: idRepo        ! river runoff ETA-positions
         integer  :: idRflg        ! river runoff flag
@@ -235,14 +263,11 @@
         integer  :: idSin2        ! SIN(omega(k)*t)*SIN(omega(l)*t)
         integer  :: idSrad        ! net shortwave radiation flux
         integer  :: idSSHc        ! SSH climatology
-        integer  :: idSSHe        ! SSH error variance
-        integer  :: idSSHo        ! SSH observations
         integer  :: idSSSc        ! SSS climatology
         integer  :: idSSTc        ! SST climatology
-        integer  :: idSSTe        ! SST error variance
-        integer  :: idSSTo        ! SST observations
         integer  :: idShea        ! net sensible heat flux
         integer  :: idSWCW        ! SIN(omega(k)*t)*COS(omega(l)*t)
+        integer  :: idResi        ! 4D-Var residual vector
         integer  :: idsfwf        ! surface freswater flux
         integer  :: idTLmo        ! TLM at observation locations
         integer  :: idTair        ! surface air temperature
@@ -278,12 +303,10 @@
         integer  :: idUfx1        ! time averaged U-flux for 2D
         integer  :: idUfx2        ! time averaged U-flux for 3D
         integer  :: idUice        ! ice U-velocity
-        integer  :: idUobs        ! 3D U-velocity observations
         integer  :: idUsms        ! surface U-momentum stress
-        integer  :: idUsur        ! surface U-velocity observations
+        integer  :: idUsuE        ! model surface eastward velocity
+        integer  :: idUsur        ! surface U-velocity
         integer  :: idUtlf        ! 3D U-velocity impulse forcing
-        integer  :: idUVer        ! 3D velocity error variance
-        integer  :: idUVse        ! surface velocity error variance
         integer  :: idUvel        ! 3D U-velocity
         integer  :: idUwet        ! wet/dry mask on U-points
         integer  :: idu2dD        ! detided 2D U-velocity
@@ -316,9 +339,9 @@
         integer  :: idVmLS        ! vertical mixing length scale
         integer  :: idVmKK        ! Kinetic energy vertical mixing
         integer  :: idVmKP        ! Length scale vertical mixing
-        integer  :: idVobs        ! 3D V-velocity observations
         integer  :: idVsms        ! surface V-momentum stress
-        integer  :: idVsur        ! surface V-velocity observations
+        integer  :: idVsuN        ! model surface northward velocity
+        integer  :: idVsur        ! surface V-velocity
         integer  :: idVtlf        ! 3D V-velocity impulse forcing
         integer  :: idVvel        ! 3D V-velocity
         integer  :: idVvis        ! vertical viscosity coefficient
@@ -337,6 +360,7 @@
         integer  :: idW3yy        ! 3D radiation stress, Syy-component
         integer  :: idW3zx        ! 3D radiation stress, Szx-component
         integer  :: idW3zy        ! 3D radiation stress, Szy-component
+        integer  :: idWads        ! 3D W-velocity adjoint sensitivity
         integer  :: idWamp        ! wind-induced wave amplitude
         integer  :: idWbrk        ! wind-induced wave breaking
         integer  :: idWdis        ! wind-induced wave dissipation
@@ -354,15 +378,19 @@
         integer  :: id3dPV        ! 3D potential vorticity
         integer  :: id3dRV        ! 3D relative vorticity
 !
+!  Last used variable ID counter.
+!
+        integer  :: last_varid
+!
 !  Input/output identification tracer indices.
 !
         integer, allocatable :: idRtrc(:)    ! river runoff for tracers
+        integer, allocatable :: idsurT(:)    ! model surface tracers
         integer, allocatable :: idTads(:)    ! tracers adjoint sentivity
         integer, allocatable :: idTbot(:)    ! bottom flux for tracers
         integer, allocatable :: idTbry(:,:)  ! tracers boundary
         integer, allocatable :: idTclm(:)    ! tracers climatology
-        integer, allocatable :: idTerr(:)    ! tracers error variance
-        integer, allocatable :: idTobs(:)    ! tracers observations
+        integer, allocatable :: idTnud(:)    ! tracers nudge coefficient
         integer, allocatable :: idTsur(:)    ! surface flux for tracers
         integer, allocatable :: idTtlf(:)    ! tracers impulse forcing
 !
@@ -403,13 +431,17 @@
         integer, allocatable :: idDv3d(:)     ! 3D v-momentum terms
 #endif
 !
-!  State variables indices (order is important).
+!  State variables indices (order is important). Notice that current
+!  extra-observations index (isRadial) needs to be initialized to zero
+!  here and reset elsewhere to the value provided by the user.
 !
         integer  :: isFsur = 1                ! free-surface
         integer  :: isUbar = 2                ! 2D U-velocity
         integer  :: isVbar = 3                ! 2D V-velocity
         integer  :: isUvel = 4                ! 3D U-velocity
         integer  :: isVvel = 5                ! 3D V-velocity
+        integer  :: isWvel                    ! 3D W-velocity
+        integer  :: isRadial = 0              ! HF radial-velocity
         integer  :: isUstr                    ! surface u-stress
         integer  :: isVstr                    ! surface v-stress
         integer  :: isMtke                    ! turbulent kinetic energy
@@ -441,6 +473,7 @@
         integer, allocatable :: idefAVG(:)    ! averages file
         integer, allocatable :: idefDIA(:)    ! diagnostics file
         integer, allocatable :: idefHIS(:)    ! history file
+        integer, allocatable :: idefQCK(:)    ! quicksave file
         integer, allocatable :: idefTLM(:)    ! tangent file
 !
 !  Output NetCDF variables IDs.
@@ -455,14 +488,13 @@
 
         integer, allocatable :: Iinfo(:,:,:)
 
-        real(r8), allocatable :: Finfo(:,:,:)
-        real(r8), allocatable :: Fpoint(:,:,:)
-        real(r8), allocatable :: Fscale(:,:)
-        real(r8), allocatable :: Tintrp(:,:,:)
+        real(dp), allocatable :: Finfo(:,:,:)
+        real(dp), allocatable :: Fpoint(:,:,:)
+        real(dp), allocatable :: Fscale(:,:)
+        real(dp), allocatable :: Tintrp(:,:,:)
+        real(dp), allocatable :: Vtime(:,:,:)
 
-        real(r8), allocatable :: Vtime(:,:,:)
-
-        character (len=5  ) :: version = '3.6  '
+        character (len=5  ) :: version = '3.9  '
         character (len=40 ) :: varnam(MV)
         character (len=44 ) :: date_str
         character (len=46 ) :: Tname(0:NV)
@@ -471,19 +503,11 @@
 
         character (len=256), allocatable :: Cinfo(:,:)
 !
-!  Source code root directory, cpp header file and directory, and
-!  analytical expression directory.
-!
-        character (len=256) :: Rdir
-        character (len=256) :: Hdir
-        character (len=256) :: Hfile
-        character (len=256) :: Adir
-!
 !  Analyical header file logical and names.
 !
         logical :: Lanafile
 
-        character (len=256), dimension(37) :: ANANAME
+        character (len=256), dimension(39) :: ANANAME
 
 #ifdef BIOLOGY
 !
@@ -494,10 +518,10 @@
         character (len=256), dimension(4) :: BIONAME
 #endif
 !
-!  SVN revision and repository root URL.
+!  GIT and SVN revision and repository root URL.
 !
-        character (len=40 ) :: svn_rev
-        character (len=256) :: svn_url
+        character (len=80 ) :: git_rev, svn_rev
+        character (len=256) :: git_url, svn_url
 !
       CONTAINS
 !
@@ -510,112 +534,357 @@
 !                                                                      !
 !=======================================================================
 !
+      USE mod_param
+!
+!  Local variable declarations.
+!
+      integer :: ng
+!
 !-----------------------------------------------------------------------
 !  Allocate variables.
 !-----------------------------------------------------------------------
 !
-      allocate ( Nxyp(Ngrids) )
-      allocate ( Nxyr(Ngrids) )
-      allocate ( Nxyu(Ngrids) )
-      allocate ( Nxyv(Ngrids) )
+      IF (.not.allocated(Nxyp)) THEN
+        allocate ( Nxyp(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(Nxyr)) THEN
+        allocate ( Nxyr(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(Nxyu)) THEN
+        allocate ( Nxyu(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(Nxyv)) THEN
+        allocate ( Nxyv(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( NwaterR(Ngrids) )
-      allocate ( NwaterU(Ngrids) )
-      allocate ( NwaterV(Ngrids) )
+      IF (.not.allocated(NwaterR)) THEN
+        allocate ( NwaterR(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(NwaterU)) THEN
+        allocate ( NwaterU(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(NwaterV)) THEN
+        allocate ( NwaterV(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( rILB(Ngrids) )
-      allocate ( rIUB(Ngrids) )
-      allocate ( rJLB(Ngrids) )
-      allocate ( rJUB(Ngrids) )
+      IF (.not.allocated(rILB)) THEN
+        allocate ( rILB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(rIUB)) THEN
+        allocate ( rIUB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(rJLB)) THEN
+        allocate ( rJLB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(rJUB)) THEN
+        allocate ( rJUB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( rXmin(Ngrids) )
-      allocate ( rXmax(Ngrids) )
-      allocate ( rYmin(Ngrids) )
-      allocate ( rYmax(Ngrids) )
+      IF (.not.allocated(rXmin)) THEN
+        allocate ( rXmin(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(rXmax)) THEN
+        allocate ( rXmax(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(rYmin)) THEN
+        allocate ( rYmin(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(rYmax)) THEN
+        allocate ( rYmax(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( uILB(Ngrids) )
-      allocate ( uIUB(Ngrids) )
-      allocate ( uJLB(Ngrids) )
-      allocate ( uJUB(Ngrids) )
+      IF (.not.allocated(uILB)) THEN
+        allocate ( uILB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(uIUB)) THEN
+        allocate ( uIUB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(uJLB)) THEN
+        allocate ( uJLB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(uJUB)) THEN
+        allocate ( uJUB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( uXmin(Ngrids) )
-      allocate ( uXmax(Ngrids) )
-      allocate ( uYmin(Ngrids) )
-      allocate ( uYmax(Ngrids) )
+      IF (.not.allocated(uXmin)) THEN
+        allocate ( uXmin(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(uXmax)) THEN
+        allocate ( uXmax(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(uYmin)) THEN
+        allocate ( uYmin(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(uYmax)) THEN
+        allocate ( uYmax(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( vILB(Ngrids) )
-      allocate ( vIUB(Ngrids) )
-      allocate ( vJLB(Ngrids) )
-      allocate ( vJUB(Ngrids) )
+      IF (.not.allocated(vILB)) THEN
+        allocate ( vILB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(vIUB)) THEN
+        allocate ( vIUB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(vJLB)) THEN
+        allocate ( vJLB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(vJUB)) THEN
+        allocate ( vJUB(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( vXmin(Ngrids) )
-      allocate ( vXmax(Ngrids) )
-      allocate ( vYmin(Ngrids) )
-      allocate ( vYmax(Ngrids) )
+      IF (.not.allocated(vXmin)) THEN
+        allocate ( vXmin(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(vXmax)) THEN
+        allocate ( vXmax(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(vYmin)) THEN
+        allocate ( vYmin(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(vYmax)) THEN
+        allocate ( vYmax(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( Aout(NV,Ngrids) )
-      allocate ( Dout(NV,Ngrids) )
-      allocate ( Hout(NV,Ngrids) )
-      allocate ( Sout(NV,Ngrids) )
+      IF (.not.allocated(Aout)) THEN
+        allocate ( Aout(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Dout)) THEN
+        allocate ( Dout(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Hout)) THEN
+        allocate ( Hout(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Qout)) THEN
+        allocate ( Qout(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Sout)) THEN
+        allocate ( Sout(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
 
-      allocate ( idRtrc(MT) )
-      allocate ( idTads(MT) )
-      allocate ( idTbot(MT) )
-      allocate ( idTbry(4,MT) )
-      allocate ( idTclm(MT) )
-      allocate ( idTerr(MT) )
-      allocate ( idTobs(MT) )
-      allocate ( idTsur(MT) )
-      allocate ( idTtlf(MT) )
+      IF (.not.allocated(idRtrc)) THEN
+        allocate ( idRtrc(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idsurT)) THEN
+        allocate ( idsurT(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTads)) THEN
+        allocate ( idTads(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTbot)) THEN
+        allocate ( idTbot(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTbry)) THEN
+        allocate ( idTbry(4,MT) )
+        Dmem(1)=Dmem(1)+4.0_r8*REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTclm)) THEN
+        allocate ( idTclm(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTnud)) THEN
+        allocate ( idTnud(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTsur)) THEN
+        allocate ( idTsur(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTtlf)) THEN
+        allocate ( idTtlf(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
 
-      allocate ( iHUTav(MT) )
-      allocate ( iHVTav(MT) )
-      allocate ( idTTav(MT) )
-      allocate ( idUTav(MT) )
-      allocate ( idVTav(MT) )
+      IF (.not.allocated(iHUTav)) THEN
+        allocate ( iHUTav(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(iHVTav)) THEN
+        allocate ( iHVTav(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTTav)) THEN
+        allocate ( idTTav(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idUTav)) THEN
+        allocate ( idUTav(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idVTav)) THEN
+        allocate ( idVTav(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
 
 #ifdef DIAGNOSTICS
-      allocate ( idDtrc(MT,NDT) )
-      allocate ( idDu2d(NDM2d) )
-      allocate ( idDv2d(NDM2d) )
-      allocate ( idDu3d(NDM3d) )
-      allocate ( idDv3d(NDM3d) )
+      IF (.not.allocated(idDtrc)) THEN
+        allocate ( idDtrc(MT,NDT) )
+        Dmem(1)=Dmem(1)+REAL(MT*NDT,r8)
+      END IF
+      IF (.not.allocated(idDu2d)) THEN
+        allocate ( idDu2d(NDM2d) )
+        Dmem(1)=Dmem(1)+REAL(NDM2d,r8)
+      END IF
+      IF (.not.allocated(idDv2d)) THEN
+        allocate ( idDv2d(NDM2d) )
+        Dmem(1)=Dmem(1)+REAL(NDM2d,r8)
+      END IF
+      IF (.not.allocated(idDu3d)) THEN
+        allocate ( idDu3d(NDM3d) )
+        Dmem(1)=Dmem(1)+REAL(NDM3d,r8)
+      END IF
+      IF (.not.allocated(idDv3d)) THEN
+        allocate ( idDv3d(NDM3d) )
+        Dmem(1)=Dmem(1)+REAL(NDM3d,r8)
+      END IF
 #endif
 
-      allocate ( isTsur(MT) )
-      allocate ( isTvar(MT) )
-      allocate ( idBvar(nLBCvar) )
-      allocate ( idSvar(MAXVAL(NSV)+1) )
-      allocate ( idSbry(MAXVAL(NSV)+1) )
+      IF (.not.allocated(isTsur)) THEN
+        allocate ( isTsur(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(isTvar)) THEN
+        allocate ( isTvar(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idBvar)) THEN
+        allocate ( idBvar(nLBCvar) )
+        Dmem(1)=Dmem(1)+REAL(nLBCvar,r8)
+      END IF
+      IF (.not.allocated(idSvar)) THEN
+        allocate ( idSvar(MAXVAL(NSV)+1) )
+        Dmem(1)=Dmem(1)+REAL(MAXVAL(NSV)+1,r8)
+      END IF
+      IF (.not.allocated(idSbry)) THEN
+        allocate ( idSbry(MAXVAL(NSV)+1) )
+        Dmem(1)=Dmem(1)+REAL(MAXVAL(NSV)+1,r8)
+      END IF
 
-      allocate ( ncFRCid(NV,Ngrids) )
+      IF (.not.allocated(ncFRCid)) THEN
+        allocate ( ncFRCid(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
 
-      allocate ( idefADJ(Ngrids) )
-      allocate ( idefAVG(Ngrids) )
-      allocate ( idefDIA(Ngrids) )
-      allocate ( idefHIS(Ngrids) )
-      allocate ( idefTLM(Ngrids) )
+      IF (.not.allocated(idefADJ)) THEN
+        allocate ( idefADJ(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(idefAVG)) THEN
+        allocate ( idefAVG(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(idefDIA)) THEN
+        allocate ( idefDIA(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(idefHIS)) THEN
+        allocate ( idefHIS(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(idefQCK)) THEN
+        allocate ( idefQCK(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
+      IF (.not.allocated(idefTLM)) THEN
+        allocate ( idefTLM(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF
 
-      allocate ( idTvar(MT) )
-      allocate ( idTrcD(NAT) )
-      allocate ( idTrcH(NAT) )
+      IF (.not.allocated(idTvar)) THEN
+        allocate ( idTvar(MT) )
+        Dmem(1)=Dmem(1)+REAL(MT,r8)
+      END IF
+      IF (.not.allocated(idTrcD)) THEN
+        allocate ( idTrcD(NAT) )
+        Dmem(1)=Dmem(1)+REAL(NAT,r8)
+      END IF
+      IF (.not.allocated(idTrcH)) THEN
+        allocate ( idTrcH(NAT) )
+        Dmem(1)=Dmem(1)+REAL(NAT,r8)
+      END IF
 
-      allocate ( Linfo(4,NV,Ngrids) )
+      IF (.not.allocated(Linfo)) THEN
+        allocate ( Linfo(6,NV,Ngrids) )
+        Dmem(1)=Dmem(1)+6.0_r8*REAL(NV*Ngrids,r8)
+      END IF
 
-      allocate ( Iinfo(10,NV,Ngrids) )
+      IF (.not.allocated(Iinfo)) THEN
+        allocate ( Iinfo(10,NV,Ngrids) )
+        Dmem(1)=Dmem(1)+10.0_r8*REAL(NV*Ngrids,r8)
+      END IF
 
-      allocate ( Finfo(10,NV,Ngrids) )
-      allocate ( Fpoint(2,NV,Ngrids) )
-      allocate ( Fscale(NV,Ngrids) )
-      allocate ( Tintrp(2,NV,Ngrids) )
+      IF (.not.allocated(Finfo)) THEN
+        allocate ( Finfo(10,NV,Ngrids) )
+        Dmem(1)=Dmem(1)+10.0_r8*REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Fpoint)) THEN
+        allocate ( Fpoint(2,NV,Ngrids) )
+        Dmem(1)=Dmem(1)+2.0_r8*REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Fscale)) THEN
+        allocate ( Fscale(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
+      IF (.not.allocated(Tintrp)) THEN
+        allocate ( Tintrp(2,NV,Ngrids) )
+        Dmem(1)=Dmem(1)+2.0_r8*REAL(NV*Ngrids,r8)
+      END IF
 
 #if defined SSH_TIDES || defined UV_TIDES
-      allocate ( Vtime(MAX(2,MTC),NV,Ngrids) )
+      IF (.not.allocated(Vtime)) THEN
+        allocate ( Vtime(MAX(2,MTC),NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(MAX(2,MTC)*NV*Ngrids,r8)
+      END IF
 #else
-      allocate ( Vtime(2,NV,Ngrids) )
+      IF (.not.allocated(Vtime)) THEN
+        allocate ( Vtime(2,NV,Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(NV*Ngrids,r8)
+      END IF
 #endif
 
-      allocate ( Cinfo(NV,Ngrids) )
+      IF (.not.allocated(Cinfo)) THEN
+        allocate ( Cinfo(NV,Ngrids) )
+        Dmem(1)=Dmem(1)+0.125_r8*256.0_r8*REAL(NV*Ngrids,r8)
+      END IF
 
       RETURN
       END SUBROUTINE allocate_ncparam
@@ -624,8 +893,8 @@
 !
 !=======================================================================
 !                                                                      !
-!  This routine allocates and initializes all variables in module      !
-!  "mod_ncparam" for all nested grids.                                 !
+!  This routine initializes all variables in module "mod_ncparam" for  !
+!  all nested grids.                                                   !
 !                                                                      !
 !=======================================================================
 !
@@ -647,7 +916,7 @@
 #ifdef DISTRIBUTE
       integer :: Itile, Jtile
 #endif
-      integer :: Lvar, Ntiles, i, ic, ie, is, j, ng
+      integer :: Lvar, Ntiles, i, ic, j, ng
       integer :: gtype, tile, varid
 
       real(r8), parameter :: spv = 0.0_r8
@@ -705,13 +974,14 @@
         idefAVG(ng)=-1
         idefDIA(ng)=-1
         idefHIS(ng)=-1
+        idefQCK(ng)=-1
         idefTLM(ng)=-1
       END DO
 !
 !  Analytical files switch and names.
 !
       Lanafile=.TRUE.
-      DO i=1,37
+      DO i=1,SIZE(ANANAME)
         DO j=1,LEN(ANANAME(1))
           ANANAME(i)(j:j)=' '
         END DO
@@ -751,6 +1021,7 @@
         isTsur(i)=ic
       END DO
 #endif
+      isWvel=ic+1
 !
 !  Set generic lateral boundary indices for LBC structure.  Use the same
 !  values of the state variables at the same C-grid location.  Generic
@@ -778,9 +1049,12 @@
           Linfo(2,i,ng)=.FALSE.
           Linfo(3,i,ng)=.FALSE.
           Linfo(4,i,ng)=.FALSE.
+          Linfo(5,i,ng)=.FALSE.
+          Linfo(6,i,ng)=.FALSE.
           Aout(i,ng)=.FALSE.
           Dout(i,ng)=.FALSE.
           Hout(i,ng)=.FALSE.
+          Qout(i,ng)=.FALSE.
           Sout(i,ng)=.FALSE.
           Iinfo(1,i,ng)=0
           Iinfo(2,i,ng)=-1
@@ -789,7 +1063,7 @@
           Iinfo(5,i,ng)=0
           Iinfo(6,i,ng)=0
           Iinfo(7,i,ng)=0
-          Iinfo(8,i,ng)=0
+          Iinfo(8,i,ng)=2
           Iinfo(9,i,ng)=0
           Iinfo(10,i,ng)=0
           Finfo(1,i,ng)=0.0_r8
@@ -802,28 +1076,35 @@
           Fscale(i,ng)=1.0_r8
           Fpoint(1,i,ng)=0.0_r8
           Fpoint(2,i,ng)=0.0_r8
-          Tintrp(1,i,ng)=0.0_r8
-          Tintrp(2,i,ng)=0.0_r8
-          Vtime(1,i,ng)=0.0_r8
-          Vtime(2,i,ng)=0.0_r8
+          Tintrp(1,i,ng)=0.0_dp
+          Tintrp(2,i,ng)=0.0_dp
+          Vtime(1,i,ng)=0.0_dp
+          Vtime(2,i,ng)=0.0_dp
           ncFRCid(i,ng)=-1
         END DO
       END DO
 !
-!  Set source code root directory, cpp header file and directory, and
-!  analytical expression directory.
+!  Set GIT and SVN Repository Root URL and revision.  Their values are
+!  assigned in the 'makefile' to the CPPFLAGS macro.
 !
-#ifdef ROOT_DIR
-      Rdir=ROOT_DIR
+#ifdef GIT_URL
+      git_url=GIT_URL
+#else
+      git_url='https://www.myroms.org/git/src'
 #endif
-#ifdef HEADER_DIR
-      Hdir=HEADER_DIR
+#ifdef GIT_REV
+      git_rev=GIT_REV
+#else
+      git_rev=' '
 #endif
-#ifdef ROMS_HEADER
-      Hfile=HEADER
+!
+#ifdef SVN_URL
+      svn_url=SVN_URL
+#else
+      svn_url='https://myroms.org/svn'
 #endif
-#ifdef ANALYTICAL_DIR
-      Adir=ANALYTICAL_DIR
+#ifdef SVN_REV
+      svn_rev=SVN_REV
 #endif
 !
 !-----------------------------------------------------------------------
@@ -839,31 +1120,19 @@
       STOP
   20  CONTINUE
 !
-!  Read in variable information.  Ignore blank and comment [char(33)=!]
-!  input lines.
+!  Read in variable information.  Ignore blank, comment [char(33)=!]
+!  input lines, and URL line [char(36)=$].
 !
       varid=0
       DO WHILE (.TRUE.)
         READ (inp,*,ERR=30,END=40) Vinfo(1)
         Lvar=LEN_TRIM(Vinfo(1))
 !
-!  Extract SVN Repository Root URL.
-!
-        IF ((Lvar.gt.0).and.(Vinfo(1)(1:1).eq.CHAR(36))) THEN
-          is=INDEX(Vinfo(1),'https')
-          ie=INDEX(Vinfo(1),'/ROMS')-1
-          IF (ie.gt.is) THEN
-            svn_url=Vinfo(1)(is:ie)
-          ELSE
-            svn_url='https:://myroms.org/svn/src'
-          END IF
-#ifdef SVN_REV
-          svn_rev=SVN_REV
-#endif
-!
 !  Read in other variable information.
 !
-        ELSE IF ((Lvar.gt.0).and.(Vinfo(1)(1:1).ne.CHAR(33))) THEN
+        IF ((Lvar.gt.0).and.                                            &
+     &      (Vinfo(1)(1:1).ne.CHAR(33)).and.                            &
+     &      (Vinfo(1)(1:1).ne.CHAR(36))) THEN
           READ (inp,*,ERR=30) Vinfo(2)
           READ (inp,*,ERR=30) Vinfo(3)
           READ (inp,*,ERR=30) Vinfo(4)
@@ -895,6 +1164,12 @@
               gtype=w3dvar
             CASE ('b3dvar')
               gtype=b3dvar
+#ifdef ECOSIM && defined DIAGNOSTICS_BIO
+            CASE ('l3dvar')
+              gtype=l3dvar
+            CASE ('l4dvar')
+              gtype=l4dvar
+#endif
             CASE DEFAULT
               gtype=0
           END SELECT
@@ -908,6 +1183,14 @@
               idtime=varid
             CASE ('idbath')
               idbath=varid
+            CASE ('idpthR')
+              idpthR=varid
+            CASE ('idpthU')
+              idpthU=varid
+            CASE ('idpthV')
+              idpthV=varid
+            CASE ('idpthW')
+              idpthW=varid
             CASE ('idFsur')
               idFsur=varid
             CASE ('idRzet')
@@ -924,12 +1207,20 @@
               idv2dN=varid
             CASE ('idRv2d')
               idRv2d=varid
+            CASE ('idUsur')
+              idUsur=varid
+            CASE ('idUsuE')
+              idUsuE=varid
             CASE ('idUvel')
               idUvel=varid
             CASE ('idu3dE')
               idu3dE=varid
             CASE ('idRu3d')
               idRu3d=varid
+            CASE ('idVsur')
+              idVsur=varid
+            CASE ('idVsuN')
+              idVsuN=varid
             CASE ('idVvel')
               idVvel=varid
             CASE ('idv3dN')
@@ -942,6 +1233,10 @@
               idOvel=varid
             CASE ('idDano')
               idDano=varid
+            CASE ('idsurT(itemp)')
+              idsurT(itemp)=varid
+            CASE ('idsurT(isalt)')
+              idsurT(isalt)=varid
             CASE ('idTvar(itemp)')
               idTvar(itemp)=varid
             CASE ('idTvar(isalt)')
@@ -1052,6 +1347,8 @@
               idTbry(isouth,isalt)=varid
             CASE ('idTbry(inorth,isalt)')
               idTbry(inorth,isalt)=varid
+            CASE ('idPwet')
+              idPwet=varid
             CASE ('idRwet')
               idRwet=varid
             CASE ('idUwet')
@@ -1219,6 +1516,8 @@
               idTads(itemp)=varid
             CASE ('idTads(isalt)')
               idTads(isalt)=varid
+            CASE ('idWads')
+              idWads=varid
 #endif
 #ifdef WEAK_CONSTRAINT
             CASE ('idZtlf')
@@ -1236,34 +1535,12 @@
             CASE ('idTtlf(isalt)')
               idTtlf(isalt)=varid
 #endif
-            CASE ('idSSHo')
-              idSSHo=varid
-            CASE ('idSSHe')
-              idSSHe=varid
-            CASE ('idUobs')
-              idUobs=varid
-            CASE ('idVobs')
-              idVobs=varid
-            CASE ('idUVer')
-              idUVer=varid
-            CASE ('idUsur')
-              idUsur=varid
-            CASE ('idVsur')
-              idVsur=varid
-            CASE ('idUVse')
-              idUVse=varid
-            CASE ('idSSTo')
-              idSSTo=varid
-            CASE ('idSSTe')
-              idSSTe=varid
-            CASE ('idTobs(itemp)')
-              idTobs(itemp)=varid
-            CASE ('idTerr(itemp)')
-              idTerr(itemp)=varid
-            CASE ('idTobs(isalt)')
-              idTobs(isalt)=varid
-            CASE ('idTerr(isalt)')
-              idTerr(isalt)=varid
+            CASE ('idM2nc')
+              idM2nc=varid
+            CASE ('idM3nc')
+              idM3nc=varid
+            CASE ('idgTnc')
+              idgTnc=varid
 #ifdef AVERAGES_DETIDE
             CASE ('idCosW')
               idCosW=varid
@@ -1333,18 +1610,6 @@
               idUVav=varid
             CASE ('idVVav')
               idVVav=varid
-# ifdef SALINITY
-            CASE ('idTTav(isalt)')
-              idTTav(isalt)=varid
-            CASE ('iHUTav(isalt)')
-              iHUTav(isalt)=varid
-            CASE ('iHVTav(isalt)')
-              iHVTav(isalt)=varid
-            CASE ('idUTav(isalt)')
-              idUTav(isalt)=varid
-            CASE ('idVTav(isalt)')
-              idVTav(isalt)=varid
-# endif
 #endif
 #ifdef T_PASSIVE
             CASE ('idTvar(inert(i))')
@@ -1357,10 +1622,8 @@
               load=.TRUE.
             CASE ('idTbry(inorth,inert(i))')
               load=.TRUE.
-# ifdef TS_PSOURCE
             CASE ('idRtrc(inert(i))')
               load=.TRUE.
-# endif
 #endif
             CASE ('id2dPV')
               id2dPV=varid
@@ -1531,6 +1794,14 @@
               idVfx2=varid
 #endif
 #if defined FOUR_DVAR || defined VERIFICATION
+            CASE ('idBgEr')
+              idBgEr=varid
+            CASE ('idBgTh')
+              idBgTh=varid
+            CASE ('idIncr')
+              idIncr=varid
+            CASE ('idInno')
+              idInno=varid
             CASE ('idNLmi')
               idNLmi=varid
             CASE ('idNLmo')
@@ -1553,12 +1824,20 @@
               idOday=varid
             CASE ('idOerr')
               idOerr=varid
+            CASE ('idOlat')
+              idOlat=varid
+            CASE ('idOlon')
+              idOlon=varid
+            CASE ('idOmet')
+              idOmet=varid
+            CASE ('idOpro')
+              idOpro=varid
             CASE ('idOtyp')
               idOtyp=varid
             CASE ('idOval')
               idOval=varid
-            CASE ('idOvar')
-              idOvar=varid
+            CASE ('idResi')
+              idResi=varid
             CASE ('idKhor')
               idKhor=varid
             CASE ('idKver')
@@ -1576,6 +1855,8 @@
 #  include <fennel_var.h>
 # elif defined ECOSIM
 #  include <ecosim_var.h>
+# elif defined HYPOXIA_SRM
+#  include <hypoxia_srm_var.h>
 # elif defined NEMURO
 #  include <nemuro_var.h>
 # elif defined NPZD_FRANKS
@@ -1584,6 +1865,8 @@
 #  include <npzd_Powell_var.h>
 # elif defined NPZD_IRON
 #  include <npzd_iron_var.h>
+# elif defined RED_TIDE
+#  include <red_tide_var.h>
 # endif
 #endif
 
@@ -1619,6 +1902,49 @@
               CASE ('idTvar(inert(i))')
                 IF (NPT.gt.0) THEN
                   varid=varid-1
+# ifdef AGE_MEAN
+                  ic=0
+                  DO i=1,NPT,2
+                    varid=varid+1
+                    ic=ic+1
+                    idTvar(inert(i))=varid
+                    DO ng=1,Ngrids
+                      Fscale(varid,ng)=scale
+                      Iinfo(1,varid,ng)=gtype
+                    END DO
+                    WRITE (Vname(1,varid),'(a,i2.2)')                   &
+     &                    TRIM(ADJUSTL(Vinfo(1))), ic
+                    WRITE (Vname(2,varid),'(a,a,i2.2)')                 &
+     &                    TRIM(ADJUSTL(Vinfo(2))), ', type ', ic
+                    WRITE (Vname(3,varid),'(a)')                        &
+     &                    TRIM(ADJUSTL(Vinfo(3)))
+                    WRITE (Vname(4,varid),'(a,a)')                      &
+     &                    TRIM(Vname(1,varid)), ', scalar, series'
+                    WRITE (Vname(5,varid),'(a)')                        &
+     &                    TRIM(ADJUSTL(Vinfo(5)))
+                  END DO
+!
+                  ic=0
+                  DO i=2,NPT,2
+                    varid=varid+1
+                    ic=ic+1
+                    idTvar(inert(i))=varid
+                    DO ng=1,Ngrids
+                      Fscale(varid,ng)=scale
+                      Iinfo(1,varid,ng)=gtype
+                    END DO
+                    WRITE (Vname(1,varid),'(a,i2.2,a)')                 &
+     &                    TRIM(ADJUSTL(Vinfo(1))), ic, '_age'
+                    WRITE (Vname(2,varid),'(a,i2.2)')                   &
+     &                    'age concentraction, type ', ic
+                    WRITE (Vname(3,varid),'(a)')                        &
+     &                    'second kilogram meter-3'
+                    WRITE (Vname(4,varid),'(a,a)')                      &
+     &                    TRIM(Vname(1,varid)), ', scalar, series'
+                    WRITE (Vname(5,varid),'(a)')                        &
+     &                    TRIM(ADJUSTL(Vinfo(5)))
+                  END DO
+# else
                   DO i=1,NPT
                     varid=varid+1
                     idTvar(inert(i))=varid
@@ -1637,6 +1963,7 @@
                     WRITE (Vname(5,varid),'(a)')                        &
      &                    TRIM(ADJUSTL(Vinfo(5)))
                   END DO
+# endif
                 END IF
               CASE ('idTbry(iwest,inert(i))')
                 IF (NPT.gt.0) THEN
@@ -1726,7 +2053,6 @@
      &                    TRIM(ADJUSTL(Vinfo(5)))
                   END DO
                 END IF
-# ifdef TS_PSOURCE
               CASE ('idRtrc(inert(i))')
                 IF (NPT.gt.0) THEN
                   varid=varid-1
@@ -1749,7 +2075,6 @@
      &                    TRIM(ADJUSTL(Vinfo(5)))
                   END DO
                 END IF
-# endif
             END SELECT
 #endif
 #ifdef DIAGNOSTICS_TS
@@ -1994,7 +2319,7 @@
                 END DO
             END SELECT
 #endif
-#if defined SOLVE3D && defined AVERAGES
+#if defined SOLVE3D && (defined AVERAGES || defined AD_AVERAGES)
 !
 !  Determine metadata for quadratic tracer averages.
 !
@@ -2009,7 +2334,7 @@
                     Iinfo(1,varid,ng)=gtype
                   END DO
                   WRITE (Vname(1,varid),'(a,a)')                        &
-     &                  TRIM(ADJUSTL(Vname(1,idTvar(i)))), '2'
+     &                  TRIM(ADJUSTL(Vname(1,idTvar(i)))), '_2'
                   WRITE (Vname(2,varid),'(a,1x,a)')                     &
      &                  'time-averaged squared',                        &
      &                  TRIM(ADJUSTL(Vname(2,idTvar(i))))
@@ -2036,7 +2361,7 @@
                     Iinfo(1,varid,ng)=gtype
                   END DO
                   WRITE (Vname(1,varid),'(a,a)')                        &
-     &                  'Huon', TRIM(ADJUSTL(Vname(1,idTvar(i))))
+     &                  'Huon_', TRIM(ADJUSTL(Vname(1,idTvar(i))))
                   WRITE (Vname(2,varid),'(a,1x,a,1x,a)')                &
      &                  'time-averaged',                                &
      &                  TRIM(ADJUSTL(Vname(2,idTvar(i)))),              &
@@ -2065,7 +2390,7 @@
                     Iinfo(1,varid,ng)=gtype
                   END DO
                   WRITE (Vname(1,varid),'(a,a)')                        &
-     &                  'u', TRIM(ADJUSTL(Vname(1,idTvar(i))))
+     &                  'u_', TRIM(ADJUSTL(Vname(1,idTvar(i))))
                   WRITE (Vname(2,varid),'(a,1x,a)')                     &
      &                  'time-averaged u-momentum times',               &
      &                  TRIM(ADJUSTL(Vname(2,idTvar(i))))
@@ -2093,7 +2418,7 @@
                     Iinfo(1,varid,ng)=gtype
                   END DO
                   WRITE (Vname(1,varid),'(a,a)')                        &
-     &                  'Hvom', TRIM(ADJUSTL(Vname(1,idTvar(i))))
+     &                  'Hvom_', TRIM(ADJUSTL(Vname(1,idTvar(i))))
                   WRITE (Vname(2,varid),'(a,1x,a,1x,a)')                &
      &                  'time-averaged',                                &
      &                  TRIM(ADJUSTL(Vname(2,idTvar(i)))),              &
@@ -2122,7 +2447,7 @@
                     Iinfo(1,varid,ng)=gtype
                   END DO
                   WRITE (Vname(1,varid),'(a,a)')                        &
-     &                  'v', TRIM(ADJUSTL(Vname(1,idTvar(i))))
+     &                  'v_', TRIM(ADJUSTL(Vname(1,idTvar(i))))
                   WRITE (Vname(2,varid),'(a,1x,a)')                     &
      &                  'time-averaged v-momentum times',               &
      &                  TRIM(ADJUSTL(Vname(2,idTvar(i))))
@@ -2155,40 +2480,6 @@
   40  CLOSE (inp)
 
 #ifdef SOLVE3D
-# ifdef TCLIMATOLOGY
-!
-!-----------------------------------------------------------------------
-!  Set climatology tracers (active and passive) metadata. The variable
-!  name and units are the same as the basic tracers. The default
-!  time-variable name is the same as the variable name but with the
-!  _time suffix.  Recall that other time-variables names are allowed
-!  provided that the input NetCDF variable has the "time" attribute
-!  with the appropriate value.
-!-----------------------------------------------------------------------
-!
-      DO i=1,MT
-        varid=varid+1
-        IF (varid.gt.MV) THEN
-          WRITE (stdout,60) MV, varid
-          STOP
-        END IF
-        idTclm(i)=varid
-        DO ng=1,Ngrids
-          Fscale(varid,ng)=1.0_r8
-          Iinfo(1,varid,ng)=r3dvar
-        END DO
-        WRITE (Vname(1,varid),'(a)')                                    &
-     &        TRIM(ADJUSTL(Vname(1,idTvar(i))))
-        WRITE (Vname(2,varid),'(a,a)')                                  &
-     &        TRIM(ADJUSTL(Vname(2,idTvar(i)))), ' climatology'
-        WRITE (Vname(3,varid),'(a)')                                    &
-     &        TRIM(ADJUSTL(Vname(3,idTvar(i))))
-        WRITE (Vname(4,varid),'(a,a)')                                  &
-     &        TRIM(Vname(1,varid)), ', scalar, series'
-        WRITE (Vname(5,varid),'(a,a)')                                  &
-     &        TRIM(ADJUSTL(Vname(1,idTvar(i)))), '_time'
-      END DO
-# endif
 !
 !-----------------------------------------------------------------------
 !  Set passive tracers surface flux metadata. The variable name is the
@@ -2212,6 +2503,34 @@
      &        TRIM(ADJUSTL(Vname(2,idTvar(i)))), ', surface flux'
         WRITE (Vname(3,varid),'(a,1x,a)')                               &
      &        TRIM(ADJUSTL(Vname(3,idTvar(i)))), 'meter second-1'
+        WRITE (Vname(4,varid),'(a,a)')                                  &
+     &        TRIM(Vname(1,varid)), ', scalar, series'
+        WRITE (Vname(5,varid),'(a)')                                    &
+     &        TRIM(ADJUSTL(Vname(5,idTvar(i))))
+      END DO
+!
+!-----------------------------------------------------------------------
+!  Set passive model surface tracers metadata. The variable name is the
+!  same as the basic tracer but with the _sflux suffix.
+!-----------------------------------------------------------------------
+!
+      DO i=NAT+1,MT
+        varid=varid+1
+        IF (varid.gt.MV) THEN
+          WRITE (stdout,60) MV, varid
+          STOP
+        END IF
+        idsurT(i)=varid
+        DO ng=1,Ngrids
+          Fscale(varid,ng)=1.0_r8
+          Iinfo(1,varid,ng)=r2dvar
+        END DO
+        WRITE (Vname(1,varid),'(a,a)')                                  &
+     &        TRIM(ADJUSTL(Vname(1,idTvar(i)))), '_sur'
+        WRITE (Vname(2,varid),'(a,1x,a)') 'model surface',              &
+     &        TRIM(ADJUSTL(Vname(2,idTvar(i))))
+        WRITE (Vname(3,varid),'(a)')                                    &
+     &        TRIM(ADJUSTL(Vname(3,idTvar(i))))
         WRITE (Vname(4,varid),'(a,a)')                                  &
      &        TRIM(Vname(1,varid)), ', scalar, series'
         WRITE (Vname(5,varid),'(a)')                                    &
@@ -2329,6 +2648,11 @@
      &        TRIM(ADJUSTL(Vname(5,idSvar(i))))
       END DO
 #endif
+!
+!  Save last variable ID counter used.
+!
+      last_varid=varid
+      Dmem(1)=Dmem(1)+REAL(varid,r8)
 !
   50  FORMAT (/,' MOD_NCPARAM - Unable to open variable information',   &
      &        ' file: ',/,15x,a,/,15x,'Default file is located in',     &

@@ -1,11 +1,12 @@
 #include "cppdefs.h"
-#if defined FOUR_DVAR  && defined OBSERVATIONS && \
-    defined DISTRIBUTE && defined SOLVE3D
+#if (defined FOUR_DVAR    || defined VERIFICATION) && \
+     defined OBSERVATIONS && \
+     defined DISTRIBUTE   && defined SOLVE3D
       SUBROUTINE obs_depth (ng, tile, model)
 !
-!svn $Id: obs_depth.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: obs_depth.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -73,17 +74,17 @@
      &             (Xobs(iobs).lt.vXmax(ng))).and.                      &
      &            ((vYmin(ng) .le.Yobs(iobs)).and.                      &
      &             (Yobs(iobs).lt.vYmax(ng)))
-          IF (ObsType(iobs).eq.isUvel) THEN
+          IF (ObsType(iobs).eq.ObsState2Type(isUvel)) THEN
             IF (.not.u_bound) THEN
               Zobs(iobs)=IniVal
             END IF
-          ELSE IF (ObsType(iobs).eq.isVvel) THEN
+          ELSE IF (ObsType(iobs).eq.ObsState2Type(isVvel)) THEN
             IF (.not.v_bound) THEN
               Zobs(iobs)=IniVal
             END IF
           ELSE
             DO itrc=1,NT(ng)
-              IF (ObsType(iobs).eq.isTvar(itrc)) THEN
+              IF (ObsType(iobs).eq.ObsState2Type(isTvar(itrc))) THEN
                 IF (.not.r_bound) THEN
                   Zobs(iobs)=IniVal
                 END IF

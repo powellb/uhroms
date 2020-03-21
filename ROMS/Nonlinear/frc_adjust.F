@@ -3,9 +3,9 @@
 
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
 !
-!svn $Id: frc_adjust.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: frc_adjust.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -46,7 +46,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 7)
+      CALL wclock_on (ng, iNLM, 7, __LINE__, __FILE__)
 # endif
       CALL frc_adjust_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -66,7 +66,7 @@
 # endif
      &                      Linp)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 7)
+      CALL wclock_off (ng, iNLM, 7, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE frc_adjust
@@ -158,7 +158,11 @@
         fac1=1.0_r8
         fac2=0.0_r8
       ELSE
+# ifdef GENERIC_DSTART
+        it1=MAX(0,(iic(ng)-ntstart(ng))/nSFF(ng))+1
+# else
         it1=MAX(0,(iic(ng)-1)/nSFF(ng))+1
+# endif
         it2=MIN(it1+1,Nfrec(ng))
         fac1=SF_time(it2,ng)-(time(ng)+dt(ng))
         fac2=(time(ng)+dt(ng))-SF_time(it1,ng)

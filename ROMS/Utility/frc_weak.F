@@ -3,9 +3,9 @@
 
 #ifdef WEAK_CONSTRAINT
 !
-!svn $Id: frc_weak.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: frc_weak.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -51,7 +51,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 7)
+      CALL wclock_on (ng, iADM, 7, __LINE__, __FILE__)
 # endif
       CALL frc_ADgather_tile (ng, tile,                                 &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -78,7 +78,7 @@
      &                        OCEAN(ng) % f_vbarG)
 # endif
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 7)
+      CALL wclock_off (ng, iADM, 7, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE frc_ADgather
@@ -171,7 +171,11 @@
 !
 !  Set time records and interpolation factor, if any.
 !
+# ifdef GENERIC_DSTART
+      it1=MAX(0,(iic(ng)-ntstart(ng))/nADJ(ng))+1
+# else
       it1=MAX(0,(iic(ng)-1)/nADJ(ng))+1
+# endif
       it2=it1+1
       time1=dstart*day2sec+(it1-1)*nADJ(ng)*dt(ng)
       time2=dstart*day2sec+(it2-1)*nADJ(ng)*dt(ng)
@@ -366,7 +370,7 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 7)
+      CALL wclock_on (ng, iADM, 7, __LINE__, __FILE__)
 # endif
       CALL frc_clear_tile (ng, tile,                                    &
      &                     LBi, UBi, LBj, UBj,                          &
@@ -381,7 +385,7 @@
      &                     OCEAN(ng) % f_vbarG)
 # endif
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 7)
+      CALL wclock_off (ng, iADM, 7, __LINE__, __FILE__)
 # endif
       RETURN
       END SUBROUTINE frc_clear

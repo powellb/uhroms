@@ -2,9 +2,9 @@
       MODULE ad_set_vbc_mod
 #ifdef ADJOINT
 !
-!svn $Id: ad_set_vbc.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: ad_set_vbc.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group       Andrew M. Moore   !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
@@ -46,7 +46,7 @@
 #  include "tile.h"
 !
 #  ifdef PROFILE
-      CALL wclock_on (ng, iADM, 6)
+      CALL wclock_on (ng, iADM, 6, __LINE__, __FILE__)
 #  endif
       CALL ad_set_vbc_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -101,6 +101,12 @@
      &                      FORCES(ng) % ad_bvstr,                      &
      &                      FORCES(ng) % ad_bvstr_sol,                  &
 #  endif
+#  if defined BULK_FLUXES || defined ATM_COUPLING
+     &                      FORCES(ng) % snhflx,                        &
+#  endif
+#  if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+     &                      FORCES(ng) % EminusP,                       &
+#  endif
 #  if defined QCORRECTION || defined SALINITY
      &                      FORCES(ng) % stflx,                         &
      &                      FORCES(ng) % ad_stflx,                      &
@@ -111,7 +117,7 @@
 #  endif
      &                      nrhs(ng))
 #  ifdef PROFILE
-      CALL wclock_off (ng, iADM, 6)
+      CALL wclock_off (ng, iADM, 6, __LINE__, __FILE__)
 #  endif
       RETURN
       END SUBROUTINE ad_set_vbc
@@ -159,6 +165,12 @@
 #  ifndef BBL_MODEL_NOT_YET
      &                            ad_bustr, ad_bustr_sol,               &
      &                            ad_bvstr, ad_bvstr_sol,               &
+#  endif
+#  if defined BULK_FLUXES || defined ATM_COUPLING
+     &                            snhflx,                               &
+#  endif
+#  if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+     &                            EminusP,                              &
 #  endif
 #  if defined QCORRECTION || defined SALINITY
      &                            stflx, ad_stflx,                      &
@@ -221,6 +233,12 @@
 #   endif
 #   if defined SCORRECTION || defined SRELAXATION
       real(r8), intent(in) :: sss(LBi:,LBj:)
+#   endif
+#   if defined BULK_FLUXES || defined ATM_COUPLING
+      real(r8), intent(in) :: snhflx(LBi:,LBj:)
+#   endif
+#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+      real(r8), intent(in) :: EminusP(LBi:,LBj:)
 #   endif
 #   if defined SCORRECTION || defined SRELAXATION
       real(r8), intent(inout) :: ad_Hz(LBi:,LBj:,:)
@@ -295,6 +313,12 @@
 #   if defined SCORRECTION || defined SRELAXATION
       real(r8), intent(in) :: sss(LBi:UBi,LBj:UBj)
 #   endif
+#   if defined BULK_FLUXES || defined ATM_COUPLING
+      real(r8), intent(in) :: snhflx(LBi:UBi,LBj:UBj)
+#   endif
+#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+      real(r8), intent(in) :: EminusP(LBi:UBi,LBj:UBj)
+#   endif
 #   if defined SCORRECTION || defined SRELAXATION
       real(r8), intent(inout) :: ad_Hz(LBi:UBi,LBj:UBj,N(ng))
 #   endif
@@ -336,6 +360,7 @@
 !
       integer :: i, j, itrc
 
+      real(r8) :: EmP, ad_EmP
       real(r8) :: cff1, cff2, cff3
       real(r8) :: ad_cff1, ad_cff2, ad_cff3, adfac, adfac1, adfac2
 
@@ -351,8 +376,10 @@
 !  Initialize adjoint private variables.
 !-----------------------------------------------------------------------
 !
+      ad_EmP=0.0_r8
       ad_cff1=0.0_r8
       ad_cff2=0.0_r8
+      ad_cff3=0.0_r8
 
 #  if (!defined BBL_MODEL_NOT_YET || defined ICESHELF) && \
         defined UV_LOGDRAG
@@ -399,7 +426,7 @@
      &                     LBi, UBi, LBj, UBj,                          &
      &                     ad_bvstr)
 !
-!  Save adjoint bottom momentun flux for output purposes.
+!  Save adjoint bottom momentum flux for output purposes.
 !
       DO j=JstrR,JendR
         DO i=Istr,IendR
@@ -1024,6 +1051,11 @@
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
+#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+          EmP=EminusP(i,j)
+#   else
+          EmP=stflx(i,j,isalt)
+#   endif
 !>        tl_btflx(i,j,isalt)=btflx(i,j,isalt)*                         &
 !>   &                        tl_t(i,j,1,nrhs,isalt)
 !>
@@ -1034,8 +1066,8 @@
           ad_btflx(i,j,isalt)=0.0_r8
 #   endif
 #   if defined SCORRECTION
-!>        tl_stflx(i,j,isalt)=stflx(i,j,isalt)*                         &
-!>   &                        tl_t(i,j,N(ng),nrhs,isalt)-               &
+!>        tl_stflx(i,j,isalt)=(EmP*tl_t(i,j,N(ng),nrhs,isalt)+          &
+!>   &                         tl_EmP*t(i,j,N(ng),nrhs,isalt))-         &
 !>   &                        Tnudg(isalt,ng)*                          &
 !>   &                        (tl_Hz(i,j,N(ng))*                        &
 !>   &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
@@ -1048,8 +1080,9 @@
           ad_t(i,j,N(ng),nrhs,isalt)=ad_t(i,j,N(ng),nrhs,isalt)-        &
      &                               Hz(i,j,N(ng))*adfac
           ad_t(i,j,N(ng),nrhs,isalt)=ad_t(i,j,N(ng),nrhs,isalt)+        &
-     &                               stflx(i,j,isalt)*                  &
-     &                               ad_stflx(i,j,isalt)
+     &                               EmP*ad_stflx(i,j,isalt)
+          ad_EmP=ad_EmP+                                                &
+                 t(i,j,N(ng),nrhs,isalt)*ad_stflx(i,j,isalt)
 #    if !(defined ADJUST_STFLUX       || defined AD_SENSITIVITY   || \
           defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
           defined SO_SEMI)
@@ -1073,21 +1106,75 @@
           ad_stflx(i,j,isalt)=0.0_r8
 #    endif
 #   else
-!>        tl_stflx(i,j,isalt)=stflx(i,j,isalt)*                         &
-!>   &                        tl_t(i,j,N(ng),nrhs,isalt)
+!>        tl_stflx(i,j,isalt)=EmP*tl_t(i,j,N(ng),nrhs,isalt)+           &
+!>   &                        tl_EmP*t(i,j,N(ng),nrhs,isalt)
 !>
           ad_t(i,j,N(ng),nrhs,isalt)=ad_t(i,j,N(ng),nrhs,isalt)+        &
-     &                               stflx(i,j,isalt)*                  &
-     &                               ad_stflx(i,j,isalt)
+     &                               EmP*ad_stflx(i,j,isalt)
+          ad_EmP=ad_EmP+                                                &
+                 t(i,j,N(ng),nrhs,isalt)*ad_stflx(i,j,isalt)
 #    if !(defined ADJUST_STFLUX       || defined AD_SENSITIVITY   || \
           defined IS4DVAR_SENSITIVITY || defined OPT_OBSERVATIONS || \
           defined SO_SEMI)
           ad_stflx(i,j,isalt)=0.0_r8
 #    endif
 #   endif
+#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+!>        tl_EmP=0.0_r8
+!>
+          ad_EmP=0.0_r8
+#   else
+!>        tl_EmP=tl_stflx(i,j,isalt)
+!>
+          ad_stflx(i,j,isalt)=ad_stflx(i,j,isalt)+ad_EmP
+          ad_EmP=0.0_r8
+#   endif
         END DO
       END DO
 #  endif
+
+#  ifdef LIMIT_STFLX_COOLING
+!
+!-----------------------------------------------------------------------
+!  If net heat flux is cooling and SST is at freezing point or below
+!  then suppress further cooling. Note: stflx sign convention is that
+!  positive means heating the ocean (J Wilkin).
+!-----------------------------------------------------------------------
+!
+!  Below the surface heat flux stflx(:,:,itemp) is ZERO if cooling AND
+!  the SST is cooler that the threshold.  The value is retained if
+!  warming.
+!
+!    cff3 = 0      if SST warmer than threshold (cff1) - change nothing
+!    cff3 = 1      if SST colder than threshold (cff1)
+!
+!    0.5*(cff2-ABS(cff2)) = 0                        if flux is warming
+!                         = stflx(:,:,itemp)         if flux is cooling
+!
+      cff1=-2.0_r8              ! nominal SST threshold to cease cooling
+      DO j=JstrR,JendR
+        DO i=IstrR,IendR
+          cff2=stflx(i,j,itemp)
+          cff3=0.5_r8*(1.0_r8+SIGN(1.0_r8,cff1-t(i,j,N(ng),nrhs,itemp)))
+!>        tl_stflx(i,j,itemp)=(1.0_r8-                                  &
+!>   &                         cff3*0.5_r8*(1.0_r8-SIGN(1.0_r8,cff2)))* &
+!>   &                        tl_cff2
+!>
+          ad_cff2=ad_cff2+                                              &
+     &            (1.0_r8-cff3*0.5_r8*(1.0_r8-SIGN(1.0_r8,cff2)))*      &
+     &            ad_stflx(i,j,itemp)
+          ad_stflx(i,j,itemp)=0.0_r8
+!>        tl_cff3=0.5_r8*SIGN(1.0_r8, cff1-t(i,j,N(ng),nrhs,itemp))*0.0
+!>        tl_cff3=0.0_r8
+!>
+!>        tl_cff2=tl_stflx(i,j,itemp)
+!>
+          ad_stflx(i,j,itemp)=ad_stflx(i,j,itemp)+ad_cff2
+          ad_cff2=0.0_r8
+        END DO
+      END DO
+#  endif
+
 #  ifdef QCORRECTION
 !
 !-----------------------------------------------------------------------
@@ -1098,7 +1185,8 @@
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-!>        tl_stflx(i,j,itemp)=dqdt(i,j)*tl_t(i,j,N(ng),nrhs,itemp)
+!>        tl_stflx(i,j,itemp)=tl_stflx(i,j,itemp)+                      &
+!>   &                        dqdt(i,j)*tl_t(i,j,N(ng),nrhs,itemp)
 !>
           ad_t(i,j,N(ng),nrhs,itemp)=ad_t(i,j,N(ng),nrhs,itemp)+        &
      &                               dqdt(i,j)*ad_stflx(i,j,itemp)
@@ -1110,6 +1198,25 @@
         END DO
       END DO
 #  endif
+#  if defined BULK_FLUXES || defined ATM_COUPLING
+!
+!-----------------------------------------------------------------------
+!  If air-sea parameterization and or atmospheric coupling, assign
+!  surface net heat flux (degC m/s).  During model coupling, we need
+!  to make sure that this forcing is unaltered during the coupling
+!  interval when ROMS timestep size is smaller. Notice that further
+!  manipulations to state variable stflx(:,:,itemp)are allowed below.
+!-----------------------------------------------------------------------
+!
+      DO j=JstrR,JendR
+        DO i=IstrR,IendR
+!>        tl_stflx(i,j,itemp)=0.0_r8      ! not needed in TLM
+!>
+!!        ad_stflx(i,j,itemp)=0.0_r8      ! not needed in ADM
+        END DO
+      END DO
+#  endif
+
       RETURN
       END SUBROUTINE ad_set_vbc_tile
 
@@ -1135,7 +1242,7 @@
 #  include "tile.h"
 !
 #  ifdef PROFILE
-      CALL wclock_on (ng, iADM, 6)
+      CALL wclock_on (ng, iADM, 6, __LINE__, __FILE__)
 #  endif
       CALL ad_set_vbc_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -1155,7 +1262,7 @@
      &                      FORCES(ng) % ad_bvstr,                      &
      &                      FORCES(ng) % ad_bvstr_sol)
 #  ifdef PROFILE
-      CALL wclock_off (ng, iADM, 6)
+      CALL wclock_off (ng, iADM, 6, __LINE__, __FILE__)
 #  endif
       RETURN
       END SUBROUTINE ad_set_vbc
@@ -1272,7 +1379,7 @@
      &                     LBi, UBi, LBj, UBj,                          &
      &                     ad_bustr)
 !
-!  Save adjoint bottom momentun flux for output purposes.
+!  Save adjoint bottom momentum flux for output purposes.
 !
       DO j=JstrR,JendR
         DO i=Istr,IendR

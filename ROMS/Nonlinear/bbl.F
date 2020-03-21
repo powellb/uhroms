@@ -2,14 +2,14 @@
       MODULE bbl_mod
 #if defined NONLINEAR && defined BBL_MODEL
 !
-!svn $Id: bbl.F 645 2013-01-22 23:21:54Z arango $
+!svn $Id: bbl.F 995 2020-01-10 04:01:28Z arango $
 !================================================== Hernan G. Arango ===
-!  Copyright (c) 2002-2013 The ROMS/TOMS Group                         !
+!  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
 !    See License_ROMS.txt                                              !
 !=======================================================================
 !                                                                      !
-!  This routine computes bottom momentun stress via a bottom boundary  !
+!  This routine computes bottom momentum stress via a bottom boundary  !
 !  layer formulation.                                                  !
 !                                                                      !
 !=======================================================================

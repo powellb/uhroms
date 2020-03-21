@@ -1,7 +1,7 @@
 /*
-** svn $Id: bl_test.h 645 2013-01-22 23:21:54Z arango $
+** svn $Id: bl_test.h 1001 2020-01-10 22:41:16Z arango $
 *******************************************************************************
-** Copyright (c) 2002-2013 The ROMS/TOMS Group                               **
+** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
 **   See License_ROMS.txt                                                    **
 *******************************************************************************
@@ -9,7 +9,7 @@
 ** Boundary Layers Test.
 **
 ** Application flag:   BL_TEST
-** Input scripts:      ocean_bl_test.in
+** Input scripts:      roms_bl_test.in
 **                     stations_bl_test.in
 */
 
@@ -19,12 +19,11 @@
 #define UV_VIS2
 #define MIX_S_UV
 #define DJ_GRADPS
-#define TS_U3HADVECTION
-#define TS_C4VADVECTION
+#define SPLINES_VDIFF
+#define SPLINES_VVISC
 #define SOLAR_SOURCE
 #define NONLIN_EOS
 #define SALINITY
-#define SPLINES
 #define AVERAGES
 #define STATIONS
 #define SOLVE3D
@@ -35,6 +34,7 @@
 #ifdef MY25_MIXING
 # define N2S2_HORAVG
 # define KANTHA_CLAYSON
+# define RI_SPLINES
 #endif
 
 #define LMD_MIXING
@@ -45,6 +45,7 @@
 # define LMD_BKPP
 # define LMD_NONLOCAL
 # define LMD_DDMIX
+# define RI_SPLINES
 #endif
 
 #define BULK_FLUXES
