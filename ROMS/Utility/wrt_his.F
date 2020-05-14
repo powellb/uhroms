@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_his (ng, tile)
 !
-!svn $Id: wrt_his.F 1827 2020-02-25 22:28:51Z arango $
+!svn $Id: wrt_his.F 1833 2020-04-27 02:06:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -123,7 +123,7 @@
 !  Write out model time (s).
 !
       CALL netcdf_put_fvar (ng, iNLM, HIS(ng)%name,                     &
-     &                      TRIM(Vname(idtime,ng)), time(ng:),          &
+     &                      TRIM(Vname(1,idtime)), time(ng:),           &
      &                      (/HIS(ng)%Rindex/), (/1/),                  &
      &                      ncid = HIS(ng)%ncid,                        &
      &                      varid = HIS(ng)%Vid(idtime))

@@ -2,7 +2,7 @@
       MODULE ad_htobs_mod
 #if defined ADJOINT && defined OBSERVATIONS && defined WEAK_CONSTRAINT
 !
-!svn $Id: ad_htobs.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: ad_htobs.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -194,7 +194,7 @@
           ObsVetting(iobs)=IniVal
         END DO
 
-# if defined OBS_SPACE && defined W4DPSAS_FCT_SENSITIVITY
+# if defined OBS_SPACE && defined RBL4DVAR_FCT_SENSITIVITY
 !
 !  Define ADmodVal to be the impact forcing in observation space.
 !

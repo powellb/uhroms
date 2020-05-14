@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_param
 !
-!svn $Id: mod_param.F 1822 2020-01-10 22:36:29Z arango $
+!svn $Id: mod_param.F 1833 2020-04-27 02:06:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1094,13 +1094,9 @@
 #endif
       END DO
 !
-!  Set maximum number of tracer between all nested grids.
+!  Set the maximum number of tracer between all nested grids.
 !
-#if defined IS4DVAR || defined W4DVAR || defined W4DPSAS
       MT=MAX(NAT,MAXVAL(NT))
-#else
-      MT=MAX(2,MAXVAL(NT))
-#endif
 !
 !-----------------------------------------------------------------------
 !  Allocate Lateral Boundary Conditions switches structure.

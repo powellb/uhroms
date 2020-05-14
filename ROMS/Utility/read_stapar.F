@@ -2,7 +2,7 @@
 #ifdef STATIONS
       SUBROUTINE read_StaPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_stapar.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: read_stapar.F 1833 2020-04-27 02:06:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -684,9 +684,11 @@
             IF (Sout(idTsur(itemp),ng)) WRITE (out,90)                  &
      &          Sout(idTsur(itemp),ng), 'Sout(idTsur)',                 &
      &          'Write out surface net heat flux.'
+#  ifdef SALINITY
             IF (Sout(idTsur(isalt),ng)) WRITE (out,90)                  &
      &          Sout(idTsur(isalt),ng), 'Sout(idTsur)',                 &
      &          'Write out surface net salt flux.'
+#  endif
 #  ifdef SHORTWAVE
             IF (Sout(idSrad,ng)) WRITE (out,90) Sout(idSrad,ng),        &
      &          'Sout(idSrad)',                                         &

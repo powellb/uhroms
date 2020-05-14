@@ -1,5 +1,5 @@
 /*
-** svn $Id: eac_4.h 1821 2020-01-10 03:54:15Z arango $
+** svn $Id: eac_4.h 1838 2020-05-13 03:00:46Z arango $
 *******************************************************************************
 ** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -17,17 +17,16 @@
 #undef  CORRELATION             /* Background-error Correlation Check */
 #undef  FORCING_SV              /* Forcing Singular Vectors */
 #undef  FT_EIGENMODES           /* Finite Time Eigenmodes */
-#undef  IS4DVAR_OLD             /* Old Incremental, strong constraint 4DVAR */
-#define IS4DVAR                 /* Incremental, strong constraint 4DVAR */
+#define I4DVAR                  /* Incremental, strong constraint 4D-Var */
 #undef  NLM_DRIVER              /* Nonlinear Basic State trajectory */
 #undef  OPT_PERTURBATION        /* Optimal perturbations */
 #undef  PICARD_TEST             /* Picard Iterations Test */
+#undef  RBL4DVAR                /* Strong/Weak constraint RBL4D-Var */
+#undef  R4DVAR                  /* Strong/Weak constraint R4D-Var */
 #undef  R_SYMMETRY              /* Representer Matrix Symmetry Test */
 #undef  SANITY_CHECK            /* Sanity Check */
 #undef  SO_SEMI                 /* Stochastic Optimals: Semi-norm */
 #undef  TLM_CHECK               /* Tangent Linear Model Check */
-#undef  W4DPSAS                 /* Weak constraint 4D-PSAS */
-#undef  W4DVAR                  /* Weak constraint 4DVAR */
 
 #define UV_ADV
 #define UV_COR

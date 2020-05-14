@@ -2,7 +2,7 @@
       MODULE tl_set_vbc_mod
 #ifdef TANGENT
 !
-!svn $Id: tl_set_vbc.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: tl_set_vbc.F 1833 2020-04-27 02:06:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -391,14 +391,14 @@
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-#  if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
+#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
           EmP=EminusP(i,j)
           tl_EmP=0.0_r8
-#  else
+#   else
           EmP=stflx(i,j,isalt)
           tl_EmP=tl_stflx(i,j,isalt)
-#  endif
-#  if defined SCORRECTION
+#   endif
+#   if defined SCORRECTION
 !>        stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)-                 &
 !>   &                     Tnudg(isalt,ng)*Hz(i,j,N(ng))*               &
 !>   &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
@@ -410,7 +410,7 @@
      &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
      &                         Hz(i,j,N(ng))*                           &
      &                         tl_t(i,j,N(ng),nrhs,isalt))
-#  elif defined SRELAXATION
+#   elif defined SRELAXATION
 !>        stflx(i,j,isalt)=-Tnudg(isalt,ng)*Hz(i,j,N(ng))*              &
 !>   &                     (t(i,j,N(ng),nrhs,isalt)-sss(i,j))
 !>
@@ -419,12 +419,12 @@
      &                         (t(i,j,N(ng),nrhs,isalt)-sss(i,j))+      &
      &                         Hz(i,j,N(ng))*                           &
      &                         tl_t(i,j,N(ng),nrhs,isalt))
-#  else
+#   else
 !>        stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)
 !>
           tl_stflx(i,j,isalt)=EmP*tl_t(i,j,N(ng),nrhs,isalt)+           &
      &                        tl_EmP*t(i,j,N(ng),nrhs,isalt)
-#  endif
+#   endif
 !>        btflx(i,j,isalt)=btflx(i,j,isalt)*t(i,j,1,nrhs,isalt)
 !>
           tl_btflx(i,j,isalt)=btflx(i,j,isalt)*                         &

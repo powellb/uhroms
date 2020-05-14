@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_initial (ng, model, backward)
 !
-!svn $Id: obs_initial.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: obs_initial.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -209,10 +209,12 @@
             Ifirst=MAX(Ifirst,i)
           END IF
         END DO
+# ifndef SP4DVAR
         IF (Ifirst.eq.0) THEN
           WRITE (stdout,30) tend, tdays(ng)
           STOP
         END IF
+# endif
       ELSE
         Ifirst=Nsurvey(ng)
         tend=(time(ng)+ntimes(ng)*dt(ng))*sec2day
@@ -222,10 +224,12 @@
             Ifirst=MIN(Ifirst,i)
           END IF
         END DO
+# ifndef SP4DVAR
         IF (Ifirst.eq.0) THEN
           WRITE (stdout,30) tdays(ng), tend
           STOP
         END IF
+# endif
       END IF
       ObsTime(ng)=FOURDVAR(ng)%SurveyTime(Ifirst)*day2sec
 !
@@ -244,7 +248,7 @@
 !
       ProcessObs(ng)=.FALSE.
 
-# ifdef IS4DVAR
+# ifdef I4DVAR
 !
 !  Initialize cost function misfit between model and observations.
 !  The IF statement is to avoid rewritting its value before it is
@@ -291,9 +295,23 @@
 !
       DO i=1,Mobs
         NLmodVal(i)=IniVal
-        TLmodVal(i)=IniVal
         ObsVetting(i)=IniVal
+#  ifndef SP4DVAR
+        TLmodVal(i)=IniVal
+#  endif
+#  if defined SP4DVAR           && defined DISJOINTED && \
+      defined CONCURRENT_KERNEL
+        TLmodVal(i)=IniVal
+#  endif
       END DO
+#  if defined SP4DVAR           && defined DISJOINTED && \
+     !defined CONCURRENT_KERNEL
+      IF (model.ne.iADM) THEN
+        DO i=1,Mobs
+          TLmodVal(i)=IniVal
+        END DO
+      END IF
+#  endif
 # endif
 !
   20  FORMAT (/,' OBS_INITIAL - unable to open input NetCDF file: ',a)

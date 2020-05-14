@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: picard_ocean.h 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: picard_ocean.h 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -11,7 +11,7 @@
 !                                                                      !
 !  This driver is used to perform the Picard iterations test for the   !
 !  representers tangent linear model used in IOMs weak constraint 4D   !
-!  variational data assimilation (W4DVAR).  Recall that all  tangent   !
+!  variational data assimilation (R4D-Var).  Recall that all tangent   !
 !  linear variables are in term of the full fields and the model can   !
 !  expressed symbolically as:                                          !
 !                                                                      !

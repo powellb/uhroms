@@ -1,11 +1,11 @@
 #include "cppdefs.h"
 
-#if (defined SENSITIVITY_4DVAR || defined TL_W4DPSAS || \
-     defined TL_W4DVAR)        && defined MINRES
+#if (defined SENSITIVITY_4DVAR || defined TL_RBL4DVAR || \
+     defined TL_R4DVAR)        && defined MINRES
 
       SUBROUTINE ad_sqlq (innLoop, a, ad_a, tau, ad_tau, y, ad_y)
 !
-!svn $Id: ad_sqlq.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: ad_sqlq.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !

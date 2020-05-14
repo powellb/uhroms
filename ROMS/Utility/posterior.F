@@ -5,7 +5,7 @@
    (defined POSTERIOR_EOFS    || defined POSTERIOR_ERROR_I || \
     defined POSTERIOR_ERROR_F)
 !
-!svn $Id: posterior.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: posterior.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -54,7 +54,8 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 45, __LINE__, __FILE__)
+      CALL wclock_on (ng, model, 83, __LINE__,                          &
+     &                __FILE__)
 # endif
 !
       CALL posterior_tile (ng, tile, model,                             &
@@ -188,7 +189,8 @@
 # endif
      &                     OCEAN(ng) % ad_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, model, 45, __LINE__, __FILE__)
+      CALL wclock_off (ng, model, 83, __LINE__,                         &
+     &                 __FILE__)
 # endif
       RETURN
       END SUBROUTINE posterior

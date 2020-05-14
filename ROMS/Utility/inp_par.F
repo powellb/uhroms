@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE inp_par (model)
 !
-!svn $Id: inp_par.F 1831 2020-03-11 01:45:22Z arango $
+!svn $Id: inp_par.F 1834 2020-04-27 22:15:29Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -51,6 +51,10 @@
       real(r8) :: cff
       real(r8), parameter :: epsilon = 1.0E-8_r8
       real(r8), parameter :: spv = 0.0_r8
+
+      character (len=10) :: stdout_file
+!
+      SourceFile=__FILE__
 !
 !-----------------------------------------------------------------------
 !  Read in and report input model parameters.
@@ -60,12 +64,19 @@
 !
 !  Change default Fortran standard out unit, so ROMS run information is
 !  directed to a file. This is advantageous in coupling applications to
-!  ROMS information separated from other models.
+!  ROMS information separated from other models. It overwite Fortran
+!  default unit 6.
 !
-       stdout=66                     ! overwite Fortran default unit 6
+# if defined DISTRIBUTE && defined DISJOINTED
+       stdout=60+ForkColor
+       WRITE (stdout_file,'(a,i2.2,a)') 'log', ForkColor+1, '.roms'
+# else
+       stdout=60
+       stdout_file='log.roms'
+# endif
 !
        IF (Master) THEN
-         OPEN (stdout, FILE='log.roms', FORM='formatted',               &
+         OPEN (stdout, FILE=TRIM(stdout_file), FORM='formatted',        &
      &         STATUS='replace')
        END IF
 #endif
@@ -195,8 +206,10 @@
 !
 !  Set switch for three ghost-points in the halo region.
 !
+#ifdef SOLVE3D
       ThreeGhostPoints=ANY(Hadvection(:,:)%MPDATA).or.                  &
      &                 ANY(Hadvection(:,:)%HSIMT)
+#endif
 #ifdef UV_VIS4
       ThreeGhostPoints=.TRUE.
 #endif

@@ -2,10 +2,10 @@
       MODULE adsen_force_mod
 
 #if defined ADJOINT          && \
-   (defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
+   (defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR)
 !
-!svn $Id: adsen_force.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: adsen_force.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -199,7 +199,7 @@
 !  arbitrarily defined.
 !
       adFac=0.0_r8
-#  ifdef IS4DVAR_SENSITIVITY
+#  ifdef I4DVAR_ANA_SENSITIVITY
       IF ((MOD(iic(ng)-1,nHIS(ng)).eq.0).and.                           &
      &    (DendS(ng).ge.tdays(ng)).and.(tdays(ng).ge.DstrS(ng))) THEN
 #  else

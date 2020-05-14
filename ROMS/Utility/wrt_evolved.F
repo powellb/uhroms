@@ -1,9 +1,9 @@
 #include "cppdefs.h"
 
-#if (defined IS4DVAR && defined EVOLVED_LCZ) || defined LCZ_FINAL
+#if (defined I4DVAR && defined EVOLVED_LCZ) || defined LCZ_FINAL
       SUBROUTINE wrt_evolved (ng, kout, nout)
 !
-!svn $Id: wrt_evolved.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: wrt_evolved.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

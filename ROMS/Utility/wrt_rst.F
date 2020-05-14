@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_rst (ng)
 !
-!svn $Id: wrt_rst.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: wrt_rst.F 1833 2020-04-27 02:06:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -139,7 +139,7 @@
 !  Write out model time (s).
 !
       CALL netcdf_put_fvar (ng, iNLM, RST(ng)%name,                     &
-     &                      TRIM(Vname(idtime,ng)), time(ng:),          &
+     &                      TRIM(Vname(1,idtime)), time(ng:),           &
      &                      (/RST(ng)%Rindex/), (/1/),                  &
      &                      ncid = RST(ng)%ncid,                        &
      &                      varid = RST(ng)%Vid(idtime))

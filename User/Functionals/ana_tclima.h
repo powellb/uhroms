@@ -1,6 +1,6 @@
       SUBROUTINE ana_tclima (ng, tile, model)
 !
-!! svn $Id: ana_tclima.h 1821 2020-01-10 03:54:15Z arango $
+!! svn $Id: ana_tclima.h 1833 2020-04-27 02:06:04Z arango $
 !!======================================================================
 !! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -82,7 +82,9 @@
         DO j=JstrT,JendT
           DO i=IstrT,IendT
             tclm(i,j,k,itemp)=???
+# ifdef SALINITY
             tclm(i,j,k,isalt)=???
+# endif
           END DO
         END DO
       END DO

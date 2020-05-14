@@ -3,7 +3,7 @@
 
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
 !
-!svn $Id: ad_frc_adjust.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: ad_frc_adjust.F 1833 2020-04-27 02:06:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -223,6 +223,7 @@
 #  endif
       END IF
 
+#  ifdef SALINITY
       IF (Lstflux(isalt,ng)) THEN
         DO j=JstrR,JendR
           DO i=IstrR,IendR
@@ -237,6 +238,7 @@
           END DO
         END DO
       END IF
+#  endif
 
       DO itrc=NAT+1,NT(ng)
         IF (Lstflux(itrc,ng)) THEN

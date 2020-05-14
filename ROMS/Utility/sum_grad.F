@@ -1,8 +1,8 @@
 #include "cppdefs.h"
       MODULE sum_grad_mod
-#if defined IS4DVAR || defined RPCG
+#if defined I4DVAR || defined RPCG
 !
-!svn $Id: sum_grad.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: sum_grad.F 1838 2020-05-13 03:00:46Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

@@ -2,7 +2,7 @@
 #ifdef ADJOINT
       SUBROUTINE ad_output (ng)
 !
-!svn $Id: ad_output.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: ad_output.F 1834 2020-04-27 22:15:29Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -148,7 +148,10 @@
             wrtHIS=(iic(ng).ne.ntstart(ng)).and.                        &
      &             (MOD(iic(ng)-1,nADJ(ng)).eq.0) ! avoid ntstart rec
           ELSE
-#  ifdef WEAK_CONSTRAINT
+#  if defined WEAK_CONSTRAINT && !defined WEAK_NOINTERP
+#   ifdef SP4DVAR
+            wrtHIS=(MOD(iic(ng)-1,nADJ(ng)).eq.0)
+#   endif
             wrtHIS=(iic(ng).ne.ntstart(ng)).and.                        &
      &             (MOD(iic(ng)-1,nADJ(ng)).eq.0) ! avoid ntstart-1 rec
 #  else
