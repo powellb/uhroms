@@ -1,4 +1,4 @@
-# svn $Id: makefile 995 2020-01-10 04:01:28Z arango $
+# svn $Id: makefile 1022 2020-05-13 03:03:15Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
 # Copyright (c) 2002-2020 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
@@ -401,6 +401,7 @@ endif
 		ROMS/Nonlinear/Sediment \
 		ROMS/Functionals \
 		ROMS/Utility \
+		ROMS/Drivers \
 		ROMS/Modules
 
  includes :=	ROMS/Include

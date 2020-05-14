@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE check_multifile (ng, model)
 !
-!svn $Id: check_multifile.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: check_multifile.F 1018 2020-04-30 01:07:09Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -104,7 +104,9 @@
 !
       IF (ObcData(ng)) THEN
         file_type='Lateral Boundary'
-        CALL multifile_info_s1d (ng, model, file_type, BRY)
+        max_files=nBCfiles(ng)
+        CALL multifile_info_s2d (ng, model, file_type, nBCfiles,        &
+     &                           max_files, BRY)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF
@@ -114,7 +116,10 @@
 !-----------------------------------------------------------------------
 !
       IF (CLM_FILE(ng)) THEN
-        CALL multifile_info_s1d (ng, model, 'Climatology', CLM)
+        file_type='Climatology'
+        max_files=nCLMfiles(ng)
+        CALL multifile_info_s2d (ng, model, file_type, nCLMfiles,       &
+     &                           max_files, CLM)
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF

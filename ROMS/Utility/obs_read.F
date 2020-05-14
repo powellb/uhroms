@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE obs_read (ng, model, backward)
 !
-!svn $Id: obs_read.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: obs_read.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -52,7 +52,7 @@
 !
       IF (ProcessObs(ng)) THEN
 # if defined TLM_OBS
-#  if defined IS4DVAR_SENSITIVITY
+#  if defined I4DVAR_ANA_SENSITIVITY
         readNLmod=.FALSE.
 #  else
         readNLmod=.TRUE.
@@ -298,7 +298,7 @@
           IF (FoundError(exit_flag, NoError, __LINE__,                  &
      &                   __FILE__)) RETURN
 
-#  if defined IS4DVAR
+#  if defined I4DVAR
 !
 !  Reset TLM values to zero at the first pass of the inner loop.
 !

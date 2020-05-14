@@ -2,7 +2,7 @@
 #ifdef TL_IOMS
       SUBROUTINE rp_set_data (ng, tile)
 !
-!svn $Id: rp_set_data.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: rp_set_data.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1835,7 +1835,8 @@
 #   endif
 #  endif
 
-#  if defined TL_W4DVAR || defined W4DVAR || defined W4DVAR_SENSITIVITY
+#  if defined R4DVAR    || defined R4DVAR_ANA_SENSITIVITY || \
+      defined TL_R4DVAR
 !
 !-----------------------------------------------------------------------
 !  Set weak contraint frequent impulse forcing.

@@ -2,7 +2,7 @@
 #ifdef ADJOINT
       SUBROUTINE ad_set_data (ng, tile)
 !
-!svn $Id: ad_set_data.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: ad_set_data.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1522,8 +1522,8 @@
 #  endif
 # endif
 
-# if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+# if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
      defined SO_SEMI
 !
 !-----------------------------------------------------------------------
@@ -1620,9 +1620,9 @@
 #  endif
 # endif
 
-# if defined ADJUST_STFLUX    || defined ADJUST_WSTRESS      || \
-     defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+# if defined ADJUST_STFLUX    || defined ADJUST_WSTRESS         || \
+     defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
      defined SO_SEMI
 !
 !-----------------------------------------------------------------------

@@ -6,7 +6,7 @@
     defined POSTERIOR_ERROR_F)
 
 !
-!svn $Id: random_ic.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: random_ic.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -56,7 +56,8 @@
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 45, __LINE__, __FILE__)
+      CALL wclock_on (ng, model, 83, __LINE__,                          &
+     &                __FILE__)
 # endif
 !
       CALL random_ic_tile (ng, tile,                                    &
@@ -95,7 +96,8 @@
 # endif
      &                     OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, model, 45, __LINE__, __FILE__)
+      CALL wclock_off (ng, model, 83, __LINE__,                         &
+     &                 __FILE__)
 # endif
       RETURN
       END SUBROUTINE random_ic

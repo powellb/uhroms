@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_grid
 !
-!svn $Id: mod_grid.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: mod_grid.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -256,8 +256,8 @@
           real(r8), pointer :: rmask_wet_avg(:,:)
 # endif
 #endif
-#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI
           real(r8), pointer :: Rscope(:,:)
           real(r8), pointer :: Uscope(:,:)
@@ -608,8 +608,8 @@
 # endif
 #endif
 
-#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI
       allocate ( GRID(ng) % Rscope(LBi:UBi,LBj:UBj) )
       Dmem(ng)=Dmem(ng)+size2d
@@ -877,8 +877,8 @@
 # endif
 #endif
 
-#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI
             GRID(ng) % Rscope(i,j) = IniVal
             GRID(ng) % Uscope(i,j) = IniVal

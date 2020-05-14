@@ -2,7 +2,7 @@
 #ifdef TANGENT
       SUBROUTINE tl_output (ng)
 !
-!svn $Id: tl_output.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: tl_output.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -263,22 +263,31 @@
 !  locations. Compute misfit (model-observations) cost function.
 !-----------------------------------------------------------------------
 !
-      IF (((time(ng)-0.5_r8*dt(ng)).le.ObsTime(ng)).and.                &
-     &    (ObsTime(ng).lt.(time(ng)+0.5_r8*dt(ng)))) THEN
-        ProcessObs(ng)=.TRUE.
+        IF (((time(ng)-0.5_r8*dt(ng)).le.ObsTime(ng)).and.              &
+     &      (ObsTime(ng).lt.(time(ng)+0.5_r8*dt(ng)))) THEN
+          ProcessObs(ng)=.TRUE.
 #   ifdef DISTRIBUTE
-        tile=MyRank
+          tile=MyRank
 #   else
-        tile=-1
+          tile=-1
 #   endif
-        CALL obs_read (ng, iTLM, .FALSE.)
-        CALL obs_write (ng, tile, iTLM)
+          CALL obs_read (ng, iTLM, .FALSE.)
+#   ifdef SP4DVAR
+!
+!  Do not assimilate obs on the last time step unless inter=Nsaddle.
+!
+          IF (iic(ng).ne.ntend(ng)+1.or.Lsadd(ng)) THEN
+            CALL obs_write (ng, tile, iTLM)
+          END IF
+#   else
+          CALL obs_write (ng, tile, iTLM)
+#   endif
 #   ifndef WEAK_CONSTRAINT
-        CALL obs_cost (ng, iTLM)
+          CALL obs_cost (ng, iTLM)
 #   endif
-      ELSE
-        ProcessObs(ng)=.FALSE.
-      END IF
+        ELSE
+          ProcessObs(ng)=.FALSE.
+        END IF
 #  endif
 # endif
 # ifdef PROFILE

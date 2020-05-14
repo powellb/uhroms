@@ -2,7 +2,7 @@
 #ifdef NONLINEAR
       SUBROUTINE set_data (ng, tile)
 !
-!svn $Id: set_data.F 1012 2020-03-04 22:09:28Z arango $
+!svn $Id: set_data.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -44,9 +44,9 @@
 !***********************************************************************
 !
       USE mod_param
-#if defined HYPOXIA_SRM || defined RED_TIDE
+# if defined HYPOXIA_SRM || defined RED_TIDE
       USE mod_biology
-#endif
+# endif
       USE mod_boundary
       USE mod_clima
       USE mod_forces
@@ -1349,8 +1349,11 @@
 #  endif
 # endif
 
-# if defined NLM_OUTER           || defined W4DPSAS                 ||\
-     defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
+# if defined NLM_OUTER                || \
+     defined RBL4DVAR                 || \
+     defined RBL4DVAR_ANA_SENSITIVITY || \
+     defined RBL4DVAR_FCT_SENSITIVITY || \
+     defined SP4DVAR
 !
 !-----------------------------------------------------------------------
 !  Set weak contraint forcing.

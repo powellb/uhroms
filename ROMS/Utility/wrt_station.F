@@ -2,7 +2,7 @@
 #ifdef STATIONS
       SUBROUTINE wrt_station (ng)
 !
-!svn $Id: wrt_station.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: wrt_station.F 1016 2020-04-27 02:06:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -652,6 +652,8 @@
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF
+
+#  ifdef SALINITY
 !
 !  Write out surface salt flux.
 !
@@ -670,6 +672,7 @@
         IF (FoundError(exit_flag, NoError, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF
+#  endif
 
 #  ifdef BULK_FLUXES
 !

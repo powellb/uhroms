@@ -1,6 +1,6 @@
-#!/bin/csh -f
+#!/bin/bash
 #
-# svn $Id: job_psas_sen.sh 995 2020-01-10 04:01:28Z arango $
+# svn $Id: job_psas_sen.sh 1019 2020-04-30 20:46:51Z arango $
 #######################################################################
 # Copyright (c) 2002-2020 The ROMS/TOMS Group                         #
 #   Licensed under a MIT/X style license                              #
@@ -8,7 +8,7 @@
 #######################################################################
 #                                                                     #
 # Strong/Weak constraint 4D-PSAS observation impact or sensitivity    #
-# job script:                                                         #
+# job BASH script:                                                    #
 #                                                                     #
 # This script NEEDS to be run before any run:                         #
 #                                                                     #
@@ -35,11 +35,11 @@
 
 # Set path definition to one directory up in the tree.
 
- set Dir=`dirname ${PWD}`
+ Dir=`dirname ${PWD}`
 
 # Set string manipulations perl script.
 
- set SUBSTITUTE=${ROMS_ROOT}/ROMS/Bin/substitute
+ SUBSTITUTE=${ROMS_ROOT}/ROMS/Bin/substitute
 
 # Copy nonlinear model initial conditions file.
 
@@ -57,22 +57,22 @@
 # Set model, initial conditions, boundary conditions and surface
 # forcing error covariance standard deviations files.
 
- set STDnameM=${Dir}/Data/wc13_std_m.nc
- set STDnameI=${Dir}/Data/wc13_std_i.nc
- set STDnameB=${Dir}/Data/wc13_std_b.nc
- set STDnameF=${Dir}/Data/wc13_std_f.nc
+ STDnameM=${Dir}/Data/wc13_std_m.nc
+ STDnameI=${Dir}/Data/wc13_std_i.nc
+ STDnameB=${Dir}/Data/wc13_std_b.nc
+ STDnameF=${Dir}/Data/wc13_std_f.nc
 
 # Set model, initial conditions, boundary conditions and surface
 # forcing error covariance normalization factors files.
 
- set NRMnameM=${Dir}/Data/wc13_nrm_m.nc
- set NRMnameI=${Dir}/Data/wc13_nrm_i.nc
- set NRMnameB=${Dir}/Data/wc13_nrm_b.nc
- set NRMnameF=${Dir}/Data/wc13_nrm_f.nc
+ NRMnameM=${Dir}/Data/wc13_nrm_m.nc
+ NRMnameI=${Dir}/Data/wc13_nrm_i.nc
+ NRMnameB=${Dir}/Data/wc13_nrm_b.nc
+ NRMnameF=${Dir}/Data/wc13_nrm_f.nc
 
 # Set observations file.
 
- set OBSname=wc13_obs.nc
+ OBSname=wc13_obs.nc
 
 # Get a clean copy of the observation file.  This is really
 # important since this file is modified.
@@ -81,10 +81,10 @@
 
 # Modify 4D-Var template input script and specify above files.
 
- set PSAS=psas.in
- if (-e $PSAS) then
+ PSAS=psas.in
+ if [ -f $PSAS ]; then
    /bin/rm $PSAS
- endif
+ fi
  cp s4dvar.in $PSAS
 
  $SUBSTITUTE $PSAS roms_std_m.nc $STDnameM

@@ -3,7 +3,7 @@
 #if defined TL_IOMS && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id: rp_pre_step3d.F 1001 2020-01-10 22:41:16Z arango $
+!svn $Id: rp_pre_step3d.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -1162,8 +1162,8 @@
               tl_FC(i,N(ng))=0.0_r8
             END DO
 !
-          ELSE IF ((tl_Vadvection(itrc,ng)%MPDATA).or                   &
-     &             (tl_Vadvection(itrc,ng)%HSINT)) THEN
+          ELSE IF ((tl_Vadvection(itrc,ng)%MPDATA).or.                  &
+     &             (tl_Vadvection(itrc,ng)%HSIMT)) THEN
 !
 !  First_order, upstream differences vertical advective flux.
 !

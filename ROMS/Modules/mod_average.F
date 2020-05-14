@@ -5,7 +5,7 @@
    (defined RP_AVERAGES && defined TL_IOMS) || \
    (defined TL_AVERAGES && defined TANGENT)
 !
-!svn $Id: mod_average.F 1007 2020-02-25 22:29:41Z arango $
+!svn $Id: mod_average.F 1016 2020-04-27 02:06:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -482,10 +482,12 @@
         allocate ( AVERAGE(ng) % avgstf(LBi:UBi,LBj:UBj) )
         Dmem(ng)=Dmem(ng)+size2d
       END IF
+#  ifdef SALINITY
       IF (Aout(idTsur(isalt),ng)) THEN
         allocate ( AVERAGE(ng) % avgswf(LBi:UBi,LBj:UBj) )
         Dmem(ng)=Dmem(ng)+size2d
       END IF
+#  endif
 #  ifdef SHORTWAVE
       IF (Aout(idSrad,ng)) THEN
         allocate ( AVERAGE(ng) % avgsrf(LBi:UBi,LBj:UBj) )
@@ -1027,6 +1029,7 @@
           END DO
         END DO
       END IF
+#  ifdef SALINITY
       IF (Aout(idTsur(isalt),ng)) THEN
         DO j=Jmin,Jmax
           DO i=Imin,Imax
@@ -1034,7 +1037,7 @@
           END DO
         END DO
       END IF
-
+#  endif
 #  ifdef SHORTWAVE
       IF (Aout(idSrad,ng)) THEN
         DO j=Jmin,Jmax

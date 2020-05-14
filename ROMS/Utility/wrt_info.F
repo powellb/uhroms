@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE wrt_info (ng, model, ncid, ncname)
 !
-!svn $Id: wrt_info.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: wrt_info.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -142,7 +142,7 @@
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN
 
-#ifdef W4DPSAS_FCT_SENSITIVITY
+#ifdef RBL4DVAR_FCT_SENSITIVITY
       CALL netcdf_put_ivar (ng, model, ncname, 'ntimes_ana',            &
      &                      ntimes_ana(ng), (/0/), (/0/),               &
      &                      ncid = ncid)
@@ -966,7 +966,7 @@
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN
 # endif
-# ifndef IS4DVAR_SENSITIVITY
+# ifndef I4DVAR_ANA_SENSITIVITY
       CALL netcdf_put_lvar (ng, model, ncname, 'LhessianEV',            &
      &                      LhessianEV, (/0/), (/0/),                   &
      &                      ncid = ncid)
@@ -1008,14 +1008,16 @@
      &                        NpostI, (/0/), (/0/),                     &
      &                        ncid = ncid)
 # endif
-# if defined IS4DVAR_SENSITIVITY     || defined W4DPSAS_SENSITIVITY || \
-     defined W4DPSAS_FCT_SENSITIVITY || defined W4DVAR_SENSITIVITY  || \
-     defined ARRAY_MODES
+# if defined ARRAY_MODES              || \
+     defined I4DVAR_ANA_SENSITIVITY   || \
+     defined RBL4DVAR_ANA_SENSITIVITY || \
+     defined RBL4DVAR_FCT_SENSITIVITY || \
+     defined R4DVAR_ANA_SENSITIVITY
         CALL netcdf_put_ivar (ng, model, ncname, 'Nimpact',             &
      &                        Nimpact, (/0/), (/0/),                    &
      &                        ncid = ncid)
 # endif
-# ifndef IS4DVAR_SENSITIVITY
+# ifndef I4DVAR_ANA_SENSITIVITY
       CALL netcdf_put_fvar (ng, model, ncname, 'GradErr',               &
      &                      GradErr, (/0/), (/0/),                      &
      &                      ncid = ncid)
@@ -1210,8 +1212,8 @@
 # endif
 #endif
 
-#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI
 !
 !  Adjoint sensitivity parameters.
@@ -2339,8 +2341,8 @@
         END IF
 #endif
 
-#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI
 !
 !  Adjoint sensitivity spatial scope mask at RHO-, U-, and V-points.

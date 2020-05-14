@@ -2,7 +2,7 @@
 #ifdef NONLINEAR
       SUBROUTINE output (ng)
 !
-!svn $Id: output.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: output.F 1022 2020-05-13 03:03:15Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -535,8 +535,9 @@
         END IF
       END IF
 
-# if (defined FOUR_DVAR || defined VERIFICATION) && \
-     !defined IS4DVAR_SENSITIVITY
+# if (defined FOUR_DVAR              || \
+      defined VERIFICATION)          && \
+     !defined I4DVAR_ANA_SENSITIVITY
 #  ifdef OBSERVATIONS
 !
 !-----------------------------------------------------------------------
@@ -549,7 +550,7 @@
         ProcessObs=.TRUE.
         CALL obs_read (ng, iNLM, .FALSE.)
         CALL obs_write (ng, tile, iNLM)
-#   if !(defined VERIFICATION || defined W4DVAR)
+#   if !(defined R4DVAR || defined VERIFICATION)
         CALL obs_cost (ng, iNLM)
 #   endif
       ELSE
