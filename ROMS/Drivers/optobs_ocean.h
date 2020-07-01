@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: optobs_ocean.h 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: optobs_ocean.h 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group           W. G. Zhang   !
 !    Licensed under a MIT/X style license                              !
@@ -608,7 +608,7 @@ if defined BULK_FLUXES && defined NL_BULK_FLUXES
 !
       IF (Master) THEN
         WRITE (stdout,20)
- 20     FORMAT (/,' Elapsed CPU time (seconds):',/)
+ 20     FORMAT (/,'Elapsed wall CPU time for each process (seconds):',/)
       END IF
 !
       DO ng=1,Ngrids

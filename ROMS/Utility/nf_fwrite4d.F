@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE nf_fwrite4d_mod
 !
-!svn $Id: nf_fwrite4d.F 1834 2020-04-27 22:15:29Z arango $
+!svn $Id: nf_fwrite4d.F 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -83,8 +83,8 @@
       integer, intent(in) :: ng, model, ncid, ncvarid, tindex, gtype
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk, LBt, UBt
 
-      real(r8), intent(in) :: Ascl
-
+      real(dp), intent(in) :: Ascl
+!
 # ifdef ASSUMED_SHAPE
 #  ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:,LBj:)
@@ -430,8 +430,8 @@
       integer, intent(in) :: ng, model, ncid, ncvarid, tindex, gtype
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk, LBt, UBt
 
-      real(r8), intent(in) :: Ascl
-
+      real(dp), intent(in) :: Ascl
+!
 # ifdef ASSUMED_SHAPE
 #  ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:,LBj:)

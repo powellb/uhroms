@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined ENKF_RESTART
       SUBROUTINE wrt_dai (ng, tile)
 !
-!svn $Id: wrt_dai.F 1833 2020-04-27 02:06:04Z arango $
+!svn $Id: wrt_dai.F 1843 2020-06-01 00:24:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -42,7 +42,8 @@
       integer :: i, j, k, itrc
       integer :: LBi, UBi, LBj, UBj
       integer :: Fcount, gfactor, gtype, status, varid
-      real(r8) :: scale
+!
+      real(dp) :: scale
 
 # include "set_bounds.h"
 !
@@ -79,7 +80,7 @@
 !
 !  Write out time independent (unperturb) depths of RHO-points.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*r3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idpthR),   &
      &                   0, gtype,                                      &
@@ -101,7 +102,7 @@
 !
 !  Write out time independent (unperturb) depths of U-points.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u3dvar
       DO k=1,N(ng)
         DO j=Jstr-1,Jend+1
@@ -131,7 +132,7 @@
 !
 !  Write out time independent (unperturb) depths of V-points.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v3dvar
       DO k=1,N(ng)
         DO j=JstrV-1,Jend+1
@@ -161,7 +162,7 @@
 !
 !  Write out time independent (unperturb) depths of W-points.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idpthW),   &
      &                   0, gtype,                                      &
@@ -194,7 +195,7 @@
 !
 !  Write out free-surface (m).
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*r2dvar
       status=nf_fwrite2d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idFsur),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -220,7 +221,7 @@
 !
 !  Write out 2D momentum component (m/s) in the XI-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u2dvar
       status=nf_fwrite2d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idUbar),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -241,7 +242,7 @@
 !
 !  Write out 2D momentum component (m/s) in the ETA-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v2dvar
       status=nf_fwrite2d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idVbar),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -264,7 +265,7 @@
 !
 !  Write out 3D momentum component (m/s) in the XI-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idUvel),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -285,7 +286,7 @@
 !
 !  Write out momentum component (m/s) in the ETA-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idVvel),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -307,7 +308,7 @@
 !  Write out tracer type variables.
 !
       DO itrc=1,NT(ng)
-        scale=1.0_r8
+        scale=1.0_dp
         gtype=gfactor*r3dvar
         status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Tid(itrc),   &
      &                     DAI(ng)%Rindex, gtype,                       &
@@ -329,7 +330,7 @@
 !
 !  Write out vertical viscosity coefficient.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idVvis),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -351,7 +352,7 @@
 !
 !  Write out vertical diffusion coefficient for potential temperature.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idTdif),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -374,7 +375,7 @@
 !
 !  Write out vertical diffusion coefficient for salinity.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, DAI(ng)%ncid, DAI(ng)%Vid(idSdif),   &
      &                   DAI(ng)%Rindex, gtype,                         &
@@ -421,20 +422,20 @@
   10  FORMAT (/,' WRT_DAI - error while writing variable: ',a,/,11x,    &
      &        'into DA initial/restart NetCDF file.')
   20  FORMAT (/,' WRT_DAI - error while writing variable: ',a,/,11x,    &
-     &        'into DA initial/rstart NetCDF file for time record: ',i4)
+     &        'into DA initial/rstart NetCDF file for time record: ',i0)
 # ifdef SOLVE3D
   30  FORMAT (6x,'WRT_DAI     - wrote DA INI/RST', t39,                 &
 #  ifdef NESTING
-     &        'fields (Index=',i1,',',i1,') in record = ',i7.7,t92,i2.2)
+     &        'fields (Index=',i1,',',i1,') in record = ',i0,t92,i2.2)
 #  else
-     &        'fields (Index=',i1,',',i1,') in record = ',i7.7)
+     &        'fields (Index=',i1,',',i1,') in record = ',i0)
 #  endif
 # else
   30  FORMAT (6x,'WRT_DAI     - wrote DA INI/RST', t39,                 &
 #  ifdef NESTING
-     &        'fields (Index=',i1,')   in record = ',i7.7,t92,i2.2)
+     &        'fields (Index=',i1,')   in record = ',i0,t92,i2.2)
 #  else
-     &        'fields (Index=',i1,')   in record = ',i7.7)
+     &        'fields (Index=',i1,')   in record = ',i0)
 #  endif
 # endif
 

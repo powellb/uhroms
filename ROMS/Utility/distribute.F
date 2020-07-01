@@ -2,7 +2,7 @@
       MODULE distribute_mod
 #ifdef DISTRIBUTE
 !
-!svn $Id: distribute.F 1834 2020-04-27 22:15:29Z arango $
+!svn $Id: distribute.F 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -3943,7 +3943,7 @@
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(out) :: Npts
 
-      real(r8), intent(in) :: Ascl
+      real(dp), intent(in) :: Ascl
 
 # ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)
@@ -4279,7 +4279,7 @@
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
       integer, intent(out) :: Npts
 
-      real(r8), intent(in) :: Ascl
+      real(dp), intent(in) :: Ascl
 
 # ifdef MASKING
       real(r8), intent(in) :: Amask(LBi:UBi,LBj:UBj)

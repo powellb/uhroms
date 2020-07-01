@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_phypar.F 1838 2020-05-13 03:00:46Z arango $
+!svn $Id: read_phypar.F 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -3718,7 +3718,7 @@
 !  If variational data assimilation, disallow creation of multiple
 !  output adjoint history files and the tangent linear history file
 !  in I4D-Var.  Multiple TLM history are allow in R4d-Var and
-!  irrelevant in 4D-PSAS since TLM history is turned off.  The
+!  irrelevant in RBL4D-Var since TLM history is turned off.  The
 !  adjoint history files are special at the unlimited dimension
 !  is not associated with time records.
 !

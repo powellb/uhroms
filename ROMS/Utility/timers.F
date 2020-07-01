@@ -2,7 +2,7 @@
       RECURSIVE SUBROUTINE wclock_on (ng, model, region, line, routine)
 !
 
-!svn $Id: timers.F 1838 2020-05-13 03:00:46Z arango $
+!svn $Id: timers.F 1843 2020-06-01 00:24:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -162,9 +162,7 @@
 #ifdef DISTRIBUTE
 !
       USE distribute_mod, ONLY : mp_barrier, mp_reduce
-# ifdef ROMS_STDOUT
       USE distribute_mod, ONLY : mp_collect
-# endif
       USE strings_mod,    ONLY : uppercase
 #endif
 !
@@ -178,7 +176,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: imodel, iregion, MyModel, NSUB
+      integer :: ig, imodel, iregion, MyModel, NSUB
 #ifdef DISTRIBUTE
       integer :: MyCOMM, nPETs, PETrank
 # ifdef ROMS_STDOUT
@@ -194,10 +192,10 @@
       real(r8) :: my_wtime
 
 #ifdef DISTRIBUTE
-# ifdef ROMS_STDOUT
+      real(r8) :: TendMin, TendMax
+
       real(r8), parameter :: Tspv = 0.0_r8
       real(r8), allocatable :: Tend(:)
-# endif
       real(r8), dimension(0:Nregion) :: buffer
 
       character (len= 3), dimension(0:Nregion) :: op_handle
@@ -265,23 +263,24 @@
         IF (ng.eq.1) THEN
 #ifdef DISTRIBUTE
           CALL mp_barrier (ng, model, MyCOMM)
-# ifdef ROMS_STDOUT
           IF (.not.allocated(Tend)) THEN
             allocate ( Tend(nPETs) )
             Tend=0.0_r8
           END IF
           Tend(PETrank+1)=Cend(region,MyModel,ng)
           CALL mp_collect (ng, model, nPETs, Tspv, Tend, MyCOMM)
+          TendMin=MINVAL(Tend)
+          TendMax=MAXVAL(Tend)
+# ifdef ROMS_STDOUT
           IF (Master) THEN
             DO node=1,nPETs
                WRITE (stdout,10) ' Node   #', node-1,                   &
      &                           ' CPU:', Tend(node)
             END DO
           END IF
-          IF (allocated(Tend)) deallocate (Tend)
 # else
-          WRITE (stdout,10) ' Node   #', PETrank, ' CPU:',              &
-     &                      Cend(region,MyModel,ng)
+          WRITE (stdout,10) ' Node   #', PETrank,                       &
+     &                      ' CPU:', Tend(PETrank+1)
 # endif
           CALL my_flush (stdout)
 #else
@@ -301,7 +300,7 @@
           END DO
         END DO
 !
-!  Compute total elapsed CPU wall time between all parallel threads.
+!  Compute total elapsed CPU wall time between all parallel processes.
 !
         IF (thread_count.eq.NSUB) THEN
           thread_count=0
@@ -331,9 +330,21 @@
             END DO
             IF (ng.eq.1) THEN
               WRITE (stdout,20) ' Total:', total_cpu
- 20           FORMAT (a,10x,f14.3)
+ 20           FORMAT (a,t18,f14.3)
+              IF (numthreads.gt.1) THEN
+                WRITE (stdout,20) ' Average:', total_cpu/numthreads
+#ifdef DISTRIBUTE
+                WRITE (stdout,20) ' Minimum:', TendMin
+                WRITE (stdout,20) ' Maximum:', TendMax
+#endif
+              END IF
             END IF
           END IF
+
+#ifdef DISTRIBUTE
+          IF (allocated(Tend)) deallocate (Tend)
+#endif
+
 #ifdef PROFILE
 !
 !  Report profiling times.
@@ -487,6 +498,49 @@
               WRITE (stdout,50) sumsum, sumper
             END IF
           END IF
+
+#  ifdef NESTING
+!
+!  Report total elapsed time for message passage communications for
+!  all nested grids.
+!
+          IF (ng.eq.Ngrids) THEN
+            total=0.0_r8
+            DO ig=1,Ngrids
+              DO iregion=Mregion,Fregion-1
+                DO imodel=1,4
+                  total=total+Csum(iregion,imodel,ig)
+                END DO
+              END DO
+            END DO
+            IF (Master.and.(total.gt.0.0_r8)) THEN
+               WRITE (stdout,90) uppercase('mpi'),                         &
+     &                      'communications profile over all nested grids:'
+ 90            FORMAT (/,1x,a,1x,a,/)
+            END IF
+            IF (total.gt.0.0_r8) THEN
+              sumper=0.0_r8
+              sumsum=0.0_r8
+              DO iregion=Mregion,Fregion-1
+                sumcpu=0.0_r8
+                DO ig=1,Ngrids
+                  DO imodel=1,4
+                    sumcpu=sumcpu+Csum(iregion,imodel,ig)
+                  END DO
+                END DO
+                IF (Master.and.(sumcpu.gt.0.0_r8)) THEN
+                  percent=100.0_r8*sumcpu/total_cpu
+                  WRITE (stdout,40) Pregion(iregion), sumcpu, percent
+                  sumsum=sumsum+sumcpu
+                  sumper=sumper+percent
+                END IF
+              END DO
+              IF (Master.and.(total.gt.0.0_r8)) THEN
+                WRITE (stdout,50) sumsum, sumper
+              END IF
+            END IF
+          END IF
+#  endif
 # endif
 #endif
         END IF

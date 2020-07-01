@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: nl_ocean.h 1827 2020-02-25 22:28:51Z arango $
+!svn $Id: nl_ocean.h 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -391,7 +391,7 @@
 !
       IF (Master) THEN
         WRITE (stdout,20)
- 20     FORMAT (/,' Elapsed CPU time (seconds):',/)
+ 20     FORMAT (/,'Elapsed wall CPU time for each process (seconds):',/)
       END IF
 !
       DO ng=1,Ngrids

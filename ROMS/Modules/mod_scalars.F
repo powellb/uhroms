@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id: mod_scalars.F 1835 2020-04-30 01:04:29Z arango $
+!svn $Id: mod_scalars.F 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -318,11 +318,16 @@
         integer :: Ninner = 1                   ! number of inner loops
         integer :: Nouter = 1                   ! number of outer loops
         integer :: Nrun = 1                     ! Current counter
-        integer :: inner = 0                    ! inner loop counter
-        integer :: outer = 0                    ! outer loop counter
 #ifdef SENSITIVITY_4DVAR
         integer :: NrunSAVE = 0                 ! Loop counter
 #endif
+        integer :: OuterLoop = 0                ! split outer loop
+        integer :: inner = 0                    ! inner loop counter
+        integer :: outer = 0                    ! outer loop counter
+!
+! Split 4D-Var phase.
+!
+        character (len=20) :: Phase4DVAR
 !
 ! Number of sadde point 4D-Var intervals.
 !

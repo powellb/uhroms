@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE nf_fwrite2d_bry_mod
 !
-!svn $Id: nf_fwrite2d_bry.F 1834 2020-04-27 22:15:29Z arango $
+!svn $Id: nf_fwrite2d_bry.F 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -72,11 +72,12 @@
 !
       integer, intent(in) :: ng, model, ncid, ncvarid, tindex, gtype
       integer, intent(in) :: LBij, UBij, Nrec
-      real(r8), intent(in) :: Ascl
-
+!
+      real(dp), intent(in) :: Ascl
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: ncvname
-
+!
 #ifdef ASSUMED_SHAPE
       real(r8), intent(in) :: A(LBij:,:,:)
 #else

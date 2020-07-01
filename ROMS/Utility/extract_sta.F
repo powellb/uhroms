@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE extract_sta_mod
 !
-!svn $Id: extract_sta.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: extract_sta.F 1841 2020-05-20 02:04:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -78,10 +78,10 @@
 !  Imported variable declarations.
 !
       logical, intent(in) :: Cgrid
-
+!
       integer, intent(in) :: ng, model, ifield, gtype, Npos
       integer, intent(in) :: LBi, UBi, LBj, UBj
-      real(r8), intent(in) :: Ascl
+      real(dp), intent(in) :: Ascl
 
 #ifdef ASSUMED_SHAPE
       real(r8), intent(in) :: A(LBi:,LBj:)
@@ -348,10 +348,10 @@
 !  Imported variable declarations.
 !
       logical, intent(in) :: Cgrid
-
+!
       integer, intent(in) :: ng, model, ifield, gtype, Npos
       integer, intent(in) :: LBi, UBi, LBj, UBj, LBk, UBk
-      real(r8), intent(in) :: Ascl
+      real(dp), intent(in) :: Ascl
 !
 # ifdef ASSUMED_SHAPE
       real(r8), intent(in) :: A(LBi:,LBj:,LBk:)
