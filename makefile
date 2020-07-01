@@ -1,4 +1,4 @@
-# svn $Id: makefile 1022 2020-05-13 03:03:15Z arango $
+# svn $Id: makefile 1025 2020-05-14 22:31:20Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
 # Copyright (c) 2002-2020 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
@@ -171,12 +171,13 @@ endif
 #--------------------------------------------------------------------------
 #  Notice that the token "libraries" is initialized with the ROMS/Utility
 #  library to account for calls to objects in other ROMS libraries or
-#  cycling dependencies. These type of dependencies are problematic in
-#  some compilers during linking. This library appears twice at linking
-#  step (beggining and almost the end of ROMS library list).
+#  cycling dependencies. These types of dependencies are problematic in
+#  some compilers during linking. Such libraries appear twice at linking
+#  step (beginning and almost the end of ROMS library list).
 #--------------------------------------------------------------------------
 
-   libraries := $(SCRATCH_DIR)/libNLM.a $(SCRATCH_DIR)/libUTIL.a
+   libraries := $(SCRATCH_DIR)/libNLM.a $(SCRATCH_DIR)/libDRIVER.a \
+		$(SCRATCH_DIR)/libUTIL.a
 
 #--------------------------------------------------------------------------
 #  Set Pattern rules.

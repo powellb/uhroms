@@ -2,7 +2,7 @@
 #ifdef FOUR_DVAR
       SUBROUTINE def_ini (ng)
 !
-!svn $Id: def_ini.F 1022 2020-05-13 03:03:15Z arango $
+!svn $Id: def_ini.F 1028 2020-06-01 00:24:59Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -10,7 +10,7 @@
 !=======================================================================
 !                                                                      !
 !  This routine open existing nonlinear model initial conditions file  !
-!  and either define new new variables or inquire its contents.        !
+!  and either define new new variables or inquire about variable IDs.  !
 !                                                                      !
 !=======================================================================
 !
@@ -39,12 +39,12 @@
       logical :: got_frc_adjust
 # endif
       logical :: got_var(NV)
-
+      logical :: Ldefine = .FALSE.
+!
       integer, parameter :: Natt = 25
 
-      logical :: Ldefine = .FALSE.
-
       integer :: i, j, ifield, itrc, status
+      integer :: Fcount
 # ifdef ADJUST_BOUNDARY
       integer :: IorJdim, brecdim
 # endif
@@ -62,9 +62,9 @@
       integer :: t4dfrc(4), u4dfrc(4), v4dfrc(4)
 # endif
       integer :: def_dim
-
+!
       real(r8) :: Aval(6)
-
+!
       character (len=120) :: Vinfo(Natt)
       character (len=256) :: ncname
 !
@@ -672,6 +672,8 @@
 !  Set unlimited time record dimension to the appropriate value.
 !
         INI(ng)%Rindex=rec_size
+        Fcount=INI(ng)%Fcount
+        INI(ng)%Nrec(Fcount)=rec_size
       END IF
 !
   10  FORMAT (/,' DEF_INI - unable to open initial NetCDF file: ',a)

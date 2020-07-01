@@ -73,11 +73,11 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model, OutRec, i2d, i3d
-
-      real(r8), intent(in) :: stime
-
+!
+      real(dp), intent(in) :: stime
+!
       character (len=*), intent(in) :: label
-
+!
       TYPE(T_IO), intent(inout) :: S(Ngrids)
 !
 !  Local variable declarations.
@@ -91,9 +91,11 @@
 # ifdef SOLVE3D
       integer :: i, itrc, j, k, tile
 # endif
-      real(r8) :: Fmin, Fmax, scale
-      real(r8) :: Tval(1)
-
+!
+      real(r8) :: Fmin, Fmax
+      real(dp) :: scale
+      real(dp) :: Tval(1)
+!
       character (len=15) :: Tstring
       character (len=22) :: t_code
       character (len=50) :: string
@@ -160,13 +162,13 @@
         WRITE (Tstring,'(f15.4)') stime*sec2day
         WRITE (stdout,10) TRIM(label), TRIM(string), t_code,            &
      &                    ng, TRIM(ADJUSTL(Tstring)), TRIM(S(ng)%name), &
-     &                    OutRec, i3d, CalledFrom(Sstr:Send)
+     &                    i3d, OutRec, CalledFrom(Sstr:Send)
       END IF
 !
 !  Write out model time (s).
 !
       IF (LwrtPER(ng)) THEN
-        Tval(1)=REAL(OutRec,r8)*day2sec
+        Tval(1)=REAL(OutRec,dp)*day2sec
       ELSE
         Tval(1)=stime
       END IF
@@ -180,7 +182,7 @@
 !
 !  Write out free-surface.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*r2dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite2d(ng, model, ncid, S(ng)%Vid(idFsur),          &
@@ -236,7 +238,7 @@
 !  Write out free-surface open boundaries.
 !
       IF (ANY(Lobc(:,isFsur,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         IF (model.eq.iTLM) THEN
           status=nf_fwrite2d_bry(ng, model, S(ng)%name, ncid,           &
      &                           Vname(1,idSbry(isFsur)),               &
@@ -277,7 +279,7 @@
 !
 !  Write out 2D U-momentum component (m/s).
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u2dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite2d(ng, model, ncid, S(ng)%Vid(idUbar),          &
@@ -320,7 +322,7 @@
 !  Write out 2D U-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isUbar,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         IF (model.eq.iTLM) THEN
           status=nf_fwrite2d_bry(ng, model, S(ng)%name, ncid,           &
      &                           Vname(1,idSbry(isUbar)),               &
@@ -361,7 +363,7 @@
 !
 !  Write out 2D V-momentum component.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v2dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite2d(ng, model, ncid, S(ng)%Vid(idVbar),          &
@@ -403,7 +405,7 @@
 !  Write out 2D V-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isVbar,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         IF (model.eq.iTLM) THEN
           status=nf_fwrite2d_bry(ng, model, S(ng)%name, ncid,           &
      &                           Vname(1,idSbry(isVbar)),               &
@@ -448,7 +450,7 @@
 !  own fixed time-dimension (of size Nfrec) to allow 4DVAR adjustments
 !  at other times in addition to initialization time.
 !
-      scale=1.0
+      scale=1.0_dp
       gtype=gfactor*u3dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite3d(ng, model, ncid, S(ng)%Vid(idUsms),          &
@@ -488,7 +490,7 @@
 !
 !  Write out surface V-momentum stress.
 !
-      scale=1.0
+      scale=1.0_dp
       gtype=gfactor*v3dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite3d(ng, model, ncid, S(ng)%Vid(idVsms),          &
@@ -531,7 +533,7 @@
 !
 !  Write out 3D U-momentum component (m/s).
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u3dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite3d(ng, model, ncid, S(ng)%Vid(idUvel),          &
@@ -574,7 +576,7 @@
 !  Write out 3D U-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isUvel,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         IF (model.eq.iTLM) THEN
           status=nf_fwrite3d_bry(ng, model, S(ng)%name, ncid,           &
      &                           Vname(1,idSbry(isUvel)),               &
@@ -615,7 +617,7 @@
 !
 !  Write out 3D V-momentum component (m/s).
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v3dvar
       IF (model.eq.iTLM) THEN
         status=nf_fwrite3d(ng, model, ncid, S(ng)%Vid(idVvel),          &
@@ -657,7 +659,7 @@
 !  Write out 3D V-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isVvel,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         IF (model.eq.iTLM) THEN
           status=nf_fwrite3d_bry(ng, model, S(ng)%name, ncid,           &
      &                           Vname(1,idSbry(isVvel)),               &
@@ -699,7 +701,7 @@
 !  Write out tracer type variables.
 !
       DO itrc=1,NT(ng)
-        scale=1.0_r8
+        scale=1.0_dp
         gtype=gfactor*r3dvar
         IF (model.eq.iTLM) THEN
           status=nf_fwrite3d(ng, model, ncid, S(ng)%Tid(itrc),          &
@@ -744,7 +746,7 @@
 !
       DO itrc=1,NT(ng)
         IF (ANY(Lobc(:,isTvar(itrc),ng))) THEN
-          scale=1.0_r8
+          scale=1.0_dp
           IF (model.eq.iTLM) THEN
             status=nf_fwrite3d_bry (ng, model, S(ng)%name, ncid,        &
      &                              Vname(1,idSbry(isTvar(itrc))),      &
@@ -794,7 +796,7 @@
 !
       DO itrc=1,NT(ng)
         IF (Lstflux(itrc,ng)) THEN
-          scale=1.0_r8                      ! kinematic flux units
+          scale=1.0_dp                      ! kinematic flux units
           gtype=gfactor*r3dvar
           IF (model.eq.iTLM) THEN
             status=nf_fwrite3d(ng, iTLM, ncid,                          &
@@ -862,7 +864,7 @@
 !
   10  FORMAT (1x,a,': WRT_STATE - ',a,t75,a,                            &
      &        /,19x,'(Grid ',i2.2,', t = ',a,', File: ',a,              &
-     &        ', Rec=',i4.4,', Index=',i1,')',                          &
+     &        ', Index=',i1,', Rec=',i0,')',                            &
      &        /,19x,'Called from ''',a,'''')
   20  FORMAT (/,' WRT_STATE - error while writing variable: ',a,        &
      &        /,13x,'into ',a,' NetCDF file: ',a,                       &

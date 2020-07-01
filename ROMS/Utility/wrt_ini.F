@@ -3,7 +3,7 @@
 
 #ifdef FOUR_DVAR
 !
-!svn $Id: wrt_ini.F 1017 2020-04-27 22:19:14Z arango $
+!svn $Id: wrt_ini.F 1028 2020-06-01 00:24:59Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -76,7 +76,8 @@
       integer :: LBi, UBi, LBj, UBj
       integer :: Fcount, gfactor, gtype, i, itrc, status, varid
 !
-      real(r8) :: Fmin, Fmax, my_time, scale
+      real(r8) :: Fmin, Fmax
+      real(dp) :: my_time, scale
 !
       character (len=15) :: Tstring
       character (len=22) :: t_code
@@ -151,7 +152,7 @@
 !
 !  Write out free-surface (m)
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*r2dvar
       status=nf_fwrite2d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idFsur),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -184,7 +185,7 @@
 !
 !  Write out 2D momentum component (m/s) in the XI-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u2dvar
       status=nf_fwrite2d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idUbar),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -213,7 +214,7 @@
 !
 !  Write out 2D momentum component (m/s) in the ETA-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v2dvar
       status=nf_fwrite2d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idVbar),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -244,7 +245,7 @@
 !
 !  Write out 3D momentum component (m/s) in the XI-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idUvel),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -273,7 +274,7 @@
 !
 !  Write out 3D momentum component (m/s) in the ETA-direction.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idVvel),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -303,7 +304,7 @@
 !  Write out tracer type variables.
 !
       DO itrc=1,NT(ng)
-        scale=1.0_r8
+        scale=1.0_dp
         gtype=gfactor*r3dvar
         status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Tid(itrc),   &
      &                     INI(ng)%Rindex, gtype,                       &
@@ -342,7 +343,7 @@
         IF (FoundError(status, nf90_noerr, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idVvis),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -378,7 +379,7 @@
         IF (FoundError(status, nf90_noerr, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idTdif),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -415,7 +416,7 @@
         IF (FoundError(status, nf90_noerr, __LINE__,                    &
      &                 __FILE__)) RETURN
       END IF
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*w3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idSdif),   &
      &                   INI(ng)%Rindex, gtype,                         &
@@ -523,8 +524,8 @@
 #  endif
 
       integer :: gfactor, gtype, i, itrc, status
-
-      real(r8) :: scale
+!
+      real(dp) :: scale
 !
 #  if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
       LBi=LBOUND(GRID(ng)%h,DIM=1)
@@ -564,7 +565,7 @@
 !  Write out free-surface open boundaries.
 !
       IF (ANY(Lobc(:,isFsur,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite2d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isFsur)),                &
      &                          INI(ng)%Vid(idSbry(isFsur)),            &
@@ -586,7 +587,7 @@
 !  Write out 2D U-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isUbar,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite2d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isUbar)),                &
      &                          INI(ng)%Vid(idSbry(isUbar)),            &
@@ -608,7 +609,7 @@
 !  Write out 2D V-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isVbar,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite2d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isVbar)),                &
      &                          INI(ng)%Vid(idSbry(isVbar)),            &
@@ -632,7 +633,7 @@
 !  Write out 3D U-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isUvel,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite3d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isUvel)),                &
      &                          INI(ng)%Vid(idSbry(isUvel)),            &
@@ -654,7 +655,7 @@
 !  Write out 3D V-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isVvel,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite3d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isVvel)),                &
      &                          INI(ng)%Vid(idSbry(isVvel)),            &
@@ -677,7 +678,7 @@
 !
       DO itrc=1,NT(ng)
         IF (ANY(Lobc(:,isTvar(itrc),ng))) THEN
-          scale=1.0_r8
+          scale=1.0_dp
           status=nf_fwrite3d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid, &
      &                            Vname(1,idSbry(isTvar(itrc))),        &
      &                            INI(ng)%Vid(idSbry(isTvar(itrc))),    &
@@ -759,7 +760,7 @@
           IF (itrc.eq.itemp) THEN
             scale=rho0*Cp                   ! Celsius m/s to W/m2
           ELSE
-            scale=1.0_r8
+            scale=1.0_dp
           END IF
           gtype=gfactor*r3dvar
           status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid,                    &
@@ -795,21 +796,22 @@
 
       IF (Master) THEN
 #  ifdef NESTING
-        WRITE (stdout,20) Nrun, Tindex, OutRec, ng
+        WRITE (stdout,20) outer, inner, Tindex, OutRec, ng
 #  else
-        WRITE (stdout,20) Nrun, Tindex, OutRec
+        WRITE (stdout,20) outer, inner, Tindex, OutRec
 #  endif
       END IF
 !
   10  FORMAT (/,' WRT_FRC - error while writing variable: ',a,/,11x,    &
      &        'into initial NetCDF file for time record: ',i4)
-  20  FORMAT (6x,'WRT_FRC   - wrote initial  fields (Iter=',i4.4,       &
+  20  FORMAT (6x,'WRT_FRC   - wrote forcing  fields (Outer=',i2.2,      &
 #  ifdef NESTING
-     &           ', Index=',i1,', Rec=',i4.4,', Grid ',i2.2,')')
+     &        ', Inner=',i3.3,', Index=',i0,', Rec=',i0,', Grid ',      &
+     &        i0,')')
 #  else
-     &           ', Index=',i1,', Rec=',i4.4,')')
+     &        ', Inner=',i3.3,', Index=',i0,', Rec=',i0,')')
 #  endif
-
+!
       RETURN
       END SUBROUTINE wrt_frc
 !
@@ -867,8 +869,8 @@
       integer :: IorJ, LBij, UBij
 #  endif
       integer :: gfactor, gtype, i, itrc, status
-
-      real(r8) :: scale
+!
+      real(dp) :: scale
 !
 #  if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
       LBi=LBOUND(GRID(ng)%h,DIM=1)
@@ -909,7 +911,7 @@
 !  Write out free-surface open boundaries.
 !
       IF (ANY(Lobc(:,isFsur,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite2d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isFsur)),                &
      &                          INI(ng)%Vid(idSbry(isFsur)),            &
@@ -931,7 +933,7 @@
 !  Write out 2D U-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isUbar,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite2d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isUbar)),                &
      &                          INI(ng)%Vid(idSbry(isUbar)),            &
@@ -953,7 +955,7 @@
 !  Write out 2D V-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isVbar,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite2d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isVbar)),                &
      &                          INI(ng)%Vid(idSbry(isVbar)),            &
@@ -977,7 +979,7 @@
 !  Write out 3D U-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isUvel,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite3d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isUvel)),                &
      &                          INI(ng)%Vid(idSbry(isUvel)),            &
@@ -999,7 +1001,7 @@
 !  Write out 3D V-momentum component open boundaries.
 !
       IF (ANY(Lobc(:,isVvel,ng))) THEN
-        scale=1.0_r8
+        scale=1.0_dp
         status=nf_fwrite3d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid,   &
      &                          Vname(1,idSbry(isVvel)),                &
      &                          INI(ng)%Vid(idSbry(isVvel)),            &
@@ -1022,7 +1024,7 @@
 !
       DO itrc=1,NT(ng)
         IF (ANY(Lobc(:,isTvar(itrc),ng))) THEN
-          scale=1.0_r8
+          scale=1.0_dp
           status=nf_fwrite3d_bry (ng, iNLM, INI(ng)%name, INI(ng)%ncid, &
      &                            Vname(1,idSbry(isTvar(itrc))),        &
      &                            INI(ng)%Vid(idSbry(isTvar(itrc))),    &
@@ -1052,7 +1054,7 @@
 !  own fixed time-dimension (of size Nfrec) to allow 4DVAR adjustments
 !  at other times in addition to initialization time.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*u3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idUsms),   &
      &                   OutRec, gtype,                                 &
@@ -1073,7 +1075,7 @@
 !
 !  Write out surface V-momentum stress.
 !
-      scale=1.0_r8
+      scale=1.0_dp
       gtype=gfactor*v3dvar
       status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid, INI(ng)%Vid(idVsms),   &
      &                   OutRec, gtype,                                 &
@@ -1101,7 +1103,7 @@
 !
       DO itrc=1,NT(ng)
         IF (Lstflux(itrc,ng)) THEN
-          scale=1.0_r8
+          scale=1.0_dp
           gtype=gfactor*r3dvar
           status=nf_fwrite3d(ng, iNLM, INI(ng)%ncid,                    &
      &                       INI(ng)%Vid(idTsur(itrc)),                 &
@@ -1133,23 +1135,25 @@
       CALL netcdf_sync (ng, iNLM, INI(ng)%name, INI(ng)%ncid)
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN
-
+!
       IF (Master) THEN
 # ifdef NESTING
-        WRITE (stdout,20) Nrun, Tindex, OutRec, ng
+        WRITE (stdout,20) outer, inner, Tindex, OutRec, ng
 # else
-        WRITE (stdout,20) Nrun, Tindex, OutRec
+        WRITE (stdout,20) outer, inner, Tindex, OutRec
 # endif
       END IF
 !
   10  FORMAT (/,' WRT_FRC_AD - error while writing variable: ',a,/,11x, &
      &        'into initial NetCDF file for time record: ',i4)
-  20  FORMAT (6x,'WRT_FRC_AD   - wrote initial  fields (Iter=',i4.4,    &
-# ifdef NESTING
-     &           ', Index=',i1,', Rec=',i4.4,', Grid ',i2.2,')')
-# else
-     &           ', Index=',i1,', Rec=',i4.4,')')
-# endif
+  20  FORMAT (6x,'WRT_FRC_AD   - wrote forcing  fields (Outer=',i2.2,   &
+#  ifdef NESTING
+     &        ', Inner=',i3.3,', Index=',i0,', Rec=',i0,', Grid ',      &
+     &        i0,')')
+#  else
+     &        ', Inner=',i3.3,', Index=',i0,', Rec=',i0,')')
+#  endif
+!
       RETURN
       END SUBROUTINE wrt_frc_AD
 # endif

@@ -2,7 +2,7 @@
 #if (defined TANGENT || defined TL_IOMS) && defined FOUR_DVAR
       SUBROUTINE tl_def_ini (ng)
 !
-!svn $Id: tl_def_ini.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: tl_def_ini.F 1028 2020-06-01 00:24:59Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -40,6 +40,7 @@
 
       integer :: i, j, ifield, itrc, nvd3, nvd4
       integer :: recdim, status, varid
+      integer :: Fcount
 # ifdef ADJUST_BOUNDARY
       integer :: IorJdim, brecdim
 # endif
@@ -997,6 +998,8 @@
 !  Set unlimited time record dimension to the appropriate value.
 !
         ITL(ng)%Rindex=rec_size
+        Fcount=ITL(ng)%Fcount
+        ITL(ng)%Nrec(Fcount)=rec_size
       END IF QUERY
 !
   10  FORMAT (3x,'TL_DEF_INI   - creating initial file: ',a)
