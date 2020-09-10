@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE def_var_mod
 !
-!svn $Id: def_var.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: def_var.F 1844 2020-07-11 02:10:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -964,7 +964,7 @@
 #if defined MASKING && !defined WRITE_WATER
 !
 !  If land/sea masking, define "_FillValue" attribute since masking
-!  areas are overwrite with special value (spval) during output.
+!  areas are overwritten with special value (spval) during output.
 !  Notice that the coordinate attribute is used to check which
 !  variables need the "_FillValue" attribute.
 !

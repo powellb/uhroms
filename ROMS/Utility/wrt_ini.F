@@ -3,7 +3,7 @@
 
 #ifdef FOUR_DVAR
 !
-!svn $Id: wrt_ini.F 1843 2020-06-01 00:24:37Z arango $
+!svn $Id: wrt_ini.F 1846 2020-07-14 01:35:41Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1037,7 +1037,7 @@
      &                   __FILE__)) THEN
             IF (Master) THEN
               WRITE (stdout,10) TRIM(Vname(1,idSbry(isTvar(itrc)))),    &
-     &                          INI(ng)%Rindex
+     &                          OutRec
             END IF
             exit_flag=3
             ioerror=status

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 1838 2020-05-13 03:00:46Z arango $
+!svn $Id: mod_ncparam.F 1850 2020-07-28 00:46:43Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -215,6 +215,7 @@
         integer  :: idMtls        ! turbulent length scale
         integer  :: idM2nc        ! 2D momentum nudging coefficients
         integer  :: idM3nc        ! 2D momentum nudging coefficients
+        integer  :: idNLmf        ! final NLM at observation locations
         integer  :: idNLmi        ! initial NLM at observation locations
         integer  :: idNLmo        ! NLM at observations locations
         integer  :: idNobs        ! number of observations
@@ -1836,6 +1837,8 @@
               idIncr=varid
             CASE ('idInno')
               idInno=varid
+            CASE ('idNLmf')
+              idNLmf=varid
             CASE ('idNLmi')
               idNLmi=varid
             CASE ('idNLmo')

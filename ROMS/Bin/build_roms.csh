@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# svn $Id: build_roms.csh 1836 2020-04-30 20:45:02Z arango $
+# svn $Id: build_roms.csh 1852 2020-08-15 01:55:53Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2020 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::
@@ -87,7 +87,7 @@ while ( ($#argv) > 0 )
       echo "              omit argument for all avaliable CPUs"
       echo ""
       echo "-p macro    Prints any Makefile macro value"
-      echo "              For example:  build.csh -p FFLAGS"
+      echo "              For example:  build_roms.csh -p FFLAGS"
       echo ""
       echo "-noclean    Do not clean already compiled objects"
       echo ""

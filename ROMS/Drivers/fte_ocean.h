@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: fte_ocean.h 1841 2020-05-20 02:04:51Z arango $
+!svn $Id: fte_ocean.h 1846 2020-07-14 01:35:41Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -56,6 +56,7 @@
       USE mod_scalars
       USE mod_storage
 !
+      USE inp_par_mod,       ONLY : inp_par
 #ifdef MCT_LIB
 # ifdef ATM_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
