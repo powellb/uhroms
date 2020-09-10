@@ -2,7 +2,7 @@
 #if defined TANGENT || defined TL_IOMS
       SUBROUTINE tl_wrt_his (ng)
 !
-!svn $Id: tl_wrt_his.F 1028 2020-06-01 00:24:59Z arango $
+!svn $Id: tl_wrt_his.F 1031 2020-07-14 01:39:55Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -834,7 +834,7 @@
         END IF
       END IF
 
-#  if defined FORWARD_MIXING     && \
+#  if defined FORWARD_MIXING && \
      (defined BVF_MIXING     || defined GLS_MIXING  || \
       defined LMD_MIXING     || defined MY25_MIXING)
 !

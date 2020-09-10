@@ -1,6 +1,6 @@
       MODULE ocean_control_mod
 !
-!svn $Id: tl_r4dvar_ocean.h 1026 2020-05-20 02:05:37Z arango $
+!svn $Id: tl_r4dvar_ocean.h 1035 2020-07-28 00:49:02Z arango $
 !=================================================== Andrew M. Moore ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group      Hernan G. Arango   !
 !    Licensed under a MIT/X style license                              !
@@ -72,6 +72,7 @@
       USE mod_iounits
       USE mod_scalars
 !
+      USE inp_par_mod,       ONLY : inp_par
 #ifdef MCT_LIB
 # ifdef ATM_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
@@ -271,6 +272,7 @@
       USE mod_scalars
       USE mod_stepping
 !
+      USE congrad_mod,       ONLY : congrad
       USE convolve_mod,      ONLY : error_covariance
 #ifdef ADJUST_BOUNDARY
       USE mod_boundary,      ONLY : initialize_boundary
