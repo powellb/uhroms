@@ -55,14 +55,14 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: ROMS_initialize
       PUBLIC  :: ROMS_run
       PUBLIC  :: ROMS_finalize
-
+!
       CONTAINS
-
+!
       SUBROUTINE ROMS_initialize (first, mpiCOMM)
 !
 !=======================================================================
@@ -94,13 +94,13 @@
 !  Imported variable declarations.
 !
       logical, intent(inout) :: first
-
+!
       integer, intent(in), optional :: mpiCOMM
 !
 !  Local variable declarations.
 !
       logical :: allocate_vars = .TRUE.
-
+!
 #ifdef DISTRIBUTE
       integer :: MyError, MySize
 #endif
@@ -109,6 +109,9 @@
 #ifdef _OPENMP
       integer :: my_threadnum
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ROMS_initialize"
 
 #ifdef DISTRIBUTE
 !
@@ -145,14 +148,12 @@
 !  grids and dimension parameters are known.
 !
         CALL inp_par (iNLM)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Set domain decomposition tile partition range.  This range is
 !  computed only once since the "first_tile" and "last_tile" values
 !  are private for each parallel thread/node.
 !
-!$OMP PARALLEL
 #if defined _OPENMP
       MyThread=my_threadnum()
 #elif defined DISTRIBUTE
@@ -165,7 +166,6 @@
         first_tile(ng)=MyThread*chunk_size
         last_tile (ng)=first_tile(ng)+chunk_size-1
       END DO
-!$OMP END PARALLEL
 !
 !  Initialize internal wall clocks. Notice that the timings does not
 !  includes processing standard input because several parameters are
@@ -177,18 +177,14 @@
         END IF
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iNLM, 0, __LINE__, __FILE__)
+            CALL wclock_on (ng, iNLM, 0, __LINE__, MyFile)
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Allocate and initialize modules variables.
 !
-!$OMP PARALLEL
         CALL mod_arrays (allocate_vars)
-!$OMP END PARALLEL
 !
 !  Allocate and initialize observation arrays.
 !
@@ -220,64 +216,53 @@
 !  LCZ(ng)%name NetCDF file.
 !-----------------------------------------------------------------------
 !
-      SourceFile=__FILE__ //                                            &
-     &           ", ROMS_initialize"
+      SourceFile=MyFile
       DO ng=1,Ngrids
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_beta',        &
      &                        cg_beta)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_delta',       &
      &                        cg_delta)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_Gnorm_v',     &
      &                        cg_Gnorm_v)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_dla',         &
      &                        cg_dla)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_QG',          &
      &                        cg_QG)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'zgrad0',         &
      &                        zgrad0)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'zcglwk',         &
      &                        zcglwk)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'TLmodVal_S',     &
      &                        TLmodVal_S,                               &
      &                        broadcast = .FALSE.)   ! Master use only
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
 # if defined RPCG && !defined OBS_IMPACT
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Hbk',            &
      &                        Hbk)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Jb0',            &
      &                        Jb0)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'vcglwk',         &
      &                        vcglwk)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
       END DO
 !
@@ -286,14 +271,12 @@
 !  quality control flag.
 !-----------------------------------------------------------------------
 !
-      SourceFile=__FILE__ //                                            &
-     &           ", ROMS_initialize"
+      SourceFile=MyFile
       wrtObsScale(1:Ngrids)=.FALSE.
       DO ng=1,Ngrids
         CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, Vname(1,idObsS),  &
      &                        ObsScale)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 #endif
 !
@@ -308,8 +291,7 @@
       Tindex=1
       DO ng=1,Ngrids
         CALL get_state (ng, 10, 10, STD(1,ng)%name, STDrec, Tindex)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !  Model error standard deviation. They are loaded in Tindex=2
@@ -320,8 +302,7 @@
       IF (NSA.eq.2) THEN
         DO ng=1,Ngrids
           CALL get_state (ng, 11, 11, STD(2,ng)%name, STDrec, Tindex)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
       END IF
 
@@ -333,8 +314,7 @@
       Tindex=1
       DO ng=1,Ngrids
         CALL get_state (ng, 12, 12, STD(3,ng)%name, STDrec, Tindex)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 #endif
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
@@ -345,14 +325,13 @@
       Tindex=1
       DO ng=1,Ngrids
         CALL get_state (ng, 13, 13, STD(4,ng)%name, STDrec, Tindex)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 #endif
-
+!
       RETURN
       END SUBROUTINE ROMS_initialize
-
+!
       SUBROUTINE ROMS_run (RunInterval)
 !
 !=======================================================================
@@ -398,7 +377,7 @@
 !  Local variable declarations.
 !
       logical :: Lcgini, Linner, Lposterior, add
-
+!
       integer :: my_inner, my_outer
       integer :: Lbck, Lini, Rec1, Rec2, ImpOrd
       integer :: i, lstr, ng, status, tile
@@ -406,15 +385,18 @@
 
       integer, dimension(Ngrids) :: indxSave
       integer, dimension(Ngrids) :: Nrec
-
+!
       real(r8) :: str_day, end_day, dstartS, rtime
-
+!
       character (len=1) :: charA, charB
 #ifdef OBS_SPACE
       character (len=1) :: charC
 #endif
       character (len=25) :: driver
       character (len=20) :: string
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ROMS_run"
 !
 !=======================================================================
 !  Run model for all nested grids, if any.
@@ -502,7 +484,7 @@
         wrtNLmod(ng)=.TRUE.
         wrtRPmod(ng)=.FALSE.
         wrtTLmod(ng)=.FALSE.
-        LsenPSAS(ng)=.FALSE.
+        Lsen4DVAR(ng)=.FALSE.
 #ifdef OBS_SPACE
         Lobspace(ng)=.FALSE.
 # ifndef OBS_IMPACT
@@ -511,11 +493,8 @@
 #endif
       END DO
 
-!$OMP PARALLEL
       CALL initial
-!$OMP END PARALLEL
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Save nonlinear initial conditions (currently in time index 1,
 !  background) into record "Lbck" of INI(ng)%name NetCDF file. The
@@ -527,8 +506,7 @@
         Fcount=INI(ng)%load
         INI(ng)%Nrec(Fcount)=1
         CALL wrt_ini (ng, 1)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !  The FWD structure is used several times and contains the nonnlinear
@@ -542,8 +520,7 @@
 !  loop into the HIS structure.
 !
       CALL edit_multifile ('FWD2HIS')
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !  Model-error covariance normalization and stardard deviation factors.
@@ -557,56 +534,47 @@
       DO ng=1,Ngrids
         IF (ANY(LwrtNRM(:,ng))) THEN
           CALL def_norm (ng, iNLM, 1)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           IF (NSA.eq.2) THEN
             CALL def_norm (ng, iNLM, 2)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END IF
 
 #ifdef ADJUST_BOUNDARY
           CALL def_norm (ng, iNLM, 3)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #endif
 
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
           CALL def_norm (ng, iNLM, 4)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #endif
 
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL normalization (ng, tile, 2)
           END DO
-!$OMP END PARALLEL
+
           LdefNRM(1:4,ng)=.FALSE.
           LwrtNRM(1:4,ng)=.FALSE.
         ELSE
           NRMrec=1
           CALL get_state (ng, 14, 14, NRM(1,ng)%name, NRMrec, 1)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           IF (NSA.eq.2) THEN
             CALL get_state (ng, 15, 15, NRM(2,ng)%name, NRMrec, 2)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END IF
 
 #ifdef ADJUST_BOUNDARY
           CALL get_state (ng, 16, 16, NRM(3,ng)%name, NRMrec, 1)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #endif
 
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
           CALL get_state (ng, 17, 17, NRM(4,ng)%name, NRMrec, 1)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #endif
         END IF
       END DO
@@ -619,15 +587,12 @@
       IF (balance(isFsur)) THEN
         DO ng=1,Ngrids
           CALL get_state (ng, iNLM, 2, INI(ng)%name, Lini, Lini)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL balance_ref (ng, tile, Lini)
             CALL biconj (ng, tile, iNLM, Lini)
           END DO
-!$OMP END PARALLEL
           wrtZetaRef(ng)=.TRUE.
         END DO
       END IF
@@ -639,8 +604,7 @@
         LdefITL(ng)=.TRUE.
         CALL tl_def_ini (ng)
         LdefITL(ng)=.FALSE.
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !  Define impulse forcing NetCDF file.
@@ -648,8 +612,7 @@
       DO ng=1,Ngrids
         LdefTLF(ng)=.TRUE.
         CALL def_impulse (ng)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 
 #ifndef OBS_SPACE
@@ -660,19 +623,17 @@
       DO ng=1,Ngrids
         LdefMOD(ng)=.TRUE.
         CALL def_mod (ng)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !  Write out outer loop beeing processed.
 !
-      SourceFile=__FILE__ // ", ROMS_run"
+      SourceFile=MyFile
       DO ng=1,Ngrids
         CALL netcdf_put_ivar (ng, iNLM, DAV(ng)%name, 'Nimpact',        &
      &                        Nimpact, (/0/), (/0/),                    &
      &                        ncid = DAV(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 #endif
 !
@@ -703,12 +664,12 @@
 !     obs_xxxx_a.nc    if obs_space is on
 !     obs_xxxx_b.nc
 !
-      SourceFile=__FILE__ // ", ROMS_run"
+      SourceFile=MyFile
       DO ng=1,Ngrids
 #ifdef OBS_SPACE
         CALL netcdf_close (ng, iNLM, OBS(ng)%ncid, OBS(ng)%name)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
         IF (ImpOrd.ne.2) THEN
           WRITE (OBS(ng)%name,90) TRIM(OIFB(ng)%head)
         ELSE
@@ -716,8 +677,8 @@
         END IF
 #else
         CALL netcdf_close (ng, iNLM, ADS(ng)%ncid, ADS(ng)%name)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
         IF (ImpOrd.ne.2) THEN
           WRITE (ADS(ng)%name,90) TRIM(FOIB(ng)%head)
         ELSE
@@ -733,8 +694,7 @@
 !  their size.
 !
       CALL edit_multifile ('FCTB2FWD')
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       DO ng=1,Ngrids
         LreadFWD(ng)=.TRUE.
       END DO
@@ -746,8 +706,7 @@
 !  their size.
 !
       CALL edit_multifile ('FCTB2BLK')
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       DO ng=1,Ngrids
         LreadBLK(ng)=.TRUE.
       END DO
@@ -770,22 +729,20 @@
       DO ng=1,Ngrids
         Lstiffness=.FALSE.
 #ifdef OBS_SPACE
-        LsenPSAS(ng)=.FALSE.
+        Lsen4DVAR(ng)=.FALSE.
         LsenFCT(ng)=.TRUE.
         Lobspace(ng)=.TRUE.
 # ifndef OBS_IMPACT
         LadjVAR(ng)=.FALSE.
 # endif
 #else
-        LsenPSAS(ng)=.TRUE.
+        Lsen4DVAR(ng)=.TRUE.
         LsenFCT(ng)=.FALSE.
 #endif
         CALL netcdf_close (ng, iADM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
         CALL ad_initial (ng)
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !  Set adjoint history NetCDF parameters.  Define adjoint history
@@ -806,16 +763,13 @@
           WRITE (stdout,20) 'AD', ng, ntstart(ng), ntend(ng)
         END IF
       END DO
-
-!$OMP PARALLEL
+!
 #ifdef SOLVE3D
       CALL ad_main3d (RunInterval)
 #else
       CALL ad_main2d (RunInterval)
 #endif
-!$OMP END PARALLEL
-      IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Write out last weak-constraint forcing (WRTforce is still .TRUE.)
 !  record into the adjoint history file.  Note that the weak-constraint
@@ -823,8 +777,7 @@
 !
       DO ng=1,Ngrids
         CALL ad_wrt_his (ng)
-        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !  Write out adjoint initial condition record into the adjoint
@@ -834,29 +787,26 @@
         WRTforce(ng)=.FALSE.
         LwrtState2d(ng)=.FALSE.
         CALL ad_wrt_his (ng)
-        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END DO
 !
 !   Retrieve adjoint solution into tl_var(1).
 !
       DO ng=1,Ngrids
-         CALL get_state (ng, iTLM, 4, ADM(ng)%name, ADM(ng)%Rindex,   &
+         CALL get_state (ng, iTLM, 4, ADM(ng)%name, ADM(ng)%Rindex,     &
      &                      Rec1)
-         IF (FoundError(exit_flag, NoError, __LINE__,                 &
-     &                  __FILE__)) RETURN
-
+         IF (FoundError(exit_flag, NoError, __LINE__,  MyFile)) RETURN
       END DO
 !
 !  Set basic state trajectory and adjoint forcing file.
 !
       IF (ImpOrd.gt.1) THEN
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
 #ifdef OBS_SPACE
           CALL netcdf_close (ng, iNLM, OBS(ng)%ncid, OBS(ng)%name)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
           IF (ImpOrd.eq.2) THEN
              WRITE (OBS(ng)%name,90) TRIM(OIFB(ng)%head)
           ELSE
@@ -864,8 +814,8 @@
           END IF
 #else
           CALL netcdf_close (ng, iNLM, ADS(ng)%ncid, ADS(ng)%name)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
           IF (ImpOrd.eq.2) THEN
              WRITE (ADS(ng)%name,90) TRIM(FOIB(ng)%head)
           ELSE
@@ -881,8 +831,7 @@
 !  their size.
 !
         CALL edit_multifile ('FCTA2FWD')
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &               __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         DO ng=1,Ngrids
           LreadFWD(ng)=.TRUE.
         END DO
@@ -894,8 +843,7 @@
 !  their size.
 !
         CALL edit_multifile ('FCTA2BLK')
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         DO ng=1,Ngrids
           LreadBLK(ng)=.TRUE.
         END DO
@@ -909,22 +857,20 @@
         DO ng=1,Ngrids
           Lstiffness=.FALSE.
 #ifdef OBS_SPACE
-          LsenPSAS(ng)=.FALSE.
+          Lsen4DVAR(ng)=.FALSE.
           LsenFCT(ng)=.TRUE.
           Lobspace(ng)=.TRUE.
 # ifndef OBS_IMPACT
           LadjVAR(ng)=.FALSE.
 # endif
 #else
-          LsenPSAS(ng)=.TRUE.
+          Lsen4DVAR(ng)=.TRUE.
           LsenFCT(ng)=.FALSE.
 #endif
           CALL netcdf_close (ng, iADM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
           CALL ad_initial (ng)
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Set adjoint history NetCDF parameters.  Define adjoint history
@@ -945,16 +891,13 @@
             WRITE (stdout,20) 'AD', ng, ntstart(ng), ntend(ng)
           END IF
         END DO
-
-!$OMP PARALLEL
+!
 #ifdef SOLVE3D
         CALL ad_main3d (RunInterval)
 #else
         CALL ad_main2d (RunInterval)
 #endif
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Write out last weak-constraint forcing (WRTforce is still .TRUE.)
 !  record into the adjoint history file.  Note that the weak-constraint
@@ -962,8 +905,7 @@
 !
         DO ng=1,Ngrids
           CALL ad_wrt_his (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Write out adjoint initial condition record into the adjoint
@@ -973,8 +915,7 @@
           WRTforce(ng)=.FALSE.
           LwrtState2d(ng)=.FALSE.
           CALL ad_wrt_his (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !   Retrieve adjoint solution.
@@ -982,8 +923,7 @@
         DO ng=1,Ngrids
           CALL get_state (ng, iADM, 4, ADM(ng)%name, ADM(ng)%Rindex,    &
      &                    Rec1)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !   Add the retrieved adjoint solution to the previous solution saved
@@ -991,11 +931,9 @@
 !
         add=.TRUE.
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL load_ADtoTL (ng, tile, Rec1, Rec1, add)
           END DO
-!$OMP END PARALLEL
         END DO
 !
       END IF
@@ -1057,9 +995,7 @@
           LreadBLK(ng)=.FALSE.
         END DO
 !
-!$OMP PARALLEL
         CALL initial
-!$OMP END PARALLEL
 #endif
 !
 !  Set basic state trajectory.
@@ -1075,24 +1011,33 @@
 !  into multiple NetCDF files to reduce their size.
 !
         CALL edit_multifile ('HIS2FWD')
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &               __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         DO ng=1,Ngrids
           LreadFWD(ng)=.TRUE.
         END DO
+
+#ifdef FORWARD_FLUXES
 !
-!  Set structure for the nonlinear surface fluxes (from regular
-!  RBL4DVAR) to be processed by by the tangent linear and adjoint
-!  models. Also, set switches to process the BLK structure in routine
-!  "check_multifile".  Notice that it is possible to split solution
-!  into multiple NetCDF files to reduce their size.
+!  Set the BLK structure to contain the nonlinear model surface fluxes
+!  needed by the tangent linear and adjoint models. Also, set switches
+!  to process that structure in routine "check_multifile". Notice that
+!  it is possible to split the solution into multiple NetCDF files to
+!  reduce their size.
 !
-        CALL edit_multifile ('FWD2BLK')
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+!  The switch LreadFRC is deactivated because all the atmospheric
+!  forcing, including shortwave radiation, is read from the NLM
+!  surface fluxes or is assigned during ESM coupling.  Such fluxes
+!  are available from the QCK structure. There is no need for reading
+!  and processing from the FRC structure input forcing-files.
+!
+        CALL edit_multifile ('QCK2BLK')
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         DO ng=1,Ngrids
           LreadBLK(ng)=.TRUE.
+          LreadFRC(ng)=.FALSE.
+          LreadQCK(ng)=.FALSE.
         END DO
+#endif
 !
         IF (Master) THEN
           WRITE (stdout,50)
@@ -1105,23 +1050,21 @@
           Lstiffness=.FALSE.
 !!AMM
 #ifdef OBS_SPACE
-          LsenPSAS(ng)=.TRUE.
+          Lsen4DVAR(ng)=.TRUE.
           LsenFCT(ng)=.FALSE.
           Lobspace(ng)=.FALSE.
 # ifndef OBS_IMPACT
           LadjVAR(ng)=.FALSE.
 # endif
 #else
-          LsenPSAS(ng)=.FALSE.
+          Lsen4DVAR(ng)=.FALSE.
           LsenFCT(ng)=.FALSE.
 #endif
 !!AMM
           CALL netcdf_close (ng, iADM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
           CALL ad_initial (ng)
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !    Copy tl_var(1) solution to ad_var(1).
@@ -1131,7 +1074,6 @@
 !
         add=.FALSE.
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
             CALL initialize_forces (ng, tile, iTLM)
@@ -1141,22 +1083,20 @@
 #endif
             CALL load_TLtoAD (ng, tile, Rec1, Rec1, add)
           END DO
-!$OMP END PARALLEL
         END DO
+
 #if defined ADJUST_WSTRESS || defined ADJUST_STFLUX || \
     defined ADJUST_BOUNDARY
 !
 !  Clear the adjoint forcing and open boundary arrays
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iADM)
 # ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iADM)
 # endif
           END DO
-!$OMP END PARALLEL
         END DO
 #endif
 !
@@ -1179,16 +1119,13 @@
             WRITE (stdout,20) 'AD', ng, ntstart(ng), ntend(ng)
           END IF
         END DO
-
-!$OMP PARALLEL
+!
 #ifdef SOLVE3D
         CALL ad_main3d (RunInterval)
 #else
         CALL ad_main2d (RunInterval)
 #endif
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Write out last weak-constraint forcing (WRTforce is still .TRUE.)
 !  record into the adjoint history file.  Note that the weak-constraint
@@ -1196,8 +1133,7 @@
 !
         DO ng=1,Ngrids
           CALL ad_wrt_his (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Write out adjoint initial condition record into the adjoint
@@ -1207,8 +1143,7 @@
           WRTforce(ng)=.FALSE.
           LwrtState2d(ng)=.FALSE.
           CALL ad_wrt_his (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Convolve adjoint trajectory with error covariances.
@@ -1217,8 +1152,7 @@
         CALL error_covariance (iTLM, driver, outer, inner,              &
      &                         Lbck, Lini, Lold, Lnew,                  &
      &                         Rec1, Rec2, Lposterior)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Convert the current adjoint solution in ADM(ng)%name to impulse
 !  forcing. Write out impulse forcing into TLF(ng)%name NetCDF file.
@@ -1239,8 +1173,7 @@
 !!        tile=-1
 #endif
 !!        CALL wrt_impulse (ng, tile, iADM, ADM(ng)%name)
-!!        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-!!   &                   __FILE__)) RETURN
+!!        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !!      END DO
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1255,8 +1188,8 @@
 !
         DO ng=1,Ngrids
           CALL netcdf_close (ng, iNLM, OBS(ng)%ncid, OBS(ng)%name)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
           WRITE (OBS(ng)%name,80) TRIM(OBS(ng)%head), charC
         END DO
 !
@@ -1269,63 +1202,53 @@
 !  LCZ(ng)%name NetCDF file.
 !-----------------------------------------------------------------------
 !
-        SourceFile=__FILE__ // ", ROMS_initialize"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_beta',      &
      &                          cg_beta)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_delta',     &
      &                          cg_delta)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_Gnorm_v',   &
      &                          cg_Gnorm_v)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_dla',       &
      &                          cg_dla)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'cg_QG',        &
      &                          cg_QG)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'zgrad0',       &
      &                          zgrad0)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'zcglwk',       &
      &                          zcglwk)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'TLmodVal_S',   &
      &                          TLmodVal_S,                             &
      &                          broadcast = .FALSE.)   ! Master use only
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
 # ifdef RPCG
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Hbk',          &
      &                          Hbk)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'Jb0',          &
      &                          Jb0)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name, 'vcglwk',       &
      &                          vcglwk)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
         END DO
 !
@@ -1334,13 +1257,12 @@
 !  quality control flag.
 !-----------------------------------------------------------------------
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         wrtObsScale(1:Ngrids)=.FALSE.
         DO ng=1,Ngrids
           CALL netcdf_get_fvar (ng, iTLM, LCZ(ng)%name,                 &
      &                          Vname(1,idObsS),  ObsScale)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Define output 4DVAR NetCDF file containing all processed data
@@ -1349,8 +1271,7 @@
         DO ng=1,Ngrids
           LdefMOD(ng)=.TRUE.
           CALL def_mod (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 #endif /* OBS_SPACE */
 !
@@ -1364,14 +1285,12 @@
 !  This is very important.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iTLM)
 #ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 #endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Set basic state trajectory.
@@ -1396,11 +1315,9 @@
         DO ng=1,Ngrids
           ITL(ng)%Rindex=Rec1
           CALL netcdf_close (ng, iTLM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
           CALL tl_initial (ng)
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Run tangent linear model forward and force with convolved adjoint
@@ -1412,17 +1329,14 @@
             WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
           END IF
         END DO
-
-!$OMP PARALLEL
+!
 #ifdef SOLVE3D
         CALL tl_main3d (RunInterval)
 #else
         CALL tl_main2d (RunInterval)
 #endif
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
-
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+!
         DO ng=1,Ngrids
           wrtNLmod(ng)=.FALSE.
           wrtTLmod(ng)=.FALSE.
@@ -1452,14 +1366,12 @@
 !  Clear tangent linear forcing arrays before entering inner-loop.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iTLM)
 # ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 # endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 # ifdef RPCG
@@ -1477,8 +1389,8 @@
              DO ng=1,Ngrids
               CALL netcdf_get_fvar (ng, iTLM, DAV(ng)%name,             &
      &                              'NLmodel_value', NLmodVal)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END DO
           END IF
           IF (inner.ne.Ninner) THEN
@@ -1502,15 +1414,14 @@
           Lcgini=.FALSE.
           DO ng=1,Ngrids
             CALL ad_congrad (ng, iTLM, outer, inner, Ninner, Lcgini)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END DO
 # endif
 !
 !  Initialize the adjoint model from rest.
 !
           DO ng=1,Ngrids
-            LsenPSAS(ng)=.FALSE.
+            Lsen4DVAR(ng)=.FALSE.
             LsenFCT(ng)=.TRUE.
 # ifdef OBS_SPACE
             Lobspace(ng)=.TRUE.
@@ -1519,11 +1430,8 @@
 #  endif
 # endif
             CALL netcdf_close (ng, iADM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
             CALL ad_initial (ng)
-!$OMP END PARALLEL
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
             wrtMisfit(ng)=.FALSE.
           END DO
 !
@@ -1545,16 +1453,13 @@
               WRITE (stdout,20) 'AD', ng, ntstart(ng), ntend(ng)
             END IF
           END DO
-
-!$OMP PARALLEL
+!
 # ifdef SOLVE3D
           CALL ad_main3d (RunInterval)
 # else
           CALL ad_main2d (RunInterval)
 # endif
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Write out last weak-constraint forcing (WRTforce is still .TRUE.)
 !  record into the adjoint history file.  Note that the weak-constraint
@@ -1562,8 +1467,7 @@
 !
           DO ng=1,Ngrids
             CALL ad_wrt_his (ng)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END DO
 !
 !  Write out adjoint initial condition record into the adjoint
@@ -1573,8 +1477,7 @@
             WRTforce(ng)=.FALSE.
             LwrtState2d(ng)=.FALSE.
             CALL ad_wrt_his (ng)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END DO
 !
 !  Convolve adjoint trajectory with error covariances.
@@ -1583,8 +1486,7 @@
           CALL error_covariance (iTLM, driver, outer, inner,            &
      &                           Lbck, Lini, Lold, Lnew,                &
      &                           Rec1, Rec2, Lposterior)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Convert the current adjoint solution in ADM(ng)%name to impulse
 !  forcing. Write out impulse forcing into TLF(ng)%name NetCDF file.
@@ -1606,8 +1508,7 @@
 !!          tile=-1
 # endif
 !!          CALL wrt_impulse (ng, tile, iADM, ADM(ng)%name)
-!!          IF (FoundError(exit_flag, NoError, __LINE__,                &
-!!   &                     __FILE__)) RETURN
+!!          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !!        END DO
 !
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1636,11 +1537,9 @@
           DO ng=1,Ngrids
             ITL(ng)%Rindex=Rec1
             CALL netcdf_close (ng, iTLM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
             CALL tl_initial (ng)
-!$OMP END PARALLEL
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END DO
 !
 !  Set tangent linear history NetCDF parameters.  Define tangent linear
@@ -1662,16 +1561,13 @@
               WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
             END IF
           END DO
-
-!$OMP PARALLEL
+!
 # ifdef SOLVE3D
           CALL tl_main3d (RunInterval)
 # else
           CALL tl_main2d (RunInterval)
 # endif
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           DO ng=1,Ngrids
             wrtNLmod(ng)=.FALSE.
@@ -1704,7 +1600,7 @@
 !
 !  Write out total observation impact.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_put_fvar (ng, iNLM, DAV(ng)%name,                 &
      &                          'ObsImpact_total', ad_ObsVal,           &
@@ -1714,18 +1610,16 @@
      &                          (/1/), (/Mobs/),                        &
 # endif
      &                          ncid = DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_sync (ng, iNLM, DAV(ng)%name, DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 #else
 !
 !  Write out observation sensitivity.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_put_fvar (ng, iTLM, DAV(ng)%name,                 &
      &                          'ObsSens_total', ad_ObsVal,             &
@@ -1735,22 +1629,19 @@
      &                          (/1/), (/Mobs/),                        &
 # endif
      &                          ncid = DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_sync (ng, iNLM, DAV(ng)%name, DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 #endif
 !
 !  Close tangent linear NetCDF file.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_close (ng, iTLM, TLM(ng)%ncid, TLM(ng)%name)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 
 #if defined OBS_IMPACT && defined OBS_IMPACT_SPLIT
@@ -1773,14 +1664,12 @@
 !  tangent linear model.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iTLM)
 # ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 # endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Set basic state trajectory.
@@ -1805,25 +1694,21 @@
         DO ng=1,Ngrids
           ITL(ng)%Rindex=Rec1
           CALL netcdf_close (ng, iTLM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
           CALL tl_initial (ng)
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Clear tangent linear forcing arrays and boundary arrays
 !  before the obs impact initial condition calculation.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iTLM)
 # ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 # endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Run tangent linear model forward and force with convolved adjoint
@@ -1835,17 +1720,14 @@
             WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
           END IF
         END DO
-
-!$OMP PARALLEL
+!
 # ifdef SOLVE3D
         CALL tl_main3d (RunInterval)
 # else
         CALL tl_main2d (RunInterval)
 # endif
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
-
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+!
         DO ng=1,Ngrids
           wrtNLmod(ng)=.FALSE.
           wrtTLmod(ng)=.FALSE.
@@ -1863,7 +1745,7 @@
 !
 !  Write out observation sentivity.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_put_fvar (ng, iTLM, DAV(ng)%name,                 &
      &                          'ObsImpact_IC', ad_ObsVal,              &
@@ -1873,12 +1755,10 @@
      &                          (/1/), (/Mobs/),                        &
 # endif
      &                          ncid = DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_sync (ng, iNLM, DAV(ng)%name, DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 
 # if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
@@ -1901,14 +1781,12 @@
 !  tangent linear model.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iTLM)
 #  ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 #  endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Set basic state trajectory.
@@ -1933,25 +1811,21 @@
         DO ng=1,Ngrids
           ITL(ng)%Rindex=Rec1
           CALL netcdf_close (ng, iTLM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
           CALL tl_initial (ng)
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Clear tangent initial condition arrays and boundary arrays
 !  before the obs impact initial condition calculation.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_ocean (ng, tile, iTLM)
 #  ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 #  endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Run tangent linear model forward and force with convolved adjoint
@@ -1963,17 +1837,14 @@
             WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
           END IF
         END DO
-
-!$OMP PARALLEL
+!
 #  ifdef SOLVE3D
         CALL tl_main3d (RunInterval)
 #  else
         CALL tl_main2d (RunInterval)
 #  endif
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
-
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+!
         DO ng=1,Ngrids
           wrtNLmod(ng)=.FALSE.
           wrtTLmod(ng)=.FALSE.
@@ -1991,7 +1862,7 @@
 !
 !  Write out observation sentivity.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_put_fvar (ng, iTLM, DAV(ng)%name,                 &
      &                          'ObsImpact_FC', ad_ObsVal,              &
@@ -2001,12 +1872,10 @@
      &                          (/1/), (/Mobs/),                        &
 # endif
      &                          ncid = DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_sync (ng, iNLM, DAV(ng)%name, DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 # endif
 
@@ -2030,14 +1899,12 @@
 !  tangent linear model.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_forces (ng, tile, iTLM)
 #  ifdef ADJUST_BOUNDARY
             CALL initialize_boundary (ng, tile, iTLM)
 #  endif
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Set basic state trajectory.
@@ -2062,23 +1929,19 @@
         DO ng=1,Ngrids
           ITL(ng)%Rindex=Rec1
           CALL netcdf_close (ng, iTLM, OBS(ng)%ncid, OBS(ng)%name)
-!$OMP PARALLEL
+!
           CALL tl_initial (ng)
-!$OMP END PARALLEL
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Clear tangent linear initial condition and forcing arrays
 !  before the obs impact initial condition calculation.
 !
         DO ng=1,Ngrids
-!$OMP PARALLEL
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL initialize_ocean (ng, tile, iTLM)
             CALL initialize_forces (ng, tile, iTLM)
           END DO
-!$OMP END PARALLEL
         END DO
 !
 !  Run tangent linear model forward and force with convolved adjoint
@@ -2090,17 +1953,14 @@
             WRITE (stdout,20) 'TL', ng, ntstart(ng), ntend(ng)
           END IF
         END DO
-
-!$OMP PARALLEL
+!
 #  ifdef SOLVE3D
         CALL tl_main3d (RunInterval)
 #  else
         CALL tl_main2d (RunInterval)
 #  endif
-!$OMP END PARALLEL
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
-
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+!
         DO ng=1,Ngrids
           wrtNLmod(ng)=.FALSE.
           wrtTLmod(ng)=.FALSE.
@@ -2118,7 +1978,7 @@
 !
 !  Write out observation sentivity.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_put_fvar (ng, iTLM, DAV(ng)%name,                 &
      &                          'ObsImpact_BC', ad_ObsVal,              &
@@ -2128,23 +1988,20 @@
      &                          (/1/), (/Mobs/),                        &
 #  endif
      &                          ncid = DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
           CALL netcdf_sync (ng, iNLM, DAV(ng)%name, DAV(ng)%ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 # endif
 #endif /* OBS_IMPACT_SPLIT */
 !
 !  Close current forward NetCDF file.
 !
-        SourceFile=__FILE__ // ", ROMS_run"
+        SourceFile=MyFile
         DO ng=1,Ngrids
           CALL netcdf_close (ng, iNLM, FWD(ng)%ncid, FWD(ng)%name)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           HIS(ng)%ncid=-1
         END DO
 
@@ -2165,10 +2022,10 @@
      &        f12.4,' - ',f12.4 ,/)
  80   FORMAT (a,'_',a,'.nc')
  90   FORMAT (a,'.nc')
-
+!
       RETURN
       END SUBROUTINE ROMS_run
-
+!
       SUBROUTINE ROMS_finalize
 !
 !=======================================================================
@@ -2187,6 +2044,17 @@
 !  Local variable declarations.
 !
       integer :: Fcount, ng, thread
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ROMS_finalize"
+!
+!-----------------------------------------------------------------------
+!  Read and write observation variables for completeness.
+!-----------------------------------------------------------------------
+!
+      DO ng=1,Ngrids
+        CALL stats_modobs (ng)
+      END DO
 !
 !-----------------------------------------------------------------------
 !  If blowing-up, save latest model state into RESTART NetCDF file.
@@ -2224,18 +2092,14 @@
       END IF
 !
       DO ng=1,Ngrids
-!$OMP PARALLEL
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 0, __LINE__, __FILE__)
+          CALL wclock_off (ng, iNLM, 0, __LINE__, MyFile)
         END DO
-!$OMP END PARALLEL
       END DO
 !
 !  Report dynamic memory and automatic memory requirements.
 !
-!$OMP PARALLEL
       CALL memory
-!$OMP END PARALLEL
 !
 !  Close IO files.
 !
@@ -2243,7 +2107,7 @@
         CALL close_inp (ng, iNLM)
       END DO
       CALL close_out
-
+!
       RETURN
       END SUBROUTINE ROMS_finalize
 

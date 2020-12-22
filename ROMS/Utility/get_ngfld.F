@@ -4,7 +4,7 @@
      &                      Istr, Iend, Jrec,                           &
      &                      Fout)
 !
-!svn $Id: get_ngfld.F 1846 2020-07-14 01:35:41Z arango $
+!svn $Id: get_ngfld.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -88,15 +88,17 @@
       real(r8), dimension((UBi-LBi+1)*UBj) :: A
 !
       character (len=22) :: t_code
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
-      SourceFile=__FILE__
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Initialize.
 !-----------------------------------------------------------------------
 !
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Determine if inquiring about the field to process in input NetCDF
 !  file(s).  This usually happens on first call or when the field
@@ -126,8 +128,7 @@
         job=1
         CALL inquiry (ng, model, job, UBk, Iend, UBi, ifield, ncid,     &
      &                Lmulti, nfiles, S)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         IF (Linfo(6,ifield,ng)) THEN
           Linfo(6,ifield,ng)=.FALSE.
         END IF
@@ -187,8 +188,7 @@
      &                            ncid = ncid,                          &
      &                            start = (/Trec/),                     &
      &                            total = (/1/))
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
               IF (Master) WRITE (stdout,50) TRIM(Tname(ifield)), Trec
               RETURN
             END IF
@@ -226,8 +226,7 @@
      &                              start = (/1,Trec/),                 &
      &                              total = (/Iend-Istr+1,1/))
             END IF
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
               IF (Master) WRITE (stdout,50) TRIM(Vname(1,ifield)), Trec
               RETURN
             END IF

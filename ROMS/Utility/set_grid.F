@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE set_grid (ng, model)
 !
-!svn $Id: set_grid.F 1847 2020-07-14 15:14:25Z arango $
+!svn $Id: set_grid.F 1859 2020-11-30 04:32:04Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -40,6 +40,9 @@
 !
       integer :: tile
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 !-----------------------------------------------------------------------
 !  Set horizontal grid, bathymetry, and Land/Sea masking (if any).
 !  Use analytical functions or read in from a grid NetCDF.
@@ -66,8 +69,7 @@
       CALL mp_bcasti (ng, model, exit_flag)
 # endif
 !$OMP BARRIER
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &                   __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #endif
 
 #ifdef SOLVE3D
@@ -151,8 +153,7 @@
         CALL mp_bcasti (ng, model, exit_flag)
 #  endif
 !$OMP BARRIER
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 # endif
 #endif

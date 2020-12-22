@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id: mod_ncparam.F 1850 2020-07-28 00:46:43Z arango $
+!svn $Id: mod_ncparam.F 1860 2020-12-04 23:08:20Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -218,6 +218,8 @@
         integer  :: idNLmf        ! final NLM at observation locations
         integer  :: idNLmi        ! initial NLM at observation locations
         integer  :: idNLmo        ! NLM at observations locations
+        integer  :: idNLmp        ! unvetted prior NLM at obs locations
+        integer  :: idNLmu        ! unvetted NLM at obs locations
         integer  :: idNobs        ! number of observations
         integer  :: idObsD        ! observations depth
         integer  :: idObsS        ! observations screening scale
@@ -1177,7 +1179,7 @@
               gtype=w3dvar
             CASE ('b3dvar')
               gtype=b3dvar
-#ifdef ECOSIM && defined DIAGNOSTICS_BIO
+#if defined ECOSIM && defined DIAGNOSTICS_BIO
             CASE ('l3dvar')
               gtype=l3dvar
             CASE ('l4dvar')
@@ -1843,6 +1845,10 @@
               idNLmi=varid
             CASE ('idNLmo')
               idNLmo=varid
+            CASE ('idNLmp')
+              idNLmp=varid
+            CASE ('idNLmu')
+              idNLmu=varid
             CASE ('idNobs')
               idNobs=varid
             CASE ('idObsD')

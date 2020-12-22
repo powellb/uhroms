@@ -2,7 +2,7 @@
       MODULE tl_omega_mod
 #if defined TANGENT && defined SOLVE3D
 !
-!svn $Id: tl_omega.F 1844 2020-07-11 02:10:37Z arango $
+!svn $Id: tl_omega.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -48,10 +48,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 13, __LINE__, __FILE__)
+      CALL wclock_on (ng, model, 13, __LINE__, MyFile)
 # endif
       CALL tl_omega_tile (ng, tile, model,                              &
      &                    LBi, UBi, LBj, UBj,                           &
@@ -71,9 +74,9 @@
      &                    OCEAN(ng) % W,                                &
      &                    OCEAN(ng) % tl_W)
 # ifdef PROFILE
-      CALL wclock_off (ng, model, 13, __LINE__, __FILE__)
+      CALL wclock_off (ng, model, 13, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE tl_omega
 !
@@ -276,7 +279,7 @@
      &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_W)
 # endif
-
+!
       RETURN
       END SUBROUTINE tl_omega_tile
 #endif

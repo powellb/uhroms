@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined VERIFICATION
       SUBROUTINE def_mod (ng)
 !
-!svn $Id: def_mod.F 1850 2020-07-28 00:46:43Z arango $
+!svn $Id: def_mod.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -27,6 +27,7 @@
       USE mod_scalars
       USE mod_strings
 !
+      USE dateclock_mod,  ONLY : time_string
       USE def_var_mod,    ONLY : def_var
 # ifdef DISTRIBUTE
       USE distribute_mod, ONLY : mp_bcasti
@@ -45,7 +46,7 @@
 !
       logical, dimension(NV) :: got_var(NV)
       logical :: foundAtt(2), foundit
-
+!
       integer, parameter :: Natt = 25
 
       integer :: iterDim, datumDim, recordDim
@@ -71,23 +72,27 @@
       integer :: ibuffer(2)
 # endif
       integer :: def_dim
-
+!
+      real(dp) :: Tstart, Tfinal
       real(r8) :: Aval(6)
-
+!
+      character (len=22 )  :: str_date, end_date
       character (len=40 )  :: Aname, AttName(2)
       character (len=80 )  :: string
       character (len=120)  :: Vinfo(Natt)
       character (len=256)  :: ncname
       character (len=2048) :: AttValue(2)
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
-      SourceFile=__FILE__
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Set and report file name.
 !-----------------------------------------------------------------------
 !
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ncname=DAV(ng)%name
 !
       IF (Master) THEN
@@ -109,46 +114,44 @@
         Aval(i)=0.0_r8
       END DO
 !
-!  Open input observations NetCDF.
-!
-      IF (OBS(ng)%ncid.eq.-1) THEN
-        CALL netcdf_open (ng, iNLM, OBS(ng)%name, 0, OBSncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
-          WRITE (stdout,30) TRIM(OBS(ng)%name)
-          RETURN
-        END IF
-        OBS(ng)%ncid=OBSncid
-      ELSE
-        OBSncid=OBS(ng)%ncid
-      END IF
-!
-!  Inquire about input observations variables.
-!
-      CALL netcdf_inq_var (ng, iNLM, OBS(ng)%name,                      &
-     &                     ncid = OBSncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
-!
-!  Inquire if the 'state_variables' and 'obs_provenance' attributes
-!  are available in the observations file.
-!
-      AttName(1)='state_variables'
-      AttName(2)='obs_provenance'
-!
-      CALL netcdf_get_satt (ng, iNLM, OBS(ng)%name, nf90_global,        &
-     &                      AttName, AttValue, foundAtt,                &
-     &                      ncid = OBSncid)
-!
 !=======================================================================
 !  Create a new model/observation file.
 !=======================================================================
 !
       DEFINE : IF (LdefMOD(ng)) THEN
-
+!
+!  Open input observations NetCDF.
+!
+        IF (OBS(ng)%ncid.eq.-1) THEN
+          CALL netcdf_open (ng, iNLM, OBS(ng)%name, 1, OBSncid)
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
+            WRITE (stdout,30) TRIM(OBS(ng)%name)
+            RETURN
+          END IF
+        ELSE
+          OBSncid=OBS(ng)%ncid
+        END IF
+!
+!  Inquire about input observations variables.
+!
+        CALL netcdf_inq_var (ng, iNLM, OBS(ng)%name,                    &
+     &                       ncid = OBSncid)
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+!
+!  Inquire if the 'state_variables' and 'obs_provenance' attributes
+!  are available in the observations file.
+!
+        AttName(1)='state_variables'
+        AttName(2)='obs_provenance'
+!
+        CALL netcdf_get_satt (ng, iNLM, OBS(ng)%name, nf90_global,      &
+     &                        AttName, AttValue, foundAtt,              &
+     &                        ncid = OBSncid)
+!
+!  Create model/observation (DAV) file
+!
         CALL netcdf_create (ng, iNLM, TRIM(ncname), DAV(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
           IF (Master) WRITE (stdout,40) TRIM(ncname)
           RETURN
         END IF
@@ -160,50 +163,41 @@
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'xi_rho',        &
      &                 IOBOUNDS(ng)%xi_rho, RxiDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'eta_rho',       &
      &                 IOBOUNDS(ng)%eta_rho, RetaDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'record',        &
      &                 2, recordDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'survey',        &
      &                 Nsurvey(ng), surveyDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'state_var',     &
      &                 NobsVar(ng), stateDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'cost_var',      &
      &                 NobsVar(ng)+1, stateDimp)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'datum',         &
      &                 Ndatum(ng), datumDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 # ifdef RPCG
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'datum+1',       &
      &                 Ndatum(ng)+1, datumDimp)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Nouter+1',      &
      &                 Nouter+1, NouterDimp)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 
 # ifdef FOUR_DVAR
@@ -211,46 +205,38 @@
 #   ifdef SP4DVAR
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Ninner1',       &
      &                 Ninner+1, NinnerDim1)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Ninner2',       &
      &                 Ninner+2, NinnerDim2)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 #   endif
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Ninner',        &
      &                 Ninner, NinnerDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Minner',        &
      &                 Ninner+1, MinnerDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Nouter',        &
      &                 Nouter, NouterDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'Mouter',        &
      &                 Nouter+1, MouterDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   ifdef I4DVAR
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'three',         &
      &                 3, threeDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   endif
 #  endif
 #  if defined I4DVAR || defined BACKGROUND
         status=def_dim(ng, iNLM, DAV(ng)%ncid, ncname, 'iteration',     &
      &                 nf90_unlimited, iterDim)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 # endif
 !
@@ -266,8 +252,7 @@
             string='ROMS/TOMS 4D-Var output observation processing file'
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'type', TRIM(string))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'type', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -310,9 +295,59 @@
 # endif
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'Algorithm', TRIM(string))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'type', TRIM(ncname)
+              exit_flag=3
+              ioerror=status
+            END IF
+          END IF
+!
+!  Set cycle start and final time and dates attributes.
+!
+          IF (INItime(ng).lt.0.0_dp) THEN
+            Tstart=time(ng)+dt(ng)             ! called after 'initial'
+          ELSE
+            Tstart=INItime(ng)
+          END IF
+          Tfinal=Tstart+ntimes(ng)*dt(ng)
+          CALL time_string (Tstart, str_date)
+          CALL time_string (Tfinal, end_date)
+!
+          IF (exit_flag.eq.NoError) THEN
+            status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
+     &                          'str_day', Tstart*sec2day)
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
+              WRITE (stdout,50) 'str_day', TRIM(ncname)
+              exit_flag=3
+              ioerror=status
+            END IF
+          END IF
+!
+          IF (exit_flag.eq.NoError) THEN
+            status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
+     &                          'end_day', Tfinal*sec2day)
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
+              WRITE (stdout,50) 'end_day', TRIM(ncname)
+              exit_flag=3
+              ioerror=status
+            END IF
+          END IF
+!
+          IF (exit_flag.eq.NoError) THEN
+            status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
+     &                          'str_date', str_date)
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
+              WRITE (stdout,50) 'str_date', TRIM(ncname)
+              exit_flag=3
+              ioerror=status
+            END IF
+          END IF
+!
+          IF (exit_flag.eq.NoError) THEN
+            status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
+     &                          'end_date', end_date)
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
+              WRITE (stdout,50) 'end_date', TRIM(ncname)
               exit_flag=3
               ioerror=status
             END IF
@@ -323,8 +358,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'obs_file', TRIM(OBS(ng)%name))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'obs_file', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -339,14 +373,13 @@
               status=nf90_copy_att(OBSncid, nf90_global,                &
      &                             'state_variables',                   &
      &                             DAV(ng)%ncid, nf90_global)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 WRITE (stdout,50) 'state_variables', TRIM(ncname)
                 exit_flag=3
                 ioerror=status
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
           END IF
 !
@@ -358,14 +391,13 @@
               status=nf90_copy_att(OBSncid, nf90_global,                &
      &                             'obs_provenance',                    &
      &                             DAV(ng)%ncid, nf90_global)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 WRITE (stdout,50) 'obs_provenance', TRIM(ncname)
                 exit_flag=3
                 ioerror=status
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
           END IF
 !
@@ -374,8 +406,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'svn_url', TRIM(svn_url))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'svn_url', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -387,8 +418,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'svn_rev', TRIM(svn_rev))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'svn_rev', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -400,8 +430,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'code_dir', TRIM(Rdir))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'code_dir', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -413,8 +442,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'header_dir', TRIM(Hdir))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'header_dir', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -426,8 +454,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'header_file', TRIM(Hfile))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'header_file', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -440,8 +467,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'os', TRIM(my_os))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'os', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -451,8 +477,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'cpu', TRIM(my_cpu))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'cpu', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -462,8 +487,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'compiler_system', TRIM(my_fort))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'compiler_system', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -473,8 +497,7 @@
           IF (exit_flag.eq.NoError) THEN
             status=nf90_put_att(DAV(ng)%ncid,nf90_global,               &
      &                          'compiler_command', TRIM(my_fc))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'compiler_command', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -486,8 +509,7 @@
             IF (lstr.le.0) lstr=LEN_TRIM(my_fflags)
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'compiler_flags', my_fflags(1:lstr))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'compiler_flags', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -507,8 +529,7 @@
             END IF
             status=nf90_put_att(DAV(ng)%ncid, nf90_global,              &
      &                          'history', TRIM(history))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,50) 'history', TRIM(ncname)
               exit_flag=3
               ioerror=status
@@ -523,8 +544,7 @@
         exit_flag=ibuffer(1)
         ioerror=ibuffer(2)
 # endif
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Define variables and their attributes.
@@ -539,16 +559,14 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/0/), Aval, Vinfo, ncname,                   &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='inner'
         Vinfo( 2)='inner loop counter'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/0/), Aval, Vinfo, ncname,                   &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined ARRAY_MODES              || \
      defined I4DVAR_ANA_SENSITIVITY   || \
@@ -563,8 +581,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/0/), Aval, Vinfo, ncname,                   &
      &                 SetParAccess = .FALSE.)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # ifndef I4DVAR_ANA_SENSITIVITY
 !
@@ -575,80 +592,70 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/surveyDim/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='Nused_obs'
         Vinfo( 2)='Number of usable observations'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='obs_mean'
         Vinfo( 2)='observations mean'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='obs_std'
         Vinfo( 2)='observations standard deviation'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='model_mean'
         Vinfo( 2)='model mean'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='model_std'
         Vinfo( 2)='model standard deviation'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='model_bias'
         Vinfo( 2)='model bias'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo,ncname,             &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='SDE'
         Vinfo( 2)='model-observations standard deviation error'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='CC'
         Vinfo( 2)='model-observations cross-correlation'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='MSE'
         Vinfo( 2)='model-observations mean squared error'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/stateDim/), Aval, Vinfo, ncname,            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR
 !
@@ -659,8 +666,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/0/), Aval, Vinfo, ncname,                   &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # elif defined WEAK_CONSTRAINT
 !
 !  Number of converged Ritz eigenvalues.
@@ -670,8 +676,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/Nouterdim/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined WEAK_CONSTRAINT && \
     (defined ARRAY_MODES     || defined CLIPPING)
@@ -688,8 +693,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_int,         &
      &                 1, (/0/), Aval, Vinfo, ncname,                   &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR
 !
@@ -700,8 +704,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/Ninnerdim/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # elif defined WEAK_CONSTRAINT
 !
 !  Converged Ritz eigenvalues.
@@ -715,8 +718,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR || defined WEAK_CONSTRAINT
 !
@@ -731,8 +733,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR || defined WEAK_CONSTRAINT
 !
@@ -747,8 +748,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 #  ifdef WEAK_CONSTRAINT
 !
@@ -761,8 +761,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 #  ifdef I4DVAR
 !
@@ -775,8 +774,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 # endif
 # if defined I4DVAR
@@ -788,8 +786,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/NouterDim/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # elif defined WEAK_CONSTRAINT
 !
 !  Initial gradient vector normalization factor.
@@ -799,16 +796,14 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/NouterDim/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='cg_Gnorm_y'
         Vinfo( 2)='initial gradient normalization factor, y-space'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 1, (/NouterDim/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR || defined WEAK_CONSTRAINT
 !
@@ -823,8 +818,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR
 !
@@ -839,8 +833,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # elif defined WEAK_CONSTRAINT
 !
 !  Reduction in the gradient norm.
@@ -854,8 +847,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='cg_Greduc_y'
         Vinfo( 2)='reduction in the gradient norm, y-space'
@@ -866,8 +858,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR
 !
@@ -880,8 +871,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Lanczos tridiagonal matrix, upper diagonal elements.
 !
@@ -894,8 +884,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR || defined WEAK_CONSTRAINT
 !
@@ -910,8 +899,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Eigenvalues relative error.
 !
@@ -924,8 +912,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined I4DVAR
 !
@@ -940,8 +927,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, NF_FRST,          &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # elif defined WEAK_CONSTRAINT
 !
 !  Eigenvectors of Lanczos recurrence relationship.
@@ -957,8 +943,7 @@
      &                 3, vardim, Aval, Vinfo, ncname,                  &
      &                 SetFillVal = .FALSE.,                            &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if defined RBL4DVAR                 || \
      defined RBL4DVAR_ANA_SENSITIVITY || \
@@ -973,16 +958,14 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, (/stateDimp/), Aval, Vinfo, ncname,           &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='NL_fDataPenalty'
         Vinfo( 2)='nonlinear model final data penalty function'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, (/stateDimp,NouterDim/), Aval, Vinfo, ncname, &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # if (defined RECOMPUTE_4DVAR       && \
      (defined ARRAY_MODES           || defined CLIPPING)) || \
@@ -996,16 +979,14 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, (/stateDimp,NouterDim/), Aval, Vinfo, ncname, &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='RP_fDataPenalty'
         Vinfo( 2)='representer model final data penalty function'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, (/stateDimp,NouterDim/), Aval, Vinfo, ncname, &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 # ifdef WEAK_CONSTRAINT
 !
@@ -1020,8 +1001,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define state estimate data misfit.
 !
@@ -1034,8 +1014,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  ifndef SP4DVAR
 !
 !  Define model penalty function.
@@ -1049,8 +1028,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define optimal penalty function.
 !
@@ -1063,8 +1041,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define actual model penalty function.
 !
@@ -1077,8 +1054,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define actual data penalty function.
 !
@@ -1091,8 +1067,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define actual data penalty function.
 !
@@ -1105,8 +1080,7 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname,                  &
      &                 SetParAccess = .FALSE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   endif
 # endif
 !
@@ -1118,8 +1092,7 @@
      &                         MyVarName = TRIM(Vname(1,idOday)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOday))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1132,8 +1105,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOday),   &
      &                   NF_TOUT, 1, (/surveyDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observation type.
@@ -1144,13 +1116,11 @@
      &                         MyVarName = TRIM(Vname(1,idOTyp)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOTyp))
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOTyp),   &
      &                   nf90_int, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !                                      copy attributes from observations
           IF (OutThread) THEN
             DO i=1,nvatt
@@ -1158,8 +1128,8 @@
               IF (status.eq.nf90_noerr) THEN
                 status=nf90_copy_att(OBSncid, vindex, TRIM(Aname),      &
      &                               DAV(ng)%ncid, DAV(ng)%Vid(idOTyp))
-                IF (FoundError(status, nf90_noerr, __LINE__,            &
-     &                         __FILE__)) THEN
+                IF (FoundError(status, nf90_noerr,                      &
+     &                         __LINE__, MyFile)) THEN
                   WRITE (stdout,60) TRIM(Aname), TRIM(Vname(1,idOTyp)), &
      &                              TRIM(ncname)
                   exit_flag=3
@@ -1188,13 +1158,11 @@
      &                         MyVarName = TRIM(Vname(1,idOpro)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOpro))
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOpro),   &
      &                   nf90_int, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !                                      copy attributes from observations
           IF (OutThread) THEN
             DO i=1,nvatt
@@ -1202,8 +1170,8 @@
               IF (status.eq.nf90_noerr) THEN
                 status=nf90_copy_att(OBSncid, vindex, TRIM(Aname),      &
      &                               DAV(ng)%ncid, DAV(ng)%Vid(idOpro))
-                IF (FoundError(status, nf90_noerr, __LINE__,            &
-     &                         __FILE__)) THEN
+                IF (FoundError(status, nf90_noerr,                      &
+     &                         __LINE__, MyFile)) THEN
                   WRITE (stdout,60) TRIM(Aname), TRIM(Vname(1,idOpro)), &
      &                              TRIM(ncname)
                   exit_flag=3
@@ -1222,8 +1190,7 @@
           exit_flag=ibuffer(1)
           ioerror=ibuffer(2)
 # endif
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations time.
@@ -1234,8 +1201,7 @@
      &                         MyVarName = TRIM(Vname(1,idObsT)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idObsT))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1248,8 +1214,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsT),   &
      &                   NF_TOUT, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations longitude.
@@ -1260,8 +1225,7 @@
      &                         MyVarName = TRIM(Vname(1,idOlon)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOlon))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1272,8 +1236,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOlon),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations latitude.
@@ -1284,8 +1247,7 @@
      &                         MyVarName = TRIM(Vname(1,idOlat)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOlat))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1296,8 +1258,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOlat),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations depth.
@@ -1308,8 +1269,7 @@
      &                         MyVarName = TRIM(Vname(1,idObsD)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idObsD))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1324,8 +1284,7 @@
           Aval(4)=spval
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsD),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations X-fractional coordinate.
@@ -1336,8 +1295,7 @@
      &                         MyVarName = TRIM(Vname(1,idObsX)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idObsX))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1346,8 +1304,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsX),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations Y-fractional coordinate.
@@ -1358,8 +1315,7 @@
      &                         MyVarName = TRIM(Vname(1,idObsY)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idObsY))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1368,8 +1324,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsY),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations Z-fractional coordinate.
@@ -1380,8 +1335,7 @@
      &                         MyVarName = TRIM(Vname(1,idObsZ)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idObsZ))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1390,8 +1344,7 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsZ),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations total error (instrument + sampling + representation).
@@ -1402,8 +1355,7 @@
      &                         MyVarName = TRIM(Vname(1,idOerr)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOerr))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1413,8 +1365,7 @@
           Vinfo(3)=TRIM(Vname(3,idOerr))
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOerr),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations value.
@@ -1425,8 +1376,7 @@
      &                         MyVarName = TRIM(Vname(1,idOval)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOval))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1436,8 +1386,7 @@
           Vinfo(3)=TRIM(Vname(3,idOval))
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOval),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations meta value.
@@ -1448,8 +1397,7 @@
      &                         MyVarName = TRIM(Vname(1,idOmet)),       &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           Vinfo(1)=TRIM(Vname(1,idOmet))
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'long_name') THEN
@@ -1458,94 +1406,81 @@
           END DO
           status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idOmet),   &
      &                   NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Observations screening/normalization scale.
 !
         Vinfo( 1)=Vname(1,idObsS)
         Vinfo( 2)=Vname(2,idObsS)
-        Vinfo(24)='_FillValue'
-        Aval(6)=0.0_r8
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idObsS),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 # if defined FOUR_DVAR && !defined I4DVAR_ANA_SENSITIVITY
+!
+!  Unvetted prior nonlinear model at observation locations.
+!
+        Vinfo( 1)=Vname(1,idNLmp)
+        Vinfo( 2)=Vname(2,idNLmp)
+        Vinfo( 3)=Vname(3,idNLmp)
+        status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmp),     &
+     &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Initial nonlinear model at observation locations.
 !
         Vinfo( 1)=Vname(1,idNLmi)
         Vinfo( 2)=Vname(2,idNLmi)
         Vinfo( 3)=Vname(3,idNLmi)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmi),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Final nonlinear model at observation locations.
 !
         Vinfo( 1)=Vname(1,idNLmf)
         Vinfo( 2)=Vname(2,idNLmf)
         Vinfo( 3)=Vname(3,idNLmf)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmf),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  4D-Var background error standard deviation at observation locations.
 !
         Vinfo( 1)=Vname(1,idBgEr)
         Vinfo( 2)=Vname(2,idBgEr)
         Vinfo( 3)=Vname(3,idBgEr)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idBgEr),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  4D-Var innovation vector: observation minus background.
 !
         Vinfo( 1)=Vname(1,idInno)
         Vinfo( 2)=Vname(2,idInno)
         Vinfo( 3)=Vname(3,idInno)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idInno),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  4D-Var increment vector: analysis minus background.
 !
         Vinfo( 1)=Vname(1,idIncr)
         Vinfo( 2)=Vname(2,idIncr)
         Vinfo( 3)=Vname(3,idIncr)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idIncr),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  4D-Var residual vector: observation minus analysis.
 !
         Vinfo( 1)=Vname(1,idResi)
         Vinfo( 2)=Vname(2,idResi)
         Vinfo( 3)=Vname(3,idResi)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idResi),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 #  ifdef BGQC
 !
@@ -1553,14 +1488,27 @@
 !
         Vinfo( 1)=Vname(1,idBgTh)
         Vinfo( 2)=Vname(2,idBgTh)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idBgTh),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 # endif
+
+# if !defined I4DVAR_ANA_SENSITIVITY && \
+     (defined I4DVAR                 || defined WEAK_CONSTRAINT)
+!
+!  Unvetted nonlinear model at observation points per outer-loop.
+!
+        haveNLmod(ng)=.FALSE.
+        Vinfo( 1)=Vname(1,idNLmu)
+        Vinfo( 2)=Vname(2,idNLmu)
+        Vinfo( 3)=Vname(3,idNLmu)
+        status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmu),     &
+     &                 NF_FRST, 2, (/datumDim,NouterDim/), Aval, Vinfo, &
+     &                 ncname)
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+# endif
+
 # if !defined I4DVAR_ANA_SENSITIVITY && \
      (defined I4DVAR                 || defined VERIFICATION || \
       defined WEAK_CONSTRAINT)
@@ -1571,21 +1519,18 @@
         Vinfo( 1)=Vname(1,idNLmo)
         Vinfo( 2)=Vname(2,idNLmo)
         Vinfo( 3)=Vname(3,idNLmo)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
 #  ifdef VERIFICATION
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmo),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  else
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idNLmo),     &
      &                 NF_FRST, 2, (/datumDim,NouterDim/), Aval, Vinfo, &
      &                 ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 # endif
+
 # if defined I4DVAR          || defined I4DVAR_ANA_SENSITIVITY || \
      defined WEAK_CONSTRAINT
 !
@@ -1598,37 +1543,30 @@
 #  else
         Vinfo( 2)=Vname(2,idTLmo)
 #  endif
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idTLmo),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # if defined I4DVAR || defined WEAK_CONSTRAINT
 !
 !  Initial model-observation misfit (innovation) vector.
 !
         Vinfo( 1)=Vname(1,idMOMi)
         Vinfo( 2)=Vname(2,idMOMi)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idMOMi),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Final model-observation misfit (innovation) vector.
 !
         Vinfo( 1)=Vname(1,idMOMf)
         Vinfo( 2)=Vname(2,idMOMf)
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, DAV(ng)%Vid(idMOMf),     &
      &                 NF_FRST, 1, (/datumDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # if defined I4DVAR
 !
 !  Define model minus observations misfit NLM cost function.
@@ -1637,8 +1575,7 @@
         Vinfo( 2)='nonlinear model misfit cost function'
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, (/stateDimp,MouterDim/), Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define model minus observations misfit TLM cost function.
 !
@@ -1647,9 +1584,9 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, (/iterDim/), Aval, Vinfo, ncname,             &
      &                 SetParAccess = .TRUE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # ifdef BACKGROUND
 !
 !  Define model minus background misfit cost function.
@@ -1659,9 +1596,9 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, (/iterDim/), Aval, Vinfo, ncname,             &
      &                 SetParAccess = .TRUE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # if defined I4DVAR
 !
 !  Define optimality property that measures the consistency between
@@ -1672,9 +1609,9 @@
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, (/iterDim/), Aval, Vinfo, ncname,             &
      &                 SetParAccess = .TRUE.)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # ifdef WEAK_CONSTRAINT
 #  ifndef RPCG
 !
@@ -1684,12 +1621,10 @@
         Vinfo( 2)='representer coefficients estimatate'
         vardim(1)=datumDim
         vardim(2)=NouterDim
-        Vinfo(24)='_FillValue'
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Define initial gradient for minimization.
@@ -1706,8 +1641,8 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+
 #  ifdef RPCG
 !
 !  Define initial gradient for minimization.
@@ -1719,8 +1654,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define sum of evolved outer-loop increments in observation space.
 !
@@ -1732,8 +1666,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define outer-loop background cost function.
 !
@@ -1744,8 +1677,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Define Lanczos vectors in observation space.
@@ -1760,8 +1692,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='vcglev'
         Vinfo( 2)='converged Lanczos vectors, observation space'
@@ -1772,8 +1703,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Vinfo( 1)='zcglwk'
         Vinfo( 2)='Lanczos vectors, observation space'
@@ -1784,8 +1714,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  else
         Vinfo( 1)='zcglwk'
         Vinfo( 2)='Lanczos vectors, observation space'
@@ -1796,8 +1725,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Define previous values of TLmodVal.
@@ -1807,13 +1735,11 @@
         vardim(1)=datumDim
         vardim(2)=NinnerDim
         vardim(3)=NouterDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # ifdef SP4DVAR
 !
 !  Define saved values of ADmodVal.
@@ -1822,12 +1748,9 @@
         Vinfo( 2)='adjoint model at observation locations'
         vardim(1)=datumDim
         vardim(2)=NinnerDim2
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define saved values of harnoldi.
 !
@@ -1840,8 +1763,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 3, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define saved values of gmze, the Arnoldi vector weights.
 !
@@ -1853,8 +1775,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define saved values of cg_beta0.
 !
@@ -1865,8 +1786,7 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Define saved values of Jobs.
 !
@@ -1878,9 +1798,9 @@
         Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # if defined R4DVAR    || defined R4DVAR_ANA_SENSITIVITY || \
      defined TL_R4DVAR
 !
@@ -1889,13 +1809,11 @@
         Vinfo( 1)='RPmodel_initial'
         Vinfo( 2)='initial representer model at observation locations'
         vardim(1)=datumDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
+
 # if defined I4DVAR_ANA_SENSITIVITY   || \
      defined RBL4DVAR_ANA_SENSITIVITY || \
      defined RBL4DVAR_FCT_SENSITIVITY || \
@@ -1909,22 +1827,16 @@
         Vinfo( 2)='total observation impact'
         vardim(1)=datumDim
         vardim(2)=NinnerDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   else
         Vinfo( 1)='ObsImpact_total'
         Vinfo( 2)='total observation impact'
         vardim(1)=datumDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   endif
 #  else
 !
@@ -1933,14 +1845,12 @@
         Vinfo( 1)='ObsSens_total'
         Vinfo( 2)='total observation sensitivity'
         vardim(1)=datumDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 # endif
+
 # if defined OBS_IMPACT_SPLIT          && \
      (defined I4DVAR_ANA_SENSITIVITY   || \
       defined RBL4DVAR_ANA_SENSITIVITY || \
@@ -1954,22 +1864,16 @@
         Vinfo( 2)='observation impact due to initial conditions'
         vardim(1)=datumDim
         vardim(2)=NinnerDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  else
         Vinfo( 1)='ObsImpact_IC'
         Vinfo( 2)='observation impact due to initial conditions'
         vardim(1)=datumDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 
 #  if defined ADJUST_WSTRESS || defined ADJUST_STFLUX
@@ -1982,24 +1886,19 @@
         Vinfo( 2)='observation impact due to surface forcing'
         vardim(1)=datumDim
         vardim(2)=NinnerDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   else
         Vinfo( 1)='ObsImpact_FC'
         Vinfo( 2)='observation impact due to surface forcing'
         vardim(1)=datumDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   endif
 #  endif
+
 #  if defined ADJUST_BOUNDARY
 !
 !  Define observation impact due to boundary condition increments.
@@ -2009,25 +1908,20 @@
         Vinfo( 2)='observation impact due to open boundary conditions'
         vardim(1)=datumDim
         vardim(2)=NinnerDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 2, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   else
         Vinfo( 1)='ObsImpact_BC'
         Vinfo( 2)='observation impact due to open boundary conditions'
         vardim(1)=datumDim
-        Vinfo(24)='_FillValue'
-        Aval(6)=spval
         status=def_var(ng, iNLM, DAV(ng)%ncid, varid, nf90_double,      &
      &                 1, vardim, Aval, Vinfo, ncname)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   endif
 #  endif
 # endif
+
 # if defined BALANCE_OPERATOR && defined ZETA_ELLIPTIC
 !
 !  Define reference free-surface used in the balance operator.
@@ -2047,8 +1941,14 @@
 !-----------------------------------------------------------------------
 !
         CALL netcdf_enddef (ng, iNLM, ncname, DAV(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+!
+!  Close observations NetCDF.
+!
+        IF (OBS(ng)%ncid.eq.-1) THEN
+          CALL netcdf_close (ng, iNLM, OBSncid, OBS(ng)%name, .FALSE.)
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+        END IF
       END IF DEFINE
 !
 !=======================================================================
@@ -2061,8 +1961,7 @@
 !  Open model/observation for read/write.
 !
         CALL netcdf_open (ng, iNLM, ncname, 1, DAV(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
           WRITE (stdout,30) TRIM(ncname)
           RETURN
         END IF
@@ -2071,15 +1970,13 @@
 !
         CALL netcdf_check_dim (ng, iNLM, ncname,                        &
      &                         ncid = DAV(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Inquire about the variables.
 !
         CALL netcdf_inq_var (ng, iNLM, ncname,                          &
      &                       ncid = DAV(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Initialize logical switches.
 !
@@ -2131,6 +2028,12 @@
             got_var(idObsS)=.TRUE.
             DAV(ng)%Vid(idObsS)=var_id(i)
 # ifdef FOUR_DVAR
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idNLmp))) THEN
+            got_var(idNLmp)=.TRUE.
+            DAV(ng)%Vid(idNLmp)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idNLmu))) THEN
+            got_var(idNLmu)=.TRUE.
+            DAV(ng)%Vid(idNLmu)=var_id(i)
           ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idNLmi))) THEN
             got_var(idNLmi)=.TRUE.
             DAV(ng)%Vid(idNLmi)=var_id(i)
@@ -2241,6 +2144,20 @@
           RETURN
         END IF
 # ifdef FOUR_DVAR
+        IF (.not.got_var(idNLmp)) THEN
+          IF (Master) WRITE (stdout,90) TRIM(Vname(1,idNLmp)),          &
+     &                                  TRIM(DAV(ng)%name)
+          exit_flag=2
+          RETURN
+        END IF
+
+        IF (.not.got_var(idNLmu)) THEN
+          IF (Master) WRITE (stdout,90) TRIM(Vname(1,idNLmu)),          &
+     &                                  TRIM(DAV(ng)%name)
+          exit_flag=2
+          RETURN
+        END IF
+
         IF (.not.got_var(idNLmi)) THEN
           IF (Master) WRITE (stdout,90) TRIM(Vname(1,idNLmi)),          &
      &                                  TRIM(DAV(ng)%name)
@@ -2336,7 +2253,7 @@
      &        'for variable: ',1x,a,/,11x,a)
   90  FORMAT (/,' DEF_MOD - unable to find model/observation variable:',&
      &        1x,a,/,11x,'in file: ',a)
-
+!
       RETURN
       END SUBROUTINE def_mod
 #else

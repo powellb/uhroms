@@ -1,7 +1,7 @@
 #ifdef NONLINEAR
       SUBROUTINE step2d (ng, tile)
 !
-!svn $Id: step2d_LF_AM3.h 1844 2020-07-11 02:10:37Z arango $
+!svn $Id: step2d_LF_AM3.h 1859 2020-11-30 04:32:04Z arango $
 !=======================================================================
 !                                                                      !
 !  Nonlinear shallow-water primitive equations predictor (Leap-frog)   !
@@ -33,10 +33,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 9, __LINE__, __FILE__)
+      CALL wclock_on (ng, iNLM, 9, __LINE__, MyFile)
 # endif
       CALL step2d_tile (ng, tile,                                       &
      &                  LBi, UBi, LBj, UBj, N(ng),                      &
@@ -113,7 +116,7 @@
      &                  OCEAN(ng) % ubar,       OCEAN(ng) % vbar,       &
      &                  OCEAN(ng) % zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 9, __LINE__, __FILE__)
+      CALL wclock_off (ng, iNLM, 9, __LINE__, MyFile)
 # endif
 !
       RETURN

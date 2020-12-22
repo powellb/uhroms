@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR && defined OBSERVATIONS
       SUBROUTINE obs_cost (ng, model)
 !
-!svn $Id: obs_cost.F 1838 2020-05-13 03:00:46Z arango $
+!svn $Id: obs_cost.F 1856 2020-11-12 04:55:32Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -147,7 +147,7 @@
         DO iobs=1,Nobs(ng)
           ivar=ObsType2State(ObsType(iobs))
           IF ((ivar.gt.0).and.(ObsScale(iobs).gt.0.0_r8)) THEN
-            cff=0.5_r8*ObsScale(iobs)*ObsErr(iobs)*                       &
+            cff=0.5_r8*ObsScale(iobs)*ObsErr(iobs)*                     &
      &          (NLmodVal(iobs)+TLmodVal(iobs)-ObsVal(iobs))**2
             my_ObsCost(0)=my_ObsCost(0)+cff
             my_ObsCost(ivar)=my_ObsCost(ivar)+cff
@@ -163,7 +163,7 @@
         DO iobs=1,Nobs(ng)
           ivar=ObsType2State(ObsType(iobs))
           IF ((ivar.gt.0).and.(ObsScale(iobs).gt.0.0_r8)) THEN
-            cff=0.5_r8*ObsScale(iobs)*ObsErr(iobs)*                       &
+            cff=0.5_r8*ObsScale(iobs)*ObsErr(iobs)*                     &
      &          (NLmodVal(iobs)-ObsVal(iobs))**2
             my_ObsCost(0)=my_ObsCost(0)+cff
             my_ObsCost(ivar)=my_ObsCost(ivar)+cff

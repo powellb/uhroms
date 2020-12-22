@@ -1,6 +1,6 @@
       SUBROUTINE t3dmix2 (ng, tile)
 !
-!svn $Id: t3dmix2_geo.h 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: t3dmix2_geo.h 1859 2020-11-30 04:32:04Z arango $
 !************************************************** Hernan G. Arango ***
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -30,10 +30,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #include "tile.h"
 !
 #ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 25, __LINE__, __FILE__)
+      CALL wclock_on (ng, iNLM, 25, __LINE__, MyFile)
 #endif
       CALL t3dmix2_tile (ng, tile,                                      &
      &                   LBi, UBi, LBj, UBj,                            &
@@ -66,8 +69,9 @@
 #endif
      &                   OCEAN(ng) % t)
 #ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 25, __LINE__, __FILE__)
+      CALL wclock_off (ng, iNLM, 25, __LINE__, MyFile)
 #endif
+!
       RETURN
       END SUBROUTINE t3dmix2
 !
@@ -402,5 +406,6 @@
           END IF
         END DO K_LOOP
       END DO T_LOOP
+!
       RETURN
       END SUBROUTINE t3dmix2_tile

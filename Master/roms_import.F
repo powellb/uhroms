@@ -1,9 +1,9 @@
 #include "cppdefs.h"
       MODULE ROMS_import_mod
 
-#ifdef MODEL_COUPLING
+#if defined MODEL_COUPLING && defined MCT_LIB
 !
-!svn $Id: roms_import.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: roms_import.F 1856 2020-11-12 04:55:32Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -28,8 +28,6 @@
      &                          id, gtype, scale, add_offset,           &
 # if defined MCT_LIB
      &                          Npts, InpField,                         &
-# elif defined ESMF_LIB
-     &                          InpField,                               &
 # endif
      &                          Imin, Imax, Jmin, Jmax,                 &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -64,15 +62,11 @@
 # ifdef ASSUMED_SHAPE
 #  if defined MCT_LIB
       real(r8), intent(in) ::  InpField(:)
-#  elif defined ESMF_LIB
-      real(r8), intent(in) ::  InpField(:,:)
 #  endif
       real(r8), intent(out) :: OutField(LBi:,LBj:)
 # else
 #  if defined MCT_LIB
       real(r8), intent(in) ::  InpField(Npts)
-#  elif defined ESMF_LIB
-      real(r8), intent(in) ::  InpField(:,:)
 #  endif
       real(r8), intent(out) :: OutField(LBi:UBi,LBj:UBj)
 # endif
@@ -108,7 +102,6 @@
           range(2)=MAX(range(2),OutField(i,j))
         END DO
       END DO
-# elif defined ESMF_LIB
 # endif
 # ifdef DISTRIBUTE
 !

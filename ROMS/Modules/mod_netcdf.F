@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_netcdf
 !
-!svn $Id: mod_netcdf.F 1848 2020-07-15 00:58:55Z arango $
+!svn $Id: mod_netcdf.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -267,23 +267,26 @@
 !
       integer, intent(in) :: ng, model
       integer, intent(in), optional :: ncid
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in), optional :: DimName
-
+!
       integer, intent(out), optional :: DimSize
       integer, intent(out), optional :: DimID
 !
 !  Local variable declarations.
 !
       logical :: foundit
-
+!
       integer :: my_ncid, i, j, status
       integer :: myID, myValue
 
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(5) :: ibuffer
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_dim"
 !
 !-----------------------------------------------------------------------
 !  Inquire about the NetCDF dimensions (names and values).
@@ -309,9 +312,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
          CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-         IF (FoundError(exit_flag, NoError, __LINE__,                   &
-     &                  __FILE__ //                                     &
-     &                  ", netcdf_get_dim")) RETURN
+         IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -340,9 +341,7 @@
             dim_id(i)=i
             status=nf90_inquire_dimension(my_ncid, dim_id(i),           &
      &                                    dim_name(i), dim_size(i))
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_get_dim")) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,10) dim_id(i), TRIM(ncname),                &
      &                          TRIM(SourceFile), nf90_strerror(status)
               exit_flag=2
@@ -362,9 +361,7 @@
             exit_flag=2
             ioerror=0
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_dim")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,30) TRIM(ncname), TRIM(SourceFile)
             exit_flag=2
             ioerror=status
@@ -432,7 +429,7 @@
      &          ' of input NetCDF file:',2x,a,/,18x,'call from:',2x,a)
   40  FORMAT (/,' NETCDF_GET_DIM - requested dimension: ',a,/18x,       &
      &        'not found in input file:',2x,a,/,18x,'call from:',2x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_dim
 !
@@ -478,12 +475,15 @@
 !
       integer, intent(in) :: ng, model
       integer, intent(in), optional :: ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
 !
       integer :: i, status
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_check_dim"
 !
 !-----------------------------------------------------------------------
 !  Inquire about the NetCDF dimensions (names and values).
@@ -495,9 +495,7 @@
         CALL netcdf_get_dim (ng, model, ncname,                         &
      &                       ncid = ncid)
       END IF
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__ //                                        &
-     &               ", netcdf_check_dim")) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Check dimensions for consistency.
@@ -596,7 +594,8 @@
               EXIT
             END IF
 #endif
-#ifdef ADJUST_BOUNDARY
+#ifndef RBL4DVAR_FCT_SENSITIVITY
+# ifdef ADJUST_BOUNDARY
           CASE ('obc_adjust')
             IF (dim_size(i).ne.Nbrec(ng)) THEN
               IF (Master) WRITE (stdout,10) TRIM(dim_name(i)),          &
@@ -605,8 +604,8 @@
               exit_flag=2
               EXIT
             END IF
-#endif
-#if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
+# endif
+# if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
           CASE ('frc_adjust')
             IF (dim_size(i).ne.Nfrec(ng)) THEN
               IF (Master) WRITE (stdout,10) TRIM(dim_name(i)),          &
@@ -615,13 +614,14 @@
               exit_flag=2
               EXIT
             END IF
+# endif
 #endif
         END SELECT
       END DO
 
  10   FORMAT (/,' NETCDF_CHECK_DIM - inconsistent size of dimension: ', &
      &        a,2x,2i5,/,20x,'in file: ',a)
-
+!
       RETURN
       END SUBROUTINE netcdf_check_dim
 !
@@ -674,19 +674,22 @@
 !
       integer, intent(in) :: ng, model
       integer, intent(in), optional :: ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
 !
       integer :: IDmod, Npts, i, ib, ic, j, j1, j2, status
       integer :: IvarS
-
+!
       real(r8), parameter :: RoundOff = 1.0e-7_r8
 
       real(r8) :: FvarS, FvarV(50), VarVal
-
+!
       character (len=80) :: text
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_check_var"
 !
 !-----------------------------------------------------------------------
 !  Inquire about the NetCDF variables.
@@ -709,9 +712,7 @@
         CALL netcdf_inq_var (ng, IDmod, ncname,                         &
      &                       ncid = ncid)
       END IF
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__ //                                        &
-     &               ", netcdf_check_var")) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Check several important variables for consistency.
@@ -730,9 +731,7 @@
      &                              IvarS,                              &
      &                              ncid = ncid)
             END IF
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_check_var")) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
             IF (IvarS.ne.Vtransform(ng)) THEN
               IF (Master) WRITE (stdout,10) TRIM(var_name(i)),          &
@@ -750,10 +749,7 @@
      &                              IvarS,                              &
      &                              ncid = ncid)
             END IF
-
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_check_var")) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
             IF (IvarS.ne.Vstretching(ng)) THEN
               IF (Master) WRITE (stdout,10) TRIM(var_name(i)),          &
@@ -771,10 +767,7 @@
      &                              FvarS,                              &
      &                              ncid = ncid)
             END IF
-
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_check_var")) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
             IF (ABS(hc(ng)-FvarS).gt.RoundOff) THEN
               IF (Master) WRITE (stdout,20) TRIM(var_name(i)),          &
@@ -792,9 +785,7 @@
      &                              FvarS,                              &
      &                              ncid = ncid)
             END IF
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_check_var")) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
             IF (ABS(theta_s(ng)-FvarS).gt.RoundOff) THEN
               IF (Master) WRITE (stdout,20) TRIM(var_name(i)),          &
@@ -812,9 +803,7 @@
      &                              FvarS,                              &
      &                              ncid = ncid)
             END IF
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_check_var")) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
             IF (ABS(theta_b(ng)-FvarS).gt.RoundOff) THEN
               IF (Master) WRITE (stdout,20) TRIM(var_name(i)),          &
@@ -832,9 +821,7 @@
      &                              FvarS,                              &
      &                              ncid = ncid)
             END IF
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_check_var")) RETURN
+            IF (FoundError(exit_flag, NoError,__LINE__, MyFile)) RETURN
 
             IF (ABS(Tcline(ng)-FvarS).gt.RoundOff) THEN
               IF (Master) WRITE (stdout,20) TRIM(var_name(i)),          &
@@ -871,9 +858,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(VarVal-FvarS).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -894,9 +880,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(Hgamma(2)-FvarS).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -918,9 +903,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(Hgamma(3)-FvarS).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -942,9 +926,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(Hgamma(4)-FvarS).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -977,9 +960,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(FvarS-VarVal).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -1000,9 +982,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(FvarS-Vgamma(2)).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -1024,9 +1005,8 @@
      &                                FvarS,                            &
      &                                ncid = ncid)
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (ABS(FvarS-Vgamma(3)).gt.RoundOff) THEN
                 IF (Master) WRITE (stdout,20) TRIM(var_name(i)),        &
@@ -1052,9 +1032,8 @@
      &                                start = (/1/), total = (/Npts/))
               END IF
 
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (model.eq.5) THEN
                 j1=1                   ! first state variable to check
@@ -1099,9 +1078,8 @@
      &                                ncid = ncid,                      &
      &                                start = (/1/), total = (/Npts/))
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               IF (model.eq.5) THEN
                 j1=1                   ! first state variable to check
@@ -1139,9 +1117,8 @@
      &                                ncid = ncid,                      &
      &                                start = (/1/), total = (/Npts/))
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               j1=1                     ! first state variable to check
 #  ifdef SOLVE3D
@@ -1176,9 +1153,8 @@
      &                                ncid = ncid,                      &
      &                                start = (/1/), total = (/Npts/))
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               j1=1                     ! first state variable to check
               j2=isTvar(NT(ng))        ! last  state variable to check
@@ -1218,9 +1194,8 @@
      &                                start = (/1,1/),                  &
      &                                total = (/Npts,4/))
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               ic=0
               j1=1                     ! first state variable to check
@@ -1262,9 +1237,8 @@
      &                                start = (/1,1/),                  &
      &                                total = (/Npts,4/))
               END IF
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_check_var")) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 
               ic=0
               j1=1                     ! first state variable to check
@@ -1300,7 +1274,7 @@
      &        a,2x,2i5,/,20x,'in file: ',a)
  20   FORMAT (/,' NETCDF_CHECK_VAR - inconsistent value of variable: ', &
      &        a,2x,2(1pe14.6),/,20x,'in file: ',a)
-
+!
       RETURN
       END SUBROUTINE netcdf_check_var
 !
@@ -1376,12 +1350,12 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in), optional :: myVarName
-
+!
       logical, intent(out), optional :: SearchVar
-
+!
       integer, intent(in), optional :: ncid
 
       integer, intent(out), optional :: VarID
@@ -1391,15 +1365,18 @@
 !  Local variable declarations.
 !
       logical :: foundit, WriteError
-
+!
       integer :: i, j, status
       integer :: att_id, my_Alen, my_Atype, my_id, my_ncid
 
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(4) :: ibuffer
 #endif
-
+!
       character (len=1024) :: text
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_inq_var"
 !
 !-----------------------------------------------------------------------
 !  Inquire about the NetCDF dimensions (names and values).
@@ -1434,9 +1411,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_inq_var")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -1458,22 +1433,22 @@
           DO i=1,MIN(Matts,n_gatt)
             att_id=i
             status=nf90_inq_attname(my_ncid, nf90_global, att_id,       &
-      &                             att_name(i))
+     &                              att_name(i))
             IF (status.eq.nf90_noerr) THEN
               status=nf90_inquire_attribute(my_ncid, nf90_global,       &
-      &                                     TRIM(att_name(i)),          &
-      &                                     xtype = att_kind(i),        &
-      &                                     attnum = att_id)
+     &                                      TRIM(att_name(i)),          &
+     &                                      xtype = att_kind(i),        &
+     &                                      attnum = att_id)
               IF (status.ne.nf90_noerr) THEN
                 WRITE (stdout,5) i, TRIM(ncname), TRIM(SourceFile),     &
-      &                          nf90_strerror(status)
+     &                           nf90_strerror(status)
                 exit_flag=2
                 ioerror=status
                 EXIT
               END IF
             ELSE
               WRITE (stdout,5) i, TRIM(ncname), TRIM(SourceFile),       &
-      &                        nf90_strerror(status)
+     &                         nf90_strerror(status)
               exit_flag=2
               ioerror=status
               EXIT
@@ -1524,9 +1499,7 @@
             WRITE (stdout,30) 'Mvars = ', Mvars, n_var
             exit_flag=2
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_inq_var")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,40) TRIM(ncname), TRIM(SourceFile)
             exit_flag=2
             ioerror=status
@@ -1611,9 +1584,7 @@
             DO i=1,n_vdim
               status=nf90_inquire_dimension(my_ncid, var_Dids(i),       &
      &                                      var_Dname(i), var_Dsize(i))
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_inq_var")) THEN
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 WRITE (stdout,50) i, TRIM(myVarName), TRIM(ncname),     &
      &                            TRIM(SourceFile),                     &
      &                            nf90_strerror(status)
@@ -1636,9 +1607,8 @@
                       status=nf90_get_att(my_ncid, my_id,               &
      &                                    TRIM(var_Aname(i)),           &
      &                                    var_Aint(i))
-                      IF (FoundError(status, nf90_noerr, __LINE__,      &
-     &                               __FILE__ //                        &
-     &                               ", netcdf_inq_var")) THEN
+                      IF (FoundError(status, nf90_noerr,                &
+     &                               __LINE__, MyFile)) THEN
                         WRITE (stdout,60) 'integer',                    &
      &                                    TRIM(var_Aname(i)),           &
      &                                    TRIM(myVarName),              &
@@ -1655,9 +1625,8 @@
                       status=nf90_get_att(my_ncid, my_id,               &
      &                                    TRIM(var_Aname(i)),           &
      &                                    var_Afloat(i))
-                      IF (FoundError(status, nf90_noerr, __LINE__,      &
-     &                               __FILE__ //                        &
-     &                               ", netcdf_inq_var")) THEN
+                      IF (FoundError(status, nf90_noerr,                &
+     &                               __LINE__, MyFile)) THEN
                         WRITE (stdout,60) 'float',                      &
      &                                    TRIM(var_Aname(i)),           &
      &                                    TRIM(myVarName),              &
@@ -1672,9 +1641,8 @@
                       status=nf90_get_att(my_ncid, my_id,               &
      &                                    TRIM(var_Aname(i)),           &
      &                                    text(1:my_Alen))
-                      IF (FoundError(status, nf90_noerr, __LINE__,      &
-     &                               __FILE__ //                        &
-     &                               ", netcdf_inq_var")) THEN
+                      IF (FoundError(status, nf90_noerr,                &
+     &                               __LINE__, MyFile)) THEN
                         WRITE (stdout,60) 'string',                     &
      &                                    TRIM(var_Aname(i)),           &
      &                                    TRIM(myVarName),              &
@@ -1779,7 +1747,7 @@
   80  FORMAT (/,' NETCDF_INQ_VAR - requested variable:',2x,a,/18x,      &
      &        'not found in input file:',2x,a,/,18x,'call from:',2x,a,  &
      &        /,18x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_inq_var
 !
@@ -1817,10 +1785,10 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model, ncid
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       integer, intent(out) :: VarID
 !
 !  Local variable declarations.
@@ -1830,15 +1798,16 @@
       integer, dimension(3) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_inq_varid"
+!
 !-----------------------------------------------------------------------
 !  Inquire ID of requested variable.
 !-----------------------------------------------------------------------
 !
       IF (InpThread) THEN
         status=nf90_inq_varid(ncid, TRIM(myVarName), VarID)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_inq_varid")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),              &
      &                      TRIM(SourceFile), nf90_strerror(status)
           exit_flag=3
@@ -1859,7 +1828,7 @@
   10  FORMAT (/,' NETCDF_INQ_VARID - error while inquiring ID for ',    &
      &        'variable:',2x,a,/,20x,'in input file:',2x,a,/,           &
      &        20x,'call from:',2x,a,/,20x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_inq_varid
 !
@@ -1903,12 +1872,12 @@
       integer, intent(in) :: ng, model, varid
 
       integer, intent(in), optional :: ncid
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: AttName(:)
-
+!
       logical, intent(out) :: foundit(:)
-
+!
       real(r8), intent(out) :: AttValue(:)
 !
 !  Local variable declarations.
@@ -1916,11 +1885,15 @@
       integer :: i, j, my_natts, my_ncid, natts, status
 
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
+!
       real(r8), allocatable :: buffer(:)
 #endif
-
+!
       character (len=40) :: my_Aname
       character (len=40) :: my_Vname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_fatt"
 !
 !-----------------------------------------------------------------------
 !  Inquire ID of requested variable.
@@ -1943,9 +1916,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fatt")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -1969,9 +1940,8 @@
                 IF (TRIM(my_Aname).eq.TRIM(AttName(i))) THEN
                   status=nf90_get_att(my_ncid, varid, TRIM(AttName(i)), &
      &                                AttValue(i))
-                  IF (FoundError(status, nf90_noerr, __LINE__,          &
-     &                           __FILE__ //                            &
-     &                           ", netcdf_get_fatt")) THEN
+                  IF (FoundError(status, nf90_noerr,                    &
+     &                           __LINE__, MyFile)) THEN
                     IF (Master) WRITE (stdout,10) TRIM(AttName(i)),     &
      &                                            TRIM(my_Vname),       &
      &                                            TRIM(ncname),         &
@@ -2052,7 +2022,7 @@
   30  FORMAT (/,' NETCDF_GET_FATT - error while inquiring number of ',  &
      &        'attributes for variable:',1x,a,/,19x,'in input file:',   &
      &        2x,a,/,19x,'call from:',2x,a,/,19x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_fatt
 !
@@ -2096,12 +2066,12 @@
       integer, intent(in) :: ng, model, varid
 
       integer, intent(in), optional :: ncid
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: AttName(:)
-
+!
       logical, intent(out) :: foundit(:)
-
+!
       character (len=*), intent(out) :: AttValue(:)
 !
 !  Local variable declarations.
@@ -2111,9 +2081,12 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, allocatable :: ibuffer(:)
 #endif
-
+!
       character (len=40) :: my_Aname
       character (len=40) :: my_Vname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_satt"
 !
 !-----------------------------------------------------------------------
 !  Inquire ID of requested variable.
@@ -2136,9 +2109,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_satt")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -2162,9 +2133,8 @@
                 IF (TRIM(my_Aname).eq.TRIM(AttName(i))) THEN
                   status=nf90_get_att(my_ncid, varid, TRIM(AttName(i)), &
      &                                AttValue(i))
-                  IF (FoundError(status, nf90_noerr, __LINE__,          &
-     &                           __FILE__ //                            &
-                                 ", netcdf_get_satt")) THEN
+                  IF (FoundError(status, nf90_noerr,                    &
+     &                           __LINE__, MyFile)) THEN
                     IF (Master) WRITE (stdout,10) TRIM(AttName(i)),     &
      &                                            TRIM(my_Vname),       &
      &                                            TRIM(ncname),         &
@@ -2244,7 +2214,7 @@
   30  FORMAT (/,' NETCDF_GET_SATT - error while inquiring number of ',  &
      &        'attributes for variable:',1x,a,/,19x,'in input file:',   &
      &        2x,a,/,19x,'call from:',2x,a,/19x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_satt
 !
@@ -2300,16 +2270,16 @@
 !  Imported variable declarations.
 !
       logical, intent(in), optional :: broadcast
-
+!
       integer, intent(in) :: ng, model
 
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(r8), intent(out), optional :: min_val
       real(r8), intent(out), optional :: max_val
 
@@ -2319,6 +2289,7 @@
 !
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       logical :: DoBroadcast
+!
 #endif
 
       integer :: my_ncid, status, varid
@@ -2326,7 +2297,11 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(r8), dimension(1) :: my_A
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_fvar_0d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
@@ -2336,9 +2311,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -2366,9 +2339,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -2419,7 +2390,7 @@
   20  FORMAT (/,' NETCDF_GET_FVAR_0D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_fvar_0d
 !
@@ -2476,16 +2447,16 @@
 !  Imported variable declarations.
 !
       logical, intent(in), optional :: broadcast
-
+!
       integer, intent(in) :: ng, model
 
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(r8), intent(out), optional :: min_val
       real(r8), intent(out), optional :: max_val
 
@@ -2497,20 +2468,24 @@
       logical :: DoBroadcast
 #endif
       logical, dimension(3) :: foundit
-
+!
       integer :: i, my_ncid, status, varid
 
       integer, dimension(1) :: Asize
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(r8) :: Afactor, Aoffset, Aspval
 
       real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
-
+!
       character (len=12), dimension(3) :: AttName
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_fvar_1d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point 1D-array variable.
@@ -2529,9 +2504,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -2558,9 +2531,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -2669,7 +2640,7 @@
   20  FORMAT (/,' NETCDF_GET_FVAR_1D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_fvar_1d
 !
@@ -2727,16 +2698,16 @@
 !  Imported variable declarations.
 !
       logical, intent(in), optional :: broadcast
-
+!
       integer, intent(in) :: ng, model
 
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(r8), intent(out), optional :: min_val
       real(r8), intent(out), optional :: max_val
 
@@ -2748,7 +2719,7 @@
       logical :: Dobroadcast
 #endif
       logical, dimension(3) :: foundit
-
+!
       integer :: i, j, my_ncid, status, varid
 
       integer, dimension(2) :: Asize
@@ -2756,13 +2727,17 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(r8) :: Afactor, Aoffset, Aspval
 
       real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
-
+!
       character (len=12), dimension(3) :: AttName
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_fvar_2d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point 2D-array variable.
@@ -2780,9 +2755,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -2809,9 +2782,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -2926,7 +2897,7 @@
   20  FORMAT (/,' NETCDF_GET_FVAR_2D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_fvar_2d
 !
@@ -2981,16 +2952,16 @@
 !  Imported variable declarations.
 !
       logical, intent(in), optional :: broadcast
-
+!
       integer, intent(in) :: ng, model
 
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(r8), intent(out), optional :: min_val
       real(r8), intent(out), optional :: max_val
 
@@ -3002,7 +2973,7 @@
       logical :: DoBroadcast
 #endif
       logical, dimension(3) :: foundit
-
+!
       integer :: i, j, k, my_ncid, status, varid
 
       integer, dimension(3) :: Asize
@@ -3010,13 +2981,17 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(r8) :: Afactor, Aoffset, Aspval
 
       real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
-
+!
       character (len=12), dimension(3) :: AttName
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_fvar_3d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point 2D-array variable.
@@ -3036,9 +3011,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -3065,9 +3038,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -3190,7 +3161,7 @@
   20  FORMAT (/,' NETCDF_GET_FVAR_3D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_fvar_3d
 !
@@ -3245,16 +3216,16 @@
 !  Imported variable declarations.
 !
       logical, intent(in), optional :: broadcast
-
+!
       integer, intent(in) :: ng, model
 
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(r8), intent(out), optional :: min_val
       real(r8), intent(out), optional :: max_val
 
@@ -3266,7 +3237,7 @@
       logical :: DoBroadcast
 #endif
       logical, dimension(3) :: foundit
-
+!
       integer :: i, j, k, l, my_ncid, status, varid
 
       integer, dimension(4) :: Asize
@@ -3274,13 +3245,17 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(r8) :: Afactor, Aoffset, Aspval
 
       real(r8), parameter :: Aepsilon = 1.0E-8_r8
 
       real(r8), dimension(3) :: AttValue
-
+!
       character (len=12), dimension(3) :: AttName
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_fvar_4d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point 2D-array variable.
@@ -3302,9 +3277,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -3331,9 +3304,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -3462,7 +3433,7 @@
   20  FORMAT (/,' NETCDF_GET_FVAR_4D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_fvar_4d
 !
@@ -3517,10 +3488,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       logical, intent(out) :: A
 !
 !  Local variable declarations.
@@ -3533,7 +3504,11 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       character (len=1) :: Achar
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_lvar_0d"
 !
 !-----------------------------------------------------------------------
 !  Read in an integer scalar variable.
@@ -3543,9 +3518,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_lvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -3585,9 +3558,7 @@
                 END IF
               END IF
             END IF
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_get_lvar")) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),          &
      &                          TRIM(SourceFile), nf90_strerror(status)
               exit_flag=2
@@ -3636,7 +3607,7 @@
   30  FORMAT (/,' NETCDF_GET_LVAR_0D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_lvar_0d
 !
@@ -3692,10 +3663,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       logical, intent(out) :: A(:)
 !
 !  Local variable declarations.
@@ -3707,7 +3678,11 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       character (len=1), dimension(SIZE(A,1)) :: Achar
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_lvar_1d"
 !
 !-----------------------------------------------------------------------
 !  Read in an integer scalar variable.
@@ -3717,9 +3692,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_lvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -3762,9 +3735,7 @@
                 END DO
               END IF
             END IF
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__ //                                  &
-     &                     ", netcdf_get_lvar")) THEN
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),          &
      &                          TRIM(SourceFile), nf90_strerror(status)
               exit_flag=2
@@ -3813,7 +3784,7 @@
   30  FORMAT (/,' NETCDF_GET_LVAR_1D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_lvar_1d
 !
@@ -3866,10 +3837,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       integer, intent(out) :: A
 !
 !  Local variable declarations.
@@ -3882,6 +3853,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_ivar_0d"
+!
 !-----------------------------------------------------------------------
 !  Read in an integer scalar variable.
 !-----------------------------------------------------------------------
@@ -3890,9 +3864,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_ivar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -3908,9 +3880,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -3950,7 +3920,7 @@
   20  FORMAT (/,' NETCDF_GET_IVAR_0D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_ivar_0d
 !
@@ -4004,10 +3974,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       integer, intent(out) :: A(:)
 !
 !  Local variable declarations.
@@ -4018,6 +3988,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_ivar_1d"
+!
 !-----------------------------------------------------------------------
 !  Read in an integer 1D-array variable.
 !-----------------------------------------------------------------------
@@ -4026,9 +3999,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_ivar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4043,9 +4014,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -4085,7 +4054,7 @@
   20  FORMAT (/,' NETCDF_GET_IVAR_1D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_ivar_1d
 !
@@ -4140,10 +4109,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       integer, intent(out) :: A(:,:)
 !
 !  Local variable declarations.
@@ -4154,6 +4123,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_ivar_2d"
+!
 !-----------------------------------------------------------------------
 !  Read in an integer 2D-array variable.
 !-----------------------------------------------------------------------
@@ -4162,9 +4134,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_ivar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4179,9 +4149,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -4221,7 +4189,7 @@
   20  FORMAT (/,' NETCDF_GET_IVAR_2D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_ivar_2d
 !
@@ -4284,7 +4252,7 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 
@@ -4298,6 +4266,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_svar_0d"
+!
 !-----------------------------------------------------------------------
 !  Read in a string scalar variable.
 !-----------------------------------------------------------------------
@@ -4306,9 +4277,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4323,9 +4292,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -4365,7 +4332,7 @@
   20  FORMAT (/,' NETCDF_GET_SVAR_0D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_svar_0d
 !
@@ -4424,7 +4391,7 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 
@@ -4438,6 +4405,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_svar_1d"
+!
 !-----------------------------------------------------------------------
 !  Read in a string 1D-array or array element.
 !-----------------------------------------------------------------------
@@ -4446,9 +4416,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4463,9 +4431,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -4505,7 +4471,7 @@
   20  FORMAT (/,' NETCDF_GET_SVAR_1D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_svar_1d
 !
@@ -4564,7 +4530,7 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 
@@ -4578,6 +4544,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_svar_2d"
+!
 !-----------------------------------------------------------------------
 !  Read in a string 2D-array or array element.
 !-----------------------------------------------------------------------
@@ -4586,9 +4555,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4603,9 +4570,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -4645,7 +4610,7 @@
   20  FORMAT (/,' NETCDF_GET_SVAR_2D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_svar_2d
 !
@@ -4704,7 +4669,7 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 
@@ -4718,6 +4683,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_svar_3d"
+!
 !-----------------------------------------------------------------------
 !  Read in a string 3D-array or array element.
 !-----------------------------------------------------------------------
@@ -4726,9 +4694,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4743,9 +4709,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -4785,7 +4749,7 @@
   20  FORMAT (/,' NETCDF_GET_SVAR_3D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_svar_3d
 !
@@ -4849,10 +4813,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(dp), intent(in) :: Rdate(2)
 
       real(dp), intent(out), optional :: min_val
@@ -4867,7 +4831,7 @@
 
       logical, dimension(1) :: got_units
       logical, dimension(2) :: foundit
-
+!
       integer :: ind, lstr, my_ncid, status, varid
       integer :: year, month, day, hour, minutes
 
@@ -4879,11 +4843,14 @@
 
       real(dp), dimension(1) :: my_A
       real(r8), dimension(2) :: AttValue
-
+!
       character (len=12) :: AttName(2)
       character (len=22) :: dstr_old, dstr_new
       character (len=40) :: UnitsAtt(1), UnitsValue(1)
       character (len=40) :: Units, Ustring
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_time_0d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
@@ -4893,9 +4860,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -4911,9 +4876,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -5072,7 +5035,7 @@
   20  FORMAT (/,' NETCDF_GET_TIME_0D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_time_0d
 !
@@ -5137,10 +5100,10 @@
       integer, intent(in), optional :: ncid
       integer, intent(in), optional :: start(:)
       integer, intent(in), optional :: total(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
-
+!
       real(dp), intent(in) :: Rdate(2)
 
       real(dp), intent(out), optional :: min_val
@@ -5155,7 +5118,7 @@
 
       logical, dimension(1) :: got_units
       logical, dimension(2) :: foundit
-
+!
       integer :: i, ind, lstr, my_ncid, status, varid
       integer :: year, month, day, hour, minutes
 
@@ -5163,15 +5126,19 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(dp) :: Afactor, Aoffset, my_Rdate(2), seconds
       real(dp) :: dnum_old, dnum_new
 
       real(r8), dimension(2) :: AttValue
-
+!
       character (len=12) :: AttName(2)
       character (len=22) :: dstr_old, dstr_new
       character (len=40) :: UnitsAtt(1), UnitsValue(1)
       character (len=40) :: Units, Ustring
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_get_time_1d"
 !
 !-----------------------------------------------------------------------
 !  Read in a time 1D-array variable.
@@ -5190,9 +5157,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 0, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_get_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -5207,9 +5172,7 @@
           ELSE
             status=nf90_get_var(my_ncid, varid, A)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_get_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=2
@@ -5377,7 +5340,7 @@
   20  FORMAT (/,' NETCDF_GET_TIME_1D - error while inquiring ID for ',  &
      &        'variable:',2x,a,/,22x,'in input file:',2x,a,/,22x,       &
      &        'call from:',2x,a,/,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_get_time_1d
 
@@ -5432,9 +5395,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(dp), intent(in) :: A
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -5445,7 +5408,11 @@
 # if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 # endif
+!
       real(r8), dimension(1) :: my_A
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_0dp"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
@@ -5455,9 +5422,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -5467,9 +5432,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5488,9 +5451,7 @@
             my_A(1)=A
             status=nf90_put_var(my_ncid, my_varid, my_A, start, total)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5522,7 +5483,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_0DP - error while writing variable:', &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_0dp
 !
@@ -5575,9 +5536,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(dp), intent(in) :: A(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -5589,6 +5550,9 @@
       integer, dimension(2) :: ibuffer
 # endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_1dp"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -5597,9 +5561,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -5609,9 +5571,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5625,9 +5585,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5659,7 +5617,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_1DP - error while writing variable:', &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_1dp
 !
@@ -5726,6 +5684,9 @@
       integer, dimension(2) :: ibuffer
 # endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_2dp"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -5734,9 +5695,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -5746,9 +5705,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5762,9 +5719,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5796,7 +5751,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_2DP - error while writing variable:', &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_2dp
 #endif
@@ -5850,9 +5805,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(r8), intent(in) :: A
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -5863,7 +5818,11 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(2) :: ibuffer
 #endif
+!
       real(r8), dimension(1) :: my_A
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_0d"
 !
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
@@ -5873,9 +5832,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -5885,9 +5842,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5906,9 +5861,7 @@
             my_A(1)=A
             status=nf90_put_var(my_ncid, my_varid, my_A, start, total)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -5940,7 +5893,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_0D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_0d
 !
@@ -5993,9 +5946,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(r8), intent(in) :: A(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6007,6 +5960,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_1d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6015,9 +5971,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6027,9 +5981,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6043,9 +5995,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6077,7 +6027,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_1D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_1d
 !
@@ -6130,9 +6080,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(r8), intent(in) :: A(:,:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6144,6 +6094,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_2d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6152,9 +6105,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6164,9 +6115,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6180,9 +6129,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6214,7 +6161,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_2D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_2d
 !
@@ -6267,9 +6214,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(r8), intent(in) :: A(:,:,:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6281,6 +6228,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_3d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6289,9 +6239,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6301,9 +6249,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6317,9 +6263,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6351,7 +6295,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_3D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_3d
 !
@@ -6404,9 +6348,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       real(r8), intent(in) :: A(:,:,:,:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6418,6 +6362,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_fvar_4d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6426,9 +6373,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_fvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6438,9 +6383,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6454,9 +6397,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_fvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6488,7 +6429,7 @@
   20  FORMAT (/,' NETCDF_PUT_FVAR_4D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_fvar_4d
 !
@@ -6543,7 +6484,7 @@
       integer, intent(in), optional :: ncid, varid
 
       integer, intent(in) :: A
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6557,6 +6498,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_ivar_0d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6565,9 +6509,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_ivar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6577,9 +6519,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6598,9 +6538,7 @@
             my_A(1)=A
             status=nf90_put_var(my_ncid, my_varid, my_A, start, total)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6632,7 +6570,7 @@
   20  FORMAT (/,' NETCDF_PUT_IVAR_0D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_ivar_0d
 !
@@ -6687,7 +6625,7 @@
       integer, intent(in), optional :: ncid, varid
 
       integer, intent(in) :: A(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6699,6 +6637,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_ivar_1d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6707,9 +6648,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_ivar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6719,9 +6658,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6735,9 +6672,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6769,7 +6704,7 @@
   20  FORMAT (/,' NETCDF_PUT_IVAR_1D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_ivar_1d
 !
@@ -6824,7 +6759,7 @@
       integer, intent(in), optional :: ncid, varid
 
       integer, intent(in) :: A(:,:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6836,6 +6771,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_ivar_2d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6844,9 +6782,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_ivar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6856,9 +6792,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6872,9 +6806,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_ivar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -6906,7 +6838,7 @@
   20  FORMAT (/,' NETCDF_PUT_IVAR_2D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_ivar_2d
 !
@@ -6962,9 +6894,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       logical, intent(in) :: A
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -6979,6 +6911,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_lvar_0d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -6987,9 +6922,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_lvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -6999,9 +6932,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_lvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7029,9 +6960,7 @@
             my_AI(1)=AI
             status=nf90_put_var(my_ncid, my_varid, my_AI, start, total)
           END IF
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_lvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7063,7 +6992,7 @@
   20  FORMAT (/,' NETCDF_PUT_LVAR_0D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_lvar_0d
 !
@@ -7119,9 +7048,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       logical, intent(in) :: A(:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -7135,6 +7064,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_lvar_1d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -7143,9 +7075,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_lvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -7155,9 +7085,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_lvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7182,9 +7110,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, AI, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_lvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7216,7 +7142,7 @@
   20  FORMAT (/,' NETCDF_PUT_LVAR_1D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_lvar_1d
 !
@@ -7272,9 +7198,9 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       logical, intent(in) :: A(:,:)
-
+!
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
 !
@@ -7288,6 +7214,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_lvar_2d"
+!
 !-----------------------------------------------------------------------
 !  Read in a floating-point scalar variable.
 !-----------------------------------------------------------------------
@@ -7296,9 +7225,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_lvar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -7308,9 +7235,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_lvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7337,9 +7262,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, AI, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_lvar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7371,7 +7294,7 @@
   20  FORMAT (/,' NETCDF_PUT_LVAR_2D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_lvar_2d
 !
@@ -7435,7 +7358,7 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       character (len=*), intent(in) :: A
       character (len=*), intent(in) :: ncname
       character (len=*), intent(in) :: myVarName
@@ -7448,6 +7371,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_svar_0d"
+!
 !-----------------------------------------------------------------------
 !  Write out a scalar string.
 !-----------------------------------------------------------------------
@@ -7456,9 +7382,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -7468,9 +7392,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7484,9 +7406,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7518,7 +7438,7 @@
   20  FORMAT (/,' NETCDF_PUT_SVAR_0D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_svar_0d
 !
@@ -7583,7 +7503,7 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       character (len=*), intent(in) :: A(:)
 
       character (len=*), intent(in) :: ncname
@@ -7597,6 +7517,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_svar_1d"
+!
 !-----------------------------------------------------------------------
 !  Write out a string 1D array or array element.
 !-----------------------------------------------------------------------
@@ -7605,9 +7528,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -7617,9 +7538,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7633,9 +7552,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7667,7 +7584,7 @@
   20  FORMAT (/,' NETCDF_PUT_SVAR_1D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_svar_1d
 !
@@ -7730,7 +7647,7 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       character (len=*), intent(in) :: A(:,:)
 
       character (len=*), intent(in) :: ncname
@@ -7744,6 +7661,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_svar_2d"
+!
 !-----------------------------------------------------------------------
 !  Write out a string array element or full 2D array.
 !-----------------------------------------------------------------------
@@ -7752,9 +7672,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -7764,9 +7682,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7780,9 +7696,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7814,7 +7728,7 @@
   20  FORMAT (/,' NETCDF_PUT_SVAR_2D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_svar_2d
 !
@@ -7877,7 +7791,7 @@
       integer, intent(in) :: start(:), total(:)
 
       integer, intent(in), optional :: ncid, varid
-
+!
       character (len=*), intent(in) :: A(:,:,:)
 
       character (len=*), intent(in) :: ncname
@@ -7891,6 +7805,9 @@
       integer, dimension(2) :: ibuffer
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_put_svar_3d"
+!
 !-----------------------------------------------------------------------
 !  Write out a string array element or full 3D array.
 !-----------------------------------------------------------------------
@@ -7899,9 +7816,7 @@
 !
       IF (.not.PRESENT(ncid)) THEN
         CALL netcdf_open (ng, model, TRIM(ncname), 1, my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_put_svar")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         my_ncid=ncid
       END IF
@@ -7911,9 +7826,7 @@
       IF (OutThread) THEN
         IF (.not.PRESENT(varid)) THEN
           status=nf90_inq_varid(my_ncid, TRIM(myVarName), my_varid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,10) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7927,9 +7840,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_put_var(my_ncid, my_varid, A, start, total)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_put_svar")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) TRIM(myVarName), TRIM(ncname),            &
      &                        TRIM(SourceFile), nf90_strerror(status)
             exit_flag=3
@@ -7961,7 +7872,7 @@
   20  FORMAT (/,' NETCDF_PUT_SVAR_3D - error while writing variable:',  &
      &        2x,a,/,22x,'in input file:',2x,a,/,22x,'call from:',2x,a, &
      &        /,22x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_put_svar_3d
 !
@@ -7999,15 +7910,16 @@
       integer, intent(in) :: ng, model
 
       integer, intent(inout) :: ncid
-
+!
       logical, intent(in), optional :: Lupdate
-
+!
       character (len=*), intent(in), optional :: ncname
 !
 !  Local variable declarations.
 !
 #ifdef BIOLOGY
       logical :: my_Lupdate
+!
 #endif
       integer :: i, status
 #ifdef BIOLOGY
@@ -8016,10 +7928,14 @@
 #if !defined PARALLEL_IO  && defined DISTRIBUTE
       integer, dimension(3) :: ibuffer
 #endif
+!
       character (len=200) :: my_ncname
 #ifdef BIOLOGY
       character (len=512) :: bio_file
 #endif
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_close"
 !
 !-----------------------------------------------------------------------
 !  If open, close requested NetCDF file.
@@ -8078,9 +7994,7 @@
             IF (lstr.gt.0) THEN
               status=nf90_put_att(ncid, nf90_global, 'bio_file',        &
      &                            bio_file(1:lstr))
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__ //                                &
-     &                       ", netcdf_close")) THEN
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 WRITE (stdout,10) 'bio_file', TRIM(my_ncname),          &
      &                            TRIM(SourceFile),                     &
      &                            nf90_strerror(status)
@@ -8096,9 +8010,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_close(ncid)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_close")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             WRITE (stdout,20) ncid, TRIM(my_ncname), TRIM(SourceFile),  &
      &                        nf90_strerror(status)
             exit_flag=3
@@ -8134,7 +8046,7 @@
   20  FORMAT (/,' NETCDF_CLOSE - error during closing of file, ',       &
      &        'ncid = ',i3,/,16x,'file:',2x,a,/,16x,'call from:',2x,a,  &
      &        /,16x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_close
 !
@@ -8173,7 +8085,7 @@
       integer, intent(in) :: ng, model
 
       integer, intent(out) :: ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
@@ -8183,6 +8095,9 @@
 #if !defined PARALLEL_IO && defined DISTRIBUTE
       integer :: ibuffer(3)
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_create"
 !
 !-----------------------------------------------------------------------
 !  Create requested NetCDF file.
@@ -8202,9 +8117,7 @@
      &                   ncid = ncid,                                   &
      &                   comm = OCN_COMM_WORLD,                         &
      &                   info = MP_INFO)
-      IF (FoundError(status, nf90_noerr, __LINE__,                      &
-     &               __FILE__ //                                        &
-     &               ", netcdf_create")) THEN
+      IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile),   &
      &                                nf90_strerror(status)
         exit_flag=3
@@ -8215,9 +8128,7 @@
 !
       IF (exit_flag.eq.NoError) THEN
         status=nf90_set_fill(ncid, nf90_nofill, OldFillMode)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_create")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           IF (Master) WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile), &
      &                                  nf90_strerror(status)
           exit_flag=3
@@ -8232,9 +8143,7 @@
 # endif
       IF (OutThread) THEN
         status=nf90_create(TRIM(ncname), my_cmode, ncid)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_create")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile),             &
      &                      nf90_strerror(status)
           exit_flag=3
@@ -8252,9 +8161,7 @@
 !
         IF (exit_flag.eq.NoError) THEN
           status=nf90_set_fill(ncid, nf90_nofill, OldFillMode)
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__ //                                    &
-     &                   ", netcdf_create")) THEN
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             IF (Master) WRITE (stdout,10) TRIM(ncname),                 &
      &                                    TRIM(SourceFile),             &
      &                                    nf90_strerror(status)
@@ -8281,7 +8188,7 @@
 #else
      &        'file:',/,17x,a,/,17x,'call from:',2x,a,/,17x,a)
 #endif
-
+!
       RETURN
       END SUBROUTINE netcdf_create
 !
@@ -8319,7 +8226,7 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model, ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
@@ -8329,6 +8236,9 @@
 #if !defined PARALLEL_IO && defined DISTRIBUTE
       integer :: ibuffer(2)
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_enddef"
 !
 !-----------------------------------------------------------------------
 !  Leave definition mode.
@@ -8342,9 +8252,7 @@
 #else
       IF (OutThread) THEN
         status=nf90_enddef(ncid)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_enddef")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           IF (Master) WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile), &
      &                                  nf90_strerror(status)
           exit_flag=3
@@ -8363,7 +8271,7 @@
   10  FORMAT (/,' NETCDF_ENDDEF - unable to end definition mode for',   &
      &        ' file:',/,17x,a,/,17x,'call from:',2x,a,/,17x,a)
 #endif
-
+!
       RETURN
       END SUBROUTINE netcdf_enddef
 !
@@ -8405,7 +8313,7 @@
       integer, intent(in) :: ng, model, omode
 
       integer, intent(out) :: ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
@@ -8415,6 +8323,9 @@
 #if !defined PARALLEL_IO && defined DISTRIBUTE
       integer :: ibuffer(3)
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_open"
 !
 !-----------------------------------------------------------------------
 !  Create requested NetCDF file.
@@ -8453,9 +8364,7 @@
      &                     info = MP_INFO)
 # endif
       END SELECT
-      IF (FoundError(status, nf90_noerr, __LINE__,                      &
-     &               __FILE__ //                                        &
-     &               ", netcdf_open")) THEN
+      IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile),   &
      &                                nf90_strerror(status)
         exit_flag=3
@@ -8486,9 +8395,7 @@
 # endif
             status=nf90_open(TRIM(ncname), my_omode, ncid)
         END SELECT
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_open")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile),             &
      &                      nf90_strerror(status)
           exit_flag=3
@@ -8522,7 +8429,7 @@
 #else
      &        'file:',/,15x,a,/,15x,'call from:',2x,a,/,15x,a)
 #endif
-
+!
       RETURN
       END SUBROUTINE netcdf_open
 !
@@ -8559,7 +8466,7 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model, ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
@@ -8570,15 +8477,16 @@
       integer :: ibuffer(2)
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_redef"
+!
 !-----------------------------------------------------------------------
 !  Leave definition mode.
 !-----------------------------------------------------------------------
 !
       IF (OutThread) THEN
         status=nf90_redef(ncid)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_redef")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           IF (Master) WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile), &
      &                                  nf90_strerror(status)
           exit_flag=3
@@ -8596,7 +8504,7 @@
 !
   10  FORMAT (/,' NETCDF_REDEF - unable to put in definition mode',     &
      &        ' file:',/,16x,a,/,16x,'call from:',2x,a,/,16x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_redef
 !
@@ -8636,7 +8544,7 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model, ncid
-
+!
       character (len=*), intent(in) :: ncname
 !
 !  Local variable declarations.
@@ -8647,15 +8555,16 @@
       integer :: ibuffer(2)
 #endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", netcdf_sync"
+!
 !-----------------------------------------------------------------------
 !  Synchronize requested NetCDF file.
 !-----------------------------------------------------------------------
 !
       IF (OutThread) THEN
         status=nf90_sync(ncid)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__ //                                      &
-     &                 ", netcdf_sync")) THEN
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(ncname), TRIM(SourceFile),             &
      &                      nf90_strerror(status)
           exit_flag=3
@@ -8673,7 +8582,7 @@
 !
   10  FORMAT (/,' NETCDF_SYNC - unable to synchronize to disk file:',   &
      &        /,15x,a,/,15x,'call from:',2x,a,/15x,a)
-
+!
       RETURN
       END SUBROUTINE netcdf_sync
 !

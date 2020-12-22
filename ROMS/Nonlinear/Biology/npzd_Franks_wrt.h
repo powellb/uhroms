@@ -1,5 +1,5 @@
 /*
-** svn $Id: npzd_Franks_wrt.h 1821 2020-01-10 03:54:15Z arango $
+** svn $Id: npzd_Franks_wrt.h 1859 2020-11-30 04:32:04Z arango $
 *************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2020 The ROMS/TOMS Group                        **
 **   Licensed under a MIT/X style license                             **
@@ -18,77 +18,64 @@
       CALL netcdf_put_ivar (ng, model, ncname, 'BioIter',               &
      &                      BioIter(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'K_ext',                 &
      &                      K_ext(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'K_NO3',                 &
      &                      K_NO3(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'K_Phy',                 &
      &                      K_Phy(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'Vm_NO3',                &
      &                      Vm_NO3(ng), (/0/), (/0/),                   &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'PhyMR',                 &
      &                      PhyMR(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'ZooGR',                 &
      &                      ZooGR(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'ZooMR',                 &
      &                      ZooMR(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'ZooMD',                 &
      &                      ZooMD(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'ZooGA',                 &
      &                      ZooGA(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'ZooEC',                 &
      &                      ZooEC(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'DetRR',                 &
      &                      DetRR(ng), (/0/), (/0/),                    &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'wDet',                  &
      &                      wDet(ng), (/0/), (/0/),                     &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN

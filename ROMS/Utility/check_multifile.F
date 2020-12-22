@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE check_multifile (ng, model)
 !
-!svn $Id: check_multifile.F 1835 2020-04-30 01:04:29Z arango $
+!svn $Id: check_multifile.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -35,13 +35,16 @@
 !  Local variable declarations.
 !
       integer :: i, max_files
-
+!
       real(dp) :: Tfinal
-
+!
       character (len= 1), parameter :: blank = ' '
       character (len=40) :: file_type
 !
-      SourceFile=__FILE__
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
+      SourceFile=MyFile
 !
 !=======================================================================
 !  If applicable, initialize parameters for input multi-files.
@@ -107,8 +110,7 @@
         max_files=nBCfiles(ng)
         CALL multifile_info_s2d (ng, model, file_type, nBCfiles,        &
      &                           max_files, BRY)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 !
 !-----------------------------------------------------------------------
@@ -120,8 +122,7 @@
         max_files=nCLMfiles(ng)
         CALL multifile_info_s2d (ng, model, file_type, nCLMfiles,       &
      &                           max_files, CLM)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 
 #ifdef FORWARD_READ
@@ -132,8 +133,7 @@
 !
       IF (LreadFWD(ng)) THEN
         CALL multifile_info_s1d (ng, model, 'Forward', FWD)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #endif
 
@@ -145,12 +145,11 @@
 !
       IF (LreadTLM(ng)) THEN
         CALL multifile_info_s1d (ng, model, 'Tangent Linear', TLM)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #endif
 
-#if defined BULK_FLUXES && defined NL_BULK_FLUXES
+#ifdef FORWARD_FLUXES
 !
 !-----------------------------------------------------------------------
 !  Nonlinear model surface fluxes data.
@@ -158,8 +157,7 @@
 !
       IF (LreadBLK(ng)) THEN
         CALL multifile_info_s1d (ng, model, 'Nonlinear Fluxes', BLK)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #endif
 
@@ -172,8 +170,7 @@
       IF (LuvSrc(ng).or.LwSrc(ng)) THEN
         file_type='Sources/Sinks Data'
         CALL multifile_info_s1d (ng, model, file_type, SSF)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #endif
 
@@ -183,12 +180,13 @@
 !  Input forcing data.
 !-----------------------------------------------------------------------
 !
-      file_type='Forcing'
-      max_files=MAXVAL(nFfiles)
-      CALL multifile_info_s2d (ng, model, file_type, nFfiles,           &
-     &                         max_files, FRC)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (LreadFRC(ng)) THEN
+        file_type='Forcing'
+        max_files=MAXVAL(nFfiles)
+        CALL multifile_info_s2d (ng, model, file_type, nFfiles,         &
+     &                           max_files, FRC)
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+      END IF
 #endif
 !
       RETURN
@@ -221,24 +219,27 @@
 !  Imported variable declarations.
 !
       integer, intent(in) :: ng, model
-
+!
       character (len=*), intent(in) :: file_type
-
+!
       TYPE(T_IO), intent(inout) :: S(Ngrids)
 !
 !  Local variable declarations.
 !
       logical :: Lcheck, foundit
       logical :: check_file
-
+!
       integer :: Fcount, Nfiles, i, ifile
-
+!
       real(dp) :: Tfinal, Tmax, Tmin, Tscale
-
+!
       character (len= 22) :: Tmin_code, Tmax_code
       character (len=256) :: ncname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", multifile_info_s1d"
 !
-      SourceFile=__FILE__ // ", multifile_info_s1d"
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Update file structure parameters.
@@ -256,11 +257,10 @@
 !
       Nfiles=S(ng)%Nfiles
       DO ifile=1,Nfiles
-        ncname=S(ng)%files(ifile)
+        ncname=TRIM(S(ng)%files(ifile))
         foundit=check_file(ng, model, Nfiles, ncname,                   &
      &                     Tmin, Tmax, Tscale,  Lcheck)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                   __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         S(ng)%time_min(ifile)=Tmin
         S(ng)%time_max(ifile)=Tmax
       END DO
@@ -309,8 +309,7 @@
           END DO
         END IF
         exit_flag=4
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 !
 !  Check if there is data up to the end of the simulation.
@@ -326,8 +325,7 @@
      &                          'first ', Tmin_code, F_code
             END IF
             exit_flag=4
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END IF
         ELSE
           Tmax=Tscale*S(ng)%time_max(Nfiles)
@@ -339,8 +337,8 @@
      &                          'last  ', Tmax_code, F_code
             END IF
             exit_flag=4
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                     __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
           END IF
         END IF
       END IF
@@ -389,24 +387,27 @@
 !
       integer, intent(in) :: ng, model, idim
       integer, intent(in) :: InpFiles(Ngrids)
-
+!
       character (len=*), intent(in) :: file_type
-
+!
       TYPE(T_IO), intent(inout) :: S(idim,Ngrids)
 !
 !  Local variable declarations.
 !
       logical :: Lcheck, foundit
       logical :: check_file
-
+!
       integer :: Fcount, Nfiles, i, ifile
-
+!
       real(dp) :: Tfinal, Tmax, Tmin, Tscale
-
+!
       character (len= 22) :: Tmin_code, Tmax_code
       character (len=256) :: ncname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", multifile_info_s2d"
 !
-      SourceFile=__FILE__ // ", multifile_info_s2d"
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Update file structure parameters.
@@ -425,11 +426,10 @@
       DO i=1,InpFiles(ng)
         Nfiles=S(i,ng)%Nfiles
         DO ifile=1,Nfiles
-          ncname=S(i,ng)%files(ifile)
+          ncname=TRIM(S(i,ng)%files(ifile))
           foundit=check_file(ng, model, Nfiles, ncname,                 &
      &                       Tmin, Tmax, Tscale, Lcheck)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           S(i,ng)%time_min(ifile)=Tmin
           S(i,ng)%time_max(ifile)=Tmax
         END DO
@@ -478,8 +478,7 @@
             END DO
           END IF
           exit_flag=4
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !
 !  Check if there is data up to the end of the simulation.
@@ -495,8 +494,8 @@
      &                            'first ', Tmin_code, F_code
               END IF
               exit_flag=4
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
           ELSE
             Tmax=Tscale*S(i,ng)%time_max(Nfiles)
@@ -508,8 +507,8 @@
      &                            'last  ', Tmax_code, F_code
               END IF
               exit_flag=4
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
           END IF
         END IF
@@ -524,6 +523,7 @@
      &        a,'data time record available is for day: ',a,/,22x,      &
      &        'but data is needed to finish run until day: ',a)
 !
+      RETURN
       END SUBROUTINE multifile_info_s2d
 !
       FUNCTION check_file (ng, model, Nfiles, ncname, Tmin, Tmax,       &
@@ -568,22 +568,25 @@
 !  Imported variable declarations.
 !
       logical, intent(out) :: Lcheck
-
+!
       integer, intent(in) :: ng, model, Nfiles
-
+!
       character (*), intent(in) :: ncname
-
+!
       real(dp), intent(out) :: Tmin, Tmax, Tscale
 !
 !  Local variable declarations.
 !
       logical :: Lcycle, Lperpetual, Lspectral, foundit
-
-      integer :: Nrec, TvarID, i, ncid, nvdim, nvatt
-
-      character (len=40) :: Tunits, TvarName
 !
-      SourceFile=__FILE__ // ", check_file"
+      integer :: Nrec, TvarID, i, ncid, nvdim, nvatt
+!
+      character (len=40) :: Tunits, TvarName
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", check_file"
+!
+      SourceFile=MyFile
 !
 !------------------------------------------------------------------------
 !  Check if requested time is within the NetCDF file dataset.
@@ -603,8 +606,7 @@
 !  Open NetCDF file for reading.
 !
       CALL netcdf_open (ng, model, ncname, 0, ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,10) TRIM(ncname)
         RETURN
       END IF
@@ -613,8 +615,7 @@
 !
       CALL netcdf_inq_var (ng, model, ncname,                           &
      &                     ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Search for the time variable: any 1D array variable with the string
 !  'time' in the variable name.
@@ -638,8 +639,7 @@
           WRITE (stdout,20) TRIM(ncname)
         END IF
         exit_flag=4
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 !
 !  Inquire about requested variable.
@@ -650,8 +650,7 @@
      &                     VarID = TvarID,                              &
      &                     nVarDim = nvdim,                             &
      &                     nVarAtt = nvatt)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Set number of records available and check the 'units' attribute.
 !  Also, set output logical switch 'Lcheck' for the calling to check
@@ -697,27 +696,24 @@
      &                      ncid = ncid,                                &
      &                      start = (/1/),                              &
      &                      total = (/1/))
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
       CALL netcdf_get_time (ng, model, ncname, TvarName,                &
      &                      Rclock%DateNumber, Tmax,                    &
      &                      ncid = ncid,                                &
      &                      start = (/Nrec/),                           &
      &                      total = (/1/))
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Close NetCDF file.
 !
       CALL netcdf_close (ng, model, ncid, ncname, .FALSE.)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
  10   FORMAT (/, ' CHECK_FILE - unable to open grid NetCDF file: ',a)
  20   FORMAT (/, ' CHECK_FILE - unable to find time variable in input', &
      &        ' NetCDF file:', /, 14x, a, /, 14x,                       &
      &        'variable name does not contains the "time" string.')
-
+!
       RETURN
       END FUNCTION check_file

@@ -2,7 +2,7 @@
 #ifdef ADJOINT
       SUBROUTINE ad_initial (ng)
 !
-!svn $Id: ad_initial.F 1846 2020-07-14 01:35:41Z arango $
+!svn $Id: ad_initial.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -80,12 +80,15 @@
 !  Local variable declarations.
 !
       logical :: update = .FALSE.
-
+!
       integer :: LBi, UBi, LBj, UBj
       integer :: Fcount, IniRec, Tindex
       integer :: thread, tile
-
+!
       real(dp) :: my_dstart
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
 !=======================================================================
 !   Initialize model variables.
@@ -188,7 +191,7 @@
 !-----------------------------------------------------------------------
 !
       DO thread=THREAD_RANGE
-        CALL wclock_on (ng, iADM, 2, __LINE__, __FILE__)
+        CALL wclock_on (ng, iADM, 2, __LINE__, MyFile)
       END DO
 # endif
 
@@ -381,8 +384,7 @@
 #   ifdef DISTRIBUTE
       CALL mp_bcasti (ng, iADM, exit_flag)
 #   endif
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  else
       IF (nrrec(ng).ne.0) THEN
         CALL get_state (ng, iADM, 1, IAD(ng)%name, IniRec, Tindex)
@@ -390,8 +392,7 @@
 #   ifdef DISTRIBUTE
         CALL mp_bcasti (ng, iADM, exit_flag)
 #   endif
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #  endif
 # endif
@@ -409,8 +410,7 @@
 #  ifdef DISTRIBUTE
         CALL mp_bcasti (ng, iADM, exit_flag)
 #  endif
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ELSE
         DO tile=first_tile(ng),last_tile(ng),+1
           CALL wetdry (ng, tile, Tindex(ng), .TRUE.)
@@ -428,7 +428,7 @@
 !-----------------------------------------------------------------------
 !
 # ifdef RBL4DVAR_FCT_SENSITIVITY
-      IF (.not.LsenPSAS(ng).and.LsenFCT(ng)) THEN
+      IF (.not.Lsen4DVAR(ng).and.LsenFCT(ng)) THEN
 #  ifdef OBS_SPACE
         IF (Lobspace(ng)) THEN
 #  endif
@@ -440,8 +440,7 @@
 # ifdef RBL4DVAR_FCT_SENSITIVITY
       END IF
 # endif
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 
 # if defined ANA_PERTURB  && \
@@ -517,8 +516,7 @@
 # ifdef DISTRIBUTE
       CALL mp_bcasti (ng, iADM, exit_flag)
 # endif
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Read in initial forcing, climatology and assimilation data from
@@ -531,8 +529,7 @@
 # ifdef DISTRIBUTE
       CALL mp_bcasti (ng, iADM, exit_flag)
 # endif
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 # ifdef MASKING
 !
@@ -568,7 +565,7 @@
 !-----------------------------------------------------------------------
 !
 #  ifdef SENSITIVITY_4DVAR
-      IF (LsenPSAS(ng)) THEN
+      IF (Lsen4DVAR(ng)) THEN
 #  endif
 #  if !defined AD_IMPULSE
         DO tile=first_tile(ng),last_tile(ng),+1
@@ -642,7 +639,7 @@
 !-----------------------------------------------------------------------
 !
       DO thread=THREAD_RANGE
-        CALL wclock_off (ng, iADM, 2, __LINE__, __FILE__)
+        CALL wclock_off (ng, iADM, 2, __LINE__, MyFile)
       END DO
 # endif
       RETURN

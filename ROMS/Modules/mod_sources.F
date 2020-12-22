@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_sources
 !
-!svn $Id: mod_sources.F 1844 2020-07-11 02:10:37Z arango $
+!svn $Id: mod_sources.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -122,12 +122,18 @@
 
       real(r8), parameter :: IniVal = 0.0_r8
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", allocate_sources"
+!
 !-----------------------------------------------------------------------
 !  Allocate module variables.
 !-----------------------------------------------------------------------
 !
-      IF (ng.eq.1) THEN
+      IF (.not.allocated(Msrc)) THEN
         allocate ( Msrc(Ngrids) )
+      END IF
+
+      IF (.not.allocated(Nsrc)) THEN
         allocate ( Nsrc(Ngrids) )
       END IF
 
@@ -145,8 +151,7 @@
      &                           VarID = Vid,                           &
      &                           nVardim = nvdim,                       &
      &                           nVarAtt = nvatt)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__//", allocate_sources")) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
             IF (foundit) THEN
               Nsrc(mg)=var_Dsize(1)         ! first dimension

@@ -1,5 +1,5 @@
 /*
-** svn $Id: wc13.h 1838 2020-05-13 03:00:46Z arango $
+** svn $Id: wc13.h 1854 2020-10-12 03:53:45Z arango $
 *******************************************************************************
 ** Copyright (c) 2002-2020 The ROMS/TOMS Group                               **
 **   Licensed under a MIT/X style license                                    **
@@ -149,7 +149,8 @@
 # define ADJUST_BOUNDARY
 # define ADJUST_WSTRESS
 # define ADJUST_STFLUX
-# define NL_BULK_FLUXES
+# define PRIOR_BULK_FLUXES
+# define FORWARD_FLUXES
 # define VCONVOLUTION
 # define IMPLICIT_VCONV
 # define BALANCE_OPERATOR

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE stdinp_mod
 !
-!svn $Id: stdinp_mod.F 1852 2020-08-15 01:55:53Z arango $
+!svn $Id: stdinp_mod.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -84,7 +84,10 @@
 !
       integer :: InpUnit
 !
-      SourceFile=__FILE__// ", stdout_unit"
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", stdout_unit"
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Determine ROMS standard input unit.

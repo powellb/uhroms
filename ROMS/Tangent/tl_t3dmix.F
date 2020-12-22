@@ -6,7 +6,7 @@
 # if !defined TS_FIXED && defined SOLVE3D &&  \
      (defined TS_DIF2  || defined TS_DIF4)
 !
-!svn $Id: tl_t3dmix.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: tl_t3dmix.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -18,7 +18,7 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
 #  ifdef TS_DIF2
       PUBLIC tl_t3dmix2
@@ -26,9 +26,9 @@
 #  ifdef TS_DIF4
       PUBLIC tl_t3dmix4
 #  endif
-
+!
       CONTAINS
-
+!
 #  ifdef TS_DIF2
 #   if defined MIX_S_TS
 #    include "tl_t3dmix2_s.h"

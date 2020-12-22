@@ -2,7 +2,7 @@
       MODULE tl_set_vbc_mod
 #ifdef TANGENT
 !
-!svn $Id: tl_set_vbc.F 1833 2020-04-27 02:06:04Z arango $
+!svn $Id: tl_set_vbc.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -44,10 +44,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #  include "tile.h"
 !
 #  ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 6, __LINE__, __FILE__)
+      CALL wclock_on (ng, iTLM, 6, __LINE__, MyFile)
 #  endif
       CALL tl_set_vbc_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -97,20 +100,16 @@
      &                      FORCES(ng) % tl_bustr,                      &
      &                      FORCES(ng) % tl_bvstr,                      &
 #  endif
-#  if defined BULK_FLUXES || defined ATM_COUPLING
-     &                      FORCES(ng) % snhflx,                        &
-#  endif
-#  if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
-     &                      FORCES(ng) % EminusP,                       &
-#  endif
+     &                      FORCES(ng) % stflux,                        &
+     &                      FORCES(ng) % btflux,                        &
      &                      FORCES(ng) % stflx,                         &
      &                      FORCES(ng) % btflx,                         &
      &                      FORCES(ng) % tl_stflx,                      &
      &                      FORCES(ng) % tl_btflx)
 #  ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 6, __LINE__, __FILE__)
+      CALL wclock_off (ng, iTLM, 6, __LINE__, MyFile)
 #  endif
-
+!
       RETURN
       END SUBROUTINE tl_set_vbc
 !
@@ -154,12 +153,7 @@
 #  ifndef BBL_MODEL_NOT_YET
      &                            tl_bustr, tl_bvstr,                   &
 #  endif
-#  if defined BULK_FLUXES || defined ATM_COUPLING
-     &                            snhflx,                               &
-#  endif
-#  if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
-     &                            EminusP,                              &
-#  endif
+     &                            stflux, btflux,                       &
      &                            stflx, btflx,                         &
      &                            tl_stflx, tl_btflx)
 !***********************************************************************
@@ -215,12 +209,8 @@
 #   if defined SCORRECTION || defined SRELAXATION
       real(r8), intent(in) :: sss(LBi:,LBj:)
 #   endif
-#   if defined BULK_FLUXES || defined ATM_COUPLING
-      real(r8), intent(in) :: snhflx(LBi:,LBj:)
-#   endif
-#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
-      real(r8), intent(in) :: EminusP(LBi:,LBj:)
-#   endif
+      real(r8), intent(in) :: stflux(LBi:,LBj:,:)
+      real(r8), intent(in) :: btflux(LBi:,LBj:,:)
 #   if defined ICESHELF
 #    ifdef SHORTWAVE
       real(r8), intent(inout) :: srflx(LBi:,LBj:)
@@ -270,12 +260,8 @@
 #   if defined SCORRECTION || defined SRELAXATION
       real(r8), intent(in) :: sss(LBi:UBi,LBj:UBj)
 #   endif
-#   if defined BULK_FLUXES || defined ATM_COUPLING
-      real(r8), intent(in) :: snhflx(LBi:UBi,LBj:UBj)
-#   endif
-#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
-      real(r8), intent(in) :: EminusP(LBi:UBi,LBj:UBj)
-#   endif
+      real(r8), intent(in) :: stflux(LBi:UBi,LBj:UBj,NT(ng))
+      real(r8), intent(in) :: btflux(LBi:UBi,LBj:UBj,NT(ng))
 #   if defined ICESHELF
 #    ifdef SHORTWAVE
       real(r8), intent(inout) :: srflx(LBi:UBi,LBj:UBj)
@@ -294,7 +280,7 @@
 !  Local variable declarations.
 !
       integer :: i, j, itrc
-
+!
       real(r8) :: EmP, tl_EmP
 #  if !defined BBL_MODEL_NOT_YET || defined ICESHELF
       real(r8) :: cff1, cff2, cff3
@@ -307,25 +293,31 @@
 #  endif
 
 #  include "set_bounds.h"
-
-#  if defined BULK_FLUXES || defined ATM_COUPLING
 !
 !-----------------------------------------------------------------------
-!  If air-sea parameterization and or atmospheric coupling, assign
-!  surface net heat flux (degC m/s).  During model coupling, we need
-!  to make sure that this forcing is unaltered during the coupling
-!  interval when ROMS timestep size is smaller. Notice that further
-!  manipulations to state variable stflx(:,:,itemp) are allowed below.
+!  Tangent linear of loading surface and bottom net heat flux (degC m/s)
+!  into state variables "stflx" and "btflx".
+!
+!  Notice that the forcing net heat flux stflux(:,:,itemp) is processed
+!  elsewhere from data, coupling, bulk flux parameterization,
+!  or analytical formulas.
+!
+!  During model coupling, we need to make sure that this forcing is
+!  unaltered during the coupling interval when ROMS timestep size is
+!  smaller. Notice that further manipulations to state variable
+!  stflx(:,:,itemp) are allowed below.
 !-----------------------------------------------------------------------
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-!>        stflx(i,j,itemp)=snhflx(i,j)
+!>        stflx(i,j,itemp)=stflux(i,j,itemp)
 !>
-!!        tl_stflx(i,j,itemp)=0.0_r8      ! not needed in TLM
+          tl_stflx(i,j,itemp)=0.0_r8                ! not needed in TLM
+!>        btflx(i,j,itemp)=btflux(i,j,itemp)
+!>
+          tl_btflx(i,j,itemp)=0.0_r8                ! not needed in TLM
         END DO
       END DO
-#  endif
 
 #  ifdef QCORRECTION
 !
@@ -385,19 +377,19 @@
 #  ifdef SALINITY
 !
 !-----------------------------------------------------------------------
-!  Multiply fresh water flux with surface salinity. If appropriate,
-!  apply correction.
+!  Tangent linear of multiply freshwater fluxes with surface and bottom
+!  salinity.
+!
+!  If appropriate, apply correction. Notice that input stflux(:,:,isalt)
+!  is the net freshwater flux (E-P; m/s) from data, coupling, bulk flux
+!  parameterization, or analytical formula. It has not been multiplied
+!  by the surface and bottom salinity.
 !-----------------------------------------------------------------------
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-#   if (defined BULK_FLUXES && defined EMINUSP) || defined ATM_COUPLING
-          EmP=EminusP(i,j)
+          EmP=stflux(i,j,isalt)
           tl_EmP=0.0_r8
-#   else
-          EmP=stflx(i,j,isalt)
-          tl_EmP=tl_stflx(i,j,isalt)
-#   endif
 #   if defined SCORRECTION
 !>        stflx(i,j,isalt)=EmP*t(i,j,N(ng),nrhs,isalt)-                 &
 !>   &                     Tnudg(isalt,ng)*Hz(i,j,N(ng))*               &
@@ -432,6 +424,24 @@
         END DO
       END DO
 #  endif
+
+#  if defined BIOLOGY || defined SEDIMENT || defined T_PASSIVE
+!
+!-----------------------------------------------------------------------
+!  Load surface and bottom passive tracer fluxes (T m/s).
+!-----------------------------------------------------------------------
+!
+      DO itrc=NAT+1,NT(ng)
+        DO j=JstrR,JendR
+          DO i=IstrR,IendR
+!>          stflx(i,j,itrc)=stflux(i,j,itrc)
+!>
+            tl_stflx(i,j,itrc)=0.0_r8
+          END DO
+        END DO
+      END DO
+#  endif
+
 #  ifdef ICESHELF
 !
 !-----------------------------------------------------------------------
@@ -865,7 +875,7 @@
      &                    tl_bustr, tl_bvstr)
 #   endif
 #  endif
-
+!
       RETURN
       END SUBROUTINE tl_set_vbc_tile
 
@@ -888,10 +898,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #  include "tile.h"
 !
 #  ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 6, __LINE__, __FILE__)
+      CALL wclock_on (ng, iTLM, 6, __LINE__, MyFile)
 #  endif
       CALL tl_set_vbc_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -909,9 +922,9 @@
      &                      FORCES(ng) % tl_bustr,                      &
      &                      FORCES(ng) % tl_bvstr)
 #  ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 6, __LINE__, __FILE__)
+      CALL wclock_off (ng, iTLM, 6, __LINE__, MyFile)
 #  endif
-
+!
       RETURN
       END SUBROUTINE tl_set_vbc
 !
@@ -974,7 +987,7 @@
 !  Local variable declarations.
 !
       integer :: i, j
-
+!
       real(r8) :: cff1, cff2
       real(r8) :: tl_cff1, tl_cff2
 
@@ -1090,7 +1103,7 @@
      &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    tl_bustr, tl_bvstr)
 #  endif
-
+!
       RETURN
       END SUBROUTINE tl_set_vbc_tile
 # endif

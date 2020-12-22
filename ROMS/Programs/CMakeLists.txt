@@ -1,0 +1,17 @@
+# svn $Id: CMakeLists.txt 1860 2020-12-04 23:08:20Z arango $
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::: David Robertson :::
+# Copyright (c) 2002-2020 The ROMS/TOMS Group                           :::
+#   Licensed under a MIT/X style license                                :::
+#   See License_ROMS.txt                                                :::
+#::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#
+# Source code list for sub-directory "ROMS/Programs"
+
+list( APPEND _files
+      ROMS/Programs/types.F
+)
+
+set ( ROMS_Programs_files
+      ${_files}
+      PARENT_SCOPE
+)

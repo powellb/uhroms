@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE state_copy_mod
 !
-!svn $Id: state_copy.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: state_copy.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -15,9 +15,9 @@
 !=======================================================================
 !
       implicit none
-
+!
       PUBLIC  :: state_copy
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -572,7 +572,7 @@
 # endif
 
 #endif
-
+!
       RETURN
       END SUBROUTINE state_copy
 

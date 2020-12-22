@@ -1,5 +1,5 @@
 /*
-** svn $Id: hypoxia_srm_wrt.h 1821 2020-01-10 03:54:15Z arango $
+** svn $Id: hypoxia_srm_wrt.h 1859 2020-11-30 04:32:04Z arango $
 *************************************************** Hernan G. Arango ***
 ** Copyright (c) 2002-2020 The ROMS/TOMS Group                        **
 **   Licensed under a MIT/X style license                             **
@@ -18,11 +18,9 @@
       CALL netcdf_put_ivar (ng, model, ncname, 'BioIter',               &
      &                      BioIter(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       CALL netcdf_put_fvar (ng, model, ncname, 'ResRate',               &
      &                      ResRate(ng), (/0/), (/0/),                  &
      &                      ncid = ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN

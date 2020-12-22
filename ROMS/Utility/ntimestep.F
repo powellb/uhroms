@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE ntimesteps (model, RunInterval, nl, Nsteps, Rsteps)
 !
-!svn $Id: ntimestep.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: ntimestep.F 1856 2020-11-12 04:55:32Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -82,7 +82,7 @@
          DO ig=1,GridsInLayer(il)
            ng=GridNumber(ig,il)
            IF (Telescoping(ng).and.                                     &
-    &          (RefineStepsCounter(ng).lt.RefineSteps(ng))) THEN
+     &         (RefineStepsCounter(ng).lt.RefineSteps(ng))) THEN
              nl=il
            END IF
          END DO

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE edit_multifile (task)
 !
-!svn $Id: edit_multifile.F 1852 2020-08-15 01:55:53Z arango $
+!svn $Id: edit_multifile.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -33,7 +33,10 @@
       integer :: Iunder, ifile, lstr, ng
       integer :: Nfiles
 !
-      SourceFile=__FILE__
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Edit and update multi-file structure acconding to requested task.

@@ -4,7 +4,7 @@
 #if defined ADJOINT && defined SOLVE3D
 # define NEUMANN
 !
-!svn $Id: ad_pre_step3d.F 1844 2020-07-11 02:10:37Z arango $
+!svn $Id: ad_pre_step3d.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -60,10 +60,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 22, __LINE__, __FILE__)
+      CALL wclock_on (ng, iADM, 22, __LINE__, MyFile)
 # endif
       CALL ad_pre_step3d_tile (ng, tile,                                &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -136,8 +139,9 @@
      &                         OCEAN(ng) % v,                           &
      &                         OCEAN(ng) % ad_v)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 22, __LINE__, __FILE__)
+      CALL wclock_off (ng, iADM, 22, __LINE__, MyFile)
 # endif
+!
       RETURN
       END SUBROUTINE ad_pre_step3d
 !
@@ -1387,8 +1391,8 @@
             DO i=Istr,Iend
 #  ifdef NEUMANN
 !>            tl_FC(i,N(ng))=(3.0_r8*tl_t(i,j,N(ng),nstp,itrc)-         &
-!>     &                      tl_FC(i,N(ng)-1))/                        &
-!>     &                     (2.0_r8-CF(i,N(ng)))
+!>   &                        tl_FC(i,N(ng)-1))/                        &
+!>   &                       (2.0_r8-CF(i,N(ng)))
 !>
               adfac=ad_FC(i,N(ng))/(2.0_r8-CF(i,N(ng)))
               ad_t(i,j,N(ng),nstp,itrc)=ad_t(i,j,N(ng),nstp,itrc)+      &
@@ -2253,7 +2257,7 @@
 !
             DO j=Jstr,Jend
               DO i=Istrm1,Iendp2
-                FX(i,j)=t(i  ,j,k,nstp,itrc)-                             &
+                FX(i,j)=t(i  ,j,k,nstp,itrc)-                           &
      &                  t(i-1,j,k,nstp,itrc)
 #  ifdef MASKING
                 FX(i,j)=FX(i,j)*umask(i,j)
@@ -2494,7 +2498,7 @@
       END DO
 #  endif
 # endif /* !TS_FIXED */
-
+!
       RETURN
       END SUBROUTINE ad_pre_step3d_tile
 #endif

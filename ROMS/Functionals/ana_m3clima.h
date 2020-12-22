@@ -1,6 +1,6 @@
       SUBROUTINE ana_m3clima (ng, tile, model)
 !
-!! svn $Id: ana_m3clima.h 1821 2020-01-10 03:54:15Z arango $
+!! svn $Id: ana_m3clima.h 1859 2020-11-30 04:32:04Z arango $
 !!======================================================================
 !! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -17,7 +17,12 @@
 ! Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
-
+!
+! Local variable declarations.
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #include "tile.h"
 !
       CALL ana_m3clima_tile (ng, tile, model,                           &
@@ -31,9 +36,9 @@
 #else
       IF (Lanafile.and.(tile.eq.0)) THEN
 #endif
-        ANANAME(13)=__FILE__
+        ANANAME(13)=MyFile
       END IF
-
+!
       RETURN
       END SUBROUTINE ana_m3clima
 !
@@ -102,6 +107,6 @@
      &                      CLIMA(ng) % vclm)
 #endif
       END IF
-
+!
       RETURN
       END SUBROUTINE ana_m3clima_tile

@@ -1,6 +1,6 @@
       SUBROUTINE ana_ssh (ng, tile, model)
 !
-!! svn $Id: ana_ssh.h 1821 2020-01-10 03:54:15Z arango $
+!! svn $Id: ana_ssh.h 1859 2020-11-30 04:32:04Z arango $
 !!======================================================================
 !! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -18,7 +18,12 @@
 ! Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
-
+!
+! Local variable declarations.
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #include "tile.h"
 !
       CALL ana_ssh_tile (ng, tile, model,                               &
@@ -33,9 +38,9 @@
 #else
       IF (Lanafile.and.(tile.eq.0)) THEN
 #endif
-        ANANAME(28)=__FILE__
+        ANANAME(28)=MyFile
       END IF
-
+!
       RETURN
       END SUBROUTINE ana_ssh
 !
@@ -101,6 +106,6 @@
      &                    EWperiodic(ng), NSperiodic(ng),               &
      &                    ssh)
 #endif
-
+!
       RETURN
       END SUBROUTINE ana_ssh_tile

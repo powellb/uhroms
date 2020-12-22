@@ -34,7 +34,7 @@
 # | usually $(HOME)/ARPACK                                  |
 # %---------------------------------------------------------%
 #
-home         = $(ROMSHOME)/Lib/ARPACK
+home         = /home/robertson/roms/svn/JEDI/src_cmake/Lib/ARPACK
 #
 #
 # %---------------------------------------------------------%
@@ -86,10 +86,10 @@ DIRS   = $(BLASdir) $(LAPACKdir) $(UTILdir) $(SRCdir)
 #
 ARPACKLIB  = $(home)/libarpack.a
 PARPACKLIB = $(home)/libparpack.a
-LAPACKLIB = 
-BLASLIB = 
+LAPACKLIB =
+BLASLIB =
 
-ALIBS =  $(ARPACKLIB) $(LAPACKLIB) $(BLASLIB) 
+ALIBS =  $(ARPACKLIB) $(LAPACKLIB) $(BLASLIB)
 #
 # %---------------------------------------------------------%
 # | If your system users custom MPI libraries specify them  |
@@ -144,17 +144,17 @@ PLIBS = $(PARPACKLIB) $(ALIBS) $(MPILIBS)
 # %---------------------------------------------------------%
 #
 
-FC	= ifort
-FFLAGS	= -ip -O3 -fp-model precise
+FC	= gfortran
+FFLAGS	= -O3 -ffast-math
 
 # %-----------------------------------%
 # | Set the parallel fortran compiler |
 # %-----------------------------------%
 
-PFC     = mpif90
-PFFLAGS = -ip -O3 -fp-model precise
+PFC     = mpifort
+PFFLAGS = -O3 -ffast-math
 
-LDFLAGS = 
+LDFLAGS =
 CD	= cd
 
 ECHO	= echo

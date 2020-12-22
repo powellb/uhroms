@@ -3,7 +3,7 @@
 
 #if defined FOUR_DVAR || defined VERIFICATION
 !
-!svn $Id: mod_fourdvar.F 1842 2020-05-27 17:06:21Z arango $
+!svn $Id: mod_fourdvar.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -883,7 +883,7 @@
 !  Switch to activate reading of adjoint sensitivity initial conditions
 !  for weak constraint 4DVAR observation sensitivity.
 !
-        logical, allocatable :: LsenPSAS(:)
+        logical, allocatable :: Lsen4DVAR(:)
 #   ifdef OBS_SPACE
         logical, allocatable :: Lobspace(:)
 #    ifndef OBS_IMPACT
@@ -1094,8 +1094,8 @@
 #  if defined RBL4DVAR_ANA_SENSITIVITY || \
       defined RBL4DVAR_FCT_SENSITIVITY || \
       defined R4DVAR_ANA_SENSITIVITY
-      IF (.not.allocated(LsenPSAS)) THEN
-        allocate ( LsenPSAS(Ngrids) )
+      IF (.not.allocated(Lsen4DVAR)) THEN
+        allocate ( Lsen4DVAR(Ngrids) )
         Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
       END IF
 #   ifdef OBS_SPACE
@@ -1567,7 +1567,10 @@
 # endif
       real(r8), parameter :: IniVal = 0.0_r8
 !
-      SourceFile=__FILE__ // ", initialize_fourdvar"
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", initialize_fourdvar"
+
+      SourceFile=MyFile
 
 # ifdef OBSERVATIONS
 !
@@ -1581,8 +1584,7 @@
 !
       DO ng=1,Ngrids
         CALL netcdf_get_dim(ng, iNLM, TRIM(OBS(ng)%name))
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         Ndatum(ng)=0
         Nsurvey(ng)=0
@@ -1904,8 +1906,7 @@
      &                        FOURDVAR(ng)%NobsSurvey,                  &
      &                        start = (/1/),                            &
      &                        total = (/Nsurvey(ng)/))
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Read in the time of each observation survey.
 !
@@ -1914,8 +1915,7 @@
      &                        FOURDVAR(ng)%SurveyTime,                  &
      &                        start = (/1/),                            &
      &                        total = (/Nsurvey(ng)/))
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Determine maximum size of observation arrays.
 !

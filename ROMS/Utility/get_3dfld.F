@@ -8,7 +8,7 @@
 # endif
      &                      Fout)
 !
-!svn $Id: get_3dfld.F 1846 2020-07-14 01:35:41Z arango $
+!svn $Id: get_3dfld.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -92,15 +92,17 @@
       real(dp) :: Tsec, Tval
 !
       character (len=22)  :: t_code
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
-      SourceFile=__FILE__
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Initialize.
 !-----------------------------------------------------------------------
 !
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Determine if inquiring about the field to process in input NetCDF
 !  file(s).  This usually happens on first call or when the field
@@ -130,8 +132,7 @@
         job=3
         CALL inquiry (ng, model, job, Iout, Irec, 1, ifield, ncid,      &
      &                Lmulti, nfiles, S)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         IF (Linfo(6,ifield,ng)) THEN
           Linfo(6,ifield,ng)=.FALSE.
         END IF
@@ -201,8 +202,7 @@
      &                            ncid = ncid,                          &
      &                            start = (/Trec/),                     &
      &                            total = (/1/))
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
               IF (Master) WRITE (stdout,40) TRIM(Tname(ifield)), Trec
               RETURN
             END IF
@@ -277,8 +277,7 @@
               Fmin=Fval
               Fmax=Fval
             END IF
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
               IF (Master) THEN
                 WRITE (stdout,40) TRIM(Vname(1,ifield)), Trec
               END IF
@@ -290,7 +289,7 @@
               ELSE
                 lstr=SCAN(ncfile,'/',BACK=.TRUE.)+1
                 lend=LEN_TRIM(ncfile)
-                lvar=MIN(43,LEN_TRIM(Vname(2,ifield)))
+                lvar=MIN(46,LEN_TRIM(Vname(2,ifield)))
                 Tsec=Tval*day2sec
                 CALL time_string (Tsec, t_code)
                 WRITE (stdout,60) Vname(2,ifield)(1:lvar), t_code,      &

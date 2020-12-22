@@ -2,7 +2,7 @@
 #if defined FOUR_DVAR || defined VERIFICATION
       SUBROUTINE read_AssPar (model, inp, out, Lwrite)
 !
-!svn $Id: read_asspar.F 1846 2020-07-14 01:35:41Z arango $
+!svn $Id: read_asspar.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -33,6 +33,7 @@
 !  Imported variable declarations
 !
       logical, intent(in) :: Lwrite
+!
       integer, intent(in) :: model, inp, out
 !
 !  Local variable declarations.
@@ -72,6 +73,9 @@
       character (len=50 ) :: label
       character (len=256) :: fname, line
       character (len=256), dimension(nCval) :: Cval
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
 !-----------------------------------------------------------------------
 !  Initialize.
@@ -1274,9 +1278,11 @@
         defined SENSITIVITY_4DVAR || defined SP4DVAR         || \
         defined TL_RBL4DVAR       || defined TL_R4DVAR
           fname=STD(2,ng)%name
-          IF (.not.find_file(ng, fname, 'STDnameM')) GO TO 30
-          WRITE (out,160) '                   Model STD File:  ',       &
-     &                    TRIM(fname)
+          IF (NSA.eq.2) THEN
+            IF (.not.find_file(ng, fname, 'STDnameM')) GO TO 30
+            WRITE (out,160) '                   Model STD File:  ',     &
+     &                      TRIM(fname)
+          END IF
 #    endif
           fname=STD(1,ng)%name
           IF (.not.find_file(ng, fname, 'STDnameI')) GO TO 30
@@ -1429,8 +1435,7 @@
             END IF
           END IF
           exit_flag=4
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
   40      CONTINUE
         END DO
       END IF

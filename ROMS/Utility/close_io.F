@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE close_inp (ng, model)
 !
-!svn $Id: close_io.F 1850 2020-07-28 00:46:43Z arango $
+!svn $Id: close_io.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -33,7 +33,10 @@
 !
       integer :: Fcount, i
 !
-      SourceFile=__FILE__ // ", close_inp.F"
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", close_inp.F"
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  If multi-file input fields, close several input files.
@@ -49,8 +52,7 @@
           Fcount=FRC(i,ng)%Fcount
           CALL netcdf_close (ng, model, FRC(i,ng)%ncid,                 &
      &                       FRC(i,ng)%files(Fcount), .FALSE.)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           FRCids=-1
           ncFRCid=-1
           Fcount=1
@@ -68,8 +70,7 @@
             Fcount=BRY(i,ng)%Fcount
             CALL netcdf_close (ng, model, BRY(i,ng)%ncid,               &
      &                         BRY(i,ng)%files(Fcount),  .FALSE.)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                   __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
             BRYids=-1
             ncBRYid=-1
             Fcount=1
@@ -85,10 +86,9 @@
         DO i=1,nCLMfiles(ng)
           IF ((CLM(i,ng)%Nfiles.gt.0).and.(CLM(i,ng)%ncid.ne.-1)) THEN
             Fcount=CLM(i,ng)%Fcount
-            CALL netcdf_close (ng, model, CLM(i,ng)%ncid,                 &
+            CALL netcdf_close (ng, model, CLM(i,ng)%ncid,               &
      &                         CLM(i,ng)%files(Fcount),  .FALSE.)
-            IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
             CLMids=-1
             ncCLMid=-1
             Fcount=1
@@ -127,7 +127,10 @@
 !
       integer :: Fcount, MyError, i, ng
 !
-      SourceFile=__FILE__ // ", close_out"
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", close_out"
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Close output NetCDF files. Set file indices to closed state.
@@ -147,7 +150,7 @@
         END IF
 #endif
 #if defined FORWARD_READ || defined FORWARD_WRITE
-        IF ((FWD(ng)%ncid.ne.-1).and.                                  &
+        IF ((FWD(ng)%ncid.ne.-1).and.                                   &
      &      (FWD(ng)%ncid.eq.HIS(ng)%ncid)) THEN
           FWD(ng)%ncid=-1
         END IF
@@ -354,8 +357,8 @@
 !  If applicable, report internal exit errors.
 !-----------------------------------------------------------------------
 !
-      IF (Master.and.(FoundError(exit_flag, NoError, __LINE__,          &
-     &               __FILE__))) THEN
+      IF (Master.and.                                                   &
+     &    (FoundError(exit_flag, NoError, __LINE__, MyFile))) THEN
         WRITE (stdout,40) Rerror(exit_flag), exit_flag
       END IF
       IF (blowup.ne.0) THEN
@@ -407,6 +410,6 @@
 110   FORMAT (/,' ERROR: Illegal domain partition.')
 120   FORMAT (/,' ERROR: Illegal input parameter.')
 130   FORMAT (/,' ERROR: Fatal algorithm result.')
-
+!
       RETURN
       END SUBROUTINE close_out

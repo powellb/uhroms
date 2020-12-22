@@ -3,7 +3,7 @@
 
 #if defined NESTING && defined ADJOINT
 !
-!svn $Id: ad_nesting.F 1821 2020-01-10 03:54:15Z arango $
+!svn $Id: ad_nesting.F 1859 2020-11-30 04:32:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -174,6 +174,9 @@
       logical :: LputFsur
       integer :: subs, tile, thread
       integer :: ngc
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 
 # ifdef SOLVE3D
 !
@@ -289,8 +292,7 @@
             CALL ad_fine2coarse (ng, model, r3dvar, tile)
           END DO
 !$OMP BARRIER
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &               __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Update coarse grid depth variables. We have a new coarse grid
 !  adjusted free-surface, Zt_avg1.
@@ -311,8 +313,7 @@
             CALL ad_fine2coarse (ng, model, r2dvar, tile)
           END DO
 !$OMP BARRIER
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 #  if defined SOLVE3D && !defined NO_CORRECT_TRACER
 !
@@ -2010,11 +2011,11 @@
      &                            CLIMA(ngc)%Tnudgcof(Ibc,Jbc,k,itrc))
               END IF
 !>            tl_Tvalue=(0.5_r8-                                        &
-!>     &                 SIGN(0.5_r8,                                   &
-!>     &                      -(OCEAN(ngc)%t(Ibc,Jbc,k,Tindex,itrc)-    &
-!>     &                      cff*(TFF-TFC))))*                         &
-!>     &                 (OCEAN(ngc)%tl_t(Ibc,Jbc,k,Tindex,itrc)-       &
-!>     &                 tl_cff*(TFF-TFC)-cff*(tl_TFF-tl_TFC))
+!>   &                   SIGN(0.5_r8,                                   &
+!>   &                        -(OCEAN(ngc)%t(Ibc,Jbc,k,Tindex,itrc)-    &
+!>   &                        cff*(TFF-TFC))))*                         &
+!>   &                   (OCEAN(ngc)%tl_t(Ibc,Jbc,k,Tindex,itrc)-       &
+!>   &                   tl_cff*(TFF-TFC)-cff*(tl_TFF-tl_TFC))
 !>
               adfac=(0.5_r8-                                            &
      &               SIGN(0.5_r8,                                       &
@@ -2586,6 +2587,9 @@
       integer :: itrc
 # endif
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_fine2coarse"
+!
 !-----------------------------------------------------------------------
 !  Average interior fine grid state variable data to the coarse grid
 !  location. Then, replace coarse grid values with averaged data.
@@ -2878,8 +2882,7 @@
      &                             OCEAN(dg)%ad_zeta(:,:,Dindex2d),     &
      &                             OCEAN(rg)%ad_zeta(:,:,Rindex2d))
 # endif
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Process 2D momentum components (ubar,vbar).
 !
@@ -2927,8 +2930,7 @@
 # else
      &                             OCEAN(rg)%ad_ubar(:,:,Rindex2d))
 # endif
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !>          CALL fine2coarse2d (rg, dg, model, tile,                    &
 !>   &                          v2dvar, Vname(1,idVbar),                &
@@ -2973,8 +2975,7 @@
 # else
      &                             OCEAN(rg)%ad_vbar(:,:,Rindex2d))
 # endif
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 # ifdef SOLVE3D
 !
@@ -3023,8 +3024,8 @@
      &                                              itrc),              &
      &                               OCEAN(rg)%ad_t(:,:,:,Rindex3d,     &
      &                                              itrc))
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END DO
 !
 !  Process 3D momentum components (u, v).
@@ -3063,8 +3064,7 @@
 #  endif
      &                             OCEAN(dg)%ad_u(:,:,:,Dindex3d),      &
      &                             OCEAN(rg)%ad_u(:,:,:,Rindex3d))
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !>          CALL fine2coarse3d (rg, dg, model, tile,                    &
 !>   &                          v3dvar, Vname(1,idVvel),                &
@@ -3099,8 +3099,7 @@
 #  endif
      &                             OCEAN(dg)%ad_v(:,:,:,Dindex3d),      &
      &                             OCEAN(rg)%ad_v(:,:,:,Rindex3d))
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
           END IF
 !
@@ -3180,6 +3179,9 @@
       real(dp) :: Wnew, Wold, SecScale, fac
       real(r8) :: cff, cff1, my_value
       real(r8) :: ad_cff, adfac, adfac1, adfac2, ad_my_value
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_put_refine2d"
 
 # include "set_bounds.h"
 !
@@ -3251,8 +3253,7 @@
      &                        INT(RollingTime(tnew,cr))
           END IF
 !         exit_flag=8
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !     END IF
 
@@ -3858,7 +3859,7 @@
 !>              OCEAN(ng)%tl_vbar(i,j,irec)=tl_my_value
 !>
                 ad_my_value=ad_my_value+                                &
-    &                       OCEAN(ng)%ad_vbar(i,j,irec)
+     &                      OCEAN(ng)%ad_vbar(i,j,irec)
                 OCEAN(ng)%ad_vbar(i,j,irec)=0.0_r8
 !!            ELSE                                   ! for debugging
 !!              OCEAN(ng)%vbar(i,j,irec)=0.0_r8      ! purposes
@@ -3867,7 +3868,7 @@
 !>            OCEAN(ng)%tl_vbar(i,j,irec)=tl_my_value
 !>
               ad_my_value=ad_my_value+                                  &
-    &                     OCEAN(ng)%ad_vbar(i,j,irec)
+     &                    OCEAN(ng)%ad_vbar(i,j,irec)
               OCEAN(ng)%ad_vbar(i,j,irec)=0.0_r8
 # endif
             END DO
@@ -4066,6 +4067,9 @@
 
       real(dp) :: Wnew, Wold, SecScale, fac
       real(r8) :: my_value, ad_my_value, adfac1, adfac2
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_put_refine3d"
 
 #  include "set_bounds.h"
 !
@@ -4108,8 +4112,7 @@
      &                        INT(RollingTime(tnew,cr))
           END IF
 !         exit_flag=8
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 !     END IF
 
@@ -4421,6 +4424,9 @@
       real(r8), allocatable :: Zd(:,:,:)
       real(r8), allocatable :: ad_Zd(:,:,:)
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_z_weights"
+!
 !=======================================================================
 !  Adjoint compute vertical indices and weights for each contact region.
 !=======================================================================
@@ -4462,18 +4468,15 @@
 !>
 !!        CALL ad_mp_assemble (rg, model, Nkpts, ispv,                  &
 !!                             Vcontact(cr)%Kdg)
-!!        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-!!   &                   __FILE__)) RETURN
+!!        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 !!        CALL mp_assemble (rg, model, Nwpts, spv,                      &
 !!   &                      Vcontact(cr)%Vweight)
-!!        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-!!   &                   __FILE__)) RETURN
+!!        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 !!        CALL ad_mp_assemble (rg, model, Nwpts, spv,                   &
 !!   &                         Vcontact(cr)%ad_Vweight)
-!!        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-!!   &                   __FILE__)) RETURN
+!!        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !-----------------------------------------------------------------------
@@ -4579,8 +4582,7 @@
 !  Exchange data between all parallel nodes.
 !
             CALL mp_assemble (dg, model, Nzpts, spv, Zd)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !
@@ -4741,8 +4743,7 @@
 !>          CALL mp_assemble (dg, model, Nzpts, spv, Zd)
 !>
 !!          CALL ad_mp_assemble (dg, model, Nzpts, spv, ad_Zd)
-!!          IF (FoundError(exit_flag, NoError, __LINE__,                &
-!!   &                     __FILE__)) RETURN
+!!          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Extract donor grid depths for each cell containing the receiver grid
@@ -4832,8 +4833,7 @@
 !>
 !!        CALL ad_mp_assemble (rg, model, Nwpts, spv,                   &
 !!   &                         Ucontact(cr)%ad_Vweight)
-!!        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-!!   &                   __FILE__)) RETURN
+!!        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !-----------------------------------------------------------------------
@@ -4944,8 +4944,7 @@
 !  Exchange data between all parallel nodes.
 !
             CALL mp_assemble (dg, model, Nzpts, spv, Zd)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Determine donor grid vertical indices (Kdg) and weights (Vweight)
@@ -5103,8 +5102,7 @@
 !>          CALL mp_assemble (dg, model, Nzpts, spv, ad_Zd)
 !>
 !!          CALL ad_mp_assemble (dg, model, Nzpts, spv, ad_Zd)
-!!          IF (FoundError(exit_flag, NoError, __LINE__,                &
-!!   &                     __FILE__)) RETURN
+!!          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
             DO Kdg=1,N(dg)
@@ -5190,12 +5188,11 @@
           Nzpts=4*Nkpts
 
 !>        CALL _mp_assemble (rg, model, Nwpts, spv,                     &
-!>    &                      Rcontact(cr)Vweight)
+!>   &                       Rcontact(cr)Vweight)
 !>
 !!        CALL ad_mp_assemble (rg, model, Nwpts, spv,                   &
-!!    &                        Rcontact(cr)%ad_Vweight)
-!!        IF (FoundError(exit_flag, NoError, __LINE__,                  &
-!!    &                  __FILE__)) RETURN
+!!   &                         Rcontact(cr)%ad_Vweight)
+!!        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !-----------------------------------------------------------------------
@@ -5301,8 +5298,7 @@
 !  Exchange data between all parallel nodes.
 !
             CALL mp_assemble (dg, model, Nzpts, spv, Zd)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Determine donor grid vertical indices (Kdg) and weights (Vweight)
@@ -5456,8 +5452,7 @@
 !>          CALL ad_mp_assemble (dg, model, Nzpts, spv, Zd)
 !>
 !!          CALL ad_mp_assemble (dg, model, Nzpts, spv, ad_Zd)
-!!          IF (FoundError(exit_flag, NoError, __LINE__,                &
-!!   &                     __FILE__)) RETURN
+!!          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
             DO Kdg=1,N(dg)
@@ -6051,6 +6046,9 @@
       real(r8), allocatable :: Fmsk(:,:)
 #  endif
 # endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_fine2coarse2d"
 
 # include "set_bounds.h"
 !
@@ -6100,15 +6098,13 @@
      &                       LBiF, UBiF, LBjF, UBjF,                    &
      &                       LBi,  UBi,  LBj,  UBj,                     &
      &                       Adx, dxF)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         CALL mp_aggregate2d (dg, model, gtype,                          &
      &                       LBiF, UBiF, LBjF, UBjF,                    &
      &                       LBi,  UBi,  LBj,  UBj,                     &
      &                       Ady, dyF)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #  ifdef MASKING
 !
@@ -6116,8 +6112,7 @@
      &                     LBiF, UBiF, LBjF, UBjF,                      &
      &                     LBi,  UBi,  LBj,  UBj,                       &
      &                     Amsk, Fmsk)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 # endif
 
@@ -6463,6 +6458,9 @@
       real(r8), allocatable :: Fmsk(:,:)
 #   endif
 #  endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_fine2coarse3d"
 
 #  include "set_bounds.h"
 !
@@ -6512,15 +6510,13 @@
      &                       LBiF, UBiF, LBjF, UBjF,                    &
      &                       LBi,  UBi,  LBj,  UBj,                     &
      &                       Adx, dxF)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
         CALL mp_aggregate2d (dg, model, gtype,                          &
      &                       LBiF, UBiF, LBjF, UBjF,                    &
      &                       LBi,  UBi,  LBj,  UBj,                     &
      &                       Ady, dyF)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 #   ifdef MASKING
 !
@@ -6528,8 +6524,7 @@
      &                     LBiF, UBiF, LBjF, UBjF,                      &
      &                     LBi,  UBi,  LBj,  UBj,                       &
      &                     Amsk, Fmsk)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #   endif
 #  endif
 !
@@ -6952,8 +6947,11 @@
 #  ifdef DISTRIBUTE
       integer :: Npts
 #  endif
-
+!
       real(r8), parameter :: Aspv = 0.0_r8
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_get_contact3d"
 !
 !-----------------------------------------------------------------------
 !  Initialize.
@@ -7007,8 +7005,7 @@
 !>    CALL mp_assemble (dg, model, Npts, Aspv, Ac(:,LBk:,:))
 !>
 !!    CALL ad_mp_assemble (dg, model, Npts, Aspv, Ac(:,LBk:,:))
-!!    IF (FoundError(exit_flag, NoError, __LINE__,                      &
-!!   &               __FILE__)) RETURN
+!!    IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
 !
 !  Notice that the indices i+1 and j+1 are bounded the maximum values
@@ -7143,9 +7140,12 @@
 # ifdef DISTRIBUTE
       integer :: Npts
 # endif
-
+!
       real(r8), parameter :: Aspv = 0.0_r8
       real(r8):: Rscale
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_get_persisted2d"
 !
 !-----------------------------------------------------------------------
 !  Initialize.
@@ -7204,8 +7204,7 @@
 !>    CALL mp_assemble (dg, model, Npts, Aspv, Ac)
 !>
 !!    CALL ad_mp_assemble (dg, model, Npts, Aspv, Ac)
-!!    IF (FoundError(exit_flag, NoError, __LINE__,                      &
-!!   &               __FILE__)) RETURN
+!!    IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 !
 !  Notice that the indices i+1 and j+1 are bounded the maximum values
@@ -7376,6 +7375,9 @@
 
       real(r8), parameter :: Fspv = 0.0_r8
 # endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ad_bry_fluxes"
 
 # ifdef DISTRIBUTE
 !
@@ -7388,26 +7390,22 @@
 !>    CALL mp_assemble (dg, model, NptsWE, Fspv, F_west (JLB:))
 !>
 !!    CALL ad_mp_assemble (dg, model, NptsWE, Fspv, F_west (JLB:))
-!!    IF (FoundError(exit_flag, NoError, __LINE__,                      &
-!!   &               __FILE__)) RETURN
+!!    IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 !>    CALL mp_assemble (dg, model, NptsWE, Fspv, F_east (JLB:))
 !>
 !!    CALL ad_mp_assemble (dg, model, NptsWE, Fspv, F_east (JLB:))
-!!    IF (FoundError(exit_flag, NoError, __LINE__,                      &
-!!   &               __FILE__)) RETURN
+!!    IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 !>    CALL mp_assemble (dg, model, NptsSN, Fspv, F_south(ILB:))
 !>
 !!    CALL ad_mp_assemble (dg, model, NptsSN, Fspv, F_south(ILB:))
-!!    IF (FoundError(exit_flag, NoError, __LINE__,                      &
-!!   &               __FILE__)) RETURN
+!!    IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 !>    CALL mp_assemble (dg, model, NptsSN, Fspv, F_north(ILB:))
 !>
 !!    CALL ad_mp_assemble (dg, model, NptsSN, Fspv, F_north(ILB:))
-!!    IF (FoundError(exit_flag, NoError, __LINE__,                      &
-!!   &               __FILE__)) RETURN
+!!    IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
 
 !
@@ -7931,17 +7929,17 @@
 !
 !  Collect data from all nodes.
 !
-!>          CALL mp_assemble (dg, model, NptsWE, spv,                      &
-!>     &                      BRY_CONTACT(iwest ,cjcr)%tl_Mflux(JLB:))
+!>        CALL mp_assemble (dg, model, NptsWE, spv,                     &
+!>   &                      BRY_CONTACT(iwest ,cjcr)%tl_Mflux(JLB:))
 !>
-!>          CALL mp_assemble (dg, model, NptsWE, spv,                      &
-!>     &                      BRY_CONTACT(ieast ,cjcr)%tl_Mflux(JLB:))
+!>        CALL mp_assemble (dg, model, NptsWE, spv,                     &
+!>   &                      BRY_CONTACT(ieast ,cjcr)%tl_Mflux(JLB:))
 !>
-!>          CALL mp_assemble (dg, model, NptsSN, spv,                      &
-!>     &                      BRY_CONTACT(isouth,cjcr)%tl_Mflux(ILB:))
+!>        CALL mp_assemble (dg, model, NptsSN, spv,                     &
+!>   &                      BRY_CONTACT(isouth,cjcr)%tl_Mflux(ILB:))
 !>
-!>          CALL mp_assemble (dg, model, NptsSN, spv,                      &
-!>     &                      BRY_CONTACT(inorth,cjcr)%tl_Mflux(ILB:))
+!>        CALL mp_assemble (dg, model, NptsSN, spv,                     &
+!>   &                      BRY_CONTACT(inorth,cjcr)%tl_Mflux(ILB:))
 !>
 # endif
         END IF
