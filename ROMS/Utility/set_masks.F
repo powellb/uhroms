@@ -2,7 +2,7 @@
       MODULE set_masks_mod
 #ifdef MASKING
 !
-!svn $Id: set_masks.F 1043 2020-11-12 04:56:14Z arango $
+!svn $Id: set_masks.F 1049 2020-11-30 04:34:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -52,10 +52,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, model, 2, __LINE__, __FILE__)
+      CALL wclock_on (ng, model, 2, __LINE__, MyFile)
 # endif
       CALL set_masks_tile (ng, tile, model,                             &
      &                     LBi, UBi, LBj, UBj,                          &
@@ -84,9 +87,9 @@
      &                     GRID(ng) % umask_full,                       &
      &                     GRID(ng) % vmask_full)
 # ifdef PROFILE
-      CALL wclock_off (ng, model, 2, __LINE__, __FILE__)
+      CALL wclock_off (ng, model, 2, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE set_masks
 !
@@ -509,9 +512,8 @@
 #  endif
 
       END IF
-
+!
       RETURN
-
       END SUBROUTINE set_avg_masks
 # endif
 #endif

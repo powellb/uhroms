@@ -2,7 +2,7 @@
       MODULE rp_ini_fields_mod
 #ifdef TL_IOMS
 !
-!svn $Id: rp_ini_fields.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: rp_ini_fields.F 1049 2020-11-30 04:34:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -42,10 +42,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 2, __LINE__, __FILE__)
+      CALL wclock_on (ng, iRPM, 2, __LINE__, MyFile)
 # endif
       CALL rp_ini_fields_tile (ng, tile, model,                         &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -75,9 +78,9 @@
      &                         OCEAN(ng) % zeta,                        &
      &                         OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 2, __LINE__, __FILE__)
+      CALL wclock_off (ng, iRPM, 2, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE rp_ini_fields
 !
@@ -792,7 +795,7 @@
      &                    tl_t(:,:,:,nnew,:))
 #  endif
 # endif
-
+!
       RETURN
       END SUBROUTINE rp_ini_fields_tile
 
@@ -818,10 +821,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", rp_ini_zeta"
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iRPM, 2, __LINE__, __FILE__)
+      CALL wclock_on (ng, iRPM, 2, __LINE__, MyFile)
 # endif
       CALL rp_ini_zeta_tile (ng, tile, model,                           &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -844,9 +850,9 @@
      &                       OCEAN(ng) % zeta,                          &
      &                       OCEAN(ng) % tl_zeta)
 # ifdef PROFILE
-      CALL wclock_off (ng, iRPM, 2, __LINE__, __FILE__)
+      CALL wclock_off (ng, iRPM, 2, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE rp_ini_zeta
 !
@@ -1190,7 +1196,7 @@
 #   endif
 #  endif
 # endif
-
+!
       RETURN
       END SUBROUTINE rp_ini_zeta_tile
 #endif

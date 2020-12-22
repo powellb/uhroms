@@ -4,7 +4,7 @@
 
 #if !defined TS_FIXED && (defined TANGENT && defined SOLVE3D)
 !
-!svn $Id: tl_step3d_t.F 1034 2020-07-15 21:16:28Z arango $
+!svn $Id: tl_step3d_t.F 1049 2020-11-30 04:34:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -61,10 +61,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 35, __LINE__, __FILE__)
+      CALL wclock_on (ng, iTLM, 35, __LINE__, MyFile)
 # endif
       CALL tl_step3d_t_tile (ng, tile,                                  &
      &                       LBi, UBi, LBj, UBj,                        &
@@ -108,7 +111,7 @@
      &                       OCEAN(ng) % t,                             &
      &                       OCEAN(ng) % tl_t)
 # ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 35, __LINE__, __FILE__)
+      CALL wclock_off (ng, iTLM, 35, __LINE__, MyFile)
 # endif
 !
       RETURN

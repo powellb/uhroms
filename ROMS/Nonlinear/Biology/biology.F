@@ -2,7 +2,7 @@
       MODULE biology_mod
 #if defined NONLINEAR && defined BIOLOGY
 !
-!svn $Id: biology.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: biology.F 1049 2020-11-30 04:34:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -107,12 +107,12 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: biology
-
+!
       CONTAINS
-
+!
 # if defined BIO_FENNEL
 #  include <fennel.h>
 # elif defined ECOSIM

@@ -2,7 +2,7 @@
       MODULE mod_tides
 #if defined SSH_TIDES || defined UV_TIDES
 !
-!svn $Id: mod_tides.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: mod_tides.F 1049 2020-11-30 04:34:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -157,6 +157,9 @@
 
       real(r8) :: size2d
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", allocate_tides"
+!
 !-----------------------------------------------------------------------
 !  Allocate module variables.
 !-----------------------------------------------------------------------
@@ -175,8 +178,7 @@
      &                       VarID = Vid,                               &
      &                       nVardim = nvdim,                           &
      &                       nVarAtt = nvatt)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__//", allocate_tides")) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Set maximum number of tidal components.  Allocate and initialize
 !  TIDE I/O structure. Notice that in nested applications, all the

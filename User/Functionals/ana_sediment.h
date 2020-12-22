@@ -1,6 +1,6 @@
       SUBROUTINE ana_sediment (ng, tile, model)
 !
-!! svn $Id: ana_sediment.h 995 2020-01-10 04:01:28Z arango $
+!! svn $Id: ana_sediment.h 1049 2020-11-30 04:34:51Z arango $
 !!======================================================================
 !! Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !!   Licensed under a MIT/X style license                              !
@@ -23,7 +23,12 @@
 ! Imported variable declarations.
 !
       integer, intent(in) :: ng, tile, model
-
+!
+! Local variable declarations.
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #include "tile.h"
 !
       CALL ana_sediment_tile (ng, tile, model,                          &
@@ -51,9 +56,9 @@
 #else
       IF (Lanafile.and.(tile.eq.0)) THEN
 #endif
-        ANANAME(23)=__FILE__
+        ANANAME(23)=MyFile
       END IF
-
+!
       RETURN
       END SUBROUTINE ana_sediment
 !
@@ -118,7 +123,7 @@
 !  Local variable declarations.
 !
       integer :: i, ised, j, k
-
+!
       real(r8) :: cff1, cff2, cff3, cff4
 
 #include "set_bounds.h"
@@ -280,6 +285,6 @@
         END DO
       END DO
 #endif
-
+!
       RETURN
       END SUBROUTINE ana_sediment_tile

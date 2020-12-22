@@ -1,6 +1,6 @@
       SUBROUTINE propagator (RunInterval, state, ad_state)
 !
-!svn $Id: propagator_so_semi.h 1039 2020-10-12 03:54:49Z arango $
+!svn $Id: propagator_so_semi.h 1049 2020-11-30 04:34:51Z arango $
 !************************************************** Hernan G. Arango ***
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -38,7 +38,7 @@
 !  Imported variable declarations.
 !
       real(dp), intent(in) :: RunInterval
-
+!
       TYPE (T_GST), intent(in) :: state(Ngrids)
       TYPE (T_GST), intent(inout) :: ad_state(Ngrids)
 !
@@ -47,6 +47,9 @@
       logical, save :: FirstPass = .TRUE.
 !
       integer :: ng, tile
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
 !=======================================================================
 !  Backward integration of adjoint model forced with the seminorm of
@@ -66,8 +69,7 @@
 !
         DO ng=1,Ngrids
           CALL ad_initial (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !  Activate adjoint output.
@@ -94,8 +96,7 @@
 #else
         CALL ad_main2d (RunInterval)
 #endif
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
       END IF FIRST_PASS
 !

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE state_initialize_mod
 !
-!svn $Id: state_initialize.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: state_initialize.F 1049 2020-11-30 04:34:51Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -17,9 +17,9 @@
 !=======================================================================
 !
       implicit none
-
+!
       PUBLIC  :: state_initialize
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -478,7 +478,7 @@
 # endif
 
 #endif
-
+!
       RETURN
       END SUBROUTINE state_initialize
 
