@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# svn $Id: job_so_semi.csh 1019 2020-04-30 20:46:51Z arango $
+# svn $Id: job_so_semi.csh 1051 2020-12-04 23:09:05Z arango $
 #######################################################################
 # Copyright (c) 2002-2020 The ROMS/TOMS Group                         #
 #   Licensed under a MIT/X style license                              #
