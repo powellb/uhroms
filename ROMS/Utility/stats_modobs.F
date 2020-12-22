@@ -2,7 +2,7 @@
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
       SUBROUTINE stats_modobs (ng)
 !
-!svn $Id: stats_modobs.F 1039 2020-10-12 03:54:49Z arango $
+!svn $Id: stats_modobs.F 1046 2020-11-18 22:36:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -338,7 +338,7 @@
       CALL netcdf_get_fvar (ng, iNLM, DAV(ng)%name, Vname(1,idNLmo),    &
      &                      mod_value,                                  &
      &                      ncid = DAV(ng)%ncid,                        &
-     &                      start = (/1,outer/),                        &
+     &                      start = (/1,MAX(1,outer)/),                 &
      &                      total = (/Ndatum(ng),1/))
 #  endif
 # endif

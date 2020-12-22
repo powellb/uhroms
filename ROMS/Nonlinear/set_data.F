@@ -2,7 +2,7 @@
 #ifdef NONLINEAR
       SUBROUTINE set_data (ng, tile)
 !
-!svn $Id: set_data.F 1041 2020-10-16 00:00:17Z arango $
+!svn $Id: set_data.F 1046 2020-11-18 22:36:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -169,12 +169,12 @@
 !  In 4D-Var data assimilation applications, the user have the option
 !  to fix the prior (background phase) surface fluxes in the successive
 !  outer loops (Nouter>1) or the final analysis phase. In such case, the
-!  fluxes are read from the background trajector
+!  fluxes are read from the background trajectory.
 !
       IF (Nrun.eq.1) THEN
         Lprocess=.TRUE.
       ELSE
-         Lprocess=.FALSE.
+        Lprocess=.FALSE.
       END IF
 # else
       Lprocess=.TRUE.
@@ -268,7 +268,9 @@
 !  Modulate the averaged shortwave radiation flux by the local diurnal
 !  cycle.
 !
-      CALL ana_srflux (ng, tile, iNLM)
+      IF (Lprocess) THEN
+        CALL ana_srflux (ng, tile, iNLM)
+      END IF
 #   endif
 #  endif
 
