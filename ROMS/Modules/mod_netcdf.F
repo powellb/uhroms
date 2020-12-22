@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_netcdf
 !
-!svn $Id: mod_netcdf.F 1033 2020-07-15 00:59:34Z arango $
+!svn $Id: mod_netcdf.F 1043 2020-11-12 04:56:14Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -596,7 +596,8 @@
               EXIT
             END IF
 #endif
-#ifdef ADJUST_BOUNDARY
+#ifndef RBL4DVAR_FCT_SENSITIVITY
+# ifdef ADJUST_BOUNDARY
           CASE ('obc_adjust')
             IF (dim_size(i).ne.Nbrec(ng)) THEN
               IF (Master) WRITE (stdout,10) TRIM(dim_name(i)),          &
@@ -605,8 +606,8 @@
               exit_flag=2
               EXIT
             END IF
-#endif
-#if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
+# endif
+# if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
           CASE ('frc_adjust')
             IF (dim_size(i).ne.Nfrec(ng)) THEN
               IF (Master) WRITE (stdout,10) TRIM(dim_name(i)),          &
@@ -615,6 +616,7 @@
               exit_flag=2
               EXIT
             END IF
+# endif
 #endif
         END SELECT
       END DO
@@ -1458,22 +1460,22 @@
           DO i=1,MIN(Matts,n_gatt)
             att_id=i
             status=nf90_inq_attname(my_ncid, nf90_global, att_id,       &
-      &                             att_name(i))
+     &                              att_name(i))
             IF (status.eq.nf90_noerr) THEN
               status=nf90_inquire_attribute(my_ncid, nf90_global,       &
-      &                                     TRIM(att_name(i)),          &
-      &                                     xtype = att_kind(i),        &
-      &                                     attnum = att_id)
+     &                                      TRIM(att_name(i)),          &
+     &                                      xtype = att_kind(i),        &
+     &                                      attnum = att_id)
               IF (status.ne.nf90_noerr) THEN
                 WRITE (stdout,5) i, TRIM(ncname), TRIM(SourceFile),     &
-      &                          nf90_strerror(status)
+     &                           nf90_strerror(status)
                 exit_flag=2
                 ioerror=status
                 EXIT
               END IF
             ELSE
               WRITE (stdout,5) i, TRIM(ncname), TRIM(SourceFile),       &
-      &                        nf90_strerror(status)
+     &                         nf90_strerror(status)
               exit_flag=2
               ioerror=status
               EXIT

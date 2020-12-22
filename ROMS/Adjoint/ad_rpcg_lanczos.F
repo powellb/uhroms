@@ -8,7 +8,7 @@
       SUBROUTINE ad_rpcg_lanczos (ng, model, outLoop, innLoop,          &
      &                            NinnLoop, Lcgini)
 !
-!svn $Id: ad_rpcg_lanczos.F 1022 2020-05-13 03:03:15Z arango $
+!svn $Id: ad_rpcg_lanczos.F 1043 2020-11-12 04:56:14Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Selime Gurol      !
 !    Licensed under a MIT/X style license            Andrew M. Moore   !
@@ -412,11 +412,11 @@
 !>            Lscale=1                 ! Spectral LMP
 !>            Laug=.FALSE.
 !>            CALL rprecond (ng, Lscale, Laug, outLoop, NinnLoop-1,     &
-!>     &                     FOURDVAR(ng)%cg_Dpxsum)
+!>   &                       FOURDVAR(ng)%cg_Dpxsum)
 !>            DO iobs=1,Ndatum(ng)+1
 !>              FOURDVAR(ng)%cg_Dpxsum(iobs)=                           &
-!>     &                               -FOURDVAR(ng)%cg_Dpxsum(iobs)+   &
-!>     &                                FOURDVAR(ng)%cg_pxsum(iobs)
+!>   &                                 -FOURDVAR(ng)%cg_Dpxsum(iobs)+   &
+!>   &                                  FOURDVAR(ng)%cg_pxsum(iobs)
 !>            END DO
 !>          END IF
 !!
@@ -533,7 +533,7 @@
             fact=1.0_r8/cg_beta(innLoop,outLoop)
           END IF
           DO iobs=1,Ndatum(ng)
-            pgrad(iobs)=TLmodVal_S(iobs,innLoop,outLoop)*fact+           &
+            pgrad(iobs)=TLmodVal_S(iobs,innLoop,outLoop)*fact+          &
      &         Hbk(iobs,outLoop)*vcglwk(Ndatum(ng)+1,innLoop,outLoop)
           END DO
           DO iobs=1,Ndatum(ng)
@@ -545,7 +545,7 @@
           DO iobs=1,Ndatum(ng)
             pgrad(iobs)=pgrad(iobs)+vcglwk(iobs,innLoop,outLoop)
           END DO
-          pgrad(Ndatum(ng)+1)=pgrad(Ndatum(ng)+1)+                       &
+          pgrad(Ndatum(ng)+1)=pgrad(Ndatum(ng)+1)+                      &
      &                             vcglwk(Ndatum(ng)+1,innLoop,outLoop)
           IF (innLoop.gt.1) THEN
             DO iobs=1,Ndatum(ng)+1

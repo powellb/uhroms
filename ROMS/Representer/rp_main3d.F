@@ -2,7 +2,7 @@
 #if defined TL_IOMS && defined SOLVE3D
       SUBROUTINE rp_main3d (RunInterval)
 !
-!svn $Id: rp_main3d.F 995 2020-01-10 04:01:28Z arango $
+!svn $Id: rp_main3d.F 1039 2020-10-12 03:54:49Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !
@@ -48,7 +48,7 @@
 # ifdef BBL_MODEL_NOT_YET
 !!    USE rp_bbl_mod,              ONLY : rp_bblm
 # endif
-# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
+# if defined BULK_FLUXES_NOT_YET && !defined PRIOR_BULK_FLUXES
       USE rp_bulk_flux_mod,        ONLY : rp_bulk_flux
 # endif
 # ifdef BVF_MIXING_NOT_YET
@@ -318,7 +318,7 @@
 !
         DO ng=1,Ngrids
           DO tile=first_tile(ng),last_tile(ng),+1
-# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
+# if defined BULK_FLUXES_NOT_YET && !defined PRIOR_BULK_FLUXES
             CALL rp_bulk_flux (ng, tile)
 # endif
 # ifdef BBL_MODEL_NOT_YET

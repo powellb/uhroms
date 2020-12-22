@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_clima
 !
-!svn $Id: mod_clima.F 1022 2020-05-13 03:03:15Z arango $
+!svn $Id: mod_clima.F 1043 2020-11-12 04:56:14Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -227,7 +227,7 @@
         Dmem(ng)=Dmem(ng)+REAL(N(ng)*NTCLM(ng),r8)*size2d
 
 # ifndef ANA_TCLIMA
-        allocate ( CLIMA(ng) % tclmG(LBi:UBi,LBj:UBj,N(ng),2,          &
+        allocate ( CLIMA(ng) % tclmG(LBi:UBi,LBj:UBj,N(ng),2,           &
      &                               NTCLM(ng)) )
         Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)*NTCLM(ng),r8)*size2d
 # endif
@@ -248,7 +248,8 @@
       END IF
 
       IF (ANY(LnudgeTCLM(:,ng))) THEN
-        allocate ( CLIMA(ng) % Tnudgcof(LBi:UBi,LBj:UBj,N(ng),NTCLM(ng)) )
+        allocate ( CLIMA(ng) % Tnudgcof(LBi:UBi,LBj:UBj,N(ng),          &
+     &                                  NTCLM(ng)) )
         Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)*NTCLM(ng),r8)*size2d
       END IF
 #endif

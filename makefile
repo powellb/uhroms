@@ -1,4 +1,4 @@
-# svn $Id: makefile 1037 2020-08-15 01:56:27Z arango $
+# svn $Id: makefile 1043 2020-11-12 04:56:14Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::: Hernan G. Arango :::
 # Copyright (c) 2002-2020 The ROMS/TOMS Group             Kate Hedstrom :::
 #   Licensed under a MIT/X style license                                :::
@@ -335,7 +335,8 @@ ifndef FORT
 endif
 
 ifneq ($(MAKECMDGOALS),clean)
-  include $(COMPILERS)/$(OS)-$(strip $(FORT)).mk
+  MKFILE := $(COMPILERS)/$(OS)-$(strip $(FORT)).mk
+  include $(MKFILE)
 endif
 
 ifdef USE_MPI
